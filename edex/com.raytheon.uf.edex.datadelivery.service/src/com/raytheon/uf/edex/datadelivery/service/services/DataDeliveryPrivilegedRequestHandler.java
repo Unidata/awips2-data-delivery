@@ -26,9 +26,9 @@ import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.plugin.nwsauth.NwsAuthRequest;
 import com.raytheon.uf.edex.auth.AuthManager;
 import com.raytheon.uf.edex.auth.AuthManagerFactory;
+import com.raytheon.uf.edex.auth.authorization.IAuthorizer;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
-import com.raytheon.uf.edex.auth.roles.IRoleStorage;
 
 /**
  * Handler for Data Delivery Privileged Requests.
@@ -41,7 +41,8 @@ import com.raytheon.uf.edex.auth.roles.IRoleStorage;
  * ------------ ---------- ----------- --------------------------
  * Apr 12, 2012  224       mpduff      Initial creation
  * Oct 03, 2012  1241      djohnson    Use {@link DataDeliveryPermission}.
- * Jul 26, 2031  2232      mpduff      Refactored Data Delivery permissions.
+ * Jul 26, 2013  2232      mpduff      Refactored Data Delivery permissions.
+ * May 29, 2014  3211      njensen     Use IAuthorizer instead of IRoleStorage
  * 
  * </pre>
  * 
@@ -67,12 +68,12 @@ public class DataDeliveryPrivilegedRequestHandler<T extends AbstractPrivilegedRe
             NwsAuthRequest authRequest = (NwsAuthRequest) request;
 
             AuthManager manager = AuthManagerFactory.getInstance().getManager();
-            IRoleStorage roles = manager.getRoleStorage();
+            IAuthorizer auth = manager.getAuthorizer();
 
             boolean addedAuthorization = false;
 
             for (String permission : authRequest.getRequestedPermissions()) {
-                boolean authorized = roles.isAuthorized(permission.toString(),
+                boolean authorized = auth.isAuthorized(permission.toString(),
                         user.uniqueId().toString(), "Data Delivery");
                 addedAuthorization |= authorized;
 
