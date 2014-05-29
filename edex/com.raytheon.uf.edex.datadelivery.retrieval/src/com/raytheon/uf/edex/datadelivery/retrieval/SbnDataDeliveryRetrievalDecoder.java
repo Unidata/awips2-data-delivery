@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.plugin.datadelivery.retrieval;
+package com.raytheon.uf.edex.datadelivery.retrieval;
 
 import com.raytheon.edex.esb.Headers;
 import com.raytheon.edex.plugin.AbstractDecoder;
