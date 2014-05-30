@@ -34,4 +34,4 @@
  * @version 1.0	
  */
 
-package com.raytheon.uf.edex.plugin.datadelivery.retrieval.distribution;
+package com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist;
