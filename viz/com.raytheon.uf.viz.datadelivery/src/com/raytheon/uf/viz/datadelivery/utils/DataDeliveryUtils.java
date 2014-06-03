@@ -93,6 +93,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Feb 11, 2014 2771       bgonzale     Added Data Delivery ID, getter, and retrieval method.
  * Apr 2,  2014 2974       dhladky      DD ID added to list for dropdowns in DD.
  * Apr 22, 2014 2992       dhladky      Unique list of all registries with data in this node.
+ * May 22, 2014 2808       dhladky      Fixed static final problem with DD ID
  * </pre>
  * 
  * @author mpduff
@@ -130,7 +131,7 @@ public class DataDeliveryUtils {
 
     public static final String UNABLE_TO_RETRIEVE_PENDING_SUBSCRIPTIONS = "Unable to retrieve pending subscriptions!";
 
-    private static final String dataDeliveryId = retrieveDataDeliveryId();
+    private static String dataDeliveryId = null;
 
     /**
      * TABLE_TYPE enumeration.
@@ -845,6 +846,9 @@ public class DataDeliveryUtils {
     }
 
     public static String getDataDeliveryId() {
+        if (dataDeliveryId == null) {
+            dataDeliveryId = retrieveDataDeliveryId();
+        }
         return dataDeliveryId;
     }
 

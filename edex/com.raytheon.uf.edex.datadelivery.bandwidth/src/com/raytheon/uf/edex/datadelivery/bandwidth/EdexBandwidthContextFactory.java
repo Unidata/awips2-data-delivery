@@ -38,7 +38,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsForScheduling;
-import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.BandwidthInitializer;
+import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -106,7 +106,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
 
     private final IBandwidthBucketDao bandwidthBucketDao;
 
-    private final BandwidthInitializer bandwidthInitializer;
+    private final IBandwidthInitializer bandwidthInitializer;
 
     private final IEdexBandwidthManagerCreator<T, C> bandwidthManagerCreator;
 
@@ -138,7 +138,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
      */
     EdexBandwidthContextFactory(IBandwidthDao<T, C> bandwidthDao,
             IBandwidthBucketDao bandwidthBucketDao,
-            BandwidthInitializer bandwidthInitializer,
+            IBandwidthInitializer bandwidthInitializer,
             IEdexBandwidthManagerCreator<T, C> bandwidthManagerCreator,
             IBandwidthDbInit dbInit,
             IDataSetMetaDataHandler dataSetMetaDataHandler,
@@ -239,7 +239,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
      * {@inheritDoc}
      */
     @Override
-    public BandwidthInitializer getBandwidthInitializer() {
+    public IBandwidthInitializer getBandwidthInitializer() {
         return bandwidthInitializer;
     }
 

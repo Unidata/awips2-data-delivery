@@ -11,13 +11,13 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.BandwidthInitializer;
+import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
  * 
- * {@link BandwidthInitializer} that uses Hibernate.
+ * {@link IBandwidthInitializer} that uses Hibernate.
  * 
  * <pre>
  * 
@@ -45,7 +45,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * @author djohnson
  * @version 1.0
  */
-public class HibernateBandwidthInitializer implements BandwidthInitializer {
+public class HibernateBandwidthInitializer implements IBandwidthInitializer {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(HibernateBandwidthInitializer.class);
@@ -123,5 +123,17 @@ public class HibernateBandwidthInitializer implements BandwidthInitializer {
             statusHandler.error(
                     "Failed to query for subscriptions to schedule", e);
         }
+    }
+
+    /**
+     * Get a map of the active subs by route.
+     * 
+     * @return Map<Network, List<Subscription>>
+     * @throws Exception 
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public Map<Network, List<Subscription>> getSubMapByRoute() throws Exception {
+
+        return findSubscriptionsStrategy.findSubscriptionsToSchedule();
     }
 }

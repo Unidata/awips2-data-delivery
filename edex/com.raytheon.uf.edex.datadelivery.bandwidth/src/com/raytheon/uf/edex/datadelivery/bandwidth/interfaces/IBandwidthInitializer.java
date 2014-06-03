@@ -1,5 +1,10 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.interfaces;
 
+import java.util.List;
+import java.util.Map;
+
+import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
@@ -20,13 +25,14 @@ import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
  * Oct 26, 2012 1286       djohnson     Initial creation
  * Apr 16, 2013 1906       djohnson     Extends RegistryInitializedListener.
  * Jun 25, 2013 2106       djohnson     init() now takes a {@link RetrievalManager}.
+ * May 22, 2014 2808       dhladky      Fixed naming
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public interface BandwidthInitializer extends RegistryInitializedListener {
+public interface IBandwidthInitializer extends RegistryInitializedListener {
 
     /**
      * Initialize the instance of BandwidthManager.
@@ -43,4 +49,11 @@ public interface BandwidthInitializer extends RegistryInitializedListener {
      */
     boolean init(IBandwidthManager instance, IBandwidthDbInit dbInit,
             RetrievalManager retrievalManager);
+
+    /**
+     * Gets a list of active subscriptions for the available routes.
+     * 
+     * @return
+     */
+    Map<Network, List<Subscription>> getSubMapByRoute() throws Exception;
 }

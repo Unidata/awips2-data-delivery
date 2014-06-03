@@ -71,7 +71,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes;
-import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.BandwidthInitializer;
+import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.ISubscriptionAggregator;
 import com.raytheon.uf.edex.datadelivery.bandwidth.processing.BandwidthSubscriptionContainer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.processing.SimpleSubscriptionAggregator;
@@ -150,6 +150,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 02, 2014  2810      dhladky      Priority sorting of subscriptions.
  * Apr 09, 2014 3012       dhladky      Range the querries for metadata checks to subscriptions.
  * Apr 22, 2014 2992       dhladky      Ability to get list of all registry nodes containing data.
+ * May 22, 2014 2808       dhladky      Schedule unscheduled subs when one is de-activated.
  * 
  * </pre>
  * 
@@ -173,7 +174,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
     private ISubscriptionAggregator aggregator;
 
-    private BandwidthInitializer initializer;
+    private IBandwidthInitializer initializer;
 
     protected final BandwidthDaoUtil<T, C> bandwidthDaoUtil;
 
@@ -181,6 +182,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     
     /** used for min time range **/
     public static final String MIN_RANGE_TIME = "min";
+    
+    // Registry ID Util
     private final RegistryIdUtil idUtil;
 
     
@@ -243,6 +246,13 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         return scheduleSubscriptionForRetrievalTimes(subscription,
                 retrievalTimes);
     }
+    
+    /**
+     * Try to schedule unscheduled subs when another deactivates
+     * 
+     * @param de-activated sub name
+     */
+    public abstract void scheduleUnscheduledSubscriptions(String deactivatedSubName);
 
     /**
      * Schedules a subscription that specifies a retrieval interval, rather than
@@ -672,7 +682,16 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 // See if the subscription was deactivated or unscheduled..
                 // Need to remove BandwidthReservations for this
                 // subscription.
-                return remove(bandwidthSubscriptions);
+                List<BandwidthAllocation> unscheduled = remove(bandwidthSubscriptions);
+
+                // Attempt to schedule any subscriptions that are unscheduled
+                // More room may be available because of the de-activation
+                if (subscription.getStatus() == SubscriptionStatus.DEACTIVATED) {
+                    scheduleUnscheduledSubscriptions(subscription.getName());
+                }
+                
+                return unscheduled;
+
             } else {
                 // Normal update, unschedule old allocations and create new ones
                 List<BandwidthAllocation> unscheduled = remove(bandwidthSubscriptions);
@@ -1462,7 +1481,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * {@inheritDoc}
      */
     @Override
-    public void setInitializer(BandwidthInitializer initializer) {
+    public void setInitializer(IBandwidthInitializer initializer) {
         this.initializer = initializer;
     }
 
@@ -1470,7 +1489,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * {@inheritDoc}
      */
     @Override
-    public BandwidthInitializer getInitializer() {
+    public IBandwidthInitializer getInitializer() {
         return initializer;
     }
 

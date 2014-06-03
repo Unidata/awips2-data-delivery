@@ -35,6 +35,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.Sta
  * Feb 07, 2013 1543       djohnson     Use session management code.
  * Feb 13, 2013 1543       djohnson     Exported interface which is now implemented.
  * Feb 22, 2013 1543       djohnson     Made public as YAJSW doesn't like Spring exceptions.
+ * May 22, 2014 2808       dhladky      Fixed notification upon SBN delivery
  * 
  * </pre>
  * 
@@ -165,7 +166,8 @@ public class RetrievalDao extends
     public void completeRetrievalRequest(RetrievalRequestRecord rec)
             throws DataAccessLayerException {
         try {
-            update(rec);
+            // Made create or Update because SBN deliveries will not exist locally
+            createOrUpdate(rec);
         } catch (HibernateException e) {
             throw new DataAccessLayerException(
                     "Failed to update the database while changing the status on ["

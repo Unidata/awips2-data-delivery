@@ -21,6 +21,7 @@ package com.raytheon.uf.common.datadelivery.registry.handlers;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -63,7 +64,8 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Sep 11, 2013 2352       mpduff       Add siteId to getSubscribedToDataSetNames method.
  * Jan 20, 2014 2538       mpduff       Added AdhocSubscriptionHandler.
  * Jan 29, 2014 2636       mpduff       Scheduling refactor.
- * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Mar 31, 2014 2889      dhladky       Added username for notification center tracking.
+ * May 22, 2014 2808      dhladky       Added sorting by priority as default.
  * 
  * </pre>
  * 
@@ -145,7 +147,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
                 dataSetName, providerName));
         subs.addAll(sharedSubscriptionHandler.getActiveByDataSetAndProvider(
                 dataSetName, providerName));
-
+        Collections.sort(subs);
         return subs;
     }
 
@@ -170,7 +172,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         List<Subscription> subs = Lists.newArrayList();
         subs.addAll(siteSubscriptionHandler.getByNames(names));
         subs.addAll(sharedSubscriptionHandler.getByNames(names));
-
+        Collections.sort(subs);
         return subs;
     }
 
@@ -183,7 +185,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         List<Subscription> subs = Lists.newArrayList();
         subs.addAll(siteSubscriptionHandler.getByOwner(owner));
         subs.addAll(sharedSubscriptionHandler.getByOwner(owner));
-
+        Collections.sort(subs);
         return subs;
     }
 
@@ -196,7 +198,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         List<Subscription> subs = Lists.newArrayList();
         subs.addAll(siteSubscriptionHandler.getByGroupName(group));
         subs.addAll(sharedSubscriptionHandler.getByGroupName(group));
-
+        Collections.sort(subs);
         return subs;
     }
 
@@ -209,7 +211,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         List<Subscription> subs = Lists.newArrayList();
         subs.addAll(siteSubscriptionHandler.getByFilters(group, officeId));
         subs.addAll(sharedSubscriptionHandler.getByFilters(group, officeId));
-
+        Collections.sort(subs);
         return subs;
     }
 
@@ -235,7 +237,8 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         List<Subscription> subs = Lists.newArrayList();
         subs.addAll(siteSubscriptionHandler.getActive());
         subs.addAll(sharedSubscriptionHandler.getActive());
-
+        Collections.sort(subs);
+        
         return subs;
     }
 
@@ -248,6 +251,8 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         List<Subscription> subs = Lists.newArrayList();
         subs.addAll(siteSubscriptionHandler.getActiveForRoute(route));
         subs.addAll(sharedSubscriptionHandler.getActiveForRoute(route));
+        Collections.sort(subs);
+        
         return subs;
     }
 
@@ -315,6 +320,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         List<Subscription> subs = Lists.newArrayList();
         subs.addAll(siteSubscriptionHandler.getAll());
         subs.addAll(sharedSubscriptionHandler.getAll());
+        Collections.sort(subs);
         return subs;
     }
 
@@ -472,4 +478,5 @@ public class SubscriptionHandler implements ISubscriptionHandler {
     public IAdhocSubscriptionHandler getAdhocSubscriptionHandler() {
         return adhocSubscriptionHandler;
     }
+
 }

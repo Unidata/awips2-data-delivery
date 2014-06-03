@@ -198,6 +198,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
 
             return data;
         }
+
     }
 
     /**

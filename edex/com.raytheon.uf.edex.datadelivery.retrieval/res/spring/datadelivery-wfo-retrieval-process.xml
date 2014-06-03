@@ -4,7 +4,7 @@
   http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="dataDeliveryRetrievalDecoder"
-    class="com.raytheon.uf.edex.plugin.datadelivery.retrieval.SbnDataDeliveryRetrievalDecoder">
+    class="com.raytheon.uf.edex.datadelivery.retrieval.SbnDataDeliveryRetrievalDecoder">
     <constructor-arg value="notifyRetrieval" />
 </bean>
 

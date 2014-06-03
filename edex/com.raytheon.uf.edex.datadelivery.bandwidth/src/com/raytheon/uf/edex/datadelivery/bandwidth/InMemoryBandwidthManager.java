@@ -35,7 +35,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.BandwidthInitializer;
+import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -61,6 +61,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Feb 06, 2014 2636       bgonzale     added initializeScheduling method.
  * Feb 12, 2014 2636       mpduff       Override getSubscriptionsToSchedule
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
+ * May 22, 2014 2808       dhladky      Scheduling unscheduled
  * 
  * </pre>
  * 
@@ -81,11 +82,11 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
     public static final String[] IN_MEMORY_BANDWIDTH_MANAGER_FILES = getSpringFileNamesForMode(MODE_NAME);
 
     /**
-     * {@link BandwidthInitializer} which will make a copy of the current
+     * {@link IBandwidthInitializer} which will make a copy of the current
      * running EDEX {@link BandwidthManager} data.
      */
     public static class InMemoryBandwidthInitializer implements
-            BandwidthInitializer {
+            IBandwidthInitializer {
 
         /**
          * {@inheritDoc}
@@ -114,6 +115,13 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
         @Override
         public void executeAfterRegistryInit() {
             // Nothing to do
+        }
+
+        @Override
+        public Map<Network, List<Subscription>> getSubMapByRoute()
+                throws Exception {
+         // This method is not implemented by the in-memory bandwidth manager
+            return null;
         }
     }
 
@@ -188,4 +196,10 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
         // Nothing to do for in-memory version
         return new ArrayList<Subscription>(0);
     }
+
+    @Override
+    public void scheduleUnscheduledSubscriptions(String subUnscheduledName) {
+        // The in-memory bandwidth manager will never schedule unscheduled subscriptions
+    }
+
 }

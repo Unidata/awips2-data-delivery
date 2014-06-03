@@ -154,6 +154,7 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
                 throws SerializationException {
             return scheduleSubscriptions(subscriptions);
         }
+
     }
 
     /**

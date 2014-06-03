@@ -30,7 +30,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthContextFactory;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.BandwidthInitializer;
+import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -49,6 +49,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 24, 2012 1286       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Add {@link #getBandwidthBucketDao()}.
  * Apr 22, 2014 2992       dhladky     Added IdUtil for siteList
+ * May 22, 2014 2808       dhladky     Scheduling unscheduled
  * 
  * </pre>
  * 
@@ -69,7 +70,7 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
 
     private final IBandwidthDbInit dbInit = new InMemoryBandwidthDbInit();
 
-    private final BandwidthInitializer initializer = new InMemoryBandwidthInitializer();
+    private final IBandwidthInitializer initializer = new InMemoryBandwidthInitializer();
 
 
     /**
@@ -92,7 +93,7 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
      * {@inheritDoc}
      */
     @Override
-    public BandwidthInitializer getBandwidthInitializer() {
+    public IBandwidthInitializer getBandwidthInitializer() {
         return initializer;
     }
 
