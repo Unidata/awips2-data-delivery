@@ -19,5 +19,6 @@
         further_licensing_information.
     -->
 <requestPatterns>
-    <regex>^LZ[ABC][ABC]9[123] KWBC</regex>
+    <regex>LZ[ABC][ABC]9[123] KNCF</regex>
+    <regex>shared_subscription</regex>
 </requestPatterns>
