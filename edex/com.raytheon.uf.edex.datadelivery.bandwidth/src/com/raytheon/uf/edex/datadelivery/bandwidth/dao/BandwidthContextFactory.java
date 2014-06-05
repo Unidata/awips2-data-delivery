@@ -25,7 +25,7 @@ import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.HibernateBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.BandwidthInitializer;
+import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -46,6 +46,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 24, 2012 1286       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Add {@link #getBandwidthBucketDao()}.
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
+ * May 22, 2014 2808       dhladky     Scheduling unscheduled
  * 
  * </pre>
  * 
@@ -76,11 +77,11 @@ public interface BandwidthContextFactory {
     IBandwidthBucketDao getBandwidthBucketDao();
 
     /**
-     * Retrieve the {@link BandwidthInitializer} implementation.
+     * Retrieve the {@link IBandwidthInitializer} implementation.
      * 
      * @return
      */
-    BandwidthInitializer getBandwidthInitializer();
+    IBandwidthInitializer getBandwidthInitializer();
 
     /**
      * Get the configuration file for the {@link BandwidthMap}.

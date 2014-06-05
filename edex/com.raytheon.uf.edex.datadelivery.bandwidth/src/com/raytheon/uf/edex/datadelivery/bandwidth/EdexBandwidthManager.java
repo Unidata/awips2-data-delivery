@@ -36,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.util.CollectionUtils;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.AllowConcurrentEvents;
@@ -51,6 +53,7 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
+import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -59,6 +62,7 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHan
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
 import com.raytheon.uf.common.event.EventBus;
+import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.ebxml.encoder.RegistryEncoders;
 import com.raytheon.uf.common.registry.event.InsertRegistryEvent;
 import com.raytheon.uf.common.registry.event.RegistryEvent;
@@ -130,6 +134,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
  * Apr 09, 2014 3012       dhladky      Range the queries for metadata checks, adhoc firing prevention.
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
+ * May 22, 2014 2808       dhladky      schedule unscheduled when a sub is deactivated
  * </pre>
  * 
  * @author djohnson
@@ -213,6 +218,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 ProposeScheduleResponse response = proposeScheduleSubscriptions(subscriptions);
                 Set<String> unscheduled = response
                         .getUnscheduledSubscriptions();
+                List<Subscription> unScheduledSubs = new ArrayList<Subscription>();
+                
                 if (!unscheduled.isEmpty()) {
                     // if proposed was unable to schedule some subscriptions it
                     // will schedule nothing. schedule any that can be scheduled
@@ -221,26 +228,33 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     for (Subscription<T, C> s : subscriptions) {
                         if (!unscheduled.contains(s.getName())) {
                             subsToSchedule.add(s);
+                        } else {
+                            unScheduledSubs.add(s);
                         }
                     }
 
                     unscheduled.addAll(scheduleSubscriptions(subsToSchedule));
-
                     unscheduledNames.addAll(unscheduled);
+
+                    // Update unscheduled subscriptions to reflect reality of
+                    // condition
+                    if (!CollectionUtils.isEmpty(unScheduledSubs)) {
+                        for (Subscription sub : unScheduledSubs) {
+                            try {
+                                sub.setUnscheduled(true);
+                                subscriptionHandler.update(
+                                        RegistryUtil.defaultUser, sub);
+                            } catch (RegistryHandlerException e) {
+                                statusHandler.handle(Priority.PROBLEM,
+                                        "Unable to update subscription scheduling status: "
+                                                + sub.getName(), e);
+                            }
+                        }
+                    }
                 }
             }
         } finally {
-            // TODO: Uncomment the last line in this comment block when fully
-            // switched over to Java 1.7 and remove the finally block in
-            // shutdown,
-            // that is also marked as TODO
-            // This will allow the bandwidth manager to be garbage collected
-            // without
-            // waiting for all of the delayed tasks to expire, currently they
-            // are
-            // manually removed in the shutdown method by casting to the
-            // implementation and clearing the queue
-            // scheduler.setRemoveOnCancelPolicy(true);
+            
             scheduler.scheduleAtFixedRate(watchForConfigFileChanges, 1, 1,
                     TimeUnit.MINUTES);
             scheduler.scheduleAtFixedRate(new MaintenanceTask(), 30, 30,
@@ -835,6 +849,73 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         }
 
         return subList;
+    }
+
+    /**
+     * Try to schedule other subs when another deactivates
+     * 
+     * @param deactivatedSubName
+     */
+    public void scheduleUnscheduledSubscriptions(String deactivatedSubName) {
+
+        // With the removal of allocations, try now to add any subs that might
+        // not have had room to schedule.
+        Map<Network, List<Subscription>> subMap = null;
+        try {
+            subMap = findSubscriptionsStrategy.findSubscriptionsToSchedule();
+        } catch (Exception e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Problem finding subscriptions that need to be scheduled",
+                    e);
+        }
+        if (subMap != null) {
+            statusHandler.info("Finding any unscheduled subscriptions...");
+            List<Subscription> unschedSubs = new ArrayList<Subscription>();
+            for (Network route : subMap.keySet()) {
+                for (Subscription sub : subMap.get(route)) {
+                    // look for unscheduled subs, try to schedule them.
+                    if (!sub.getName().equals(deactivatedSubName)
+                            && ((RecurringSubscription) sub).shouldSchedule()
+                            && sub.isUnscheduled()) {
+                        unschedSubs.add(sub);
+                    }
+                }
+            }
+
+            if (!CollectionUtil.isNullOrEmpty(unschedSubs)) {
+                for (Subscription sub : unschedSubs) {
+                    statusHandler
+                            .info("Attempting to Schedule unscheduled subscription: "
+                                    + sub.getName());
+                    List<BandwidthAllocation> unscheduleAllocations = schedule(sub);
+
+                    /*
+                     * The problem with the way this originally worked was that
+                     * the info that a sub was either "scheduled", or
+                     * "un-scheduled" was never persisted to the subscription in
+                     * registry. That state never survived a restart and you
+                     * would get unpredictable subscription scheduling each time
+                     * you restarted. This way, subs that are un-scheduled and
+                     * or deactivated will be clearly visible in the
+                     * SubscriptionManager Dialog. Before, They existed in a
+                     * limbo state in which they weren't displayed in the BUG
+                     * graph but still showed as active in the
+                     * SubscriptionManager presenting a confusing state.
+                     */
+                    try {
+                        subscriptionHandler.update(RegistryUtil.DEFAULT_OWNER,
+                                sub);
+                    } catch (RegistryHandlerException e) {
+                        statusHandler
+                                .handle(Priority.PROBLEM,
+                                        "Couldn't update subscription state in BandwidthManager",
+                                        e);
+                    }
+                }
+            } else {
+                statusHandler.info("No unscheduled subscriptions found...");
+            }
+        }
     }
 
     /**

@@ -30,7 +30,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.BandwidthInitializer;
+import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.ISubscriptionAggregator;
 
 /**
@@ -49,7 +49,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.ISubscriptionAggre
  * Jan 08, 2014 2615       bgonzale     Added scheduleAdoc method.
  * Jan 29, 2014 2636       mpduff       Scheduling refactor.
  * Feb 06, 2014 2636       bgonzale     added initializeScheduling method.
- * Fev 12, 2014 2636       mpduff       Add updateSchedule method.
+ * Feb 12, 2014 2636       mpduff       Add updateSchedule method.
  * </pre>
  * 
  * @author djohnson
@@ -130,12 +130,12 @@ public interface IBandwidthManager<T extends Time, C extends Coverage> {
      * @param initializer
      *            the initializer to set
      */
-    void setInitializer(BandwidthInitializer initializer);
+    void setInitializer(IBandwidthInitializer initializer);
 
     /**
      * @return the initializer
      */
-    BandwidthInitializer getInitializer();
+    IBandwidthInitializer getInitializer();
 
     /**
      * Called after a BandwidthManager has been created to initialize scheduling
