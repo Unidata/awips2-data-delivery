@@ -19,28 +19,23 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
-import com.google.common.collect.Sets;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
+import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
-import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
@@ -86,6 +81,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Feb 11, 2014 2636       mpduff       Change how retrieval times are calculated.
  * Apr 15, 2014 3012       dhladky      Fixed improper offsets.
  * Apr 21, 2014 2887       dhladky      Missed start/end in previous call, needs shouldScheduleForTime();
+ * Jun 09, 2014 3113       mpduff       Moved getRetrievalTimes to Subscription.
  * </pre>
  * 
  * @author djohnson
@@ -115,149 +111,7 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
         this.retrievalManager = retrievalManager;
     }
 
-    /**
-     * Calculate all the retrieval times for a subscription that should be in
-     * the current retrieval plan for the specified subscription.
-     * 
-     * @param subscription
-     * @param cycles
-     * @return
-     */
-    public SortedSet<Calendar> getRetrievalTimes(
-            Subscription<T, C> subscription, SortedSet<Integer> cycles) {
-        return getRetrievalTimes(subscription, cycles,
-                Sets.newTreeSet(Arrays.asList(0)));
-    }
-
-    /**
-     * Calculate all the retrieval times for a subscription that should be in
-     * the current retrieval plan for the specified subscription.
-     * 
-     * @param subscription
-     * @param retrievalInterval
-     *            the retrieval interval
-     * @return the retrieval times
-     */
-    public SortedSet<Calendar> getRetrievalTimes(
-            Subscription<T, C> subscription, int retrievalInterval) {
-        // Add all hours of the days
-        final SortedSet<Integer> hours = Sets.newTreeSet();
-        for (int i = 0; i < TimeUtil.HOURS_PER_DAY; i++) {
-            hours.add(i);
-        }
-
-        // Add every minute of the hour that is a multiple of the retrieval
-        // interval
-        final SortedSet<Integer> minutes = Sets.newTreeSet();
-        for (int i = 0; i < TimeUtil.MINUTES_PER_HOUR; i += retrievalInterval) {
-            minutes.add(i);
-        }
-
-        return getRetrievalTimes(subscription, hours, minutes);
-    }
-
-    /**
-     * Calculate all the retrieval times for a subscription that should be in
-     * the current retrieval plan for the specified subscription.
-     * 
-     * @param subscription
-     *            The subscription
-     * @param hours
-     *            The set of hours
-     * @param minutes
-     *            The set of minutes
-     * @return Set of retrieval times
-     */
-    private SortedSet<Calendar> getRetrievalTimes(
-            Subscription<T, C> subscription, SortedSet<Integer> hours,
-            SortedSet<Integer> minutes) {
-        SortedSet<Calendar> subscriptionTimes = new TreeSet<Calendar>();
-
-        RetrievalPlan plan = retrievalManager.getPlan(subscription.getRoute());
-        Calendar planStart = plan.getPlanStart();
-        Calendar planEnd = plan.getPlanEnd();
-
-        // starting time when when subscription is first valid for scheduling
-        // based on plan start and subscription start.
-        Calendar subscriptionCalculatedStart = subscription
-                .calculateStart(planStart);
-
-        // end time when when subscription is last valid for scheduling based on
-        // plan end and subscription end.
-        Calendar subscriptionCalculatedEnd = subscription.calculateEnd(planEnd);
-        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler.debug("**** PlanStart: " + planStart.getTime());
-            statusHandler.debug("**** PlanEnd  : " + planEnd.getTime());
-            statusHandler.debug("**** CalculatedStart: "
-                    + subscriptionCalculatedStart.getTime());
-            statusHandler.debug("**** CalculatedEnd  : "
-                    + subscriptionCalculatedEnd.getTime());
-        }
-
-        subscriptionCalculatedStart = TimeUtil.minCalendarFields(
-                subscriptionCalculatedStart, Calendar.MINUTE, Calendar.SECOND,
-                Calendar.MILLISECOND);
-
-        // drop the start time by 6 hours to account for 4 cycle/day models
-        subscriptionCalculatedStart.add(Calendar.HOUR_OF_DAY, -6);
-        Calendar start = TimeUtil.newGmtCalendar(subscriptionCalculatedStart
-                .getTime());
-
-        while (!start.after(subscriptionCalculatedEnd)) {
-            for (Integer cycle : hours) {
-                start.set(Calendar.HOUR_OF_DAY, cycle);
-
-                // calculate the offset, every hour
-                int availabilityOffset = 0;
-                try {
-                    availabilityOffset = BandwidthUtil
-                            .getDataSetAvailablityOffset(subscription, start);
-                } catch (RegistryHandlerException e) {
-                    // Error occurred querying the registry. Log and continue on
-                    statusHandler
-                            .handle(Priority.PROBLEM,
-                                    "Unable to retrieve data availability offset, using 0 for the offset.",
-                                    e);
-                }
-
-                for (Integer minute : minutes) {
-
-                    start.set(Calendar.MINUTE, minute);
-                    Calendar baseRefTime = TimeUtil.newGmtCalendar();
-                    baseRefTime.setTimeInMillis(start.getTimeInMillis());
-
-                    // add the offset and check if it falls within window
-                    Calendar offsetBaseRefTime = TimeUtil
-                            .newGmtCalendar(baseRefTime.getTime());
-                    offsetBaseRefTime.add(Calendar.MINUTE, availabilityOffset);
-
-                    if (offsetBaseRefTime.after(planStart)
-                            && offsetBaseRefTime.before(planEnd)) {
-                        /*
-                         * Fine grain check by hour and minute, for
-                         * subscription(start/end), activePeriod(start/end)
-                         */
-
-                        if (!subscription.shouldScheduleForTime(baseRefTime)) {
-                            // don't schedule this retrieval time,
-                            // outside subscription window
-                            continue;
-                        }
-                        subscriptionTimes.add(baseRefTime);
-                    }
-                }
-            }
-
-            // Start the next day..
-            start.add(Calendar.DAY_OF_YEAR, 1);
-            start.set(Calendar.HOUR_OF_DAY, hours.first());
-        }
-
-        return subscriptionTimes;
-    }
-
     public void remove(BandwidthSubscription dao) {
-
         List<BandwidthAllocation> reservations = bandwidthDao
                 .getBandwidthAllocations(dao.getIdentifier());
 
@@ -401,5 +255,9 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
         }
 
         return retVal;
+    }
+
+    public RetrievalPlan getRetrievalPlan(Network network) {
+        return this.retrievalManager.getRetrievalPlans().get(network);
     }
 }

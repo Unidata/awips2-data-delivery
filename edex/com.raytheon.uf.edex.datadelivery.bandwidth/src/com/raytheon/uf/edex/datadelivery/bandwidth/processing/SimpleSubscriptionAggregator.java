@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.SubscriptionUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -55,6 +56,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Jan 06, 2014 2636       mpduff      Changed how data set offset is set.
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
  * Apr 15, 2014 3012       dhladky     help with confusing nomenclature.
+ * Jun 09, 2014 3113       mpduff      Use SubscriptionUtil rather than BandwidthUtil.
  * </pre>
  * 
  * @author jspinks
@@ -107,7 +109,8 @@ public class SimpleSubscriptionAggregator implements ISubscriptionAggregator {
 
             int offset = 0;
             try {
-                offset = BandwidthUtil.getDataSetAvailablityOffset(sub,
+                SubscriptionUtil subUtil = new SubscriptionUtil();
+                offset = subUtil.getDataSetAvailablityOffset(sub,
                         subDao.getBaseReferenceTime());
             } catch (RegistryHandlerException e) {
                 statusHandler

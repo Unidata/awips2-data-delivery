@@ -17,8 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.bandwidth.util;
-
+package com.raytheon.uf.common.datadelivery.registry.util;
 
 /**
  * Object holding name and provider Strings to act as a hash key.
@@ -31,6 +30,7 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.util;
  * ------------ ---------- ----------- --------------------------
  * Dec 20, 2013   2636     mpduff      Initial creation.
  * Jan 13, 2014   2636     mpduff      Removed the apache commons Equals/Hashcode builder.
+ * May 15, 2014   3113     mpduff      Moved to common.
  * 
  * </pre>
  * 

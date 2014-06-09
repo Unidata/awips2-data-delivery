@@ -42,7 +42,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Sep 07, 2012 1102       djohnson     Remove invalid {@code @XmlRootElement}.
  * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
  * Dec 18, 2013 2636       mpduff       Add a data availability delay for the dataset.
- * jan 23, 2013   2584     dhladky     Versions.
+ * jan 23, 2013   2584     dhladky      Versions.
+ * Jun 09, 2014   3113     mpduff       Version 1.1 - Add arrivalTime.
  * 
  * </pre>
  * 
@@ -52,7 +53,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 @RegistryObject({ "providerName", "collectionName", "dataSetName" })
-@RegistryObjectVersion(value = 1.0f)
+@RegistryObjectVersion(value = 1.1f)
 public abstract class DataSet<T extends Time, C extends Coverage> {
 
     @RegistryObjectOwner
@@ -102,6 +103,13 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
     @DynamicSerializeElement
     @SlotAttribute
     protected int availabilityOffset;
+
+    /**
+     * Actual arrival time of the last data.
+     */
+    @XmlElement
+    @DynamicSerializeElement
+    protected long arrivalTime;
 
     public Map<String, Parameter> getParameters() {
         return parameters;
@@ -179,6 +187,21 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
      */
     public void setAvailabilityOffset(int availabilityOffset) {
         this.availabilityOffset = availabilityOffset;
+    }
+
+    /**
+     * @return the arrivalTime
+     */
+    public long getArrivalTime() {
+        return arrivalTime;
+    }
+
+    /**
+     * @param arrivalTime
+     *            the arrivalTime to set
+     */
+    public void setArrivalTime(long arrivalTime) {
+        this.arrivalTime = arrivalTime;
     }
 
     @Override

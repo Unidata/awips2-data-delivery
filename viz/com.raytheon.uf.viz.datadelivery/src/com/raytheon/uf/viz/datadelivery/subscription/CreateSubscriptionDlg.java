@@ -85,6 +85,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.viz.core.IGuiThreadTaskExecutor;
 import com.raytheon.uf.viz.core.auth.UserController;
@@ -146,6 +147,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Jan 14, 2014   2459     mpduff      Change Subscription status code
  * Feb 11, 2014   2771     bgonzale    Use Data Delivery ID instead of Site.
  * Mar 31, 2014   2889     dhladky     Added username for notification center tracking.
+ * May 15, 2014   3113     mpduff      Don't display the gridded cycle composite if no cycles.
  * 
  * </pre>
  * 
@@ -329,7 +331,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 priorityRule, priority, isReadOnlyLatency);
 
         if (this.subscription.getDataSetType() == DataType.GRID) {
-            this.createCycleGroup();
+            if (!CollectionUtil.isNullOrEmpty(cycleTimes)) {
+                this.createCycleGroup();
+            }
         }
 
         createSiteSelection();
@@ -893,9 +897,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      */
     private List<Integer> getCycleTimes() {
         ArrayList<Integer> cycleList = new ArrayList<Integer>();
-        for (Button b : hourBtnArr) {
-            if (b.getSelection()) {
-                cycleList.add(Integer.parseInt(b.getText()));
+        if (hourBtnArr != null) {
+            for (Button b : hourBtnArr) {
+                if (b.getSelection()) {
+                    cycleList.add(Integer.parseInt(b.getText()));
+                }
             }
         }
 
@@ -1266,7 +1272,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             if (autoApprove) {
                 try {
                     final SubscriptionServiceResult response = subscriptionService
-                            .update(username, subscription,
+                            .update(username,
+                                    subscription,
                                     new CancelForceApplyAndIncreaseLatencyDisplayText(
                                             "update", getShell()));
                     if (response.hasMessageToDisplay()) {
@@ -1659,7 +1666,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         if (this.dataSet.getDataSetType() == DataType.GRID) {
             List<Integer> cycleTimes = ((GriddedTime) subscription.getTime())
                     .getCycleTimes();
-            if (cycleTimes != null) {
+            if (!CollectionUtil.isNullOrEmpty(cycleTimes)) {
                 List<String> cycleStrings = new ArrayList<String>();
 
                 for (int cycle : cycleTimes) {

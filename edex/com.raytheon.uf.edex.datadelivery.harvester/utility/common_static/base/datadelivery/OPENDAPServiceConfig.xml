@@ -44,7 +44,9 @@
 		<pattern name="ofs_hires" dataSetLocation="0" cycleLocation="1" regex="\." />
 		<!-- RTOFS special case dataSetName = linkkey, no cycle -->
 		<pattern name="rtofs" dataSetLocation="-1" regex="_" />
-	</dataSetConfig>
+		<!-- Ice special case  -->
+        <pattern name="ice" dataSetLocation="0" cycleLocation="1" regex="\." />
+   	</dataSetConfig>
 	<!-- OPEnDAP service constants -->
 	<constant name="BLANK" value=""/>
 	<constant name="UNKNOWN" value="unknown"/>

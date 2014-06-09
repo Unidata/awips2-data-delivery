@@ -6,8 +6,6 @@ import java.util.Date;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
@@ -34,7 +32,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * Dec 20, 2013  2636      mpduff      Changed dataset delay to offset.
  * Jan 08, 2014 2615       bgonzale    Moved Calendar min and max methods to TimeUtil.
  * Apr 09, 2014 3012       dhladky     GMT Calendar use.
- * 
+ * Jun 09, 2014 3113       mpduff      Moved getDataSetAvailablityOffset to SubscriptionUtil.
  * </pre>
  * 
  * @version 1.0
@@ -54,15 +52,11 @@ public class BandwidthUtil {
     // algorithms can be injected with Spring..
     private static final BandwidthUtil instance = new BandwidthUtil();
 
-    private final AveragingAvailablityCalculator dataSetAvailabilityCalculator;
-
     private ISubscriptionLatencyCalculator subscriptionLatencyCalculator;
 
     private ISubscriptionRescheduleStrategy subscriptionRescheduleStrategy;
 
     private BandwidthUtil() {
-        dataSetAvailabilityCalculator = new AveragingAvailablityCalculator(
-                DataDeliveryHandlers.getDataSetMetaDataHandler());
     };
 
     public static int getSubscriptionLatency(Subscription<?, ?> subscription) {
@@ -82,24 +76,6 @@ public class BandwidthUtil {
         now.set(Calendar.SECOND, 0);
         now.set(Calendar.MILLISECOND, 0);
         return now;
-    }
-
-    /**
-     * Calculate the number of minutes of offset between a Subscriptions base
-     * reference time and the time the data should be available.
-     * 
-     * @param subscription
-     *            The Subscription Object to obtain the availability for.
-     * @param referenceTime
-     *            Data reference time
-     * @return The offset in minutes.
-     * @throws RegistryHandlerException
-     */
-    public static int getDataSetAvailablityOffset(
-            Subscription<?, ?> subscription, Calendar referenceTime)
-            throws RegistryHandlerException {
-        return instance.dataSetAvailabilityCalculator
-                .getDataSetAvailablityOffset(subscription, referenceTime);
     }
 
     /**
@@ -192,7 +168,8 @@ public class BandwidthUtil {
         dao.setDataSetName(dataSetMetaData.getDataSetName());
         dao.setProviderName(dataSetMetaData.getProviderName());
         dao.setUpdateTime(BandwidthUtil.now());
-        dao.setDataSetBaseTime(TimeUtil.newGmtCalendar(dataSetMetaData.getDate()));
+        dao.setDataSetBaseTime(TimeUtil.newGmtCalendar(dataSetMetaData
+                .getDate()));
         dao.setUrl(dataSetMetaData.getUrl());
 
         return dao;

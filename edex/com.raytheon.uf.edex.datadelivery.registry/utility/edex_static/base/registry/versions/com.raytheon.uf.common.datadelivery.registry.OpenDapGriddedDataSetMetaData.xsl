@@ -27,6 +27,7 @@
  * Date         Ticket#    Engineer    Description
  ******************************************************************
  * Mar 02, 2014 2789      dhladky      XSLT transformation of other versions to current.
+ * May 21, 2014 3113      mpduff       Add arrivalTime attribute.
  * 
  * </pre>
  * 
@@ -79,6 +80,11 @@
                 <xsl:attribute name="url">
         		<xsl:value-of select="@url" />
 			</xsl:attribute>
+            </xsl:if>
+            <xsl:if test="@arrivalTime != ''">
+                <xsl:attribute name="arrivalTime">
+        		    <xsl:value-of select="@arrivalTime" />
+			    </xsl:attribute>
             </xsl:if>
 
             <!-- List of applied templates -->

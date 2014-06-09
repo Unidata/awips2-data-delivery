@@ -31,7 +31,6 @@ import java.util.TreeSet;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
@@ -44,6 +43,7 @@ import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
@@ -97,6 +97,7 @@ import dods.dap.DAS;
  * Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
  * Dec 18, 2013 2636       mpduff       Calculate a data availability delay for the dataset and dataset meta data.
  * Jan 14, 2014            dhladky      Data set info used for availability delay calculations.
+ * Jun 09, 2014  3113      mpduff       Save the ArrivalTime.
  * 
  * </pre>
  * 
@@ -263,7 +264,7 @@ class OpenDAPMetaDataParser extends MetaDataParser {
                 time.setStepUnit(Time.findStepUnit(step.get(1))
                         .getDurationUnit());
                 gdsmd.setTime(time);
-                
+
             } catch (Exception le) {
                 logParsingException(timecon, "Time", collectionName, url);
             }
@@ -744,13 +745,14 @@ class OpenDAPMetaDataParser extends MetaDataParser {
                 throw new IllegalStateException(
                         "The time cannot be null for a DataSet object!");
             }
-            
+
             // Calculate dataset availability delay
-            DataSetInformation dsi = LookupManager.getInstance().getDataSetInformation(gdsmd.getDataSetName());
+            DataSetInformation dsi = LookupManager.getInstance()
+                    .getDataSetInformation(gdsmd.getDataSetName());
             long offset = 0l;
             long startMillis = gdsmd.getTime().getStart().getTime();
             long endMillis = TimeUtil.newGmtCalendar().getTimeInMillis();
-            
+
             /**
              * This is here for if no one has configured this particular model
              * They are gross defaults and will not guarantee this model working
@@ -764,34 +766,39 @@ class OpenDAPMetaDataParser extends MetaDataParser {
                         .getConstantValue("DEFAULT_OFFSET"));
                 dsi = new DataSetInformation(gdsmd.getDataSetName(), multi,
                         runIncrement, defaultOffest);
-                // writes out a place holder DataSetInformation object in the file
+                // writes out a place holder DataSetInformation object in the
+                // file
                 LookupManager.getInstance().modifyDataSetInformationLookup(dsi);
-            } 
-            
+            }
+
             offset = (endMillis - startMillis) / TimeUtil.MILLIS_PER_MINUTE;
             // this is the actually ranging check
             if (dsi.getRange() < offset) {
                 offset = dsi.getDefaultOffset();
             }
-
+            long arrivalTime = TimeUtil.currentTimeMillis();
+            dataSet.setArrivalTime(arrivalTime);
             dataSet.setAvailabilityOffset((int) offset);
             gdsmd.setAvailabilityOffset((int) offset);
+            gdsmd.setArrivalTime(arrivalTime);
 
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug("Dataset Name: "
-                        + dataSet.getDataSetName());
+                statusHandler
+                        .debug("Dataset Name: " + dataSet.getDataSetName());
                 statusHandler.debug("StartTime:    " + gdsmd.getTime());
                 statusHandler.debug("Offset:       "
                         + dataSet.getAvailabilityOffset());
+                statusHandler
+                        .debug("Arrival Time: " + dataSet.getArrivalTime());
             }
-            
+
             List<DataSetMetaData<?>> toStore = metaDatas.get(dataSet);
-            
+
             if (toStore == null) {
                 toStore = new ArrayList<DataSetMetaData<?>>();
                 metaDatas.put(dataSet, toStore);
             }
-            
+
             toStore.add(gdsmd);
         }
 

@@ -27,6 +27,7 @@
  * Date         Ticket#    Engineer    Description
  ******************************************************************
  * Mar 02, 2014 2789      dhladky      XSLT transformation of other versions to current.
+ * Jun 05, 2014 3113      mpduff       Added arrivalTime.
  * 
  * </pre>
  * 
@@ -87,6 +88,12 @@
             <xsl:if test="availabilityOffset">
                 <xsl:element name="availabilityOffset">
                     <xsl:value-of select="availabilityOffset" />
+                </xsl:element>
+            </xsl:if>
+
+            <xsl:if test="arrivalTime">
+                <xsl:element name="arrivalTime">
+                    <xsl:value-of select="arrivalTime" />
                 </xsl:element>
             </xsl:if>
 

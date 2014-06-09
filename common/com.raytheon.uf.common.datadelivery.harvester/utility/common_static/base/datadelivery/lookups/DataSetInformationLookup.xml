@@ -20,7 +20,7 @@
         <modelName>rtofs_native_048_gma</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>270</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>naefs_bc_gemode</modelName>
@@ -38,7 +38,7 @@
         <modelName>rtofs_native_000_gma</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>210</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>rtofs_glo_3dz_nowcast_6hrly_reg1</modelName>
@@ -104,7 +104,7 @@
         <modelName>rtofs_native_144_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>420</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>nam_alaskanest</modelName>
@@ -140,7 +140,7 @@
         <modelName>rtofs_forecast_hires_std_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>720</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>fens_all</modelName>
@@ -182,7 +182,7 @@
         <modelName>rtofs_native_120_gs</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>390</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>gens_ndgd_ge50pt</modelName>
@@ -212,7 +212,7 @@
         <modelName>rtofs_native_120_gm</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>390</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>sref_na_em_n1</modelName>
@@ -338,7 +338,7 @@
         <modelName>rtofs_native_024_gma</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>240</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>akrtma_anl</modelName>
@@ -422,7 +422,7 @@
         <modelName>rtofs_native_048_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>270</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>ncom_amseas</modelName>
@@ -548,7 +548,7 @@
         <modelName>rtofs_native_024_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>300</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>sref_na_nmb_ctl</modelName>
@@ -566,7 +566,7 @@
         <modelName>ice</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>420</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>hiresw_guamnmm</modelName>
@@ -656,7 +656,7 @@
         <modelName>rtofs_native_096_gma</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>360</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>srefbc_nmb_p1</modelName>
@@ -740,7 +740,7 @@
         <modelName>rtofs_glo_3dz_forecast_daily_salt</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>270</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>rtofs_glo_2ds_nowcast_daily_diag</modelName>
@@ -758,7 +758,7 @@
         <modelName>rtofs_native_120_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>390</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>hiresw_guamarw</modelName>
@@ -794,7 +794,7 @@
         <modelName>rtofs_native_096_gm</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>360</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>sref_em_p1</modelName>
@@ -830,7 +830,7 @@
         <modelName>rtofs_native_048_gm</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>270</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>prrtma_err</modelName>
@@ -842,7 +842,7 @@
         <modelName>rtofs_native_048_gs</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>270</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>cmcens_all</modelName>
@@ -860,13 +860,13 @@
         <modelName>rtofs_forecast_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>400</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>rtofs_native_120_gma</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>390</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>sref_na132_em_p1</modelName>
@@ -878,7 +878,7 @@
         <modelName>rtofs_native_000_gm</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>210</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>hiresw_westnmm</modelName>
@@ -890,7 +890,7 @@
         <modelName>rtofs_native_000_gs</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>210</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>nam_ak</modelName>
@@ -998,7 +998,7 @@
         <modelName>rtofs_native_144_gma</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>420</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>hirtma_anl</modelName>
@@ -1052,7 +1052,7 @@
         <modelName>rtofs_native_000_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>210</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>srefbc_nmm_n3</modelName>
@@ -1064,7 +1064,7 @@
         <modelName>rtofs_native_096_gs</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>360</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>naefs_bc_ge90pt</modelName>
@@ -1136,7 +1136,7 @@
         <modelName>rtofs_native_072_gma</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>300</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>hiresw_prarw</modelName>
@@ -1172,7 +1172,7 @@
         <modelName>rtofs_latlon</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>240</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>srefbc_nmm_p2</modelName>
@@ -1196,13 +1196,13 @@
         <modelName>rtofs_native_024_gs</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>240</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>rtofs_native_072_gs</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>300</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>hirtma_err</modelName>
@@ -1214,7 +1214,7 @@
         <modelName>rtofs_native_024_gm</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>240</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>narre_242_mean</modelName>
@@ -1268,7 +1268,7 @@
         <modelName>rtofs_native_096_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>345</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>sref_nmb_n3</modelName>
@@ -1280,7 +1280,7 @@
         <modelName>rtofs_nowcast_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>300</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>gurtma_ges</modelName>
@@ -1310,7 +1310,7 @@
         <modelName>rtofs_native_072_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>300</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>nam1hr</modelName>
@@ -1334,7 +1334,7 @@
         <modelName>rtofs_native_072_gm</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>300</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>naefs_bc_gespr</modelName>
@@ -1376,7 +1376,7 @@
         <modelName>rtofs_native_144_gm</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>400</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>sref_na_em_ctl</modelName>
@@ -1406,7 +1406,7 @@
         <modelName>rtofs_nowcast_hires_std_atl</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>480</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>cmcensavg</modelName>
@@ -1424,7 +1424,7 @@
         <modelName>rtofs_native_144_gs</modelName>
         <multiplier>1.5</multiplier>
         <modelRunIncrement>6</modelRunIncrement>
-        <defaultOffset>400</defaultOffset>
+        <defaultOffset>1440</defaultOffset>
     </dataSetInformation>
     <dataSetInformation>
         <modelName>hiresw_prnmm</modelName>
