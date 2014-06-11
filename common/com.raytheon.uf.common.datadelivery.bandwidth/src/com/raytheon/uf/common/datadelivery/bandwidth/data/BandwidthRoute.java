@@ -48,6 +48,9 @@ public class BandwidthRoute {
     @XmlAttribute(name = "planDays", required = true)
     private int planDays;
 
+    @XmlAttribute(name = "retrievalThreshold", required = false)
+    private float retrievalThreshold = 0.33f;
+
     /**
      * @return the bucketSizeMinutes
      */
@@ -121,6 +124,21 @@ public class BandwidthRoute {
      */
     public void setPlanDays(int planDays) {
         this.planDays = planDays;
+    }
+
+    /**
+     * @return the retrievalThreshold
+     */
+    public float getRetrievalThreshold() {
+        return retrievalThreshold;
+    }
+
+    /**
+     * @param retrievalThreshold
+     *            the retrievalThreshold to set
+     */
+    public void setRetrievalThreshold(float retrievalThreshold) {
+        this.retrievalThreshold = retrievalThreshold;
     }
 
 }

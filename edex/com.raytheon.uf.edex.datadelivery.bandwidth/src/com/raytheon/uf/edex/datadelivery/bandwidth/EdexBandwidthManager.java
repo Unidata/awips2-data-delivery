@@ -183,8 +183,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     public EdexBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao<T, C> bandwidthDao,
             RetrievalManager retrievalManager,
-            BandwidthDaoUtil<T, C> bandwidthDaoUtil,
-            RegistryIdUtil idUtil,
+            BandwidthDaoUtil<T, C> bandwidthDaoUtil, RegistryIdUtil idUtil,
             IDataSetMetaDataHandler dataSetMetaDataHandler,
             ISubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
@@ -219,7 +218,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 Set<String> unscheduled = response
                         .getUnscheduledSubscriptions();
                 List<Subscription> unScheduledSubs = new ArrayList<Subscription>();
-                
+
                 if (!unscheduled.isEmpty()) {
                     // if proposed was unable to schedule some subscriptions it
                     // will schedule nothing. schedule any that can be scheduled
@@ -254,7 +253,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 }
             }
         } finally {
-            
+
             scheduler.scheduleAtFixedRate(watchForConfigFileChanges, 1, 1,
                     TimeUnit.MINUTES);
             scheduler.scheduleAtFixedRate(new MaintenanceTask(), 30, 30,
@@ -399,7 +398,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             Subscription<T, C> sub = getRegistryObjectById(subscriptionHandler,
                     re.getId());
             sendSubscriptionNotificationEvent(re, sub);
-            
+
         }
     }
 
@@ -467,7 +466,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             }
 
             BandwidthEventBus.publish(dsmd);
-            
+
         } else {
             statusHandler.error("No DataSetMetaData found for id [" + id + "]");
         }
@@ -507,7 +506,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @Subscribe
     public void updateGriddedDataSetMetaData(
             GriddedDataSetMetaData dataSetMetaData) throws ParseException {
-      
+
         // Daily/Hourly/Monthly datasets
         if (dataSetMetaData.getCycle() == GriddedDataSetMetaData.NO_CYCLE) {
             updateDataSetMetaDataWithoutCycle((DataSetMetaData<T>) dataSetMetaData);
@@ -516,7 +515,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         else {
             updateDataSetMetaDataWithCycle((DataSetMetaData<T>) dataSetMetaData);
         }
-        
+
     }
 
     /**
@@ -684,15 +683,21 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             DataSetMetaData<T> dataSetMetaData) throws ParseException {
         BandwidthDataSetUpdate dataset = bandwidthDao
                 .newBandwidthDataSetUpdate(dataSetMetaData);
-      
-        // Range the query for subscriptions within the baseReferenceTime hour.
-        // SOME models, RAP and RTMA, come not exactly on the hour.  This causes these
-        // subscriptions to be missed because baseReferenceTimes are on the hour.
-        Map<String, Date> timeRange = getBaseReferenceTimeDateRange(dataset.getDataSetBaseTime());
-        
+
+        /*
+         * Range the query for subscriptions within the baseReferenceTime hour.
+         * SOME models, RAP and RTMA, come not exactly on the hour. This causes
+         * these subscriptions to be missed because baseReferenceTimes are on
+         * the hour.
+         */
+        Map<String, Date> timeRange = getBaseReferenceTimeDateRange(dataset
+                .getDataSetBaseTime());
+
         final SortedSet<SubscriptionRetrieval> subscriptions = bandwidthDao
-                .getSubscriptionRetrievals(dataset.getProviderName(), dataset.getDataSetName(),
-                        RetrievalStatus.SCHEDULED, timeRange.get(MIN_RANGE_TIME), timeRange.get(MAX_RANGE_TIME));
+                .getSubscriptionRetrievals(dataset.getProviderName(),
+                        dataset.getDataSetName(), RetrievalStatus.SCHEDULED,
+                        timeRange.get(MIN_RANGE_TIME),
+                        timeRange.get(MAX_RANGE_TIME));
 
         if (!subscriptions.isEmpty()) {
             // Loop through the scheduled SubscriptionRetrievals and mark
@@ -856,6 +861,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * 
      * @param deactivatedSubName
      */
+    @Override
     public void scheduleUnscheduledSubscriptions(String deactivatedSubName) {
 
         // With the removal of allocations, try now to add any subs that might

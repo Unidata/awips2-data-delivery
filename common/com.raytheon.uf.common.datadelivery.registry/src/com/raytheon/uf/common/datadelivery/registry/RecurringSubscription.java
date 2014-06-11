@@ -25,6 +25,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -43,8 +44,13 @@ import com.raytheon.uf.common.registry.annotations.SlotAttribute;
 import com.raytheon.uf.common.registry.annotations.SlotAttributeConverter;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.ebxml.slots.SetSlotConverter;
+import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.CollectionUtil;
 
 /**
  * Base definition of a recurring subscription.
@@ -71,6 +77,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Jan 28, 2014 2636       mpduff       Changed to use GMT calendar.
  * Feb 12, 2014 2636       mpduff       Return new instance of calculated start and end.
  * Apr 02, 2014 2810       dhladky      Priority sorting of subscriptions.
+ * May 20, 2014 3113       mpduff       Add the functionality that the subscription itself provides the retrieval times.
  * 
  * </pre>
  * 
@@ -82,9 +89,13 @@ import com.raytheon.uf.common.time.util.TimeUtil;
         AdhocSubscription.class, SiteSubscription.class,
         SharedSubscription.class })
 public abstract class RecurringSubscription<T extends Time, C extends Coverage>
-        implements Serializable, Subscription<T, C>, Comparable<Subscription<T, C>> {
+        implements Serializable, Subscription<T, C>,
+        Comparable<Subscription<T, C>> {
 
     private static final long serialVersionUID = -6422673887457060034L;
+
+    protected static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(RecurringSubscription.class);
 
     /**
      * Constructor.
@@ -972,6 +983,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      * @param checkDate
      * @return
      */
+    @Override
     public boolean shouldScheduleForTime(Calendar checkCal) {
         if (!isExpired(checkCal.getTime()) && inActivePeriodWindow(checkCal)) {
             return true;
@@ -1120,5 +1132,180 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         SubscriptionPriority myPriority = this.getPriority();
 
         return myPriority.compareTo(oPriority);
+    }
+
+    @Override
+    public SortedSet<Calendar> getRetrievalTimes(Calendar planStart,
+            Calendar planEnd, List<DataSetMetaData> dsmdList,
+            SubscriptionUtil subUtil) {
+        SortedSet<Calendar> retrievalTimes = null;
+        switch (dataSetType) {
+        case GRID:
+            List<Integer> cycles = ((GriddedTime) getTime()).getCycleTimes();
+            final boolean subscribedToCycles = !CollectionUtil
+                    .isNullOrEmpty(cycles);
+
+            if (subscribedToCycles) {
+                retrievalTimes = getTimes(Sets.newTreeSet(cycles), planStart,
+                        planEnd);
+            } else {
+                int interval = subUtil.calculateInterval(dsmdList);
+                Date lastArrivalTime = subUtil.getLatestArrivalTime(dsmdList);
+                Calendar lastArrival = TimeUtil.newGmtCalendar(lastArrivalTime);
+                if (lastArrival == null) {
+                    return new TreeSet<Calendar>();
+                }
+                while (lastArrival.before(planStart)) {
+                    lastArrival.add(Calendar.MINUTE, interval);
+                }
+                retrievalTimes = getTimes(interval, lastArrival, planEnd);
+            }
+            break;
+        case POINT:
+            int interval = this.getLatencyInMinutes();
+            retrievalTimes = getTimes(interval, planStart, planEnd);
+            break;
+        default:
+            throw new IllegalArgumentException(
+                    "The BandwidthManager doesn't know how to treat subscriptions with data type ["
+                            + dataSetType + "]!");
+        }
+
+        return retrievalTimes;
+    }
+
+    /**
+     * Get the times for the specified time range and interval
+     * 
+     * @param interval
+     *            The interval
+     * @param planStart
+     *            The start
+     * @param planEnd
+     *            The end
+     * @return sorted set of calendar objects
+     */
+    private SortedSet<Calendar> getTimes(int interval, Calendar planStart,
+            Calendar planEnd) {
+        SortedSet<Calendar> subscriptionTimes = new TreeSet<Calendar>();
+
+        if (interval == SubscriptionUtil.MISSING || interval <= 0) {
+            return subscriptionTimes;
+        }
+        // starting time when subscription is first valid for scheduling
+        // based on plan start and subscription start.
+        Calendar subscriptionCalculatedStart = calculateStart(planStart);
+
+        // end time when when subscription is last valid for scheduling based on
+        // plan end and subscription end.
+        Calendar subscriptionCalculatedEnd = calculateEnd(planEnd);
+
+        subscriptionCalculatedStart = TimeUtil.minCalendarFields(
+                subscriptionCalculatedStart, Calendar.MINUTE, Calendar.SECOND,
+                Calendar.MILLISECOND);
+
+        Calendar start = TimeUtil.newGmtCalendar(subscriptionCalculatedStart
+                .getTime());
+        start.add(Calendar.MINUTE, interval * -1);
+        while (!start.after(subscriptionCalculatedEnd)) {
+            Calendar baseRefTime = TimeUtil.newGmtCalendar();
+            baseRefTime.setTimeInMillis(start.getTimeInMillis());
+            if (baseRefTime.after(planStart) && baseRefTime.before(planEnd)) {
+                /*
+                 * Fine grain check by hour and minute, for
+                 * subscription(start/end), activePeriod(start/end)
+                 */
+
+                if (shouldScheduleForTime(baseRefTime)) {
+                    subscriptionTimes.add(baseRefTime);
+                }
+            }
+            start.add(Calendar.MINUTE, interval);
+        }
+
+        return subscriptionTimes;
+    }
+
+    /**
+     * Get the times for the specified time range and cycles
+     * 
+     * @param cycles
+     *            Cycles to consider
+     * @param planStart
+     *            start time
+     * @param planEnd
+     *            end time
+     * @return sorted set of calendar objects
+     */
+    private SortedSet<Calendar> getTimes(TreeSet<Integer> cycles,
+            Calendar planStart, Calendar planEnd) {
+        SortedSet<Calendar> subscriptionTimes = new TreeSet<Calendar>();
+
+        /*
+         * starting time when subscription is first valid for scheduling based
+         * on plan start and subscription start.
+         */
+        Calendar subscriptionCalculatedStart = calculateStart(planStart);
+
+        /*
+         * end time when when subscription is last valid for scheduling based on
+         * plan end and subscription end.
+         */
+        Calendar subscriptionCalculatedEnd = calculateEnd(planEnd);
+
+        subscriptionCalculatedStart = TimeUtil.minCalendarFields(
+                subscriptionCalculatedStart, Calendar.MINUTE, Calendar.SECOND,
+                Calendar.MILLISECOND);
+
+        // drop the start time by 6 hours to account for 4 cycle/day models
+        subscriptionCalculatedStart.add(Calendar.HOUR_OF_DAY, -6);
+        Calendar start = TimeUtil.newGmtCalendar(subscriptionCalculatedStart
+                .getTime());
+
+        while (!start.after(subscriptionCalculatedEnd)) {
+            for (Integer cycle : cycles) {
+                start.set(Calendar.HOUR_OF_DAY, cycle);
+
+                // calculate the offset, every hour
+                int availabilityOffset = 0;
+                try {
+                    SubscriptionUtil subUtil = new SubscriptionUtil();
+                    availabilityOffset = subUtil.getDataSetAvailablityOffset(
+                            this, start);
+                } catch (RegistryHandlerException e) {
+                    // Error occurred querying the registry. Log and continue on
+                    statusHandler
+                            .handle(Priority.PROBLEM,
+                                    "Unable to retrieve data availability offset, using 0 for the offset.",
+                                    e);
+                }
+
+                Calendar baseRefTime = TimeUtil.newGmtCalendar();
+                baseRefTime.setTimeInMillis(start.getTimeInMillis());
+
+                // add the offset and check if it falls within window
+                Calendar offsetBaseRefTime = TimeUtil
+                        .newGmtCalendar(baseRefTime.getTime());
+                offsetBaseRefTime.add(Calendar.MINUTE, availabilityOffset);
+
+                if (offsetBaseRefTime.after(planStart)
+                        && offsetBaseRefTime.before(planEnd)) {
+                    /*
+                     * Fine grain check by hour and minute, for
+                     * subscription(start/end), activePeriod(start/end)
+                     */
+
+                    if (shouldScheduleForTime(baseRefTime)) {
+                        subscriptionTimes.add(baseRefTime);
+                    }
+                }
+            }
+
+            // Start the next day..
+            start.add(Calendar.DAY_OF_YEAR, 1);
+            start.set(Calendar.HOUR_OF_DAY, 0);
+        }
+
+        return subscriptionTimes;
     }
 }

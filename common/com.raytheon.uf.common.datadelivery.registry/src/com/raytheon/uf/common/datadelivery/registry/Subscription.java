@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 
 import javax.xml.bind.annotation.XmlEnum;
 import javax.xml.bind.annotation.XmlEnumValue;
@@ -51,6 +52,7 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
  * Feb 05, 2014 2677       mpduff       Add subscription state getter/setter.
  * Apr 02, 2014  2810      dhladky      Priority sorting of subscriptions.
  * Apr 21, 2014  2887      dhladky      Added shouldScheduleForTime() to interface.
+ * Jun 09, 2014  3113      mpduff       Added getRetrievalTimes().
  * 
  * </pre>
  * 
@@ -58,7 +60,8 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
  * @version 1.0
  */
 
-public interface Subscription<T extends Time, C extends Coverage> extends Comparable<Subscription<T, C>> {
+public interface Subscription<T extends Time, C extends Coverage> extends
+        Comparable<Subscription<T, C>> {
 
     @XmlEnum
     public enum SubscriptionType {
@@ -80,15 +83,16 @@ public interface Subscription<T extends Time, C extends Coverage> extends Compar
 
     /** Enumeration to use for subscription priorities */
     @XmlEnum
-    public static enum SubscriptionPriority implements Comparable<SubscriptionPriority>{
-        
-        /* 
-         These are in the order in which priorities would 
-         appear for comparator purposes.  BE SURE that 
-         if you add any new state enum it is inserted in the order
-         you wish it to be in for logical ordering in comparison to others. 
+    public static enum SubscriptionPriority implements
+            Comparable<SubscriptionPriority> {
+
+        /*
+         * These are in the order in which priorities would appear for
+         * comparator purposes. BE SURE that if you add any new state enum it is
+         * inserted in the order you wish it to be in for logical ordering in
+         * comparison to others.
          */
-        
+
         /** High Priority */
         @XmlEnumValue("High")
         HIGH("High", 1),
@@ -731,11 +735,28 @@ public interface Subscription<T extends Time, C extends Coverage> extends Compar
      * @return This subscrition's state
      */
     SubscriptionState getSubscriptionState();
-    
+
     /**
      * Check against activePeriod and Start/End of subscription
+     * 
      * @param checkCal
      * @return
      */
     boolean shouldScheduleForTime(Calendar checkCal);
+
+    /**
+     * Return the retrieval times for the provided plan start/end.
+     * 
+     * @param planStart
+     *            Retrieval plan start time
+     * @param planEnd
+     *            Retrieval plan end time
+     * @param dsmdList
+     *            List of DataSetMetaData objects
+     * @param subUtil
+     *            SubscriptionUtil instance
+     * @return SortedSet of retrieval times
+     */
+    SortedSet<Calendar> getRetrievalTimes(Calendar planStart, Calendar planEnd,
+            List<DataSetMetaData> dsmdList, SubscriptionUtil subUtil);
 }

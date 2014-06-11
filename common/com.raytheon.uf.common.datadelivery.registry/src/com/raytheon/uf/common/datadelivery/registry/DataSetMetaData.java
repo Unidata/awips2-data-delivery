@@ -45,6 +45,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * Dec 20, 2013 2636       mpduff       Add a dataset availability offset
  * jan 23, 2013   2584     dhladky      Versions.
  * Apr 14, 2013  3012      dhladky      Removed unused methods.
+ * Jun 09, 2014  3113      mpduff       Version 1.1 - Added arrivalTime.
  * </pre>
  * 
  * @author dhladky
@@ -54,7 +55,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
 @XmlSeeAlso({ GriddedDataSetMetaData.class,
         OpenDapGriddedDataSetMetaData.class, PointDataSetMetaData.class })
 @RegistryObject({ "url" })
-@RegistryObjectVersion(value = 1.0f)
+@RegistryObjectVersion(value = 1.1f)
 public abstract class DataSetMetaData<T extends Time> {
     public static final String DATE_SLOT = "date";
 
@@ -118,6 +119,13 @@ public abstract class DataSetMetaData<T extends Time> {
     @DynamicSerializeElement
     @SlotAttribute
     protected int availabilityOffset;
+
+    /**
+     * Actual arrival time of the data.
+     */
+    @XmlElement
+    @DynamicSerializeElement
+    private long arrivalTime;
 
     public DataSetMetaData() {
 
@@ -206,6 +214,14 @@ public abstract class DataSetMetaData<T extends Time> {
         this.availabilityOffset = availabilityOffset;
     }
 
+    public long getArrivalTime() {
+        return arrivalTime;
+    }
+
+    public void setArrivalTime(long arrivalTime) {
+        this.arrivalTime = arrivalTime;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof DataSetMetaData) {
@@ -229,5 +245,4 @@ public abstract class DataSetMetaData<T extends Time> {
     public String toString() {
         return url;
     }
-
 }

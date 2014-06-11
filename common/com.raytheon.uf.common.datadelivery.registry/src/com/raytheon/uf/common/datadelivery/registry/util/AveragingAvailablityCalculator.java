@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.bandwidth.util;
+package com.raytheon.uf.common.datadelivery.registry.util;
 
 import java.util.Calendar;
 import java.util.List;
@@ -46,6 +46,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * ------------ ---------- ----------- --------------------------
  * Nov 9, 2012  1286       djohnson     Add SW history.
  * Jan 06, 2014 2636       mpduff       Changed how offset is determined.
+ * May 15, 2014   3113     mpduff      Calculate availability offset for gridded data sets without cycles.
  * 
  * </pre>
  * 
@@ -128,7 +129,8 @@ public class AveragingAvailablityCalculator {
         int total = 0;
         for (DataSetMetaData md : records) {
             GriddedDataSetMetaData gmd = (GriddedDataSetMetaData) md;
-            if (gmd.getCycle() == cycle) {
+            if (gmd.getCycle() == cycle
+                    || gmd.getCycle() == GriddedDataSetMetaData.NO_CYCLE) {
                 total += gmd.getAvailabilityOffset();
                 count++;
                 if (count == 10) {
