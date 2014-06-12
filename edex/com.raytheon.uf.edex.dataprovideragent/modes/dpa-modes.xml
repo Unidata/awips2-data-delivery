@@ -47,6 +47,7 @@
 		<include>dpa-datadelivery.xml</include>
 		<!-- Don't want this for DPA, we don't need a local registry -->
 		<exclude>harvester-datadelivery-standalone.xml</exclude>
+		<exclude>datadelivery-standalone.xml</exclude>
 		
 		<!-- OGC/DPA services -->
 		<include>ogc-common.xml</include>
