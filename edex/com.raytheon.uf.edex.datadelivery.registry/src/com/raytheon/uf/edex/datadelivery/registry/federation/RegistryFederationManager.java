@@ -157,6 +157,7 @@ import com.raytheon.uf.edex.registry.events.CreateAuditTrailEvent;
  * Mar 31, 2014 2889        dhladky     Added username for notification center tracking.
  * 4/11/2014    3011        bphillip    Removed automatic registry sync check on startup
  * 4/15/2014    3012        dhladky     Merge fixes.
+ * 6/5/2014     1712        bhillip     Fixed typo. Registry now only updates uptime when federation is enabled
  * </pre>
  * 
  * @author bphillip
@@ -326,7 +327,7 @@ public class RegistryFederationManager implements IRegistryFederationManager,
 
             } catch (Exception e1) {
                 throw new EbxmlRegistryException(
-                        "Error initializing RegistryReplicationManager", e1);
+                        "Error initializing RegistryFederationManager", e1);
             }
 
             Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -1127,7 +1128,7 @@ public class RegistryFederationManager implements IRegistryFederationManager,
      */
     @Transactional
     public void updateUpTime() throws EbxmlRegistryException {
-        if (initialized.get() && EDEXUtil.isRunning()) {
+        if (federationEnabled && initialized.get() && EDEXUtil.isRunning()) {
             long currentTime = TimeUtil.currentTimeMillis();
             long lastKnownUp = federatedRegistryMonitor.getLastKnownUptime();
             long downTime = currentTime - lastKnownUp;

@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
 import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
@@ -43,6 +42,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
+import com.raytheon.uf.edex.registry.ebxml.web.RegistryWebServer;
 
 /**
  * {@link RegistryBandwidthUtilizationListener} Keeps track of network traffic for registry
@@ -54,6 +54,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 06, 2013 1736       dhladky     Initial creation
+ * 6/5/2014     1712       bphillip    Changed registry Jetty server class
  * 
  * </pre>
  * 
@@ -90,7 +91,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
      * @param isFederated
      * @param BandwidthMap
      */
-    public RegistryBandwidthUtilizationListener(Server server, Boolean isFederated, BandwidthMap map, IBandwidthBucketDao bucketDao) {
+    public RegistryBandwidthUtilizationListener(RegistryWebServer server, Boolean isFederated, BandwidthMap map, IBandwidthBucketDao bucketDao) {
         
         // We only care about OPSNET in this listener
         this.setFederated(isFederated);
@@ -101,7 +102,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
         String cron = getCronString(route.getBucketSizeMinutes());
         createQuartzCron(cron, network.name());
         
-        for (Connector connector: server.getConnectors()) {
+        for (Connector connector: server.getJettyServer().getConnectors()) {
             if (connector instanceof NetworkTrafficSelectChannelConnector) {
                 NetworkTrafficSelectChannelConnector nconnector = ((NetworkTrafficSelectChannelConnector)connector);
                 nconnector.addNetworkTrafficListener(this);
