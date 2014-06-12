@@ -43,6 +43,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
+import com.raytheon.uf.common.registry.schemas.ebxml.util.EbxmlJaxbManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -64,6 +65,7 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
  * Jan 13, 2014  #2679     dhladky      multiple layers
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
  * Apr 14, 2014  3012      dhladky      Cleaned up.
+ * Jun 08, 2014  3141      dhladky      DPA SOAP to central registry comm
  * 
  * </pre>
  * 
@@ -81,14 +83,46 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     protected OGCAgent agent = null;
 
     protected Map<String, Parameter> parameters = null;
-
+    
+    protected String[] packageNames = null;
+    
+    protected static final String pathSeparator = ":";
+    
     /**
-	 * 
-	 */
+     * public (Spring loaded) constructor
+     */
     public RegistryCollectorAddon() {
-        this.config = HarvesterConfigurationManager.getOGCConfiguration();
-        setAgent((OGCAgent) config.getAgent());
-        storeProvider(config.getProvider());
+        /*
+         * Need these to be setup before anything happens. This is the default
+         * JAXB path for registry objects, collector won't work without it.
+         */
+        String paths = System.getProperty("registry.ogc.jaxb.path");
+        
+        if (paths != null) {
+            try {
+                this.packageNames = paths.split(pathSeparator);
+            } catch (Exception e) {
+                statusHandler.error(
+                        "Couldn't parse Registry Collector JAXB path list: "+paths, e);
+            }
+
+            if (packageNames != null) {
+                for (String path : packageNames) {
+                    if (!path.isEmpty()) {
+                        EbxmlJaxbManager.getInstance().findJaxables(path);
+                    }
+                }
+                this.config = HarvesterConfigurationManager
+                        .getOGCConfiguration();
+                setAgent((OGCAgent) config.getAgent());
+                storeProvider(config.getProvider());
+            }
+        } else {
+            throw new IllegalArgumentException(
+                    "The registry OGC JAXB path property, {registry.ogc.jaxb.path} is not viewable! \n"
+                            + "Registry Collector will not operate correctly in this state!");
+        }
+
     }
 
     public HarvesterConfig getConfig() {
