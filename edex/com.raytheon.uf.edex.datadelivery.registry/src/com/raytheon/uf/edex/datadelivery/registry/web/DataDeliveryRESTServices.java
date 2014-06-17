@@ -27,9 +27,9 @@ import com.raytheon.uf.common.datadelivery.registry.web.IRegistryAvailableRestSe
 import com.raytheon.uf.common.datadelivery.registry.web.IRegistryDataAccessService;
 import com.raytheon.uf.common.datadelivery.registry.web.IRegistryFederationManager;
 import com.raytheon.uf.common.registry.constants.RegistryAvailability;
-import com.raytheon.uf.common.registry.services.RegistryRESTServices;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.edex.registry.ebxml.services.RegistryRESTServices;
 
 /**
  * <pre>
