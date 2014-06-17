@@ -84,7 +84,6 @@ import com.raytheon.uf.common.registry.constants.QueryReturnTypes;
 import com.raytheon.uf.common.registry.constants.RegistryObjectTypes;
 import com.raytheon.uf.common.registry.constants.StatusTypes;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
-import com.raytheon.uf.common.registry.services.RegistrySOAPServices;
 import com.raytheon.uf.common.registry.services.RegistryServiceException;
 import com.raytheon.uf.common.registry.services.rest.response.RestCollectionResponse;
 import com.raytheon.uf.common.serialization.JAXBManager;
@@ -108,6 +107,7 @@ import com.raytheon.uf.edex.registry.ebxml.exception.NoReplicationServersAvailab
 import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
 import com.raytheon.uf.edex.registry.ebxml.services.query.QueryConstants;
 import com.raytheon.uf.edex.registry.ebxml.services.query.RegistryQueryUtil;
+import com.raytheon.uf.edex.registry.ebxml.services.soap.RegistrySOAPServices;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.EbxmlObjectUtil;
 import com.raytheon.uf.edex.registry.events.CreateAuditTrailEvent;

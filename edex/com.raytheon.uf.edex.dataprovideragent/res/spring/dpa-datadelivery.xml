@@ -16,11 +16,11 @@
     <util:constant id="ebxmlQueryServiceKey"
         static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_QUERY_SERVICE" />
         
-    <bean id="registrySOAPServices" class="com.raytheon.uf.common.registry.services.RegistrySOAPServices"/>
+    <bean id="registrySOAPServices" class="com.raytheon.uf.edex.registry.ebxml.services.soap.RegistrySOAPServices"/>
 
 	<!-- This bean references the dpa.properties prop file -->
 	<bean id="soapRegistryManager"
-		class="com.raytheon.uf.common.registry.ebxml.RemoteSOAPRegistryHandler">
+		class="com.raytheon.uf.edex.registry.ebxml.services.soap.RemoteSOAPRegistryHandler">
 		<constructor-arg ref="registrySOAPServices" />
 		<property name="host" value="${registry.host}" />
 		<property name="port" value="${ebxml.registry.webserver.port}" />
