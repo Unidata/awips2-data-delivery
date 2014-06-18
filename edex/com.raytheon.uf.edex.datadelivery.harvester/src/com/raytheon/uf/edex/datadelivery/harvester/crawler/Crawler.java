@@ -22,7 +22,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.harvester.crawler.MainSequenceCrawler.ModelCrawlConfiguration;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.ConnectionUtil;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 
@@ -38,6 +37,7 @@ import edu.uci.ics.crawler4j.crawler.CrawlConfig;
  * ------------ ---------- ----------- --------------------------
  * Oct 4, 2012   1038      dhladky     Initial creation
  * Oct 28, 2013  2361       dhladky     Fixed up JAXBManager.
+ * 6/18/2014    1712        bphillip    Updated Proxy configuration
  * 
  * </pre>
  * 
@@ -68,8 +68,6 @@ public abstract class Crawler {
     protected final CommunicationStrategy communicationStrategy;
 
     protected final HarvesterConfig hconfig;
-
-    protected final ProxyConfiguration proxyParameters;
 
     protected static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
         @Override
@@ -207,7 +205,6 @@ public abstract class Crawler {
             CommunicationStrategy communicationStrategy) {
         this.communicationStrategy = communicationStrategy;
         this.hconfig = hconfig;
-        proxyParameters = ConnectionUtil.getProxyParameters();
     }
 
     /**
@@ -284,12 +281,9 @@ public abstract class Crawler {
         /*
          * Do you need to set a proxy? If so, you can use:
          */
-        if (proxyParameters != null) {
-            String host = proxyParameters.getHost();
-            int port = proxyParameters.getPort();
-
-            config.setProxyHost(host);
-            config.setProxyPort(port);
+        if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
+            config.setProxyHost(ProxyConfiguration.getHttpProxyHost());
+            config.setProxyPort(ProxyConfiguration.getHttpProxyPort());
         }
 
         /*

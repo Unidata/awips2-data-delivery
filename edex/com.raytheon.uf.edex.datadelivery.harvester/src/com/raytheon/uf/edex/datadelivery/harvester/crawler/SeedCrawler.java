@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.raytheon.uf.common.comm.ProxyConfiguration;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.ProtoCollection;
@@ -32,6 +33,7 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 4, 2012  1038       dhladky     Initial creation
+ * 6/18/2014    1712        bphillip    Updated Proxy configuration
  * 
  * </pre>
  * 
@@ -110,11 +112,11 @@ public class SeedCrawler extends Crawler {
         super(config, communicationStrategy);
 
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            if (proxyParameters != null) {
+            if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
                 statusHandler.debug(String.format(
                         "proxy host:[%s]  proxy port: [%s]",
-                        proxyParameters.getHost(),
-                        proxyParameters.getPortString()));
+                        ProxyConfiguration.getHttpProxyHost(),
+                        ProxyConfiguration.getHttpProxyPortString()));
             } else {
                 statusHandler.debug("No proxy information configured.");
             }
