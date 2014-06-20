@@ -42,7 +42,7 @@ class WXXMRetrievalGenerator extends RetrievalGenerator {
      * {@inheritDoc}
      */
     @Override
-    protected RetrievalAdapter getServiceRetrievalAdapter() {
+    public RetrievalAdapter getServiceRetrievalAdapter() {
         return new WXXMRetrievalAdapter();
     }
 

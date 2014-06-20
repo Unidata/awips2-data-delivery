@@ -36,7 +36,6 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.WfsConnectionUtil;
 
 /**
  * WFS OGC Provider Retrieval Adapter

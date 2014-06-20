@@ -22,13 +22,13 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 import java.util.Date;
 
 import com.raytheon.uf.common.datadelivery.registry.Provider;
-import com.raytheon.uf.edex.datadelivery.retrieval.IExtractMetaData;
-import com.raytheon.uf.edex.datadelivery.retrieval.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
-import com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
- * Implementation of {@link ServiceFactory} that handles OpenDAP. This should be
+ * Implementation of {@link IServiceFactory} that handles OpenDAP. This should be
  * the ONLY non package-private class in this entire package.
  * 
  * <pre>
@@ -46,7 +46,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-public class OpenDapServiceFactory implements ServiceFactory {
+public class OpenDapServiceFactory implements IServiceFactory {
 
     private static final OpenDAPMetaDataParser PARSER = new OpenDAPMetaDataParser();
 

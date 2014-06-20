@@ -45,7 +45,7 @@ class WCSRetrievalGenerator extends RetrievalGenerator {
      * getServiceAdapter()
      */
     @Override
-    protected RetrievalAdapter getServiceRetrievalAdapter() {
+    public RetrievalAdapter getServiceRetrievalAdapter() {
         return new WCSRetrievalAdapter();
     }
 

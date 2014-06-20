@@ -435,7 +435,7 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator {
      */
 
     @Override
-    protected RetrievalAdapter getServiceRetrievalAdapter() {
+    public RetrievalAdapter getServiceRetrievalAdapter() {
         return new OpenDAPRetrievalAdapter();
     }
 

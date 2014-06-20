@@ -8,7 +8,7 @@ import org.quartz.SchedulerFactory;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
+import com.raytheon.uf.edex.datadelivery.harvester.Launcher;
 
 /**
  * Harvester Job for Quartz in code.
@@ -20,6 +20,7 @@ import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
  * ------------ ---------- ----------- --------------------------
  * Oct 04, 2012 1038       dhladky     Initial creation
  * May 20, 2013 2000       djohnson    Scheduler must now be started since quartz upgrade.
+ * Jun 14, 2014 3120       dhladky     Made more abstract
  * 
  * </pre>
  * 
@@ -27,7 +28,7 @@ import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
  * @version 1.0
  */
 
-public class HarvesterJobController<T extends CrawlLauncher> {
+public class HarvesterJobController<T extends Launcher> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(HarvesterJobController.class);
@@ -47,7 +48,7 @@ public class HarvesterJobController<T extends CrawlLauncher> {
             // schedular.deleteJob(name, "Crawler");
             JobDetail jobDetail = null;
             try {
-                jobDetail = schedular.getJobDetail(name, "Crawler");
+                jobDetail = schedular.getJobDetail(name, "Launcher");
             } catch (SchedulerException se) {
                 statusHandler.info("Job doesn't exist!");
             }
@@ -55,17 +56,17 @@ public class HarvesterJobController<T extends CrawlLauncher> {
             if (jobDetail != null) {
                 // reschedule
                 CronTrigger trigger = (CronTrigger) schedular.getTrigger(name,
-                        "Crawler");
+                        "Launcher");
                 String cronEx = trigger.getCronExpression();
                 if (!cron.equals(cronEx)) {
                     trigger.setCronExpression(cron);
-                    schedular.rescheduleJob(name, "Crawler", trigger);
+                    schedular.rescheduleJob(name, "Launcher", trigger);
                     statusHandler.info("Rescheduling Job: " + name);
                 }
             } else {
-                jobDetail = new JobDetail(name, "Crawler", clazz);
+                jobDetail = new JobDetail(name, "Launcher", clazz);
                 jobDetail.getJobDataMap().put(name, "FULL");
-                CronTrigger trigger = new CronTrigger(name, "Crawler");
+                CronTrigger trigger = new CronTrigger(name, "Launcher");
                 trigger.setCronExpression(cron);
                 schedular.scheduleJob(jobDetail, trigger);
             }

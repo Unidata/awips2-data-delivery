@@ -29,6 +29,7 @@ import com.raytheon.uf.edex.datadelivery.harvester.cron.HarvesterJobController;
  * Oct 4, 2012  1038      dhladky     Initial creation
  * Nov 19, 2012 1166      djohnson    Clean up JAXB representation of registry objects.
  * Oct 28, 2013 2361       dhladky     Fixed up JAXBManager.
+ * Jun 14, 2014 3120       dhladky     Changed method name so it's more flexible
  * 
  * </pre>
  * 
@@ -49,13 +50,13 @@ public class SeedCrawlLauncher extends CrawlLauncher {
     }
 
     @Override
-    public void addHarvesterJobs(String providerName, CrawlAgent agent) {
+    public void addHarvesterJobs(String providerName, Agent agent) {
 
         getHarvesterJobs().add(
                 new HarvesterJobController<SeedCrawlLauncher>(providerName
-                        + "-" + getType(), agent.getSeedScan(),
+                        + "-" + getType(), ((CrawlAgent)agent).getSeedScan(),
                         SeedCrawlLauncher.class));
-        statusHandler.handle(Priority.DEBUG, "Added/Updated " + providerName
+        statusHandler.handle(Priority.INFO, "Added/Updated " + providerName
                 + " Seed Scan entry.");
     }
 
@@ -63,7 +64,7 @@ public class SeedCrawlLauncher extends CrawlLauncher {
      * launches the crawl
      */
     @Override
-    public void crawl(String providerName) {
+    public void launch(String providerName) {
 
         try {
             // first get the Localization directory and find all harvester

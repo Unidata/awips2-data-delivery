@@ -22,13 +22,13 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wms;
 import java.util.Date;
 
 import com.raytheon.uf.common.datadelivery.registry.Provider;
-import com.raytheon.uf.edex.datadelivery.retrieval.IExtractMetaData;
-import com.raytheon.uf.edex.datadelivery.retrieval.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
-import com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
- * {@link ServiceFactory} implementation for WMS.
+ * {@link IServiceFactory} implementation for WMS.
  * 
  * <pre>
  * 
@@ -44,7 +44,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-public class WmsServiceFactory implements ServiceFactory {
+public class WmsServiceFactory implements IServiceFactory {
 
     /*
      * (non-Javadoc)

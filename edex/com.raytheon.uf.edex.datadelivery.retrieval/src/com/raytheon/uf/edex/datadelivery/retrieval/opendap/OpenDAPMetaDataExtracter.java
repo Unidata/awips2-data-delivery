@@ -16,7 +16,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManage
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.MetaDataExtracter;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtracter;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ConnectionUtil;
 
 import dods.dap.DAS;
@@ -41,14 +41,17 @@ import dods.dap.parser.ParseException;
  * Jul 25, 2012    955      djohnson    Make package-private.
  * Aug 06, 2012   1022      djohnson    Cache a retrieved DAS instance.
  * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
+ * Jul 08, 2014  3120      dhladky      More generic
  * 
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
  */
-class OpenDAPMetaDataExtracter extends MetaDataExtracter {
+class OpenDAPMetaDataExtracter extends MetaDataExtracter<String, DAS> {
 
+    private String url;
+    
     /**
      * DAP Type
      * 
@@ -103,7 +106,6 @@ class OpenDAPMetaDataExtracter extends MetaDataExtracter {
     /**
      * Checks whether or not the data is new
      */
-    @Override
     public boolean checkLastUpdate(Date date) {
 
         if (date.before(getDataDate())) {
@@ -112,15 +114,17 @@ class OpenDAPMetaDataExtracter extends MetaDataExtracter {
 
         return false;
     }
-
+  
     @Override
-    public Map<String, Object> extractMetaData() throws Exception {
+    public Map<String, DAS> extractMetaData(Object url) throws Exception {
+        
         try {
-            Map<String, Object> metaData = new HashMap<String, Object>();
-
+            setUrl((String)url);
+            Map<String, DAS> metaData = new HashMap<String, DAS>();
             // we only need DAS
             metaData.put(DAP_TYPE.DAS.getDapType(), getDASData());
             return metaData;
+            
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Can't extract MetaData from URL " + url, e);
@@ -193,12 +197,22 @@ class OpenDAPMetaDataExtracter extends MetaDataExtracter {
         rootUrl = webUrl.substring(0, index);
     }
 
-    @Override
+    /**
+     * Set the URL
+     */
     public void setUrl(String url) {
-        super.setUrl(url);
+        
+        this.url = url;
         setRootUrl();
-
         // If the URL changes, then the das object is also invalid
         das = null;
+    }
+    
+    /**
+     * Gets the URL
+     * @return
+     */
+    public String getUrl() {
+        return url;
     }
 }

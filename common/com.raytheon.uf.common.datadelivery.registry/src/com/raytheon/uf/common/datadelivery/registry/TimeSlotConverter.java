@@ -33,6 +33,7 @@ import com.raytheon.uf.common.registry.ebxml.slots.SlotConverter;
  * May 29, 2013 753        dhladky     Updated the way point datasets are sent.
  * Sept 25, 2013 1797      dhladky     separated time and gridded time
  * Oct 10, 2013 1797       bgonzale    Refactored registry Time objects.
+ * Aug 20, 2014  3120      dhladky     Added support for General Time objects.
  * 
  * </pre>
  * 
@@ -68,66 +69,71 @@ public class TimeSlotConverter implements SlotConverter {
         List<ValueType> collectionValues = new ArrayList<ValueType>();
         CollectionValueType cvt = new CollectionValueType();
 
-        // Handle times for Point types
-        if (slotValue instanceof PointTime) {
+        // Must at least extend Time object
+        if (slotValue instanceof Time) {
 
-            PointTime pt = (PointTime) slotValue;
-            // initial datasets can have no times in them
-            if (pt.getTimes() != null) {
-                for (Date date : pt.getTimes()) {
-                    List<SlotType> ptSlots = DateSlotConverter.INSTANCE
-                            .getSlots(slotName, date);
-                    slots.add(ptSlots.get(0));
+            // Handle special times for Point types
+            if (slotValue instanceof PointTime) {
+
+                PointTime pt = (PointTime) slotValue;
+                // initial datasets can have no times in them
+                if (pt.getTimes() != null) {
+                    for (Date date : pt.getTimes()) {
+                        List<SlotType> ptSlots = DateSlotConverter.INSTANCE
+                                .getSlots(slotName, date);
+                        slots.add(ptSlots.get(0));
+                    }
+                }
+
+            // Handle special Gridded Times
+            } else if (slotValue instanceof GriddedTime) {
+
+                GriddedTime t = (GriddedTime) slotValue;
+                SimpleDateFormat df = new SimpleDateFormat(
+                        CalendarAttribute.DATE_TIME_FORMAT);
+                Calendar current = Calendar.getInstance();
+                Calendar end = Calendar.getInstance();
+
+                current.setTime(t.getStart());
+                end.setTime(t.getEnd());
+
+                STEP_UNIT stepu = STEP_UNIT.valueOf(t.getStepUnit()
+                        .toUpperCase());
+                Double step = t.getStep();
+
+                // Add One millisecond to handle the case when the step of the
+                // Time
+                // Object
+                // is exactly equal to the end time.
+                end.add(Calendar.MILLISECOND, 1);
+
+                while (end.after(current)) {
+
+                    collectionValues.add(newEntrySlot(df.format(current
+                            .getTime())));
+
+                    switch (stepu) {
+                    case SECOND:
+                        current.add(Calendar.SECOND, step.intValue());
+                        break;
+                    case MINUTE:
+                        current.add(Calendar.MINUTE, step.intValue());
+                        break;
+                    case HOUR:
+                        current.add(Calendar.HOUR_OF_DAY, step.intValue());
+                        break;
+                    case WEEK:
+                        current.add(Calendar.WEEK_OF_YEAR, step.intValue());
+                        break;
+                    case DAY:
+                        current.add(Calendar.DAY_OF_WEEK, step.intValue());
+                        break;
+                    case MONTH:
+                        current.add(Calendar.MONTH, step.intValue());
+                        break;
+                    }
                 }
             }
-
-            // Handle Gridded Times
-        } else if (slotValue instanceof GriddedTime) {
-
-            GriddedTime t = (GriddedTime) slotValue;
-            SimpleDateFormat df = new SimpleDateFormat(
-                    CalendarAttribute.DATE_TIME_FORMAT);
-            Calendar current = Calendar.getInstance();
-            Calendar end = Calendar.getInstance();
-
-            current.setTime(t.getStart());
-            end.setTime(t.getEnd());
-
-            STEP_UNIT stepu = STEP_UNIT.valueOf(t.getStepUnit().toUpperCase());
-            Double step = t.getStep();
-
-            // Add One millisecond to handle the case when the step of the Time
-            // Object
-            // is exactly equal to the end time.
-            end.add(Calendar.MILLISECOND, 1);
-
-            while (end.after(current)) {
-
-                collectionValues
-                        .add(newEntrySlot(df.format(current.getTime())));
-
-                switch (stepu) {
-                case SECOND:
-                    current.add(Calendar.SECOND, step.intValue());
-                    break;
-                case MINUTE:
-                    current.add(Calendar.MINUTE, step.intValue());
-                    break;
-                case HOUR:
-                    current.add(Calendar.HOUR_OF_DAY, step.intValue());
-                    break;
-                case WEEK:
-                    current.add(Calendar.WEEK_OF_YEAR, step.intValue());
-                    break;
-                case DAY:
-                    current.add(Calendar.DAY_OF_WEEK, step.intValue());
-                    break;
-                case MONTH:
-                    current.add(Calendar.MONTH, step.intValue());
-                    break;
-                }
-            }
-
         } else {
             throw new IllegalArgumentException("Object of type "
                     + slotValue.getClass().getName()

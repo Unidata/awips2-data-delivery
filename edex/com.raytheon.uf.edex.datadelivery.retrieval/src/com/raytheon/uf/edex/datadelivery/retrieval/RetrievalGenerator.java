@@ -33,6 +33,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionT
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 
 /**
  * Generate Retrieval
@@ -83,7 +84,7 @@ public abstract class RetrievalGenerator {
      */
     public abstract List<Retrieval> buildRetrieval(SubscriptionBundle bundle);
 
-    protected abstract RetrievalAdapter getServiceRetrievalAdapter();
+    public abstract RetrievalAdapter getServiceRetrievalAdapter();
 
     /**
      * Check for duplicates;

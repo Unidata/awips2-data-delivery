@@ -50,6 +50,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * --/--/----              dhladky     Initial creation
  * Oct 23, 2013 2361       njensen     Use JAXBManager for XML
  * Oct 28, 2013 2361       dhladky     Fixed up JAXBManager.
+ * Jun 14, 2014 3120       dhladky     PDA
  * 
  * </pre>
  * 
@@ -64,7 +65,7 @@ public class HarvesterConfigurationManager {
     private static final Class<?>[] clazzess = new Class<?>[] {
         HarvesterConfig.class, Provider.class, Connection.class,
         ProviderType.class, ServiceType.class, Agent.class,
-        CrawlAgent.class, OGCAgent.class, ConfigLayer.class };
+        CrawlAgent.class, OGCAgent.class, PDAAgent.class, ConfigLayer.class };
 
     private static JAXBManager jaxb = null;
     
@@ -144,6 +145,33 @@ public class HarvesterConfigurationManager {
                 Agent agent = config.getAgent();
 
                 if (agent instanceof OGCAgent) {
+                    return config;
+                } else {
+                    config = null;
+                }
+            }
+        }
+
+        return config;
+    }
+    
+    /**
+     * Get the PDA configuration
+     * 
+     * @return
+     */
+    public static HarvesterConfig getPDAConfiguration() {
+
+        HarvesterConfig config = null;
+
+        for (LocalizationFile lf : getLocalizedFiles()) {
+
+            config = getHarvesterFile(lf.getFile());
+
+            if (config != null) {
+                Agent agent = config.getAgent();
+
+                if (agent instanceof PDAAgent) {
                     return config;
                 } else {
                     config = null;

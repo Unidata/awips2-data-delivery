@@ -42,7 +42,7 @@ class WmsRetrievalGenerator extends RetrievalGenerator {
      * {@inheritDoc}
      */
     @Override
-    protected RetrievalAdapter getServiceRetrievalAdapter() {
+    public RetrievalAdapter getServiceRetrievalAdapter() {
         return new WMSRetrievalAdapter();
     }
 
