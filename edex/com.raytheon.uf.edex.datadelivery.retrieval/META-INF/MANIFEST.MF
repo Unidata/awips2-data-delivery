@@ -2,9 +2,8 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Providerretreival
 Bundle-SymbolicName: com.raytheon.uf.edex.datadelivery.retrieval
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Eclipse-RegisterBuddy: com.raytheon.edex.common, com.raytheon.uf.common.serialization
 Require-Bundle: com.raytheon.uf.common.status;bundle-version="1.12.1174",
  net.dods;bundle-version="1.0.0",
  com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.0.0",
@@ -34,7 +33,7 @@ Require-Bundle: com.raytheon.uf.common.status;bundle-version="1.12.1174",
  com.raytheon.uf.edex.registry.ebxml;bundle-version="1.0.0",
  com.raytheon.uf.edex.datadelivery.event;bundle-version="1.0.0",
  org.apache.http;bundle-version="4.1.2"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval;
   uses:="com.raytheon.uf.common.datadelivery.event,
