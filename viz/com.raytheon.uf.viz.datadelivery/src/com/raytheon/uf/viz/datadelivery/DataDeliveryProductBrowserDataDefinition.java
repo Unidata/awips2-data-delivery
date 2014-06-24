@@ -45,7 +45,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.BinOffset;
 import com.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
-import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.ResourceType;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.productbrowser.AbstractRequestableProductBrowserDataDefinition;
@@ -54,6 +53,7 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceType;
 import com.raytheon.viz.grid.GridProductBrowserDataFormatter;
 import com.raytheon.viz.grid.inv.GridInventory;
+import com.raytheon.viz.grid.rsc.GridLoadProperties;
 import com.raytheon.viz.grid.rsc.GridResourceData;
 import com.raytheon.viz.pointdata.PlotModels;
 import com.raytheon.viz.pointdata.rsc.PlotResourceData;
@@ -75,6 +75,7 @@ import com.raytheon.viz.pointdata.util.PointDataInventory;
  * Nov 21, 2013  2554      dhladky     Restored ADHOC's to working.
  * Jan 14, 2014  2459      mpduff      Change Subscription status code
  * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
+ * Jun 24, 2014  3128      bclement    changed loadProperties to be GridLoadProperties
  * 
  * </pre>
  * 
@@ -131,7 +132,12 @@ public class DataDeliveryProductBrowserDataDefinition
     public DataDeliveryProductBrowserDataDefinition() {
         this.productName = DATA_DELIVERY;
         this.displayName = DATA_DELIVERY;
-        loadProperties = new LoadProperties();
+        /*
+         * TODO this product browser data definition should be refactored to
+         * delegate to either the grid definition or the point definition to
+         * reduce code duplication
+         */
+        loadProperties = new GridLoadProperties();
         order = POINT_ORDER;
     }
 
