@@ -158,6 +158,7 @@ import com.raytheon.uf.edex.registry.events.CreateAuditTrailEvent;
  * 4/11/2014    3011        bphillip    Removed automatic registry sync check on startup
  * 4/15/2014    3012        dhladky     Merge fixes.
  * 6/5/2014     1712        bhillip     Fixed typo. Registry now only updates uptime when federation is enabled
+ * June 25, 2014 3320       dhladky     Remove all references to DD environment variables from setup.env
  * </pre>
  * 
  * @author bphillip
@@ -223,14 +224,14 @@ public class RegistryFederationManager implements IRegistryFederationManager,
     public static AtomicBoolean initialized = new AtomicBoolean(false);
 
     private boolean federationEnabled = Boolean.parseBoolean(System
-            .getenv("EBXML_REGISTRY_FEDERATION_ENABLED"));
+            .getProperty("ebxml.registry.federation.enabled"));
 
     private static AtomicBoolean running = new AtomicBoolean(false);
 
     /** The servers that we are subscribing to */
     private static NotificationServers servers;
 
-    private String ncfAddress = System.getenv("NCF_ADDRESS");
+    private String ncfAddress = "https://"+(System.getProperty("ncf.host"))+":"+(System.getProperty("ebxml.registry.webserver.port"));
 
     /** Monitors how long this registry has been connected to the federation */
     private FederatedRegistryMonitor federatedRegistryMonitor;
@@ -708,7 +709,7 @@ public class RegistryFederationManager implements IRegistryFederationManager,
     @Path("isFederated")
     @Transactional
     public String isFederated() {
-        return System.getenv("EBXML_REGISTRY_FEDERATION_ENABLED");
+        return System.getProperty("ebxml.registry.federation.enabled");
     }
 
     @GET
