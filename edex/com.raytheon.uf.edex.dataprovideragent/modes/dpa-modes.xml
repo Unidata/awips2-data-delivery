@@ -45,6 +45,7 @@
 		<include>request-router.xml</include>
 		<include>utility-request.xml</include>
 		<include>dpa-datadelivery.xml</include>
+		<include>edex-security.xml</include>
 		<!-- Don't want this for DPA, we don't need a local registry -->
 		<exclude>harvester-datadelivery-standalone.xml</exclude>
 		<exclude>datadelivery-standalone.xml</exclude>

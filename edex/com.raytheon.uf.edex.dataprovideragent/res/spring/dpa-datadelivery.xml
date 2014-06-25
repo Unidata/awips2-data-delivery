@@ -15,17 +15,45 @@
 
     <util:constant id="ebxmlQueryServiceKey"
         static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_QUERY_SERVICE" />
-        
-    <bean id="registrySOAPServices" class="com.raytheon.uf.edex.registry.ebxml.services.soap.RegistrySOAPServices"/>
-
+   
 	<!-- This bean references the dpa.properties prop file -->
 	<bean id="soapRegistryManager"
 		class="com.raytheon.uf.edex.registry.ebxml.services.soap.RemoteSOAPRegistryHandler">
-		<constructor-arg ref="registrySOAPServices" />
+		<constructor-arg ref="registryWebServiceClient" />
 		<property name="host" value="${registry.host}" />
 		<property name="port" value="${ebxml.registry.webserver.port}" />
 		<property name="protocol" value="${ebxml.registry.protocol}" />
     </bean>
+    
+    <bean id="registryWebServiceClient"
+		class="com.raytheon.uf.edex.registry.ebxml.services.soap.RegistrySOAPServices">
+		<property name="securityInterceptor" ref="securityOutInterceptor" />
+		<property name="serviceConfig" ref="RegistryServiceConfig" />
+		<property name="securityConfig" ref="securityConfiguration" />
+	</bean>
+	
+	<bean id="RegistryServiceConfig"
+		class="com.raytheon.uf.common.registry.services.RegistryServiceConfiguration" />
+		
+	<bean id="securityOutInterceptor" class="org.apache.cxf.ws.security.wss4j.WSS4JOutInterceptor">
+		<constructor-arg>
+			<map>
+				<entry key="mustUnderstand" value="false" />
+				<entry key="enableNonceCache" value="false" />
+				<entry key="enableTimestampCache" value="false" />
+				<entry key="enableSamlOneTimeUseCache" value="false" />
+				<entry key="action" value="Signature" />
+				<entry key="user" value="${EBXML_REGISTRY_USER}" />
+				<entry key="signaturePropRefId" value="propRef"/>
+				<entry key="propRef"  value-ref="encryptedPropertyLoader"/>
+				<entry key="passwordCallbackClass"
+					value="com.raytheon.uf.edex.registry.ebxml.acp.PasswordCallback" />
+				<entry key="signatureParts"
+					value="{Element}{http://schemas.xmlsoap.org/soap/envelope/}Body" />
+				<entry key="signatureAlgorithm" value="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+			</map>
+		</constructor-arg>
+	</bean>
  
 	<bean id="registryHandler"
 		class="com.raytheon.uf.common.registry.ebxml.FactoryRegistryHandler">
