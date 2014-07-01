@@ -10,6 +10,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.raytheon.uf.common.comm.ProxyConfiguration;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
@@ -46,6 +47,7 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
  * Sep 11, 2012   1154      djohnson    Change to create crawl configuration objects, 
  *                                      then use them to perform configured crawls that can span days.
  * Oct 2, 2012    1038      dhladky     redesigned
+ * 6/18/2014    1712        bphillip    Updated Proxy configuration
  * </pre>
  * 
  * @author dhladky
@@ -213,11 +215,11 @@ public class MainSequenceCrawler extends Crawler {
         super(config, mainSequenceCommunicationStrategyDecorator);
 
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            if (proxyParameters != null) {
+            if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
                 statusHandler.debug(String.format(
                         "proxy host:[%s]  proxy port: [%s]",
-                        proxyParameters.getHost(),
-                        proxyParameters.getPortString()));
+                        ProxyConfiguration.getHttpProxyHost(),
+                        ProxyConfiguration.getHttpProxyPortString()));
             } else {
                 statusHandler.debug("No proxy information configured.");
             }
