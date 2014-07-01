@@ -20,6 +20,7 @@
    <requires>
       <import feature="com.raytheon.uf.viz.core.feature" version="1.0.0.qualifier"/>
       <import feature="com.raytheon.uf.viz.nwsauth.feature" version="1.0.0.qualifier"/>
+      <import feature="com.raytheon.uf.viz.registry.feature" version="1.0.0.qualifier"/>
    </requires>
 
    <plugin
@@ -30,13 +31,6 @@
 
    <plugin
          id="com.raytheon.uf.common.datadelivery.registry"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="com.raytheon.uf.common.registry.schemas.ebxml"
          download-size="0"
          install-size="0"
          version="0.0.0"
@@ -57,19 +51,6 @@
 
    <plugin
          id="com.raytheon.uf.common.datadelivery.event"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="com.raytheon.uf.common.registry.ebxml"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="com.raytheon.uf.common.registry.event"
          download-size="0"
          install-size="0"
          version="0.0.0"
@@ -97,12 +78,6 @@
 
    <plugin
          id="com.raytheon.uf.common.datadelivery.service"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="com.sun.xml.bind"
          download-size="0"
          install-size="0"
          version="0.0.0"/>
