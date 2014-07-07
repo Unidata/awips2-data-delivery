@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.datadelivery;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,8 +50,6 @@ import com.raytheon.uf.viz.core.rsc.ResourceType;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.productbrowser.AbstractRequestableProductBrowserDataDefinition;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
-import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
-import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceType;
 import com.raytheon.viz.grid.GridProductBrowserDataFormatter;
 import com.raytheon.viz.grid.inv.GridInventory;
 import com.raytheon.viz.grid.rsc.GridLoadProperties;
@@ -76,6 +75,8 @@ import com.raytheon.viz.pointdata.util.PointDataInventory;
  * Jan 14, 2014  2459      mpduff      Change Subscription status code
  * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
  * Jun 24, 2014  3128      bclement    changed loadProperties to be GridLoadProperties
+ * Jul 07, 2014  3135      bsteffen    Allow reuse of definition across multiple tree selections.
+ * 
  * 
  * </pre>
  * 
@@ -100,15 +101,6 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /** Constant */
     private final String DATA_DELIVERY = "Data Delivery";
-
-    /** Constant */
-    private final String SHOW_DERIVED_PARAMS = "Show Derived Parameters";
-
-    /** Active subscription list */
-    private final List<Subscription> activeSubList = new ArrayList<Subscription>();
-
-    /** Selected subscription name */
-    private String selectedSubscriptionName;
 
     /** Selected data type */
     private String selectedDataType;
@@ -146,7 +138,6 @@ public class DataDeliveryProductBrowserDataDefinition
      */
     @Override
     public void constructResource(String[] selection, ResourceType type) {
-        selectedSubscriptionName = selection[2];
         selectedDataType = selection[1];
         super.constructResource(selection, type);
         if (selection[1].equalsIgnoreCase("Point")) {
@@ -191,12 +182,12 @@ public class DataDeliveryProductBrowserDataDefinition
         }
 
         if (selection.length == 3) {
-            if (selectedDataType.equalsIgnoreCase(DataType.POINT.name())) {
+            if (selection[1].equalsIgnoreCase(DataType.POINT.name())) {
                 String[] results = PlotModels.getInstance().getLevels(MADIS,
                         SVG);
                 String param = order[2];
                 return formatData(param, results);
-            } else if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
+            } else if (selection[1].equalsIgnoreCase(DataType.GRID.name())) {
                 this.productName = DataType.GRID.name().toLowerCase();
                 // Must remove the first selection so this matches with the grid
                 // version
@@ -236,8 +227,16 @@ public class DataDeliveryProductBrowserDataDefinition
     @Override
     public List<ProductBrowserLabel> formatData(String param,
             String[] parameters) {
-        if (selectedDataType == null
-                || selectedDataType.equalsIgnoreCase(DataType.POINT.name())) {
+        if (Arrays.asList(GRID_ORDER).contains(param)) {
+            try {
+                return GridProductBrowserDataFormatter.formatGridData(param,
+                        parameters);
+            } catch (CommunicationException e) {
+                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
+                        e);
+            }
+        } else {
+            /* Data Type or point data. */
             List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
             for (int i = 0; i < parameters.length; i++) {
                 ProductBrowserLabel label = new ProductBrowserLabel(
@@ -248,14 +247,6 @@ public class DataDeliveryProductBrowserDataDefinition
             }
             Collections.sort(temp);
             return temp;
-        } else if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
-            try {
-                return GridProductBrowserDataFormatter.formatGridData(param,
-                        parameters);
-            } catch (CommunicationException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            }
         }
         return Collections.emptyList();
     }
@@ -338,7 +329,7 @@ public class DataDeliveryProductBrowserDataDefinition
                     selection[2]));
         }
 
-        List<RequestConstraint> spatialCons = getSpatialConstraint();
+        List<RequestConstraint> spatialCons = getSpatialConstraint(selection[2]);
         if (spatialCons != null && !spatialCons.isEmpty()) {
             queryList.put("location.longitude", spatialCons.get(0));
             queryList.put("location.latitude", spatialCons.get(1));
@@ -352,16 +343,14 @@ public class DataDeliveryProductBrowserDataDefinition
      * 
      * @return List of spatial constraints, or empty list if none
      */
-    private List<RequestConstraint> getSpatialConstraint() {
-        if (activeSubList == null || activeSubList.isEmpty()) {
-            getSubscriptions(selectedDataType);
-        }
+    private List<RequestConstraint> getSpatialConstraint(
+            String selectedSubscriptionName) {
 
         List<RequestConstraint> cons = new ArrayList<RequestConstraint>();
 
         Coverage cov = null;
-        for (Subscription s : activeSubList) {
-            if (s.getName().equals(this.selectedSubscriptionName)) {
+        for (Subscription s : getSubscriptions()) {
+            if (s.getName().equals(selectedSubscriptionName)) {
                 cov = s.getCoverage();
                 break;
             }
@@ -405,7 +394,6 @@ public class DataDeliveryProductBrowserDataDefinition
      * @return
      */
     private List<String> getSubscriptions(DataType dataType) {
-        activeSubList.clear();
         final List<String> subNames = new ArrayList<String>();
 
         List<Subscription> subList = getSubscriptions();
@@ -413,7 +401,6 @@ public class DataDeliveryProductBrowserDataDefinition
             if (s.isActive()
                     || s.getSubscriptionType().equals(SubscriptionType.QUERY)) {
                 if (s.getDataSetType() == dataType) {
-                    activeSubList.add(s);
                     subNames.add(s.getName());
                 }
             }
@@ -489,27 +476,4 @@ public class DataDeliveryProductBrowserDataDefinition
         return super.getDisplayTypes();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.productbrowser.
-     * AbstractRequestableProductBrowserDataDefinition#configurePreferences()
-     */
-    @Override
-    protected List<ProductBrowserPreference> configurePreferences() {
-        if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
-            List<ProductBrowserPreference> widgets = super
-                    .configurePreferences();
-            ProductBrowserPreference derivedParameterPref = new ProductBrowserPreference();
-            derivedParameterPref.setLabel(SHOW_DERIVED_PARAMS);
-            derivedParameterPref.setPreferenceType(PreferenceType.BOOLEAN);
-            derivedParameterPref
-                    .setTooltip("Show derived parameters in the Product Browser");
-            derivedParameterPref.setValue(true);
-            widgets.add(derivedParameterPref);
-            return widgets;
-
-        }
-        return super.configurePreferences();
-    }
 }
