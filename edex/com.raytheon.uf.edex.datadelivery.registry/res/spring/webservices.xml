@@ -43,6 +43,7 @@
 	<jaxrs:server id="dataDeliveryRestServices" address="/dataDelivery">
 		<jaxrs:inInterceptors>
 			<ref bean="webServiceInInterceptor" />
+			<ref bean="authenticationInterceptor" />
 		</jaxrs:inInterceptors>
 		<jaxrs:serviceBeans>
 			<ref bean="registryDataAccessService" />

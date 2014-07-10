@@ -99,6 +99,7 @@ import com.raytheon.uf.edex.datadelivery.registry.availability.FederatedRegistry
 import com.raytheon.uf.edex.datadelivery.registry.dao.ReplicationEventDao;
 import com.raytheon.uf.edex.datadelivery.registry.replication.NotificationServers;
 import com.raytheon.uf.edex.datadelivery.registry.web.DataDeliveryRESTServices;
+import com.raytheon.uf.edex.registry.ebxml.RegistryUsers;
 import com.raytheon.uf.edex.registry.ebxml.dao.DbInit;
 import com.raytheon.uf.edex.registry.ebxml.dao.RegistryDao;
 import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
@@ -108,8 +109,8 @@ import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
 import com.raytheon.uf.edex.registry.ebxml.services.query.QueryConstants;
 import com.raytheon.uf.edex.registry.ebxml.services.query.RegistryQueryUtil;
 import com.raytheon.uf.edex.registry.ebxml.services.soap.RegistrySOAPServices;
-import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.EbxmlObjectUtil;
+import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 import com.raytheon.uf.edex.registry.events.CreateAuditTrailEvent;
 
 /**
@@ -159,6 +160,7 @@ import com.raytheon.uf.edex.registry.events.CreateAuditTrailEvent;
  * 4/15/2014    3012        dhladky     Merge fixes.
  * 6/5/2014     1712        bhillip     Fixed typo. Registry now only updates uptime when federation is enabled
  * June 25, 2014 3320       dhladky     Remove all references to DD environment variables from setup.env
+ * 7/10/2014    1717        bphillip    Central registry now inserts system user
  * </pre>
  * 
  * @author bphillip
@@ -255,6 +257,8 @@ public class RegistryFederationManager implements IRegistryFederationManager,
 
     private FederationDbInit federationDbInit;
 
+    private RegistryUsers registryUsers;
+
     public RegistryFederationManager() throws JAXBException {
         jaxbManager = new JAXBManager(SubmitObjectsRequest.class,
                 FederationProperties.class, NotificationServers.class,
@@ -344,6 +348,24 @@ public class RegistryFederationManager implements IRegistryFederationManager,
                 }
             });
         }
+
+        /*
+         * If this is the central registry then we ensure that the superuser is
+         * in the registry
+         */
+        if (centralRegistry
+                && !registryUsers.userExists(RegistryUtil.DEFAULT_OWNER)) {
+            /*
+             * The registry super user initially gets the default password which
+             * *must* be changed immediately
+             */
+            try {
+                registryUsers.addUser(RegistryUtil.DEFAULT_OWNER, "password",
+                        "RegistryAdministrator");
+            } catch (MsgRegistryException e) {
+                throw new EbxmlRegistryException("Error adding default registry user!",e);
+            }
+        }
         initialized.set(true);
     }
 
@@ -382,9 +404,9 @@ public class RegistryFederationManager implements IRegistryFederationManager,
                         new RegistryObjectListType(objects), false,
                         Mode.CREATE_OR_REPLACE);
                 submitObjectsRequest
-                        .getSlot()
-                        .add(new SlotType(EbxmlObjectUtil.EVENT_SOURCE_SLOT,
-                                new StringValueType(RegistryIdUtil.getId())));
+                    .getSlot()
+                    .add(new SlotType(EbxmlObjectUtil.EVENT_SOURCE_SLOT,
+                        new StringValueType(RegistryIdUtil.getId())));
                 try {
                     statusHandler
                             .info("Submitting federation registration objects to local registry...");
@@ -646,7 +668,8 @@ public class RegistryFederationManager implements IRegistryFederationManager,
 
             for (int currentBatch = 0; currentBatch < batches; currentBatch++) {
 
-            	statusHandler.info("Processing batch "+(currentBatch+1)+"/"+batches);
+                statusHandler.info("Processing batch " + (currentBatch + 1)
+                        + "/" + batches);
 
                 persistBatch(objectType, remoteRegistryUrl, remoteIds.subList(
                         currentBatch * SYNC_BATCH_SIZE, (currentBatch + 1)
@@ -703,7 +726,6 @@ public class RegistryFederationManager implements IRegistryFederationManager,
             registryObjectDao.flushAndClearSession();
         }
     }
-
 
     @GET
     @Path("isFederated")
@@ -1070,10 +1092,10 @@ public class RegistryFederationManager implements IRegistryFederationManager,
                     request.setCheckReferences(false);
                     request.setMode(Mode.CREATE_OR_REPLACE);
                     request.setUsername(RegistryUtil.registryUser);
-                    request.getSlot().add(
-                            new SlotType(EbxmlObjectUtil.EVENT_SOURCE_SLOT,
-                                    new StringValueType(RegistryIdUtil
-                                            .getId())));
+                    request.getSlot()
+                            .add(new SlotType(
+                                    EbxmlObjectUtil.EVENT_SOURCE_SLOT,
+                                    new StringValueType(RegistryIdUtil.getId())));
                     try {
                         if (!request.getRegistryObjects().isEmpty()) {
                             soapService.getLifecycleManagerServiceForHost(
@@ -1094,10 +1116,10 @@ public class RegistryFederationManager implements IRegistryFederationManager,
                     RemoveObjectsRequest request = new RemoveObjectsRequest(
                             "Replicate - Remove events", "", null, null,
                             refList, false, true, DeletionScope.DELETE_ALL);
-                    request.getSlot().add(
-                            new SlotType(EbxmlObjectUtil.EVENT_SOURCE_SLOT,
-                                    new StringValueType(RegistryIdUtil
-                                            .getId())));
+                    request.getSlot()
+                            .add(new SlotType(
+                                    EbxmlObjectUtil.EVENT_SOURCE_SLOT,
+                                    new StringValueType(RegistryIdUtil.getId())));
                     try {
                         if (!refList.getObjectRef().isEmpty()) {
                             soapService.getLifecycleManagerServiceForHost(
@@ -1151,7 +1173,6 @@ public class RegistryFederationManager implements IRegistryFederationManager,
                     }
 
                 }
-
 
             } else {
                 federatedRegistryMonitor.updateTime();
@@ -1259,6 +1280,14 @@ public class RegistryFederationManager implements IRegistryFederationManager,
 
     public NotificationServers getServers() {
         return servers;
+    }
+
+    /**
+     * @param registryUsers
+     *            the registryUsers to set
+     */
+    public void setRegistryUsers(RegistryUsers registryUsers) {
+        this.registryUsers = registryUsers;
     }
 
 }

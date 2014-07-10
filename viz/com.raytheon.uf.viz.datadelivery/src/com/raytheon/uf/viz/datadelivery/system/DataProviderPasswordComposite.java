@@ -65,6 +65,7 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 07, 2013   2180     mpduff      Initial creation.
+ * 7/10/2014    1717       bphillip    Changed imports due to moved AESEncryptor class
  * 
  * </pre>
  * 
@@ -200,7 +201,7 @@ public class DataProviderPasswordComposite extends Composite implements
         });
 
         Label keyLabel = new Label(comp, SWT.NONE);
-        keyLabel.setText("Encryption Key:");
+        keyLabel.setText("AESEncryptor Key:");
 
         keyTxt = new Text(comp, SWT.BORDER);
         keyTxt.setLayoutData(new GridData(150, SWT.DEFAULT));

@@ -25,6 +25,7 @@
   		<property name="registryObjectDao" ref="registryObjectDao"/>
   		<property name="federatedRegistryMonitor" ref="FederatedRegistryMonitor"/>
   		<property name="federationDbInit" ref="FederationDbInit"/>
+  		<property name="registryUsers" ref="registryUsers"/>
   		
   	</bean>
 

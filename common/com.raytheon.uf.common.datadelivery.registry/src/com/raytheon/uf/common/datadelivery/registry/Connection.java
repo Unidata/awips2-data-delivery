@@ -27,6 +27,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.raytheon.uf.common.datadelivery.registry.Encryption;
+import com.raytheon.uf.common.security.encryption.AESEncryptor;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -43,9 +45,10 @@ import com.raytheon.uf.common.status.UFStatus;
  * Jan 17, 2011    191      dhladky     Initial creation
  * Jun 28, 2012    819      djohnson    Remove proxy information.
  * Jul 24, 2012    955      djohnson    Add copy constructor.
- * Jun 11, 2013    1763     dhladky     Added Encryption type
+ * Jun 11, 2013    1763     dhladky     Added AESEncryptor type
  * Jun 17, 2013    2106     djohnson    Check for encryption to not be null, getPassword() must be left alone for dynamic serialize.
  * Aug 08, 2013    2108     mpduff      Serialize the provider key.
+ * 7/10/2014       1717     bphillip    Changed import of relocated AESEncryptor class
  * </pre>
  * 
  * @author dhladky
@@ -60,6 +63,8 @@ public class Connection implements Serializable {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(Connection.class);
+    
+    private AESEncryptor encryptionProcessor = new AESEncryptor();
 
     public Connection() {
 
@@ -131,7 +136,7 @@ public class Connection implements Serializable {
         if (password != null && providerKey != null) {
 
             try {
-                return encryption.decrypt(providerKey, password);
+                return encryptionProcessor.decrypt(providerKey, password);
             } catch (Exception e) {
                 statusHandler.error("Unable to decrypt password!", e);
             }
@@ -154,7 +159,7 @@ public class Connection implements Serializable {
         if (password != null && providerKey != null) {
 
             try {
-                encryptPassword = encryption.encrypt(providerKey, password);
+                encryptPassword = encryptionProcessor.encrypt(providerKey, password);
                 setPassword(encryptPassword);
             } catch (Exception e) {
                 statusHandler.error("Unable to crypt password!", e);
@@ -178,7 +183,7 @@ public class Connection implements Serializable {
         if (userName != null && providerKey != null) {
 
             try {
-                return encryption.decrypt(providerKey, userName);
+                return encryptionProcessor.decrypt(providerKey, userName);
             } catch (Exception e) {
                 statusHandler.error("Unable to decrypt userName!", e);
             }
@@ -201,7 +206,7 @@ public class Connection implements Serializable {
         if (userName != null && providerKey != null) {
 
             try {
-                encryptUserName = encryption.encrypt(providerKey, userName);
+                encryptUserName = encryptionProcessor.encrypt(providerKey, userName);
                 setUserName(encryptUserName);
             } catch (Exception e) {
                 statusHandler.error("Unable to crypt userName!", e);
