@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: DataDelivery Retrieval Phase3
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-SymbolicName: com.raytheon.uf.edex.datadelivery.retrieval.wfs
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.14.0.qualifier
 Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.0.0",
  com.raytheon.uf.edex.datadelivery.retrieval;bundle-version="1.0.0",
  com.raytheon.uf.common.time;bundle-version="1.12.1174",
@@ -23,6 +23,7 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.
  com.raytheon.uf.common.dataplugin.madis;bundle-version="1.0.0",
  com.raytheon.uf.edex.plugin.madis.ogc;bundle-version="1.0.0",
  com.raytheon.uf.edex.plugin.madis;bundle-version="1.0.0",
- com.raytheon.uf.edex.wfs;bundle-version="1.0.0"
+ com.raytheon.uf.edex.wfs;bundle-version="1.0.0",
+ com.sun.xml.bind;bundle-version="1.0.0"
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval.wfs,
  com.raytheon.uf.edex.datadelivery.retrieval.wfs.metadata
