@@ -32,6 +32,7 @@ import com.raytheon.uf.edex.wfs.reg.Unique;
  * May 12, 2013  753       dhladky      Initial javadoc
  * May 31, 2013 2038       djohnson     Move to correct git repo.
  * June 03, 2012 1763      dhladky      Made operational, moved to ogc plugin
+ * Jul 14, 2014 3373       bclement     jaxb manager api changes
  * 
  * </pre>
  * 
@@ -97,7 +98,8 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis>
             configureMarshaller();
         }
 
-        return (FeatureCollectionType) getMarshaller().unmarshal(payload);
+        return (FeatureCollectionType) getMarshaller()
+                .unmarshalFromXml(payload);
     }
     
     /**
