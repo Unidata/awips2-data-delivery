@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.uf.edex.core.props.PropertiesException;
 
 /**
  * Applies the Data Delivery WMO header.
@@ -70,6 +69,7 @@ import com.raytheon.uf.edex.core.props.PropertiesException;
  *                                      Fixed ordering of elements in maps and defaults when
  *                                      element keys are null.
  * Oct 09, 2013 2267       bgonzale     Fix Wmo header cr and lf formatting.
+ * Jul 21, 2014 2914       garmendariz  Remove references to PropertiesException
  * 
  * </pre>
  * 
@@ -88,7 +88,7 @@ public class DataDeliveryRetrievalWmoHeaderApplier implements IWmoHeaderApplier 
 
     public DataDeliveryRetrievalWmoHeaderApplier(String wmoHeader,
             String dataProviderMapping, String dataFormatMapping,
-            String dataSourceMapping) throws PropertiesException {
+            String dataSourceMapping) throws Exception {
         this.wmoHeaderMessage = new MessageFormat(wmoHeader);
         // ensure any DateFormats in the given format are GMT
         for (Format format : this.wmoHeaderMessage.getFormats()) {
@@ -102,7 +102,7 @@ public class DataDeliveryRetrievalWmoHeaderApplier implements IWmoHeaderApplier 
     }
 
     private static Map<String, String> parseMapping(String dataMapping)
-            throws PropertiesException {
+            throws Exception {
         String[] elementPairs = dataMapping.split(",");
         Map<String, String> resultMap = new LinkedHashMap<String, String>(
                 elementPairs.length, 1);
@@ -116,7 +116,7 @@ public class DataDeliveryRetrievalWmoHeaderApplier implements IWmoHeaderApplier 
 
                 resultMap.put(key, value);
             } else {
-                throw new PropertiesException(
+                throw new Exception(
                         "Failed to Parse WMO Configuration Properties Mapping from: "
                                 + dataMapping);
             }

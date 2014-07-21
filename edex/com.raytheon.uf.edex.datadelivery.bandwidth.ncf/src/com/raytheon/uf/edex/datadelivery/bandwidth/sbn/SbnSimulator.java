@@ -45,6 +45,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 18, 2013 2267       bgonzale     Added distribution to and check in site specific directories.
  * Feb 11, 2014   2771     bgonzale     Use Data Delivery ID instead of Site.
  * Feb 13, 2014 2828       bgonzale     Add purge method.
+ * Jul 21, 2014 2914       garmendariz  Change reference to edex home
  * 
  * </pre>
  * 
@@ -79,7 +80,7 @@ public class SbnSimulator {
             FileUtil.copyFile(
                     file,
                     new File(FileUtil
-                            .join(EDEXUtil.EDEX_HOME, "data", "manual"), file
+                            .join(EDEXUtil.getEdexHome(), "data", "manual"), file
                             .getName()));
 
             statusHandler.info("Processed [" + file + "]");
