@@ -56,6 +56,7 @@ import com.raytheon.uf.edex.ogc.common.feature.ObsLocation;
  * Aug 30, 2013 2298        rjpeter     Make getPluginName abstract
  * Sept 19,2013 2388        dhladky     Fixed creation of geometry (location assignment)
  * jan 22, 2014 2713       dhladky     Calendar conversion.
+ * Jul 23, 2014 3410       bclement    location changed to floats
  * </pre>
  * 
  * @author dhladky
@@ -743,7 +744,8 @@ public class Madis extends AbstractFeatureType {
                 obsLocation.getStationId());
         sol.setElevation(obsLocation.getElevation());
         List<Double> points = obsLocation.getLocation().getPos().getValue();
-        sol.assignLocation(points.get(1), points.get(0));
+        sol.assignLocation(points.get(1).floatValue(), points.get(0)
+                .floatValue());
 
         return sol;
     }
