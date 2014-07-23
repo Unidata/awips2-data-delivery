@@ -57,8 +57,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Jan 15, 2014 2678       bgonzale     Use Queue for passing RetrievalRequestRecords to the 
  *                                      RetrievalTasks (PerformRetrievalsThenReturnFinder).
  *                                      Added constructor that sets the retrievalQueue to null.
- * Jan 30, 2014   2686     dhladky      refactor of retrieval.
- * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
+ * Jan 30, 2014 2686       dhladky      refactor of retrieval.
+ * Feb 10, 2014 2678       dhladky      Prevent duplicate allocations.
+ * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
  * 
  * </pre>
  * 
@@ -233,8 +234,20 @@ public class SubscriptionRetrievalAgent extends
         List<RetrievalRequestRecordPK> requestRecordPKs = null;
         boolean retrievalsGenerated = !CollectionUtil.isNullOrEmpty(retrievals);
         
+        Long requestRetrievalTimeLong = Long.valueOf( System.currentTimeMillis() ); //Default to "now"
+        Subscription<?, ?> bundleSub = bundle.getSubscription();
+        com.raytheon.uf.common.datadelivery.registry.Time requestRetrievalTimeT =  bundleSub.getTime();
+        if (requestRetrievalTimeT != null) {
+            Date requestRetrievalDate = requestRetrievalTimeT.getStart();
+            if (requestRetrievalDate == null) {
+                requestRetrievalDate = requestRetrievalTimeT.getEnd(); //Failover 
+            }
+            if (requestRetrievalDate != null) {
+                requestRetrievalTimeLong = Long.valueOf( requestRetrievalDate.getTime() );
+            } 
+        }
+        
         if (retrievalsGenerated) {
-
             String owner = bundle.getSubscription().getOwner();
             String provider = bundle.getSubscription().getProvider();
 
@@ -257,6 +270,7 @@ public class SubscriptionRetrievalAgent extends
                 Retrieval retrieval = retrievals.get(i);
                 RetrievalRequestRecord rec = new RetrievalRequestRecord(
                         subscriptionName, i, subRetrievalKey);
+                retrieval.setRequestRetrievalTime(requestRetrievalTimeLong); //Stored ONLY as Retrieval (Thrift) data; not part of the record proper
 
                 rec.setOwner(owner);
                 rec.setPriority(priority);
@@ -265,10 +279,9 @@ public class SubscriptionRetrievalAgent extends
                 rec.setProvider(provider);
                 rec.setPlugin(plugin);
                 rec.setSubscriptionType(retrieval.getSubscriptionType());
-
+                
                 try {
-                    rec.setRetrieval(SerializationUtil
-                            .transformToThrift(retrieval));
+                    rec.setRetrieval(SerializationUtil.transformToThrift(retrieval));
                     rec.setState(RetrievalRequestRecord.State.PENDING);
                     requestRecords.add(rec);
                     requestRecordPKs.add(rec.getId());

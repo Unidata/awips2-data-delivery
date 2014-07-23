@@ -44,6 +44,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * Feb 05, 2013 1580       mpduff       EventBus refactor.
  * Mar 05, 2013 1647       djohnson     Debug log running message.
  * Jan 08, 2013 2645       bgonzale     Catch all exceptions in run to prevent the recurring timer from failing.
+ * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
  * 
  * </pre>
  * 
@@ -71,9 +72,13 @@ public class SubscriptionNotifyTask implements Runnable {
 
         final String key;
 
+        final Long retrievalRequestTime;
+        
+        
         SubscriptionDelay(String subName, String owner, String plugin,
                 SubscriptionType subscriptionType, Network network,
-                String provider, Long subRetrievalKey, long delayedUntilMillis) {
+                String provider, Long subRetrievalKey, long delayedUntilMillis,
+                Long retrievalRequestTime) {
             this.subName = subName;
             this.owner = owner;
             this.plugin = plugin;
@@ -82,6 +87,7 @@ public class SubscriptionNotifyTask implements Runnable {
             this.subRetrievalKey = subRetrievalKey;
             this.network = network;
             this.delayedUntilMillis = delayedUntilMillis;
+            this.retrievalRequestTime = retrievalRequestTime;
             key = subName + "_" + owner;
         }
 
@@ -119,6 +125,7 @@ public class SubscriptionNotifyTask implements Runnable {
                 eqBuilder.append(network, other.network);
                 eqBuilder.append(provider, other.provider);
                 eqBuilder.append(subRetrievalKey, other.subRetrievalKey);
+                eqBuilder.append(retrievalRequestTime, other.retrievalRequestTime);
                 return eqBuilder.isEquals();
             }
             return super.equals(obj);
@@ -151,6 +158,18 @@ public class SubscriptionNotifyTask implements Runnable {
             return Math.max(delayedUntilMillis - currentTimeMillis, 0);
         }
 
+        /**
+         * Returns The date time (long) of the Data Retrieval Request.
+         * has passed.
+         * 
+         * @return retrievalRequestTime  Time that Retrieval Request was generated
+         */
+        @VisibleForTesting
+        Long getRetrievalRequestTime() {
+            return(retrievalRequestTime);
+        }
+
+        
         @Override
         public int hashCode() {
             HashCodeBuilder hcBuilder = new HashCodeBuilder();
@@ -161,6 +180,7 @@ public class SubscriptionNotifyTask implements Runnable {
             hcBuilder.append(network);
             hcBuilder.append(provider);
             hcBuilder.append(subRetrievalKey);
+            hcBuilder.append(retrievalRequestTime);
 
             return hcBuilder.toHashCode();
         }
@@ -186,12 +206,28 @@ public class SubscriptionNotifyTask implements Runnable {
     @VisibleForTesting
     static SubscriptionDelay createSubscriptionDelay(
             RetrievalRequestRecord record, long startTime) {
+
+        Long retrievalRequestTimeLong = null;
+        try {
+            Retrieval retrievalObject = record.getRetrievalObj();
+            if (retrievalObject != null) {
+                retrievalRequestTimeLong = retrievalObject.getRequestRetrievalTime();
+            }
+        }
+        catch(SerializationException se) {
+            statusHandler.error("Error occurred unmarshalling retrieval object for determining Subscriptiong Request time.", se);
+        }
+
+        if (retrievalRequestTimeLong == null) {
+            retrievalRequestTimeLong = Long.valueOf(0L);
+        }
         // 11 seconds from start time
         return new SubscriptionDelay(record.getId().getSubscriptionName(),
                 record.getOwner(), record.getPlugin(),
                 record.getSubscriptionType(), record.getNetwork(),
                 record.getProvider(), record.getSubRetrievalKey(),
-                startTime + 11000);
+                startTime + 11000,
+                retrievalRequestTimeLong );
     }
 
     // set written to by other threads
@@ -244,7 +280,7 @@ public class SubscriptionNotifyTask implements Runnable {
                 subscriptionQueue.addAll(subscriptionsInProcess.values());
                 subscriptionsInProcess.clear();
             }
-
+            
             SubscriptionDelay subToCheck = subscriptionQueue.poll();
             while (subToCheck != null) {
                 Map<RetrievalRequestRecord.State, Integer> stateCounts = dao
@@ -263,7 +299,8 @@ public class SubscriptionNotifyTask implements Runnable {
                     event.setSubscriptionType(subToCheck.subscriptionType
                             .name());
                     event.setNetwork(subToCheck.network.name());
-
+                    event.setRetrievalRequestTime(subToCheck.retrievalRequestTime);
+                    
                     RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
                     retrievalManagerNotifyEvent.setId(Long
                             .toString(subToCheck.subRetrievalKey));
@@ -291,7 +328,7 @@ public class SubscriptionNotifyTask implements Runnable {
                             for (RetrievalRequestRecord failedRec : failedRecs) {
                                 Retrieval retrieval = failedRec
                                         .getRetrievalObj();
-                                for (RetrievalAttribute att : retrieval
+                                for (RetrievalAttribute<?, ?> att : retrieval
                                         .getAttributes()) {
                                     sb.append(att.getParameter().getName()
                                             + ", ");
@@ -316,6 +353,7 @@ public class SubscriptionNotifyTask implements Runnable {
                     } else {
                         event.setNumFailed(numFailed);
                     }
+                    
                     EventBus.publish(event);
                     EventBus.publish(retrievalManagerNotifyEvent);
                     dao.removeSubscription(subToCheck.subName);

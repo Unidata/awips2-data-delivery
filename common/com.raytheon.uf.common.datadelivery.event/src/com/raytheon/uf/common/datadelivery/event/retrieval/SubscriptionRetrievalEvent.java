@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.datadelivery.event.retrieval;
 
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,11 +39,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * SOFTWARE HISTORY 
  * 
  * 
- * Date    Ticket#     Engineer      Description 
- * ------------ ------------------------------------------------ 
- * Aug 21, 2012        jsanchez       Made object serializable.
- * Nov 20, 2012        dhladky        More fields.
- * Dec 07, 2012 1104   djohnson       Simplify event type hierarchy.
+ * Date         Ticket# Engineer      Description 
+ * ------------ -----   ------------------------------------------------ 
+ * Aug 21, 2012         jsanchez      Made object serializable.
+ * Nov 20, 2012         dhladky       More fields.
+ * Dec 07, 2012 1104    djohnson      Simplify event type hierarchy.
+ * Jul 22, 2014 2732    ccody         Add Date Time to SubscriptionRetrievalEvent message
  * 
  * </pre>
  * 
@@ -59,6 +61,15 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
     private static final long serialVersionUID = -1139458560029047046L;
 
     private static final Map<String, String> FIELD_UNIT_MAP;
+    private static final String sdfString = "yyyy-MM-dd HH:mm:ss";
+    private static ThreadLocal<SimpleDateFormat> subscriptionDateFormat = new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+            SimpleDateFormat sdf = new SimpleDateFormat(sdfString);
+            return sdf;
+        }
+    };
+    
 
     static {
         Map<String, String> m = new HashMap<String, String>();
@@ -67,40 +78,59 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
         FIELD_UNIT_MAP = Collections.unmodifiableMap(m);
     }
 
+    
     protected Status status;
 
     protected String subscriptionType;
 
     protected String failureMessage;
 
+    protected Long retrievalRequestTime;
+    
     @DynamicSerializeElement
     protected int numFailed;
 
     @DynamicSerializeElement
     protected int numComplete;
 
+    
     @Override
     public NotificationRecord generateNotification() {
         String subname = getId();
 
         int priority = 3;
         StringBuffer sb = new StringBuffer();
+        String retrievalRequestTimeString = null;
+        if (retrievalRequestTime != null) {
+            retrievalRequestTimeString = subscriptionDateFormat.get().format(retrievalRequestTime);
+        }
+        
+        
         switch (getStatus()) {
         case SUCCESS:
             sb.append("Successfully retrieved and stored data for ");
             sb.append(subname);
+            if (retrievalRequestTime != null) {
+                sb.append(" Data Time: " + retrievalRequestTimeString);
+            }
             break;
         case PARTIAL_SUCCESS:
             priority = 1;
             sb.append("Partial-success retrieving data for ");
             sb.append(subname);
             sb.append(". Failure message: " + getFailureMessage());
+            if (retrievalRequestTime != null) {
+                sb.append(" Data Time: " + retrievalRequestTimeString);
+            }
             break;
         case FAILED:
             priority = 1;
             sb.append("Failed data retrieval for ");
             sb.append(subname);
             sb.append(". Failure message: " + getFailureMessage());
+            if (retrievalRequestTime != null) {
+                sb.append(" Data Time: " + retrievalRequestTimeString);
+            }
             break;
         }
 
@@ -158,7 +188,18 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
     public void setStatus(Status status) {
         this.status = status;
     }
+    
+    public Long getRetrievalRequestTime() {
+        return retrievalRequestTime;
+    }
 
+    public void setRetrievalRequestTime(Long retrievalRequestTime) {
+        if (retrievalRequestTime == null) {
+            retrievalRequestTime = Long.valueOf(0L);
+        }
+        this.retrievalRequestTime = retrievalRequestTime;
+    }
+    
     @Override
     public String toString() {
         StringBuilder rval = new StringBuilder(200);

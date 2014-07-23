@@ -51,6 +51,9 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
  * Feb 07, 2013 1543       djohnson    Never have null attributes.
  * 07 Nov, 2013 2361       njensen     Remove ISerializableObject
+ * Jul 25, 2014 2732       ccody       Add Date Time to SubscriptionRetrievalEvent message. 
+ * 
+ * 
  * 
  * </pre>
  * 
@@ -92,6 +95,10 @@ public class Retrieval implements Serializable {
     @XmlElement
     @DynamicSerializeElement
     private Network network;
+    
+    @XmlElement
+    @DynamicSerializeElement
+    private Long requestRetrievalTime;
 
     @XmlElements({ @XmlElement(name = "attribute", type = RetrievalAttribute.class) })
     @DynamicSerializeElement
@@ -195,6 +202,21 @@ public class Retrieval implements Serializable {
         return network;
     }
 
+    public Long getRequestRetrievalTime() {
+        if (this.requestRetrievalTime == null) {
+            this.requestRetrievalTime = Long.valueOf(0L);
+        }
+        return requestRetrievalTime;
+    }
+
+    public void setRequestRetrievalTime(Long requestRetrievalTime) {
+        if (requestRetrievalTime == null) {
+            requestRetrievalTime = Long.valueOf(0L);
+        }
+        this.requestRetrievalTime = requestRetrievalTime;
+    }
+
+    
     /**
      * Enumeration of subscription types, we know so far
      * 
