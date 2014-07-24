@@ -2,6 +2,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs.metadata;
 
 import javax.xml.bind.JAXBException;
 
+import net.opengis.ows.v_1_0_0.ExceptionReport;
 import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
 
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
@@ -33,6 +34,7 @@ import com.raytheon.uf.edex.wfs.reg.Unique;
  * May 31, 2013 2038       djohnson     Move to correct git repo.
  * June 03, 2012 1763      dhladky      Made operational, moved to ogc plugin
  * Jul 14, 2014 3373       bclement     jaxb manager api changes
+ * Jul 24, 2014 3441       dhladky      Fixed what the previous update broke
  * 
  * </pre>
  * 
@@ -89,17 +91,29 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis>
     }
 
     @Override
-    public FeatureCollectionType getFeatureCollection(String payload)
-            throws JAXBException {
+    public Object getData(String payload) throws JAXBException {
         // Madis is pointData
         setIsPointData(true);
-        
+
         if (marshaller == null) {
             configureMarshaller();
         }
 
-        return (FeatureCollectionType) getMarshaller()
-                .unmarshalFromXml(payload);
+        try {
+            FeatureCollectionType collection = (FeatureCollectionType) getMarshaller()
+                    .unmarshalFromXml(payload);
+            return collection;
+        } catch (Exception e) {
+            // try as an exception report
+            try {
+                ExceptionReport exception = (ExceptionReport) getMarshaller()
+                        .unmarshalFromXml(payload);
+                return exception;
+            } catch (JAXBException e2) {
+                // Just return the non-jaxed XML
+                return payload;
+            }
+        }
     }
     
     /**

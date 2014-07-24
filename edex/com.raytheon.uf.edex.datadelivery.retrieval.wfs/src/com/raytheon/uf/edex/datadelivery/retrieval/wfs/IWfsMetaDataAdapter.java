@@ -2,8 +2,6 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs;
 
 import javax.xml.bind.JAXBException;
 
-import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
-
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 
@@ -19,6 +17,7 @@ import com.raytheon.uf.common.dataplugin.PluginException;
  * ------------ ---------- ----------- --------------------------
  * May 22, 2013  753          dhladky    Initial javadoc
  * June 11, 2013 1763        dhladky     Moved and updated.
+ * July 24, 2014 3441        dhladky     Made interface less rigid
  * 
  * </pre>
  * 
@@ -28,7 +27,7 @@ import com.raytheon.uf.common.dataplugin.PluginException;
 
 public interface IWfsMetaDataAdapter {
 
-    public FeatureCollectionType getFeatureCollection(String payload) throws JAXBException;
+    public Object getData(String payload) throws JAXBException;
     
     public PluginDataObject[] setPointData(PluginDataObject[] pdos) throws PluginException;
 

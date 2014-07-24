@@ -2,15 +2,14 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs;
 
 import java.util.List;
 
-import javax.xml.bind.JAXBException;
-
 import net.opengis.gml.v_3_1_1.AbstractFeatureType;
 import net.opengis.gml.v_3_1_1.FeaturePropertyType;
+import net.opengis.ows.v_1_0_0.ExceptionReport;
+import net.opengis.ows.v_1_0_0.ExceptionType;
 import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
 
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -30,6 +29,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
  * May 12, 2013  753       dhladky      Initial javadoc
  * May 31, 2013 2038       djohnson     Move to correct repo.
  * May 31, 2013 1763       dhladky      Fixed up merge, made operational.
+ * Jul 24, 2014 3441       dhladky      Sharpen error handling for WFS
  * 
  * </pre>
  * 
@@ -79,26 +79,53 @@ public class WfsTranslator extends RetrievalTranslator {
     public PluginDataObject[] asPluginDataObjects(String payload) {
         
         try {
-            IWfsMetaDataAdapter wfsAdapter = (IWfsMetaDataAdapter)metadataAdapter;
-            FeatureCollectionType featureCollection = wfsAdapter.getFeatureCollection(payload);
-            if (featureCollection.getNumberOfFeatures().intValue() > 0) {
-                int i = 0;
-                metadataAdapter.allocatePdoArray(featureCollection.getNumberOfFeatures().intValue());
-                for (FeaturePropertyType type : featureCollection.getFeatureMember()) {
-                    AbstractFeatureType feature = type.getFeature().getValue();
-                    metadataAdapter.getPdos()[i] = metadataAdapter.getRecord(feature);
-                    i++;
+            IWfsMetaDataAdapter wfsAdapter = (IWfsMetaDataAdapter) metadataAdapter;
+            Object o = wfsAdapter.getData(payload);
+
+            if (o instanceof FeatureCollectionType) {
+                FeatureCollectionType featureCollection = (FeatureCollectionType) o;
+
+                if (featureCollection.getNumberOfFeatures().intValue() > 0) {
+                    int i = 0;
+                    metadataAdapter.allocatePdoArray(featureCollection
+                            .getNumberOfFeatures().intValue());
+                    for (FeaturePropertyType type : featureCollection
+                            .getFeatureMember()) {
+                        AbstractFeatureType feature = type.getFeature()
+                                .getValue();
+                        metadataAdapter.getPdos()[i] = metadataAdapter
+                                .getRecord(feature);
+                        i++;
+                    }
+                }
+
+                if (metadataAdapter.isPointData()) {
+                    wfsAdapter.setPointData(metadataAdapter.getPdos());
+                }
+            } else {
+                if (o instanceof ExceptionReport) {
+                    ExceptionReport exception = (ExceptionReport) o;
+                    if (exception != null) {
+                        for (ExceptionType type : exception.getException()) {
+
+                            statusHandler.handle(Priority.ERROR,
+                                    "Remote Exception returned: \n"
+                                            + type.getExceptionText()
+                                                    .toString());
+                        }
+                    }
+                } else if (o instanceof String) {
+                    // failed utterly, but with a raw string explanation.
+                    statusHandler.handle(Priority.ERROR,
+                            "Raw Remote Exception: \n" + o.toString());
+                } else {
+                    throw new IllegalStateException(
+                            "Recieved an invalid WFS return object. "+o.toString());
                 }
             }
-            
-            if (metadataAdapter.isPointData()) {
-                wfsAdapter.setPointData(metadataAdapter.getPdos());
-            }
-            
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.PROBLEM, "Can't de-serialize FeatureCollection", e);
-        } catch (PluginException e) {
-            statusHandler.handle(Priority.PROBLEM, "Can't create plugins.", e);
+
+        } catch (Exception e) {
+            statusHandler.handle(Priority.ERROR, "Can't create plugins.", e);
         }
         
         return metadataAdapter.getPdos();
