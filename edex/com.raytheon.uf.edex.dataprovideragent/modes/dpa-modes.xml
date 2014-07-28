@@ -32,9 +32,10 @@
         <exclude>.*dpa.*</exclude>
 	</mode>
 	<mode name="dataProviderAgentTemplate" template="true">
+		<include>ebxml.xml</include>
 		<include>ebxml-webservices.xml</include>
         <include>ebxml-registry-dao.xml</include>
-        <include>ebxml-validator-plugin</include>
+        <include>ebxml-validator-plugins.xml</include>
 		<include>manualIngest*</include>
 		<include>time-common.xml</include>
 		<include>distribution-spring.xml</include>
