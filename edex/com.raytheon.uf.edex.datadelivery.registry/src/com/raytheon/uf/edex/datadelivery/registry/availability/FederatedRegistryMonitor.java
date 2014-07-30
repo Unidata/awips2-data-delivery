@@ -53,6 +53,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.EbxmlObjectUtil;
  * 7/29/2013    2191        bphillip    Initial implementation
  * 12/2/2013    1829        bphillip    Uses correct getter for getting date time value
  * 2/19/2014    2769        bphillip    Refactored to no longer extend Runnable
+ * 7/28/2014    2752        dhladky     Fixed bad default user setup.
  * </pre>
  * 
  * @author bphillip
@@ -111,7 +112,7 @@ public class FederatedRegistryMonitor {
                 regObj = new RegistryObjectType();
                 regObj.setId(REGISTRY_AVAILABLE_ID);
                 regObj.setLid(REGISTRY_AVAILABLE_ID);
-                regObj.setOwner(RegistryUtil.DEFAULT_OWNER);
+                regObj.setOwner(RegistryUtil.registryUser);
                 regObj.setVersionInfo(new VersionInfoType());
                 regObj.setStatus(StatusTypes.APPROVED);
                 regObj.getSlot().add(slot);

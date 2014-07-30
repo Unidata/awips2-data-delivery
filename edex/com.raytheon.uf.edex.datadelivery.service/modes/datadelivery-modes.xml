@@ -62,6 +62,8 @@
         <include>.*bandwidth.*</include>
         <!-- Exclude the inmemory versions of Spring files -->
         <exclude>.*bandwidth.*-inmemory.*.xml</exclude>
+        <!-- Exclude DPA -->
+        <exclude>dpa-datadelivery.xml</exclude>
         <include>time-common.xml</include>
         <include>auth-common.xml</include>
         <include>nwsauth-request.xml</include>

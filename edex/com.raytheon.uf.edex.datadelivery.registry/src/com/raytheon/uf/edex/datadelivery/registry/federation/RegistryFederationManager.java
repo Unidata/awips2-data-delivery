@@ -161,6 +161,7 @@ import com.raytheon.uf.edex.registry.events.CreateAuditTrailEvent;
  * 6/5/2014     1712        bhillip     Fixed typo. Registry now only updates uptime when federation is enabled
  * June 25, 2014 3320       dhladky     Remove all references to DD environment variables from setup.env
  * 7/10/2014    1717        bphillip    Central registry now inserts system user
+ * 7/28/2014    2752        dhladky     Fixed bad registry user name.
  * </pre>
  * 
  * @author bphillip
@@ -354,13 +355,13 @@ public class RegistryFederationManager implements IRegistryFederationManager,
          * in the registry
          */
         if (centralRegistry
-                && !registryUsers.userExists(RegistryUtil.DEFAULT_OWNER)) {
+                && !registryUsers.userExists(RegistryUtil.registryUser)) {
             /*
              * The registry super user initially gets the default password which
              * *must* be changed immediately
              */
             try {
-                registryUsers.addUser(RegistryUtil.DEFAULT_OWNER, "password",
+                registryUsers.addUser(RegistryUtil.registryUser, "password",
                         "RegistryAdministrator");
             } catch (MsgRegistryException e) {
                 throw new EbxmlRegistryException("Error adding default registry user!",e);
@@ -954,7 +955,7 @@ public class RegistryFederationManager implements IRegistryFederationManager,
                     .getInternationalString(FEDERATION_ID));
             federation.setDescription(RegistryUtil
                     .getInternationalString(FEDERATION_ID));
-            federation.setOwner(RegistryUtil.DEFAULT_OWNER);
+            federation.setOwner(RegistryUtil.registryUser);
             federation.setStatus(StatusTypes.APPROVED);
             federation.setObjectType(RegistryObjectTypes.FEDERATION);
             federation

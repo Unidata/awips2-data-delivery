@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -27,7 +26,6 @@ import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
-import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -37,7 +35,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
@@ -82,6 +79,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Apr 15, 2014 3012       dhladky      Fixed improper offsets.
  * Apr 21, 2014 2887       dhladky      Missed start/end in previous call, needs shouldScheduleForTime();
  * Jun 09, 2014 3113       mpduff       Moved getRetrievalTimes to Subscription.
+ * Jul 28, 2014 2752       dhladky      Greatly streamlined scheduling.
  * </pre>
  * 
  * @author djohnson
@@ -158,8 +156,9 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
     @SuppressWarnings("rawtypes")
     public AdhocSubscription<T, C> setAdhocMostRecentUrlAndTime(
             AdhocSubscription<T, C> adhoc, boolean mostRecent) {
+        
         AdhocSubscription<T, C> retVal = null;
-
+        
         if (adhoc.getDataSetType() == DataType.POINT) {
 
             List<DataSetMetaData> dataSetMetaDatas = null;
@@ -194,60 +193,41 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
 
         } else if (adhoc.getDataSetType() == DataType.GRID) {
 
-            // if the start time is there, it already has it, skip
-            if (adhoc.getTime().getStart() == null) {
+            DataSetMetaData dataSetMetaData = null;
 
-                List<BandwidthDataSetUpdate> dataSetMetaDataUpdates = bandwidthDao
-                        .getBandwidthDataSetUpdate(adhoc.getProvider(),
-                                adhoc.getDataSetName());
+            try {
+                dataSetMetaData = DataDeliveryHandlers
+                        .getDataSetMetaDataHandler().getByDataSetDate(
+                                adhoc.getDataSetName(), adhoc.getProvider(),
+                                adhoc.getTime().getStart());
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "No DataSetMetaData matching query! DataSetName: "
+                                + adhoc.getDataSetName() + " Provider: "
+                                + adhoc.getProvider() + " Time: "
+                                + adhoc.getTime().getStart(), e);
+            }
 
-                if (dataSetMetaDataUpdates != null
-                        && !dataSetMetaDataUpdates.isEmpty()) {
-                    // getDataSetMetaData returns the dataset meta-data in
-                    // descending
-                    // order of time, so walk the iterator finding the first
-                    // subscribed
-                    // to cycle
-                    BandwidthDataSetUpdate daoToUse = null;
-                    Time adhocTime = adhoc.getTime();
-                    for (BandwidthDataSetUpdate current : dataSetMetaDataUpdates) {
-                        if (mostRecent
-                                || ((GriddedTime) adhocTime)
-                                        .getCycleTimes()
-                                        .contains(
-                                                current.getDataSetBaseTime()
-                                                        .get(Calendar.HOUR_OF_DAY))) {
-                            daoToUse = current;
-                            break;
-                        }
-                    }
-
-                    if (daoToUse == null) {
-                        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                            statusHandler
-                                    .debug(String
-                                            .format("There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
-                                                    adhoc.getName()));
-                        }
-                    } else {
-                        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                            statusHandler
-                                    .debug(String
-                                            .format("Found most recent metadata for adhoc subscription [%s], using url [%s]",
-                                                    adhoc.getName(),
-                                                    daoToUse.getUrl()));
-                        }
-
-                        adhoc.setUrl(daoToUse.getUrl());
-                        adhocTime.setStart(daoToUse.getDataSetBaseTime()
-                                .getTime());
-
-                        retVal = adhoc;
-                    }
+            if (dataSetMetaData == null) {
+                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                    statusHandler
+                            .debug(String
+                                    .format("There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
+                                            adhoc.getName()));
                 }
             } else {
+                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                    statusHandler
+                            .debug(String
+                                    .format("Found most recent metadata for adhoc subscription [%s], using url [%s]",
+                                            adhoc.getName(),
+                                            dataSetMetaData.getUrl()));
+                }
+
+                adhoc.setUrl(dataSetMetaData.getUrl());
                 retVal = adhoc;
             }
+
         } else {
             throw new IllegalArgumentException("DataType: "
                     + adhoc.getDataSetType()

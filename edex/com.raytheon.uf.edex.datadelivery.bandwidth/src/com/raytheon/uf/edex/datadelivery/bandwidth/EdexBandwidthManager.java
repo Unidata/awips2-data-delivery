@@ -135,6 +135,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 09, 2014 3012       dhladky      Range the queries for metadata checks, adhoc firing prevention.
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
  * May 22, 2014 2808       dhladky      schedule unscheduled when a sub is deactivated
+ * Jul 28, 2014 2752       dhladky      Fixed bad default user for registry.
  * </pre>
  * 
  * @author djohnson
@@ -909,7 +910,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                      * SubscriptionManager presenting a confusing state.
                      */
                     try {
-                        subscriptionHandler.update(RegistryUtil.DEFAULT_OWNER,
+                        subscriptionHandler.update(RegistryUtil.registryUser,
                                 sub);
                     } catch (RegistryHandlerException e) {
                         statusHandler

@@ -39,7 +39,6 @@ import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
-import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionUtil;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -154,6 +153,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 22, 2014 2992       dhladky      Ability to get list of all registry nodes containing data.
  * May 22, 2014 2808       dhladky      Schedule unscheduled subs when one is de-activated.
  * May 15, 2014   3113     mpduff       Schedule subscriptions for gridded datasets without cycles.
+ * Jul 28, 2014 2752       dhladky      Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
  * 
  * </pre>
  * 
@@ -439,13 +439,14 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription
                 .getRoute());
         List<DataSetMetaData> dsmdList = new ArrayList<DataSetMetaData>(0);
+        
         try {
-            dsmdList = DataDeliveryHandlers.getGriddedDataSetMetaDataHandler()
-                    .getByDataSet(subscription.getDataSetName(),
-                            subscription.getProvider());
+            dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                    .getDataSetMetaDataToDate(subscription.getDataSetName(),
+                            subscription.getProvider(), plan.getPlanEnd().getTime());
         } catch (RegistryHandlerException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to look-up list of DataSetMetData during scheduling. ", e1);
         }
 
         SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
@@ -474,21 +475,24 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @param subscription
      *            The subscription that needs its scheduling updated
      */
-    private void updateSchedule(Subscription<T, C> sub) {
-        RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(sub.getRoute());
+    private void updateSchedule(Subscription<T, C> subscription) {
+        
+        RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription.getRoute());
         List<DataSetMetaData> dsmdList = new ArrayList<DataSetMetaData>(0);
+        
         try {
-            dsmdList = DataDeliveryHandlers.getGriddedDataSetMetaDataHandler()
-                    .getByDataSet(sub.getDataSetName(), sub.getProvider());
+            dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                    .getDataSetMetaDataToDate(subscription.getDataSetName(),
+                            subscription.getProvider(), plan.getPlanEnd().getTime());
         } catch (RegistryHandlerException e1) {
             statusHandler
-                    .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
+                    .handle(Priority.PROBLEM, "Unable to look-up list of DataSetMetData during schedule updating. ", e1);
         }
-        SortedSet<Calendar> retrievalTimes = sub.getRetrievalTimes(
+        SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
                 plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
                 new SubscriptionUtil());
         List<BandwidthSubscription> currentBandwidthSubscriptions = bandwidthDao
-                .getBandwidthSubscription(sub);
+                .getBandwidthSubscription(subscription);
 
         // Get the latest/max scheduled time
         Calendar max = currentBandwidthSubscriptions.get(0)
@@ -512,7 +516,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             }
         }
 
-        scheduleSubscriptionForRetrievalTimes(sub, retrievalTimes);
+        scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
     }
 
     /*
@@ -703,16 +707,17 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         // Create an adhoc subscription based on the new subscription,
         // and set it to retrieve the most recent cycle (or most recent
         // url if a daily product)
-        if (subscription instanceof SiteSubscription && subscription.isActive()) {
+        if (subscription instanceof RecurringSubscription && subscription.isActive()) {
+
             AdhocSubscription<T, C> adhoc = new AdhocSubscription<T, C>(
-                    (SiteSubscription<T, C>) subscription);
+                    (RecurringSubscription<T, C>) subscription);
             adhoc = bandwidthDaoUtil.setAdhocMostRecentUrlAndTime(adhoc,
                     useMostRecentDataSetUpdate);
 
             if (adhoc == null) {
                 statusHandler
-                        .info(String
-                                .format("There wasn't applicable most recent dataset metadata to use for new subscription [%s].  "
+                        .warn(String
+                                .format("There wasn't any applicable recent dataset metadata to use for new subscription [%s].  "
                                         + "No adhoc requested.",
                                         subscription.getName()));
             } else {
@@ -740,8 +745,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 }
             }
         } else {
-            statusHandler
-                    .warn("Unable to create adhoc queries for shared subscriptions at this point.  This functionality should be added in the future...");
+            throw new IllegalArgumentException("Unable to create adhoc queries for this type of subscription.  "+subscription.getSubscriptionType().name());
         }
         return unscheduled;
     }
@@ -1092,6 +1096,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         Collections.sort(subscriptions);
 
         for (Subscription<T, C> subscription : subscriptions) {
+
             List<BandwidthAllocation> unscheduled = subscriptionUpdated(subscription);
             unscheduledAllocations.addAll(unscheduled);
 

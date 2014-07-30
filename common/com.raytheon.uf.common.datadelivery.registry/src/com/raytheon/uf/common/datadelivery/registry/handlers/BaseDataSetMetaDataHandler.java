@@ -19,6 +19,9 @@
  **/
 package com.raytheon.uf.common.datadelivery.registry.handlers;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,6 +29,7 @@ import java.util.Set;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetMetaDataDatesQuery;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetMetaDataFilterableQuery;
+import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetMetaDataQuery;
 import com.raytheon.uf.common.registry.RegistryQueryResponse;
 import com.raytheon.uf.common.registry.handler.BaseRegistryObjectHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -43,6 +47,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * Oct 03, 2012 1241       djohnson    Initial creation
  * Oct 17, 2012 0726       djohnson    Move in {@link #getByDataSet}.
  * Jun 24, 2013 2106       djohnson    Now composes a registryHandler.
+ * Jul 28, 2014 2752       dhladky     Added new method functions for more efficient querying.
  * 
  * </pre>
  * 
@@ -50,7 +55,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * @version 1.0
  */
 
-public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData, QUERY extends DataSetMetaDataFilterableQuery<T>>
+public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?>, QUERY extends DataSetMetaDataFilterableQuery<T>>
         extends BaseRegistryObjectHandler<T, QUERY> implements
         IBaseDataSetMetaDataHandler<T> {
 
@@ -89,4 +94,60 @@ public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData, QUER
 
         return response.getResults();
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
+    public T getByDataSetDate(String dataSetName,
+            String providerName, Date date)
+            throws RegistryHandlerException {
+        DataSetMetaDataQuery query = new DataSetMetaDataQuery();
+        query.setDataSetName(dataSetName);
+        query.setProviderName(providerName);
+        query.setDate(new ImmutableDate(date));
+
+        RegistryQueryResponse<DataSetMetaData> response = registryHandler
+                .getObjects(query);
+
+        checkResponse(response, "getByDataSetDate");
+
+        return (T) response.getSingleResult();
+    }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
+    public List<T> getDataSetMetaDataToDate(String dataSetName,
+            String providerName, Date planEnd)
+            throws RegistryHandlerException {
+        
+        // First, get date list for this dataSet. Then add only dates before planEnd.
+        Set<ImmutableDate> dates = getDatesForDataSet(dataSetName, providerName);
+        List<ImmutableDate> dateList = new ArrayList<ImmutableDate>();
+        for (ImmutableDate id: dates) {
+            if(id.before(planEnd)) {
+                dateList.add(id);
+            }
+        }
+        
+        // ensure proper sorting
+        Collections.sort(dateList);
+        
+        // Now make our actual query for DSMD's, will return them in ordered by date.
+        DataSetMetaDataQuery query = new DataSetMetaDataQuery();
+        query.setDataSetName(dataSetName);
+        query.setProviderName(providerName);
+        query.setDates(dateList);
+
+        RegistryQueryResponse<DataSetMetaData> response = registryHandler.getObjects(query);
+
+        checkResponse(response, "getDataSetMetaToDate");
+
+        return (List<T>) response.getResults();
+    }
+    
 }

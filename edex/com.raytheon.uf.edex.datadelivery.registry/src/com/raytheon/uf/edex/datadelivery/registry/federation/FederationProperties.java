@@ -54,6 +54,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * 5/22/2013    1707        bphillip    Initial implementation
  * Feb 11, 2014 2771        bgonzale    Removed siteIdentifier field and use Data Delivery ID instead.
  * 2/19/2014    2769        bphillip    Moved getFederationAssociation from RegistryFederationManager
+ * 7/28/2014    2752        dhladky     Fixed bad default user setup.
  * </pre>
  * 
  * @author bphillip
@@ -198,7 +199,7 @@ public class FederationProperties {
         registryObj.setStatus(StatusTypes.APPROVED);
         registryObj.setCatalogingLatency(catalogingLatency);
         registryObj.setConformanceProfile(conformanceProfile);
-        registryObj.setOperator(RegistryUtil.DEFAULT_OWNER);
+        registryObj.setOperator(RegistryUtil.registryUser);
         registryObj.setReplicationSyncLatency(replicationSyncLatency);
         registryObj.setSpecificationVersion(specificationVersion);
         registryObj.setBaseURL(RegistryUtil.LOCAL_REGISTRY_ADDRESS);

@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.datadelivery.registry.handlers;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * ------------ ---------- ----------- --------------------------
  * Oct 04, 2012 1241       djohnson     Initial creation
  * Oct 17, 2012 0726       djohnson     Move in {@link #getByDataSet}.
+ * Jul 28, 2014 2752       dhladky      Added new methods.
  * 
  * </pre>
  * 
@@ -75,4 +77,34 @@ public interface IBaseDataSetMetaDataHandler<T extends DataSetMetaData> extends
      */
     List<T> getByDataSet(String dataSetName, String providerName)
             throws RegistryHandlerException;
+    
+    /**
+     * Retrieve the DataSetMetaData instance for the specified date.
+     * 
+     * @param dataSetName
+     *            the name of the dataset
+     * @param providerName
+     *            the provider name
+     * @param date
+     * @return DataSetMetaData
+     * @throws RegistryHandlerException
+     *             on error
+     */
+    T getByDataSetDate(String dataSetName, String providerName, Date date) throws RegistryHandlerException;
+
+    /**
+     * Retrieve the DataSetMetaData up to the Retrieval Plan end.
+     * 
+     * @param dataSetName
+     *            the name of the dataset
+     * @param providerName
+     *            the provider name
+     * @param date (end of plan date)
+     * @return the list of DataSetMetaDatas ordered by Date
+     * @throws RegistryHandlerException
+     *             on error
+     */
+    List<T> getDataSetMetaDataToDate(String dataSetName, String providerName,
+            Date planEnd) throws RegistryHandlerException;
+    
 }

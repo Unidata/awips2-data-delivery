@@ -78,6 +78,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Feb 12, 2014 2636       mpduff       Return new instance of calculated start and end.
  * Apr 02, 2014 2810       dhladky      Priority sorting of subscriptions.
  * May 20, 2014 3113       mpduff       Add the functionality that the subscription itself provides the retrieval times.
+ * Jul 28, 2014 2765       dhladky      No setOwner() in the setup super() method.
  * 
  * </pre>
  * 
@@ -123,6 +124,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         this.setGroupName(sub.getGroupName());
         this.setId(sub.getId());
         this.setName(name);
+        this.setOwner(sub.getOwner());
         this.setOfficeIDs(sub.getOfficeIDs());
         this.setParameter(sub.getParameter());
         this.setPriority(sub.getPriority());

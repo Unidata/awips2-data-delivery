@@ -53,6 +53,7 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
  * Apr 02, 2014  2810      dhladky      Priority sorting of subscriptions.
  * Apr 21, 2014  2887      dhladky      Added shouldScheduleForTime() to interface.
  * Jun 09, 2014  3113      mpduff       Added getRetrievalTimes().
+ * Jul 28, 2014  2752      dhladky      Somehow setOwner() got left off the interface.
  * 
  * </pre>
  * 
@@ -682,6 +683,12 @@ public interface Subscription<T extends Time, C extends Coverage> extends
      *            Office Id to add
      */
     void addOfficeID(String officeId);
+    
+    /**
+     * Sets the owner
+     * @param owner
+     */
+    void setOwner(String owner);
 
     /**
      * Gets the original site the subscription was created as
