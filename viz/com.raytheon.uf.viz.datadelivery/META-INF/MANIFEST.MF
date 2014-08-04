@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: DataDelivery Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.datadelivery;singleton:=true
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Activator: com.raytheon.uf.viz.datadelivery.Activator
-Eclipse-RegisterBuddy: com.raytheon.viz.core, com.raytheon.uf.viz.core, com.raytheon.viz.ui
+Eclipse-RegisterBuddy: com.raytheon.viz.core, com.raytheon.uf.viz.core
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
@@ -38,7 +38,7 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.viz.alerts;bundle-version="1.12.1174",
  com.raytheon.viz.grid;bundle-version="1.12.1174",
  com.raytheon.uf.common.security;bundle-version="1.14.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.datadelivery;uses:="org.eclipse.ui.plugin,org.osgi.framework",
  com.raytheon.uf.viz.datadelivery.actions;uses:="org.eclipse.core.commands",
@@ -48,4 +48,3 @@ Export-Package: com.raytheon.uf.viz.datadelivery;uses:="org.eclipse.ui.plugin,or
  com.raytheon.uf.viz.datadelivery.subscription.xml;uses:="com.raytheon.uf.common.serialization"
 Import-Package: com.raytheon.uf.common.comm,
  com.raytheon.uf.common.message
-Eclipse-BuddyPolicy: ext, registered, global
