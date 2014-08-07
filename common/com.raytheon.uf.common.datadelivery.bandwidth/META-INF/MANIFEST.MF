@@ -20,4 +20,5 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.registry;bundle-version="1.0
 Export-Package: com.raytheon.uf.common.datadelivery.bandwidth,
  com.raytheon.uf.common.datadelivery.bandwidth.data,
  com.raytheon.uf.common.datadelivery.bandwidth.request,
- com.raytheon.uf.common.datadelivery.bandwidth.response
+ com.raytheon.uf.common.datadelivery.bandwidth.response,
+ com.raytheon.uf.common.datadelivery.bandwidth.util
