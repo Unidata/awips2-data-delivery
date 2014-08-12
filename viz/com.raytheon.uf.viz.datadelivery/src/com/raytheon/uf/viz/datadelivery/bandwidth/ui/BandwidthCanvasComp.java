@@ -107,6 +107,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jan 29, 2014   2722     mpduff      Changed how graph data are requested.
  * Mar 24, 2014   2951     lvenable    Added dispose checks for SWT widgets.
  * Apr 21, 2014   2891     mpduff      Add Y Label canvas to redraw on refresh.
+ * Aug 05, 2014   2748     ccody       Add GRAPH canvas to redraw on refresh.
  * </pre>
  * 
  * @author lvenable
@@ -1126,7 +1127,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             }
         }
 
-        redrawImage(CanvasImages.Y_LABEL);
+        redrawImage(CanvasImages.GRAPH); 
+        redrawImage(CanvasImages.Y_LABEL); 
     }
 
     /**
@@ -1324,7 +1326,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             imageMgr.setChecked(name, selectAll);
         }
 
-        redrawImage(CanvasImages.Y_LABEL);
+        redrawImage(CanvasImages.GRAPH); 
+        redrawImage(CanvasImages.Y_LABEL); 
     }
 
     /**
