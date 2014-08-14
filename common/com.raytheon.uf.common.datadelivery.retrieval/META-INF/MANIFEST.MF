@@ -2,9 +2,8 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Providerretrieval
 Bundle-SymbolicName: com.raytheon.uf.common.datadelivery.retrieval
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization
 Require-Bundle: com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
  com.raytheon.uf.common.datadelivery.registry;bundle-version="1.0.0",
  com.raytheon.uf.common.status;bundle-version="1.12.1174",
@@ -17,7 +16,7 @@ Require-Bundle: com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
  javax.persistence;bundle-version="1.0.0",
  com.raytheon.uf.common.dataquery;bundle-version="1.0.0",
  org.apache.commons.lang;bundle-version="2.3.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.common.datadelivery.retrieval.util,
  com.raytheon.uf.common.datadelivery.retrieval.xml

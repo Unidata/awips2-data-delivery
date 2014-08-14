@@ -4,7 +4,6 @@ Bundle-Name: DataDelivery Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.datadelivery;singleton:=true
 Bundle-Version: 1.14.0.qualifier
 Bundle-Activator: com.raytheon.uf.viz.datadelivery.Activator
-Eclipse-RegisterBuddy: com.raytheon.viz.core, com.raytheon.uf.viz.core
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
