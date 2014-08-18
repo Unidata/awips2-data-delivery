@@ -108,6 +108,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Sep 25, 2013  2410      mpduff     Check type of localization file.
  * Feb 07, 2013  2453      mpduff     Support find dialog refactor..
  * Mar 18, 2014  2433      mpduff     Implement view by priority check box menus.
+ * Aug 18, 2014   2746     ccody      Non-local Subscription changes not updating dialogs
  * 
  * </pre>
  * 
@@ -860,7 +861,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         VizApp.runAsync(new Runnable() {
             @Override
             public void run() {
-                if (isDisposed() == false && tableComp.passesFilter(records)) {
+                if (isDisposed() == false && tableComp.passesValueFilter(records)) {
                     tableComp.populateTableDataRows(records);
                     tableComp.populateTable();
                     tableComp.handlePageSelection();
