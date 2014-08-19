@@ -41,6 +41,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 19, 2014   3113     mpduff      Initial creation
+ * 8/29/2014     3446      bphillip     SubscriptionUtil is now a singleton
  * 
  * </pre>
  * 
@@ -56,10 +57,16 @@ public class SubscriptionUtil {
     private static final long WEEK_THRESHOLD = TimeUtil.MILLIS_PER_WEEK;
 
     private final AveragingAvailablityCalculator dataSetAvailabilityCalculator;
+    
+    private static final SubscriptionUtil instance = new SubscriptionUtil();
 
-    public SubscriptionUtil() {
+    private SubscriptionUtil() {
         dataSetAvailabilityCalculator = new AveragingAvailablityCalculator(
                 DataDeliveryHandlers.getDataSetMetaDataHandler());
+    }
+    
+    public static SubscriptionUtil getInstance(){
+        return instance;
     }
 
     /**

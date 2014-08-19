@@ -79,6 +79,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Apr 02, 2014 2810       dhladky      Priority sorting of subscriptions.
  * May 20, 2014 3113       mpduff       Add the functionality that the subscription itself provides the retrieval times.
  * Jul 28, 2014 2765       dhladky      No setOwner() in the setup super() method.
+ * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
  * 
  * </pre>
  * 
@@ -1271,8 +1272,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
                 // calculate the offset, every hour
                 int availabilityOffset = 0;
                 try {
-                    SubscriptionUtil subUtil = new SubscriptionUtil();
-                    availabilityOffset = subUtil.getDataSetAvailablityOffset(
+                    availabilityOffset = SubscriptionUtil.getInstance().getDataSetAvailablityOffset(
                             this, start);
                 } catch (RegistryHandlerException e) {
                     // Error occurred querying the registry. Log and continue on

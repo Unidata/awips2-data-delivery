@@ -154,6 +154,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * May 22, 2014 2808       dhladky      Schedule unscheduled subs when one is de-activated.
  * May 15, 2014   3113     mpduff       Schedule subscriptions for gridded datasets without cycles.
  * Jul 28, 2014 2752       dhladky      Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
+ * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
  * 
  * </pre>
  * 
@@ -451,7 +452,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
                 plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
-                new SubscriptionUtil());
+                SubscriptionUtil.getInstance());
 
         scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
 
@@ -490,7 +491,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         }
         SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
                 plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
-                new SubscriptionUtil());
+                SubscriptionUtil.getInstance());
         List<BandwidthSubscription> currentBandwidthSubscriptions = bandwidthDao
                 .getBandwidthSubscription(subscription);
 

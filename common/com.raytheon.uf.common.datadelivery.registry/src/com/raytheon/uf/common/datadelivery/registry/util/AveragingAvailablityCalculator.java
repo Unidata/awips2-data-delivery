@@ -32,6 +32,7 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
+import com.raytheon.uf.common.status.StatusHandler;
 import com.raytheon.uf.common.util.CollectionUtil;
 
 /**
@@ -47,6 +48,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Nov 9, 2012  1286       djohnson     Add SW history.
  * Jan 06, 2014 2636       mpduff       Changed how offset is determined.
  * May 15, 2014   3113     mpduff      Calculate availability offset for gridded data sets without cycles.
+ * 8/29/2014    3446       bphillip     Changed cache timeout
  * 
  * </pre>
  * 
@@ -56,7 +58,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
 public class AveragingAvailablityCalculator {
     LoadingCache<NameProviderKey, List<DataSetMetaData>> cache = CacheBuilder
             .newBuilder().maximumSize(1000)
-            .expireAfterWrite(30, TimeUnit.MINUTES)
+            .expireAfterWrite(20, TimeUnit.SECONDS)
             .build(new CacheLoader<NameProviderKey, List<DataSetMetaData>>() {
                 @Override
                 public List<DataSetMetaData> load(NameProviderKey key)
