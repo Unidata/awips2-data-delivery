@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="integration"/>
+	<classpathentry kind="src" path="manual"/>
+	<classpathentry kind="src" path="unit"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.registry.schemas.ebxml"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.datadelivery.retrieval"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.monitor"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.datadelivery.bandwidth"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.datadelivery.bandwidth"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.archive"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.plugin.redbook"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.datadelivery.registry"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.serialization"/>
+	<classpathentry kind="src" path="/org.apache.commons.io"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.registry.ebxml"/>
+	<classpathentry kind="src" path="/net.opengis"/>
+	<classpathentry kind="src" path="/org.geotools"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.comm"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.auth"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.mockito"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.serialization.comm"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.localization"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.edex.datadelivery.bandwidth.ncf"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.time"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.datadelivery.retrieval"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.status"/>
+	<classpathentry kind="src" path="/org.apache.http"/>
+	<classpathentry kind="src" path="/org.eclipse.jetty"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.util"/>
+	<classpathentry kind="lib" path="lib/javax.servlet_2.5.0.v200910301333.jar"/>
+	<classpathentry kind="lib" path="lib/javax.servlet.jsp-2.1.0.v201105211820.jar"/>
+	<classpathentry kind="lib" path="lib/javax.servlet.source_2.5.0.v200910301333.jar"/>
+	<classpathentry kind="lib" path="lib/jetty-http-7.6.14.v20131031.jar"/>
+	<classpathentry kind="lib" path="lib/jetty-security-7.6.14.v20131031.jar"/>
+	<classpathentry kind="lib" path="lib/jetty-server-7.6.14.v20131031.jar"/>
+	<classpathentry kind="lib" path="lib/jetty-servlet-7.6.14.v20131031.jar"/>
+	<classpathentry kind="lib" path="lib/jetty-servlets-7.6.14.v20131031.jar"/>
+	<classpathentry kind="lib" path="lib/jetty-util-7.6.14.v20131031.jar"/>
+	<classpathentry kind="src" path="/com.raytheon.edex.common"/>
+	<classpathentry exported="true" kind="src" path="/com.raytheon.uf.common.dataplugin"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.dataplugin.redbook"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.edex.core"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.dataplugin.grid"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.gridcoverage"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/net.dods"/>
+	<classpathentry kind="lib" path="lib/h2-1.3.171.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.jface_3.8.0.v20120912-135020.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-api-2.5.jar"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.dataplugin.level"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.edex.database"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.event"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.edex.event"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/org.springframework"/>
+	<classpathentry kind="src" path="/com.google.guava"/>
+	<classpathentry kind="lib" path="lib/swt_gtk_linux_x86_64.jar"/>
+	<classpathentry kind="lib" path="lib/swt_gtk_linux_x86.jar"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.datadelivery.service"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.registry.event"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.auth"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.hibernate"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.stats"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.stats"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.datadelivery.event"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.datadelivery.harvester"/>
+	<classpathentry kind="src" path="/edu.uci.ics.crawler4j"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.datadelivery.harvester"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.datadelivery.service"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.geospatial"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.viz.datadelivery"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.units"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.plugin.nwsauth"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.datadelivery.request"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.viz.core"/>
+	<classpathentry kind="src" path="/javax.jms"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.jms"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.common.wmo"/>
+	<classpathentry kind="lib" path="/common/ccody/workspace/AWIPS2_foss/lib/org.hamcrest/hamcrest-all-1.3.jar"/>
+	<classpathentry kind="lib" path="/common/ccody/workspace/AWIPS2_foss/lib/org.hamcrest/hamcrest-all-1.3-sources.jar"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.datadelivery.retrieval.wfs"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.plugin.nwsauth"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.registry.ebxml"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.edex.plugin.gfe"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
