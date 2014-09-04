@@ -1,15 +1,17 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.util;
 
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 
 import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
-import com.raytheon.uf.common.comm.IHttpsConfiguration;
+import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.IHttpsCredentialsHandler;
 import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
@@ -36,6 +38,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Aug 06, 2013 2097       dhladky     WFS 2.0 compliance upgrade and switched to POST
  * Nov 20, 2013 2554       dhladky     Added GZIP capability to WFS requests.
  * Jan 13, 2014 2697       dhladky     Added util to strip unique Id field from URL.
+ * Sep 03, 2014 3570       bclement    http client API changes
  * 
  * </pre>
  * 
@@ -49,6 +52,56 @@ public class WfsConnectionUtil {
             .getHandler(WfsConnectionUtil.class);
 
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
+    
+    /**
+     * connections indexed by URI host:port keys
+     */
+    private static final Map<String, Connection> uriConnections = new ConcurrentHashMap<String, Connection>();
+
+    private static final IHttpsCredentialsHandler credentialHandler = new IHttpsCredentialsHandler() {
+
+        @Override
+        public String[] getCredentials(String host, int port, String authValue) {
+            String key = createConnectionKey(host, port);
+            Connection connection = uriConnections.get(key);
+            String[] rval = null;
+            if (connection != null) {
+                rval = new String[2];
+                rval[0] = connection.getUnencryptedUsername();
+                rval[1] = connection.getUnencryptedPassword();
+            } else {
+                statusHandler.warn("Missing credentials for service at " + key);
+            }
+            return rval;
+        }
+
+        @Override
+        public void credentialsFailed() {
+            statusHandler
+                    .error("Failed to authenticate with supplied username and password");
+        }
+
+    };
+    
+    private static volatile HttpClient httpClient;
+    
+    /**
+     * @return cached http client instance
+     */
+    private static HttpClient getHttpClient(){
+        if (httpClient == null){
+            synchronized (credentialHandler) {
+                if (httpClient == null){
+                    HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
+                    // accept gzipped data for WFS
+                    builder.setHandlingGzipResponses(true);
+                    builder.setHttpsHandler(credentialHandler);
+                    httpClient = new HttpClient(builder.build());
+                }
+            }
+        }
+        return httpClient;
+    }
 
     /**
      * Connect to the provided URL and return the xml response.
@@ -71,15 +124,11 @@ public class WfsConnectionUtil {
         try {
 
             rootUrl = getCleanUrl(providerConn.getUrl());
-            http = HttpClient.getInstance();
-            // accept gzipped data for WFS
-            http.setGzipResponseHandling(true);
+            http = getHttpClient();
             URI uri = new URI(rootUrl);
             HttpPost post = new HttpPost(uri);
             // check for the need to do a username password auth check
-            ProviderCredentials creds = ProviderCredentialsUtil
-                    .retrieveCredentials(providerName);
-            Connection localConnection = creds.getConnection();
+            Connection localConnection = getLocalConnection(uri, providerName);
 
             if (localConnection != null
                     && localConnection.getProviderKey() != null) {
@@ -89,14 +138,12 @@ public class WfsConnectionUtil {
                 // encryption method for password storage and decrypt.
                 String userName = localConnection.getUnencryptedUsername();
                 String password = localConnection.getUnencryptedPassword();
-
-                http.setHandler(new WfsCredentialsHandler(userName, password));
-                http.setHttpsConfiguration(new WfsHttpsConfiguration(uri));
+                
                 http.setCredentials(uri.getHost(), uri.getPort(), providerName,
                         userName, password);
             }
 
-            post.setEntity(new StringEntity(request, "text/xml", "ISO-8859-1"));
+            post.setEntity(new StringEntity(request, ContentType.TEXT_XML));
             HttpClientResponse response = http.executeRequest(post);
             xmlResponse = new String(response.data);
 
@@ -109,99 +156,22 @@ public class WfsConnectionUtil {
     }
 
     /**
-     * 
-     * Credentials Holder
-     * 
-     * <pre>
-     * 
-     * SOFTWARE HISTORY
-     * 
-     * Date         Ticket#    Engineer    Description
-     * ------------ ---------- ----------- --------------------------
-     * Jun 19, 2013  2120       dhladky     Initial creation
-     * Feb 10, 2014  2704       njensen     Added credentialsFailed()
-     * 
-     * </pre>
-     * 
-     * @author dhladky
-     * @version 1.0
+     * @param uri
+     * @param providerName
+     * @return cached local connection for provider
+     * @throws Exception
      */
-    private static class WfsCredentialsHandler implements
-            IHttpsCredentialsHandler {
-
-        private final String username;
-
-        private final String password;
-
-        @Override
-        public String[] getCredentials(String message) {
-            return new String[] { username, password };
+    private static Connection getLocalConnection(URI uri, String providerName)
+            throws Exception {
+        String key = createConnectionKey(uri.getHost(), uri.getPort());
+        Connection rval = uriConnections.get(key);
+        if (rval == null) {
+            ProviderCredentials creds = ProviderCredentialsUtil
+                    .retrieveCredentials(providerName);
+            rval = creds.getConnection();
+            uriConnections.put(key, rval);
         }
-
-        public WfsCredentialsHandler(String username, String password) {
-            this.password = password;
-            this.username = username;
-        }
-
-        @Override
-        public void credentialsFailed() {
-            statusHandler
-                    .error("Failed to authenticate with supplied username and password");
-        }
-    }
-
-    /**
-     * 
-     * HTTPS Configuration
-     * 
-     * <pre>
-     * 
-     * SOFTWARE HISTORY
-     * 
-     * Date         Ticket#    Engineer    Description
-     * ------------ ---------- ----------- --------------------------
-     * Jun 19, 2013  2120       dhladky     Initial creation
-     * 
-     * </pre>
-     * 
-     * @author dhladky
-     * @version 1.0
-     */
-    private static class WfsHttpsConfiguration implements IHttpsConfiguration {
-
-        private int httpsPort = 443;
-
-        private int httpPort = 80;
-
-        public WfsHttpsConfiguration(URI uri) throws URISyntaxException {
-
-            try {
-                if (uri.getScheme().equals("http")) {
-                    httpPort = uri.getPort();
-                } else if (uri.getScheme().equals("https")) {
-                    httpsPort = uri.getPort();
-                    if (httpsPort == -1) {
-                        httpsPort = 443; // The default https port
-                    }
-                } else {
-                    throw new URISyntaxException(uri.toString(),
-                            "Invalid server");
-                }
-            } catch (URISyntaxException e) {
-                throw new URISyntaxException(uri.toString(),
-                        "Syntax or URI is bad!");
-            }
-        }
-
-        @Override
-        public int getHttpsPort() {
-            return httpsPort;
-        }
-
-        @Override
-        public int getHttpPort() {
-            return httpPort;
-        }
+        return rval;
     }
 
     /**
@@ -214,4 +184,14 @@ public class WfsConnectionUtil {
     private static String getCleanUrl(String providerUrl) {
         return COMMA_PATTERN.split(providerUrl)[0];
     }
+
+    /**
+     * @param host
+     * @param port
+     * @return key to {@link #uriConnections} map
+     */
+    private static String createConnectionKey(String host, int port) {
+        return host + ":" + port;
+    }
+
 }
