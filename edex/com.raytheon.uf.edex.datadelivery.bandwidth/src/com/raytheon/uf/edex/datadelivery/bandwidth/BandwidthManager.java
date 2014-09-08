@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -199,6 +200,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
     @VisibleForTesting
     final RetrievalManager retrievalManager;
+    
+    /** Map of application contexts used for starting bandwidth manager instances */
+    private ConcurrentHashMap<String[], ClassPathXmlApplicationContext> appContextMap = new ConcurrentHashMap<String[], ClassPathXmlApplicationContext>();
 
     public BandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao<T, C> bandwidthDao,
@@ -1322,10 +1326,14 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         ITimer timer = TimeUtil.getTimer();
         timer.start();
 
-        ClassPathXmlApplicationContext ctx = null;
+        ClassPathXmlApplicationContext ctx = appContextMap.get(springFiles);
         try {
-            ctx = new ClassPathXmlApplicationContext(springFiles,
-                    EDEXUtil.getSpringContext());
+            
+            if(ctx == null){
+                ctx = new ClassPathXmlApplicationContext(springFiles,
+                        EDEXUtil.getSpringContext());
+                appContextMap.put(springFiles, ctx);
+            }
             final BandwidthManager<T, C> bwManager = ctx.getBean(
                     "bandwidthManager", BandwidthManager.class);
             try {
@@ -1339,10 +1347,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 return null;
             }
         } finally {
-            if (close) {
-                Util.close(ctx);
-            }
-
             timer.stop();
             statusHandler.info("Took [" + timer.getElapsedTime()
                     + "] ms to start a new bandwidth manager of type [" + type
