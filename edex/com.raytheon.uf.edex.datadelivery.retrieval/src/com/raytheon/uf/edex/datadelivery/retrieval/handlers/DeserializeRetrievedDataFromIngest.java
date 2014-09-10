@@ -43,7 +43,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WfsRetrievalResponse;
  * Oct 04, 2013 2267       bgonzale     Added WfsRetrieval to unmarshal classes.
  * Nov 04, 2013 2506       bgonzale     Added SbnRetrievalResponseXml to unmarshal classes.
  *                                      Trim content after last xml tag during 
- *                                      marshaling from xml.
+ *                                      unmarshalling from xml.
  * Jan 30, 2014 2686       dhladky      refactor of retrieval.
  * May 14, 2014 2536       bclement     moved WMO Header to common
  * 

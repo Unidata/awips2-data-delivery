@@ -2,6 +2,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.util;
 
 import java.io.File;
 
+
 import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
@@ -12,7 +13,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.serialization.SerializationUtil;
+import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -52,6 +53,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.ProviderKeyRecord;
  * Jul 10, 2013 2180       dhladky     Initial
  * Aug 08, 2013 2180       mpduff      Corrected the filename and blanked the key before saving
  * Aug 23, 2013 2180       mpduff      Changed return types and add status messages.
+ * Sep 10, 2014 3581       ccody       Remove references to SerializationUtil for JAXB operations.
  * 
  * </pre>
  * 
@@ -225,10 +227,11 @@ public class ProviderCredentialsUtil {
             }
             return null;
         }
-
-        Connection conn = SerializationUtil.jaxbUnmarshalFromXmlFile(
-                Connection.class, file.getAbsolutePath());
-
+        
+        SingleTypeJAXBManager<Connection> jaxbManager = 
+                new SingleTypeJAXBManager<Connection>(true,Connection.class);
+        Connection conn = (Connection) jaxbManager.unmarshalFromXmlFile(file.getAbsolutePath());
+        
         return conn;
 
     }
@@ -260,6 +263,10 @@ public class ProviderCredentialsUtil {
          * providerKey and encrypted username and password stored together
          */
         conn.setProviderKey(null);
-        SerializationUtil.jaxbMarshalToXmlFile(conn, file.getAbsolutePath());
+        
+        SingleTypeJAXBManager<Connection>  jaxbManager = 
+                new SingleTypeJAXBManager<Connection>(true,Connection.class);
+        jaxbManager.marshalToXmlFile(conn, file.getAbsolutePath());
     }
+    
 }
