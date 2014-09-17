@@ -21,6 +21,7 @@ package com.raytheon.uf.viz.datadelivery.notification;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -86,6 +87,7 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * Nov 01, 2013  2431      skorolev     Changed labels on the table.
  * Feb 07, 2014  2453      mpduff       Refactored.
  * Apr 18, 2014  3012      dhladky      Null check.
+ * Aug 18, 2014  2746      ccody        Non-local Subscription changes not updating dialogs
  * </pre>
  * 
  * @author lvenable
@@ -611,7 +613,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             ++messageReceivedWhilePausedCount;
 
             // Apply filter
-            if (passesFilter(rd.getUser(), rd.getPriority(), rd.getCategory())) {
+            if (passesFilter(record)) {
                 filteredTableList.addDataRow(rd);
             }
         }
@@ -690,23 +692,21 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     }
 
     /**
-     * Pass filter information.
+     * Pass filter value information.
      * 
      * @param username
      *            user name table data
      * @param priority
      *            data priority table data
-     * @param subscription
-     *            subscription table data
-     * @return boolean true if passes filter
+     * @param category
+     *            subscription category table data
+     * @return boolean true if passes value filter
      */
-    private boolean passesFilter(String username, int priority,
-            String subscription) {
-
+    public boolean passesValueFilter(String username, Integer priority, String category) {
+        boolean filterFlag = false;
         boolean userFlag = false;
         boolean subscriptionFlag = false;
         boolean priorityFlag = false;
-        boolean filterFlag = false;
 
         NotificationConfigManager configMan = NotificationConfigManager
                 .getInstance();
@@ -714,7 +714,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 .getUserList();
         ArrayList<Priority> priorityList = configMan.getFilterXml()
                 .getPriorityList();
-        ArrayList<String> subscriptions = configMan.getFilterXml()
+        ArrayList<String> subscriptionCategoryList = configMan.getFilterXml()
                 .getSubscriptionList();
         ArrayList<Integer> num = new ArrayList<Integer>();
 
@@ -729,9 +729,9 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             }
         }
 
-        if (subscriptions == null || subscriptions.isEmpty()
-                || subscriptions.equals("")
-                || subscriptions.contains(subscription)) {
+        if (subscriptionCategoryList == null || subscriptionCategoryList.isEmpty()
+                || subscriptionCategoryList.equals("")
+                || subscriptionCategoryList.contains(category)) {
             subscriptionFlag = true;
         }
 
@@ -743,8 +743,48 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             filterFlag = true;
         }
 
-        return filterFlag;
+        return(filterFlag);
+    }
+    
+    private boolean passesFilter(NotificationRecord notificationRecord) {
 
+        boolean filterFlag = false;
+
+        if (notificationRecord == null) {
+            return(false);
+        }
+
+        String nrUsername = notificationRecord.getUsername();
+        Integer nrPriority = notificationRecord.getPriority();
+        String nrCategory = notificationRecord.getCategory();
+        
+        filterFlag = passesValueFilter(nrUsername, nrPriority, nrCategory);
+
+        if (filterFlag == true) {
+            //Check to see if we already HAVE this message
+            NotificationRowData rd = null;
+            int filteredTableListSize = this.filteredTableList.getSize();
+            for (int i = 0; ((i < filteredTableListSize) && (filterFlag == true)); i++) {
+                rd  = (NotificationRowData) this.filteredTableList.getDataRow(i);
+                String rdCategory = rd.getCategory();
+                Integer rdPriority = rd.getPriority();
+                String rdMessage = rd.getMessage();
+                String rdUsername = rd.getUser();
+                Date rdDate = rd.getDate();
+                long rdTimeInMils = 0;
+                if (rdDate != null) {
+                    rdTimeInMils = rdDate.getTime();
+                }
+                boolean areEquivalent = notificationRecord.areFunctionallyEquivalent(rdCategory, rdPriority,
+                                            rdMessage, rdUsername, rdTimeInMils);
+                if (areEquivalent == true) {
+                    filterFlag = false;
+                    break;
+                }
+            }
+        }
+        
+        return filterFlag;
     }
 
     /**
@@ -755,10 +795,9 @@ public class NotificationTableComp extends TableComp implements ITableFind {
      * @return boolean true if passes filter
      * 
      */
-    public boolean passesFilter(List<NotificationRecord> records) {
+    public boolean passesValueFilter(List<NotificationRecord> records) {
         for (NotificationRecord record : records) {
-            if (passesFilter(record.getUsername(), record.getPriority(),
-                    record.getCategory()) == false) {
+            if (passesFilter(record) == false) {
                 return false;
             }
         }

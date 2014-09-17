@@ -3,9 +3,11 @@ package com.raytheon.uf.edex.datadelivery.event.notification;
 import java.io.File;
 import java.util.Calendar;
 
+import javax.xml.bind.JAXBException;
+
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
@@ -22,7 +24,8 @@ import com.raytheon.uf.edex.database.purge.PurgeRuleSet;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 6, 2012            jsanchez     Initial creation
+ * Mar  6, 2012            jsanchez     Initial creation
+ * Sep 10, 2014  3581      ccody        Remove references to SerializationUtil for JAXB operations.
  * 
  * </pre>
  * 
@@ -56,10 +59,11 @@ public class NotificationPurge {
         }
 
         try {
-            purgeRules = (PurgeRuleSet) SerializationUtil
-                    .jaxbUnmarshalFromXmlFile(file);
-        } catch (SerializationException e) {
-            statusHandler.error("Error deserializing notification purge rule!");
+            SingleTypeJAXBManager<PurgeRuleSet>  jaxbManager = 
+                        new SingleTypeJAXBManager<PurgeRuleSet>(true,PurgeRuleSet.class);
+            purgeRules = (PurgeRuleSet) jaxbManager.unmarshalFromXmlFile(file);
+        } catch (JAXBException | SerializationException e) {
+            statusHandler.error("Error deserializing notification purge rule from file " + file +"\n", e);
         }
     }
 
@@ -81,4 +85,5 @@ public class NotificationPurge {
             }
         }
     }
+    
 }

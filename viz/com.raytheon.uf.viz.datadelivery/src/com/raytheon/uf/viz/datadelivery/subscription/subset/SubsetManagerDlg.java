@@ -58,6 +58,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionTyp
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
+import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -148,6 +149,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  *                                      Added dispose check for subscription button.
  * Mar 31, 2014   2889     dhladky      Added username for notification center tracking.
  * Apr 10, 2014   2864     mpduff       Changed how saved subset files are stored.
+ * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
  * 
  * </pre>
  * 
@@ -165,6 +167,10 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     private final ISubscriptionService subscriptionService = DataDeliveryServices
             .getSubscriptionService();
+
+    /** Subscription notification service */
+    private final ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+            .getSubscriptionNotificationService();
 
     /** Subset Name text box */
     private Text nameText;
@@ -555,10 +561,11 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 return;
             }
             try {
+                String currentUser = LocalizationManager.getInstance().getCurrentUser();
                 as.setSubscriptionType(SubscriptionType.QUERY);
-                SubscriptionServiceResult result = subscriptionService.store(
-                        LocalizationManager.getInstance().getCurrentUser(), as,
-                        this);
+                SubscriptionServiceResult result = subscriptionService.store(currentUser, as, this);
+
+                subscriptionNotificationService.sendCreatedSubscriptionNotification(as, currentUser);
 
                 if (result.hasMessageToDisplay()) {
                     DataDeliveryUtils.showMessage(getShell(), SWT.OK,

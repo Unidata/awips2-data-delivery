@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
@@ -76,6 +75,7 @@ import com.raytheon.viz.pointdata.util.PointDataInventory;
  * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
  * Jun 24, 2014  3128      bclement    changed loadProperties to be GridLoadProperties
  * Jul 07, 2014  3135      bsteffen    Allow reuse of definition across multiple tree selections.
+ * Sep 09, 2014  3356      njensen     Remove CommunicationException
  * 
  * 
  * </pre>
@@ -228,13 +228,8 @@ public class DataDeliveryProductBrowserDataDefinition
     public List<ProductBrowserLabel> formatData(String param,
             String[] parameters) {
         if (Arrays.asList(GRID_ORDER).contains(param)) {
-            try {
-                return GridProductBrowserDataFormatter.formatGridData(param,
-                        parameters);
-            } catch (CommunicationException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            }
+            return GridProductBrowserDataFormatter.formatGridData(param,
+                    parameters);
         } else {
             /* Data Type or point data. */
             List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
@@ -248,7 +243,6 @@ public class DataDeliveryProductBrowserDataDefinition
             Collections.sort(temp);
             return temp;
         }
-        return Collections.emptyList();
     }
 
     /**

@@ -57,6 +57,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
  * Apr 15, 2014 3012       dhladky     help with confusing nomenclature.
  * Jun 09, 2014 3113       mpduff      Use SubscriptionUtil rather than BandwidthUtil.
+ * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
  * </pre>
  * 
  * @author jspinks
@@ -109,8 +110,7 @@ public class SimpleSubscriptionAggregator implements ISubscriptionAggregator {
 
             int offset = 0;
             try {
-                SubscriptionUtil subUtil = new SubscriptionUtil();
-                offset = subUtil.getDataSetAvailablityOffset(sub,
+                offset = SubscriptionUtil.getInstance().getDataSetAvailablityOffset(sub,
                         subDao.getBaseReferenceTime());
             } catch (RegistryHandlerException e) {
                 statusHandler

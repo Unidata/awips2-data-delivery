@@ -64,15 +64,12 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Slider;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
+import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.registry.Network;
-import com.raytheon.uf.common.datadelivery.service.SubscriptionNotificationResponse;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.notification.INotificationObserver;
-import com.raytheon.uf.viz.core.notification.NotificationException;
-import com.raytheon.uf.viz.core.notification.NotificationMessage;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.CanvasImages;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphSection;
@@ -81,6 +78,8 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.SortBy;
 import com.raytheon.uf.viz.datadelivery.common.ui.IDialogClosed;
 import com.raytheon.uf.viz.datadelivery.common.ui.SubscriptionViewer;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
+import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
+import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler.INotificationArrivedListener;
 
 /**
  * 
@@ -108,13 +107,14 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Mar 24, 2014   2951     lvenable    Added dispose checks for SWT widgets.
  * Apr 21, 2014   2891     mpduff      Add Y Label canvas to redraw on refresh.
  * Aug 05, 2014   2748     ccody       Add GRAPH canvas to redraw on refresh.
+ * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
 public class BandwidthCanvasComp extends Composite implements IDialogClosed,
-        INotificationObserver, IDataUpdated {
+        INotificationArrivedListener, IDataUpdated {
 
     /** UFStatus handler. */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -246,6 +246,18 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** Graph canvas */
     private Canvas graphCanvas;
 
+    /** Messaging Notification Handler */
+    private NotificationHandler handler;
+    
+    /** JMS Message topic */
+    private static final String NOTIFY_MESSAGE_TOPIC = "notify.msg";
+    
+    /** Last NotificationRecord Message */
+    private NotificationRecord lastNotificationRecord = null;
+
+    /** The current instance (Used to remove this as an event listener) */ 
+    BandwidthCanvasComp bandwidthCanvasComp = null;
+
     /**
      * Constructor.
      * 
@@ -257,6 +269,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     public BandwidthCanvasComp(Composite parentComp) {
         super(parentComp, SWT.BORDER);
 
+        this.bandwidthCanvasComp = this;
         this.parentComp = parentComp;
         this.display = this.parentComp.getDisplay();
         this.graphDataUtil = new GraphDataUtil(this);
@@ -269,8 +282,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      * Initialize method.
      */
     private void init() {
-        NotificationManagerJob.addObserver("notify.msg", this);
-
         this.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
 
         generateCanvasSettings();
@@ -339,7 +350,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             public void widgetDisposed(DisposeEvent e) {
                 graphDataUtil.cancelThread();
                 timer.shutdown();
-                deregisterNotification();
+                NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC, handler);
+                NotificationHandler.removeListener(bandwidthCanvasComp);
             }
         });
 
@@ -356,13 +368,80 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 }
             }
         });
+        
+        NotificationHandler.addListener(this);
+        NotificationHandler handler = new NotificationHandler();
+        NotificationManagerJob.addObserver(NOTIFY_MESSAGE_TOPIC, handler);
+    }
+
+
+    
+    protected boolean isUpdateableNotification(List<NotificationRecord> notificationRecordList) {
+        boolean isUpdateNeeded = false;
+        if ((isDisposed() == true) || (notificationRecordList == null) || (notificationRecordList.isEmpty() == true)) {
+            return(false);
+        }
+
+        //Only update the graph for Activation, Deactivation, Insert (Create), Update, and Delete Notification Records
+        String messageString = null;
+        NotificationRecord nr = null;
+        int notificationRecordListSize = notificationRecordList.size();
+        for (int i = 0; ((isUpdateNeeded == false) && (i < notificationRecordListSize)); i++) {
+            nr = (NotificationRecord) notificationRecordList.get(i);
+            if (nr != null) {
+                messageString = nr.getMessage();
+                if ((messageString != null) &&
+                    ((messageString.indexOf("ACTIVATE") > 0) || (messageString.indexOf("DEACTIVATE") > 0) ||
+                    (messageString.indexOf("UPDATE") > 0) || (messageString.indexOf("DELETE") > 0) ||
+                    (messageString.indexOf("CREATE") > 0) || (messageString.indexOf("INSERT") > 0))) {
+                    
+                    if (lastNotificationRecord != null) {
+                        boolean areEquivalent = lastNotificationRecord.areFunctionallyEquivalent(nr);
+                        if (areEquivalent == true) {
+                            //This is a repeated NotificationRecord. Do not update.
+                            isUpdateNeeded = false;
+                        } else { 
+                            isUpdateNeeded = true;
+                        }
+                    } else {
+                        isUpdateNeeded = true;
+                    }
+                    
+                    lastNotificationRecord = nr;
+                } else {
+                    isUpdateNeeded = false;
+                }
+            } else {
+                isUpdateNeeded = false;
+            }
+        }
+        
+        return(isUpdateNeeded);
+    }
+    
+    /**
+     * Updates the notification table and displays a balloon tool tip.
+     */
+    @Override
+    public void handleNotification(
+            ArrayList<NotificationRecord> notificationRecords) {
+        final ArrayList<NotificationRecord> records = notificationRecords;
+        boolean isUpdateNeeded = isUpdateableNotification(records);
+        if (isUpdateNeeded == true) {
+            graphDataUtil.requestGraphDataUsingThread();
+            dataUpdated();
+            fullUpdateMinuteCount = 0;
+        }
     }
 
     /**
-     * Deregister the notification.
+     * Removes data rows from the table.
      */
-    private void deregisterNotification() {
-        NotificationManagerJob.removeObserver("notify.msg", this);
+    @Override
+    public void deleteNotification(ArrayList<Integer> ids) {
+        if (isDisposed() == false) {
+            graphDataUtil.requestGraphDataUsingThread();  //Refresh on subscription deletion
+        }
     }
 
     /**
@@ -1542,23 +1621,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         }
     }
 
-    /**
-     * This method will update the graph with any updates, deletions, or new
-     * subscriptions.
-     */
-    @Override
-    public void notificationArrived(NotificationMessage[] messages) {
-        try {
-            for (NotificationMessage msg : messages) {
-                Object obj = msg.getMessagePayload();
-                if (obj instanceof SubscriptionNotificationResponse) {
-                    graphDataUtil.requestGraphDataUsingThread();
-                }
-            }
-        } catch (NotificationException e) {
-            statusHandler.error("Error when receiving notification", e);
-        }
-    }
 
     /**
      * This will update the graph as the data has been updated.

@@ -148,6 +148,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Feb 11, 2014   2771     bgonzale    Use Data Delivery ID instead of Site.
  * Mar 31, 2014   2889     dhladky     Added username for notification center tracking.
  * May 15, 2014   3113     mpduff      Don't display the gridded cycle composite if no cycles.
+ * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
  * 
  * </pre>
  * 
@@ -1276,6 +1277,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                                     subscription,
                                     new CancelForceApplyAndIncreaseLatencyDisplayText(
                                             "update", getShell()));
+                    
+                    subscriptionNotificationService.sendUpdatedSubscriptionNotification(subscription, username);
+                    
                     if (response.hasMessageToDisplay()) {
                         displayPopup(UPDATED_TITLE, response.getMessage());
                     }
@@ -1570,6 +1574,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             result = subscriptionService.store(username, subscription,
                     new CancelForceApplyAndIncreaseLatencyDisplayText("create",
                             getShell()));
+            
+            subscriptionNotificationService.sendCreatedSubscriptionNotification(subscription, username);
+
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to create subscription.", e);

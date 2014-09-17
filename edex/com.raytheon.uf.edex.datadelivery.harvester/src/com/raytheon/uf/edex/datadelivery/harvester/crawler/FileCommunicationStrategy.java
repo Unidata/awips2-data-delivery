@@ -31,6 +31,8 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import javax.xml.bind.JAXBException;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
@@ -45,6 +47,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.ExceptionWrapper;
+import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializableExceptionWrapper;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
@@ -58,6 +61,7 @@ import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.common.util.file.FilenameFilters;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLinkStore;
+import com.raytheon.uf.edex.datadelivery.retrieval.Link;
 
 /**
  * A {@link File}-based communication strategy.
@@ -72,7 +76,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * Aug 06, 2012 1022       djohnson     Add shutdown(), write out millis with filename to prevent overwriting.
  * Sep 10, 2012 1154       djohnson     Use JAXB instead of thrift, allowing introspection of links, return files in ascending order.
  * Mar 14, 2013 1794       djohnson     Consolidate common FilenameFilter implementations.
- *  * Oct 28, 2013 2361       dhladky     Fixed up JAXBManager.
+ * Oct 28, 2013 2361       dhladky      Fixed up JAXBManager.
+ * Sep 10, 2014 3581       ccody        Remove references to SerializationUtil for JAXB operations.
  * 
  * </pre>
  * 
@@ -112,6 +117,9 @@ class FileCommunicationStrategy implements CommunicationStrategy {
      */
     private final File errorsDir;
 
+    /** JAXBManager Class for marshaling and unmarshaling objects */
+    private JAXBManager jaxbManager = null;
+    
     /**
      * Constructor.
      */
@@ -207,10 +215,9 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         return null;
     }
 
-    private void marshalAndWriteToFile(File destinationFile, Object object)
-            throws IOException, SerializationException {
-        SerializationUtil.jaxbMarshalToXmlFile(object,
-                destinationFile.getAbsolutePath());
+    private void marshalAndWriteToFile(File destinationFile, LinkStore links)
+            throws IOException, JAXBException, SerializationException {
+        getJaxbManager().marshalToXmlFile(links, destinationFile.getAbsolutePath());
     }
 
     @Override
@@ -339,17 +346,13 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         LinkStore links = null;
 
         try {
-            links = SerializationUtil.jaxbUnmarshalFromXmlFile(LinkStore.class,
-                    file);
-
+            links = (LinkStore) getJaxbManager().unmarshalFromXmlFile(LinkStore.class, file);
             statusHandler.info("Read linkStore for " + file);
-
-        } catch (SerializationException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
+        } catch (JAXBException  | SerializationException e) {
+            statusHandler.handle(Priority.PROBLEM, "Error unmarshalling file " + file.getAbsolutePath(), e);
         }
 
         return links;
-
     }
 
     /**
@@ -436,9 +439,7 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                         + links.getLinkKeys().size());
             }
 
-        } catch (SerializationException e) {
-            sendException(e);
-        } catch (IOException e) {
+        } catch (JAXBException | SerializationException |IOException e) {
             sendException(e);
         }
     }
@@ -455,4 +456,19 @@ class FileCommunicationStrategy implements CommunicationStrategy {
     @Override
     public void shutdown() {
     }
+    
+    /**
+     * Create or get JAXB Manager to marshal and unmarshal JAXB objects
+     * 
+     * @return
+     */
+    private JAXBManager getJaxbManager() throws JAXBException {
+
+        if (this.jaxbManager == null) {
+            jaxbManager = new JAXBManager(LinkStore.class, Link.class);
+        }
+        return this.jaxbManager;
+    }
+    
+    
 }

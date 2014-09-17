@@ -97,6 +97,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Oct 23, 2013 2292       mpduff      Move subscription overlap checks to edex.
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
  * Apr 18, 2014  3012      dhladky      Null check.
+ * Aug 18, 2014 2746       ccody        Non-local Subscription changes not updating dialogs
  * 
  * </pre>
  * 
@@ -539,6 +540,11 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
                 SubscriptionServiceResult result = subscriptionService
                         .update(username, s,
                                 new ApproveSubscriptionForceApplyPromptDisplayText());
+                
+                subscriptionNotificationService
+                            .sendApprovedPendingSubscriptionNotification(ps,
+                                    username);
+                
                 if (result.hasMessageToDisplay()) {
                     DataDeliveryUtils.showMessage(getShell(), SWT.OK,
                             "Subscription Approved.", result.getMessage());
@@ -548,9 +554,6 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
                     exceptionMessage = "Unable to delete pending subscription.";
                     pendingSubHandler.delete(username, ps);
 
-                    subscriptionNotificationService
-                            .sendApprovedPendingSubscriptionNotification(ps,
-                                    username);
                 }
             } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM, exceptionMessage, e);

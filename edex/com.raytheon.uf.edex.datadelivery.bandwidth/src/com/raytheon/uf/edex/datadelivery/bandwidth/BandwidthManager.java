@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -154,6 +155,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * May 22, 2014 2808       dhladky      Schedule unscheduled subs when one is de-activated.
  * May 15, 2014   3113     mpduff       Schedule subscriptions for gridded datasets without cycles.
  * Jul 28, 2014 2752       dhladky      Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
+ * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
  * 
  * </pre>
  * 
@@ -198,6 +200,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
     @VisibleForTesting
     final RetrievalManager retrievalManager;
+    
+    /** Map of application contexts used for starting bandwidth manager instances */
+    private ConcurrentHashMap<String[], ClassPathXmlApplicationContext> appContextMap = new ConcurrentHashMap<String[], ClassPathXmlApplicationContext>();
 
     public BandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao<T, C> bandwidthDao,
@@ -451,7 +456,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
                 plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
-                new SubscriptionUtil());
+                SubscriptionUtil.getInstance());
 
         scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
 
@@ -490,7 +495,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         }
         SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
                 plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
-                new SubscriptionUtil());
+                SubscriptionUtil.getInstance());
         List<BandwidthSubscription> currentBandwidthSubscriptions = bandwidthDao
                 .getBandwidthSubscription(subscription);
 
@@ -1321,10 +1326,14 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         ITimer timer = TimeUtil.getTimer();
         timer.start();
 
-        ClassPathXmlApplicationContext ctx = null;
+        ClassPathXmlApplicationContext ctx = appContextMap.get(springFiles);
         try {
-            ctx = new ClassPathXmlApplicationContext(springFiles,
-                    EDEXUtil.getSpringContext());
+            
+            if(ctx == null){
+                ctx = new ClassPathXmlApplicationContext(springFiles,
+                        EDEXUtil.getSpringContext());
+                appContextMap.put(springFiles, ctx);
+            }
             final BandwidthManager<T, C> bwManager = ctx.getBean(
                     "bandwidthManager", BandwidthManager.class);
             try {
@@ -1338,10 +1347,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 return null;
             }
         } finally {
-            if (close) {
-                Util.close(ctx);
-            }
-
             timer.stop();
             statusHandler.info("Took [" + timer.getElapsedTime()
                     + "] ms to start a new bandwidth manager of type [" + type

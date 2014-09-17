@@ -47,6 +47,7 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandler
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.retrieval.util.DataSizeUtils;
+import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -98,7 +99,8 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Jun 13, 2013  2108      mpduff       Refactored DataSizeUtils.
  * Oct 28, 2013  2292      mpduff       Change overlap services.
  * Feb 11, 2014  2771      bgonzale     Use Data Delivery ID instead of Site.
- * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
+ * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
  * </pre>
  * 
  * @author jpiatt
@@ -420,11 +422,20 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
         }
 
         try {
+            
+            List<Subscription> pendingSubscriptionList = new ArrayList<Subscription>( 
+                            Sets.union(groupSubscriptions, removeFromGroupSubscriptions));
             final SubscriptionServiceResult result = DataDeliveryServices
                     .getSubscriptionService().updateWithPendingCheck(
-                            currentUser, new ArrayList<Subscription>(Sets.union(
-                                    groupSubscriptions,
-                                    removeFromGroupSubscriptions)), this);
+                            currentUser, pendingSubscriptionList, this);
+
+            ISubscriptionNotificationService subscriptionNotificationService = 
+                            DataDeliveryServices.getSubscriptionNotificationService();
+            for (Subscription pendingSubscription : pendingSubscriptionList) {
+                subscriptionNotificationService.
+                        sendUpdatedSubscriptionNotification(pendingSubscription, currentUser);
+            }
+
             if (result.hasMessageToDisplay()) {
                 DataDeliveryUtils.showMessage(getShell(), SWT.ICON_INFORMATION,
                         "Edit Group", result.getMessage());
