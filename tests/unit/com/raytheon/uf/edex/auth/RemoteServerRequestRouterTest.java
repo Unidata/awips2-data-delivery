@@ -28,7 +28,8 @@ import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.serialization.SerializationUtil;
-import com.raytheon.uf.edex.auth.req.ServerPrivilegedRequestHandler.ServerPrivilegedRequest;
+import com.raytheon.uf.edex.requestsrv.request.ServerPrivilegedRequestHandler.ServerPrivilegedRequest;
+import com.raytheon.uf.edex.requestsrv.router.RemoteServerRequestRouter;
 
 /**
  * Test {@link RemoteServerRequestRouter}.
@@ -59,10 +60,6 @@ public class RemoteServerRequestRouterTest {
 
     private final RemoteServerRequestRouter router = new RemoteServerRequestRouter(
             HTTP_ADDRESS) {
-        /**
-         * {@inheritDoc}
-         */
-        @Override
         byte[] sendSerializedRequest(byte[] message)
                 throws CommunicationException, Exception {
             serializedData = message;
