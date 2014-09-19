@@ -171,7 +171,10 @@ public class WfsConnectionUtil {
             ProviderCredentials creds = ProviderCredentialsUtil
                     .retrieveCredentials(providerName);
             rval = creds.getConnection();
-            uriConnections.put(key, rval);
+
+            if (rval != null) {
+                uriConnections.put(key, rval);
+            }
         }
         return rval;
     }
