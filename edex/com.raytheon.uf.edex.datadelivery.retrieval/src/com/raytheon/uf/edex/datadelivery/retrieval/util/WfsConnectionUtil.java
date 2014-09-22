@@ -130,7 +130,6 @@ public class WfsConnectionUtil {
             HttpPost post = new HttpPost(uri);
             // check for the need to do a username password auth check
             Connection localConnection = getLocalConnection(uri, providerName);
-     //       http.setHttpsConfiguration(new WfsHttpsConfiguration(uri));
 
             if (localConnection != null
                     && localConnection.getProviderKey() != null) {
