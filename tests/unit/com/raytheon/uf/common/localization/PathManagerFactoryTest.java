@@ -86,12 +86,13 @@ public class PathManagerFactoryTest implements BeanFactoryPostProcessor {
 
         // But only install the path manager if the test version is not already
         // installed
-        if (!(PathManagerFactory.pathManager instanceof TestPathManager)) {
+        IPathManager pathManager = PathManagerFactory.getPathManager();
+        if (!(pathManager instanceof TestPathManager)) {
             TestLocalizationAdapter adapter = (isRunningInEclipse()) ? new EclipseTestLocalizationAdapter(
                     site, savedLocalizationFileDir)
                     : new CommandLineTestLocalizationAdapter(site,
                             savedLocalizationFileDir);
-            PathManagerFactory.pathManager = new TestPathManager(adapter);
+            PathManagerFactory.setAdapter(adapter);
             
             System.setProperty("edex.home", file.getAbsolutePath());
             File confResDataDir = new File(file, "conf/res");
