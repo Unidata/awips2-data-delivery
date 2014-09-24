@@ -30,8 +30,11 @@ import org.junit.Test;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
-import com.raytheon.uf.edex.auth.req.ServerPrivilegedRequestHandler;
-import com.raytheon.uf.edex.auth.req.ServerPrivilegedRequestHandler.ServerPrivilegedRequest;
+import com.raytheon.uf.edex.requestsrv.HandlerRegistry;
+import com.raytheon.uf.edex.requestsrv.RequestServiceExecutor;
+import com.raytheon.uf.edex.requestsrv.request.ServerPrivilegedRequestHandler;
+import com.raytheon.uf.edex.requestsrv.request.ServerPrivilegedRequestHandler.ServerPrivilegedRequest;
+import com.raytheon.uf.edex.requestsrv.router.ServerRequestRouter;
 
 /**
  * Test {@link ServerPrivilegedRequestHandler}.
@@ -67,7 +70,9 @@ public class ServerRequestRouterTest {
 
     @Before
     public void setUp() {
-        RemoteRequestServer.getInstance().setRegistry(registry);
+        //REMOVED RemoteRequestServer.getInstance().setRegistry(registry);
+        //This will set the private final Registry for the RequestServiceExecutor instance
+        RequestServiceExecutor rse = new RequestServiceExecutor(registry);
 
         when(
                 registry.getRequestHandler(ServerPrivilegedRequest.class

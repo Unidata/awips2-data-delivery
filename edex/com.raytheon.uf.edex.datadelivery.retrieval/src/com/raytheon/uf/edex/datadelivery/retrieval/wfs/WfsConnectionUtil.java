@@ -59,6 +59,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Aug 06, 2013 2097       dhladky     WFS 2.0 compliance upgrade and switched to POST
  * Nov 20, 2013 2554       dhladky     Added GZIP capability to WFS requests.
  * Jan 13, 2014 2697       dhladky     Added util to strip unique Id field from URL.
+ * Aub 20, 2014 3564       dhladky     Allow for un-authenicated HTTPS
  * Sep 03, 2014 3570       bclement    http client API changes
  * 
  * </pre>
@@ -190,7 +191,10 @@ public class WfsConnectionUtil {
             ProviderCredentials creds = ProviderCredentialsUtil
                     .retrieveCredentials(providerName);
             rval = creds.getConnection();
-            uriConnections.put(key, rval);
+
+            if (rval != null) {
+                uriConnections.put(key, rval);
+            }
         }
         return rval;
     }

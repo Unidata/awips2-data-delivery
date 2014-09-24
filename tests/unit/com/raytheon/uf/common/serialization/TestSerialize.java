@@ -555,7 +555,7 @@ public class TestSerialize {
         DynamicSerializationManager dmgr = DynamicSerializationManager
                 .getManager(SerializationType.Thrift);
 
-        DynamicSerializationManager.inspect(inTest.getClass());
+        DynamicSerializationManager.getSerializationMetadata(inTest.getClass()); //this performs the "inspect" of the class
         byte[] bdata = null;
         try {
             bdata = dmgr.serialize(inTest);
@@ -644,7 +644,8 @@ public class TestSerialize {
         inMap.put("abc", inTest2_1);
         inContainer.setMap(inMap);
 
-        DynamicSerializationManager.inspect(inContainer.getClass());
+        DynamicSerializationManager.getSerializationMetadata(inContainer.getClass()); //this performs the "inspect" of the class
+        
         byte[] bdata = null;
         try {
             bdata = dmgr.serialize(inContainer);
@@ -712,8 +713,7 @@ public class TestSerialize {
 
         DynamicSerializationManager dmgr = DynamicSerializationManager
                 .getManager(SerializationType.Thrift);
-
-        DynamicSerializationManager.inspect(tc.getClass());
+        DynamicSerializationManager.getSerializationMetadata(tc.getClass()); //this performs the "inspect" of the class
         byte[] bdata = null;
         try {
             bdata = dmgr.serialize(tc);
@@ -750,7 +750,7 @@ public class TestSerialize {
         DynamicSerializationManager dmgr = DynamicSerializationManager
                 .getManager(SerializationType.Thrift);
 
-        DynamicSerializationManager.inspect(coll.getClass());
+        DynamicSerializationManager.getSerializationMetadata(coll.getClass()); //this performs the "inspect" of the class
         byte[] bdata = null;
         try {
             bdata = dmgr.serialize(coll);
@@ -794,7 +794,7 @@ public class TestSerialize {
         DynamicSerializationManager dmgr = DynamicSerializationManager
                 .getManager(SerializationType.Thrift);
 
-        DynamicSerializationManager.inspect(NullTester.class);
+        DynamicSerializationManager.getSerializationMetadata(NullTester.class); //this performs the "inspect" of the class
 
         NullTester nt = new NullTester();
         Object[] obj = new Object[3];

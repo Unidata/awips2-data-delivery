@@ -75,6 +75,7 @@
         <include>obs-common.xml</include>
         <include>madis-common.xml</include>
         <include>level-common.xml</include>
+        <include>levelhandler-common.xml</include>
         <include>persist-ingest.xml</include>
         <include>management-common.xml</include>
         <include>event-ingest.xml</include>

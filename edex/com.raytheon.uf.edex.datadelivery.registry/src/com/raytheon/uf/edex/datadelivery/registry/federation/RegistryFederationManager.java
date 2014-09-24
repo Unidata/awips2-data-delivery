@@ -92,6 +92,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.ClusterIdUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
@@ -162,6 +163,7 @@ import com.raytheon.uf.edex.registry.events.CreateAuditTrailEvent;
  * June 25, 2014 3320       dhladky     Remove all references to DD environment variables from setup.env
  * 7/10/2014    1717        bphillip    Central registry now inserts system user
  * 7/28/2014    2752        dhladky     Fixed bad registry user name.
+ * 8/27/2014    3560        bphillip    Added updateRegistryEvents method
  * </pre>
  * 
  * @author bphillip
@@ -561,6 +563,16 @@ public class RegistryFederationManager implements IRegistryFederationManager,
         }
 
     }
+    
+	@Transactional
+	@GET
+	@Path("updateRegistryEvents/{registryId}/{time}")
+	public void updateRegistryEvents(@PathParam("registryId") String registryId, @PathParam("time") String time) {
+		for(ReplicationEvent event: replicationEventDao.getEventsBeforeTime(time)){
+			event.addReplicatedTo(registryId);
+			replicationEventDao.update(event);
+		}
+	}
 
     /**
      * Synchronizes this registry's data with the registry at the specified URL
@@ -607,6 +619,9 @@ public class RegistryFederationManager implements IRegistryFederationManager,
                 }
                 federatedRegistryMonitor.updateTime();
                 StringBuilder syncMsg = new StringBuilder();
+                
+                // Update the registry events table on the remote registry so duplicate data is not sent again
+                dataDeliveryRestClient.getRegistryFederationManager(remoteRegistryUrl).updateRegistryEvents(ClusterIdUtil.getId(), String.valueOf(start));
 
                 syncMsg.append("Registry synchronization using [")
                         .append(remoteRegistryUrl)
@@ -1290,5 +1305,4 @@ public class RegistryFederationManager implements IRegistryFederationManager,
     public void setRegistryUsers(RegistryUsers registryUsers) {
         this.registryUsers = registryUsers;
     }
-
 }

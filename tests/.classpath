@@ -83,5 +83,6 @@
 	<classpathentry kind="src" path="/com.raytheon.uf.edex.plugin.nwsauth"/>
 	<classpathentry kind="src" path="/com.raytheon.uf.edex.registry.ebxml"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.edex.plugin.gfe"/>
+	<classpathentry kind="src" path="/com.raytheon.uf.edex.requestsrv"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

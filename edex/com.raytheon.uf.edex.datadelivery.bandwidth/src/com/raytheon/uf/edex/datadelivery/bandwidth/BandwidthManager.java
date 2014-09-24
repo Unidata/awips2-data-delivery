@@ -156,6 +156,10 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * May 15, 2014   3113     mpduff       Schedule subscriptions for gridded datasets without cycles.
  * Jul 28, 2014 2752       dhladky      Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
  * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
+ * Sep 17, 2014 2749       ccody        Changes to startNewBandwidthManager
+ *                                      @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager#
+ *                                      to refresh spring components so that attempts to connect with them 
+ *                                      do not result in errors and exceptions.
  * 
  * </pre>
  * 
@@ -526,7 +530,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
     /*
      * (non-Javadoc)
-     * 
      * @see com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager#
      * updateSchedule(com.raytheon.uf.common.datadelivery.registry.Network)
      */
@@ -902,11 +905,10 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 // scheduled, just apply
                 setBandwidth(requestNetwork, bandwidth);
             }
-
             break;
         case FORCE_SET_BANDWIDTH:
-            boolean setBandwidth = setBandwidth(requestNetwork, bandwidth);
-            response = setBandwidth;
+            boolean setBandwidthBool = setBandwidth(requestNetwork, bandwidth);
+            response = setBandwidthBool;
             break;
         case SHOW_ALLOCATION:
             break;
@@ -1297,11 +1299,49 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     /**
      * Starts the new bandwidth manager.
      * 
+     * 2014-09-17 CCODY Developer's Notes: (Issue #2749)
+     * Making changes to preference settings; particularly Bandwidth settinds; in CAVE 
+     * results in a forced refresh of the Spring .xml configuration.
+     * (ex. CAVE->Data Delivery->System Management:: Settings->Bandwidth)
+     * The call path of the Spring refresh looks like:  
+     * [ ... -> setBandwidth() -> startNewBandwidthManager() -> startBandwidthManager(...) ]
+     * and uses the full list of EDEX Spring .xml files. 
+     * This operation fails.<p>
+     * 1. There are presently a total of 73 .xml files that are included in the EDEX
+     * Spring configuration. Using the full list of files results in (non terminal, but 
+     * repeating) exception errors.<p>
+     * 
+     * 2. Removing the following files from the EDEX file list will allow this method to 
+     * complete execution without failure, but results in Bandwidth Manager not
+     * restarting properly. i.e. Exceptions result elsewhere.
+     *      /res/spring/harvester-datadelivery-registry.xml
+     *      /res/spring/harvester-datadelivery.xml
+     *      /spring/datadelivery-subscription-verification.xml
+     *      /spring/bandwidth-datadelivery-edex-impl-wfo.xml
+     *      /spring/bandwidth-datadelivery-edex-impl.xml
+     *      /spring/bandwidth-datadelivery-edex-impl-monolithic.xml
+     *      /res/spring/purge-logs.xml
+     *      /res/spring/ebxml-garbagecollector-edex-impl.xml
+     *      /res/spring/ebxml-webserver.xml
+     *      /spring/datadelivery-cron.xml
+     *      /spring/datadelivery-wfo-cron.xml
+     *      /spring/retrieval-datadelivery.xml
+     *      /res/spring/request-service-common.xml
+     *<p>
+     * 3. Using ONLY the Spring files for the "memory" configuration
+     *    e.g. InMemoryBandwidthManager.IN_MEMORY_BANDWIDTH_MANAGER_FILES
+     *    (@see BandwidthManager.startProposedBandwidthManager)
+     *    will cause the Spring component environment to restart properly.
+     *    This does not appear to negatively impact other parts of the system.
+     * <p>
+     *  
      * @return true if the new bandwidth manager was started
      */
     private boolean startNewBandwidthManager() {
+        
         BandwidthManager<T, C> bandwidthManager = startBandwidthManager(
-                getSpringFilesForNewInstance(), false, "EDEX");
+                InMemoryBandwidthManager.IN_MEMORY_BANDWIDTH_MANAGER_FILES,
+                false, "EDEX");
 
         final boolean successfullyStarted = bandwidthManager != null;
         if (successfullyStarted) {
@@ -1325,17 +1365,16 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             final String[] springFiles, boolean close, String type) {
         ITimer timer = TimeUtil.getTimer();
         timer.start();
-
+    
         ClassPathXmlApplicationContext ctx = appContextMap.get(springFiles);
         try {
-            
             if(ctx == null){
                 ctx = new ClassPathXmlApplicationContext(springFiles,
                         EDEXUtil.getSpringContext());
                 appContextMap.put(springFiles, ctx);
             }
-            final BandwidthManager<T, C> bwManager = ctx.getBean(
-                    "bandwidthManager", BandwidthManager.class);
+            BandwidthManager<T, C> bwManager = null;
+                bwManager = ctx.getBean("bandwidthManager", BandwidthManager.class);
             try {
                 bwManager.initializer.executeAfterRegistryInit();
                 return bwManager;
