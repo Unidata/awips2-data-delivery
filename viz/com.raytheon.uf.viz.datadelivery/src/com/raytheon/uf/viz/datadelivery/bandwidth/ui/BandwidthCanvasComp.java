@@ -108,6 +108,7 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler.INotificationA
  * Apr 21, 2014   2891     mpduff      Add Y Label canvas to redraw on refresh.
  * Aug 05, 2014   2748     ccody       Add GRAPH canvas to redraw on refresh.
  * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
+ * Sep 22, 2014   3607     ccody       Add checks to prevent NullPointerException
  * </pre>
  * 
  * @author lvenable
@@ -273,7 +274,9 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         this.parentComp = parentComp;
         this.display = this.parentComp.getDisplay();
         this.graphDataUtil = new GraphDataUtil(this);
-        this.bgd = this.graphDataUtil.getGraphData();
+        if (this.graphDataUtil != null) {
+            this.bgd = this.graphDataUtil.getGraphData();
+        }
 
         init();
     }
@@ -348,8 +351,12 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         this.addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent e) {
-                graphDataUtil.cancelThread();
-                timer.shutdown();
+                if (graphDataUtil != null) {
+                    graphDataUtil.cancelThread();
+                }
+                if (timer != null) {
+                    timer.shutdown();
+                }
                 NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC, handler);
                 NotificationHandler.removeListener(bandwidthCanvasComp);
             }

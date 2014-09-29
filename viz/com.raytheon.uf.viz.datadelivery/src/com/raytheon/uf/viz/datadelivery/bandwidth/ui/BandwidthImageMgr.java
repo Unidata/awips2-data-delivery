@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.core.RGBColors;
  * Oct 28, 2013   2430     mpduff      Add % of bandwidth utilized graph.
  * Nov 19, 2013   1531     mpduff      Update the settings.
  * Dec 17, 2013   2633     mpduff      Keep data used to regenerate images.
+ * Sep 22, 2014   3607     ccody       Prevent NullPointerException on image regeneration for populateCanvasMap
  * 
  * </pre>
  * 
@@ -245,8 +246,15 @@ public class BandwidthImageMgr implements IGraphOptions {
         canvasImgMap.put(CanvasImages.UTILIZATION_GRAPH, aci);
 
         // Regenerate all of the images
-        for (CanvasImages ci : CanvasImages.values()) {
-            canvasImgMap.get(ci).regenerateImage();
+        CanvasImages[] canvasImagesArray = CanvasImages.values();
+        if (canvasImagesArray != null) {
+            AbstractCanvasImage canvasImage = null;
+            for (CanvasImages ci : canvasImagesArray) {
+                canvasImage = canvasImgMap.get(ci);
+                if (canvasImage != null) {
+                    canvasImage.regenerateImage();
+                }
+            }
         }
     }
 
