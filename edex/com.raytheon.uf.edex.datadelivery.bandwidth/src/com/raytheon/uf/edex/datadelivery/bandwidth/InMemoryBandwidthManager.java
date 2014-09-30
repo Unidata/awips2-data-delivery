@@ -192,9 +192,9 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
     }
 
     @Override
-    protected List<Subscription> getSubscriptionsToSchedule(Network network) {
+    protected List<Subscription<T, C>> getSubscriptionsToSchedule(Network network) {
         // Nothing to do for in-memory version
-        return new ArrayList<Subscription>(0);
+        return new ArrayList<Subscription<T,C>>(0);
     }
 
     @Override

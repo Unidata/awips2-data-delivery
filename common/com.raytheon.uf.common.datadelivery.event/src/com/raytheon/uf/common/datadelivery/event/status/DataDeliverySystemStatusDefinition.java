@@ -29,6 +29,7 @@ package com.raytheon.uf.common.datadelivery.event.status;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 17, 2013   1655     mpduff      Initial creation.
+ * Sep 29. 2014   2749     ccody       Added RESTART to enum
  * 
  * </pre>
  * 
@@ -37,7 +38,7 @@ package com.raytheon.uf.common.datadelivery.event.status;
  */
 
 public enum DataDeliverySystemStatusDefinition {
-    UP("System Up"), DOWN("System Down"), PROBLEM("Problem"), UNKNOWN(
+    UP("System Up"), DOWN("System Down"), RESTART("Restart"), PROBLEM("Problem"), UNKNOWN(
             "Status Unknown");
 
     private final String status;

@@ -26,7 +26,7 @@ import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsForScheduling;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 
 /**
  * Returns active subscriptions in the registry.
@@ -48,7 +48,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsF
  */
 
 public class FindActiveSubscriptionsForRoute implements
-        IFindSubscriptionsForScheduling {
+        ISubscriptionFinder {
 
     private final ISubscriptionHandler subscriptionHandler;
 

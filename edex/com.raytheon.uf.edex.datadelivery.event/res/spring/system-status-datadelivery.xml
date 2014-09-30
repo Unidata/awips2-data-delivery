@@ -13,12 +13,12 @@
         <constructor-arg value="com.raytheon.uf.common.datadelivery.event.status.SystemStatusRequest"/>
         <constructor-arg ref="systemStatusHandler"/>
     </bean>
-    
-    <bean id="systemStatusEventBusHandler" class="com.raytheon.uf.edex.datadelivery.event.handler.SystemStatusEventBusHandler">
-		<property name="statusDao" ref="statusDao" />
-	</bean>
+    <bean id="dataDeliverySystemStatusEventHandler" class="com.raytheon.uf.edex.datadelivery.event.handler.DataDeliverySystemStatusEventHandler">
+        <property name="uri" value="jms-generic:topic:notify.msg" />
+        <property name="statusDao" ref="statusDao" />
+    </bean>
     
     <bean factory-bean="eventBus" factory-method="register">
-        <constructor-arg ref="systemStatusEventBusHandler" />
+        <constructor-arg ref="dataDeliverySystemStatusEventHandler" />
     </bean>
  </beans>

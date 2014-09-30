@@ -48,6 +48,11 @@
 			value="com.raytheon.uf.common.datadelivery.service.PendingSubscriptionNotificationRequest" />
 		<constructor-arg ref="subscriptionNotificationHandler" />
 	</bean>
+    <bean factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg
+            value="com.raytheon.uf.common.datadelivery.service.BandwidthManagerResetSubscriptionNotificationRequest" />
+        <constructor-arg ref="subscriptionNotificationHandler" />
+    </bean>
 
 	<bean id="notificationDao"
 		class="com.raytheon.uf.edex.datadelivery.event.notification.NotificationDao">

@@ -51,7 +51,9 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphType
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 20, 2013   2430     mpduff      Initial creation
- * Sep 22, 2014   3607     ccody       Handle uncaught Exception and RuntimeException objects 
+ * Sep 22, 2014   3607     ccody       Handle uncaught Exception and RuntimeException objects
+ * Oct 03, 2014   2749     ccody       Minor change for dynamic graph adjustment for Utilization Graph height 
+ *  
  * 
  * </pre>
  * 
@@ -218,25 +220,24 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
         }
 
         long currentTimeMillis = imageMgr.getCurrentTimeMillis();
-
         int height = cs.getCanvasHeight();
         List<GraphPoint> points = new ArrayList<GraphPoint>();
         for (BandwidthBucketDescription bucket : data) {
             long bucketSize = bucket.getBucketSize();
             long startTime = bucket.getBucketStartTime();
             long usedBytes = bucket.getUsedBytes();
-
             if (startTime < currentTimeMillis) {
                 continue;
             }
-
+            
             int x = Math.round(((startTime - currentTimeMillis) / millisPerPix)
                     + 1 + cs.getXSpaceBuffer());
 
-            double percent = usedBytes / (double) bucketSize;
+            double percent = (double) usedBytes / (double) bucketSize;
 
             int y = (int) Math.round(height * percent);
-            y = 60 - y;
+            y = height - y;
+
             GraphPoint point = new GraphPoint(x, y);
             points.add(point);
         }

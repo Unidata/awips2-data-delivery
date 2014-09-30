@@ -40,7 +40,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthContextFactory.IEdexBandwidthManagerCreator;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsForScheduling;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -117,7 +117,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
                 ISubscriptionHandler subscriptionHandler,
                 IAdhocSubscriptionHandler adhocSubscriptionHandler,
                 ISubscriptionNotificationService subscriptionNotificationService,
-                IFindSubscriptionsForScheduling findSubscriptionsStrategy) {
+                ISubscriptionFinder findSubscriptionsStrategy) {
             super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
                     dataSetMetaDataHandler, subscriptionHandler,
                     adhocSubscriptionHandler, subscriptionNotificationService,
@@ -213,7 +213,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
             ISubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
             ISubscriptionNotificationService subscriptionNotificationService,
-            IFindSubscriptionsForScheduling findSubscriptionsStrategy) {
+            ISubscriptionFinder findSubscriptionsStrategy) {
         return new WfoBandwidthManager<T, C>(dbInit, bandwidthDao,
                 retrievalManager, bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
                 subscriptionHandler, adhocSubscriptionHandler,

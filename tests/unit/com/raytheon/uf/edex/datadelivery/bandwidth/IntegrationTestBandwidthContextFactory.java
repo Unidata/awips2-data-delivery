@@ -29,7 +29,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthContextFactory;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsForScheduling;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 
 /**
  * The {@link BandwidthContextFactory} implementation for integration tests.
@@ -77,7 +77,7 @@ public class IntegrationTestBandwidthContextFactory extends
             ISubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
             ISubscriptionNotificationService notificationService,
-            IFindSubscriptionsForScheduling findSubscriptionStrategy) {
+            ISubscriptionFinder findSubscriptionStrategy) {
         super(bandwidthDao, bandwidthBucketsDao,
                 new IntegrationTestBandwidthInitializer(),
                 bandwidthManagerCreator, dbInit, dataSetMetaDataHandler,

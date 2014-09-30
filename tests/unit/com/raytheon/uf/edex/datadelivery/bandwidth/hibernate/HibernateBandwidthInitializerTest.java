@@ -55,8 +55,8 @@ public class HibernateBandwidthInitializerTest {
         // .get(DataType.GRID);
         //
         // subscription.addOfficeID("OAX");
-        // IFindSubscriptionsForScheduling strategy =
-        // mock(IFindSubscriptionsForScheduling.class);
+        // ISubscriptionFinder strategy =
+        // mock(ISubscriptionFinder.class);
         // when(strategy.findSubscriptionsToSchedule()).thenReturn(
         // Sets.newHashSet(subscription));
         //

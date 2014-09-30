@@ -66,11 +66,14 @@ import org.eclipse.swt.widgets.Slider;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.jms.notification.INotificationObserver;
+import com.raytheon.uf.common.jms.notification.NotificationException;
+import com.raytheon.uf.common.jms.notification.NotificationMessage;
+
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.CanvasImages;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphSection;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphType;
@@ -78,8 +81,8 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.SortBy;
 import com.raytheon.uf.viz.datadelivery.common.ui.IDialogClosed;
 import com.raytheon.uf.viz.datadelivery.common.ui.SubscriptionViewer;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
-import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler.INotificationArrivedListener;
+import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
+
 
 /**
  * 
@@ -109,13 +112,14 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler.INotificationA
  * Aug 05, 2014   2748     ccody       Add GRAPH canvas to redraw on refresh.
  * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
  * Sep 22, 2014   3607     ccody       Add checks to prevent NullPointerException
+ * Oct 03, 2014   2749     ccody       Unable to change the OPSNET Bandwidth value for Data Delivery
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
 public class BandwidthCanvasComp extends Composite implements IDialogClosed,
-        INotificationArrivedListener, IDataUpdated {
+                    INotificationObserver, IDataUpdated {
 
     /** UFStatus handler. */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -247,9 +251,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** Graph canvas */
     private Canvas graphCanvas;
 
-    /** Messaging Notification Handler */
-    private NotificationHandler handler;
-    
     /** JMS Message topic */
     private static final String NOTIFY_MESSAGE_TOPIC = "notify.msg";
     
@@ -357,8 +358,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 if (timer != null) {
                     timer.shutdown();
                 }
-                NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC, handler);
-                NotificationHandler.removeListener(bandwidthCanvasComp);
+                NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC, bandwidthCanvasComp);
             }
         });
 
@@ -376,47 +376,67 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             }
         });
         
-        NotificationHandler.addListener(this);
-        NotificationHandler handler = new NotificationHandler();
-        NotificationManagerJob.addObserver(NOTIFY_MESSAGE_TOPIC, handler);
+        NotificationManagerJob.addObserver(NOTIFY_MESSAGE_TOPIC, this);
     }
 
-
-    
-    protected boolean isUpdateableNotification(List<NotificationRecord> notificationRecordList) {
+    protected boolean isUpdateableNotification(NotificationMessage[] notificationMessages) {
         boolean isUpdateNeeded = false;
-        if ((isDisposed() == true) || (notificationRecordList == null) || (notificationRecordList.isEmpty() == true)) {
+        if ((isDisposed() == true) || (notificationMessages == null) || (notificationMessages.length == 0)) {
             return(false);
         }
 
-        //Only update the graph for Activation, Deactivation, Insert (Create), Update, and Delete Notification Records
+        //Update the graph for: Activation, Deactivation, Insert (Create), Update, and Delete Notification Records
+        //                      Bandwidth Manager Restart
         String messageString = null;
-        NotificationRecord nr = null;
-        int notificationRecordListSize = notificationRecordList.size();
+        String messageCategory = null;
+        Object obj = null;
+        Object payloadObj = null;
+        
+        NotificationMessage notificationMessage = null; 
+        NotificationRecord notificationRecord = null;
+        int notificationRecordListSize = notificationMessages.length;
         for (int i = 0; ((isUpdateNeeded == false) && (i < notificationRecordListSize)); i++) {
-            nr = (NotificationRecord) notificationRecordList.get(i);
-            if (nr != null) {
-                messageString = nr.getMessage();
-                if ((messageString != null) &&
-                    ((messageString.indexOf("ACTIVATE") > 0) || (messageString.indexOf("DEACTIVATE") > 0) ||
-                    (messageString.indexOf("UPDATE") > 0) || (messageString.indexOf("DELETE") > 0) ||
-                    (messageString.indexOf("CREATE") > 0) || (messageString.indexOf("INSERT") > 0))) {
-                    
-                    if (lastNotificationRecord != null) {
-                        boolean areEquivalent = lastNotificationRecord.areFunctionallyEquivalent(nr);
-                        if (areEquivalent == true) {
-                            //This is a repeated NotificationRecord. Do not update.
-                            isUpdateNeeded = false;
-                        } else { 
+            obj = notificationMessages[i];
+            if (obj instanceof NotificationMessage) {
+                notificationMessage = (NotificationMessage) obj;
+                try {
+                    payloadObj = notificationMessage.getMessagePayload();
+                }
+                catch(NotificationException ne) {
+                    statusHandler.error("Error Extracting data from Notification Message: \n" + notificationMessage.toString(), ne);
+                    payloadObj = null;
+                }
+                if ((payloadObj != null)  && (payloadObj instanceof NotificationRecord)) {
+                    notificationRecord = (NotificationRecord) payloadObj;
+                    messageCategory = notificationRecord.getCategory();
+                    messageCategory = messageCategory.toUpperCase(); //make case insensitive
+                    messageString = notificationRecord.getMessage();
+                    messageString = messageString.toUpperCase(); //make case insensitive
+                    if ((messageString != null) &&
+                        ((messageString.indexOf("ACTIVATE") > 0) || (messageString.indexOf("DEACTIVATE") > 0) ||
+                        (messageString.indexOf("UPDATE") > 0) || (messageString.indexOf("DELETE") > 0) ||
+                        (messageString.indexOf("CREATE") > 0) || (messageString.indexOf("INSERT") > 0))) {
+                        
+                        if (lastNotificationRecord != null) {
+                            boolean areEquivalent = lastNotificationRecord.areFunctionallyEquivalent(notificationRecord);
+                            if (areEquivalent == true) {
+                                //This is a repeated NotificationRecord. Do not update.
+                                isUpdateNeeded = false;
+                            } else { 
+                                isUpdateNeeded = true;
+                            }
+                        } else {
                             isUpdateNeeded = true;
                         }
-                    } else {
+                        
+                        lastNotificationRecord = notificationRecord;
+                    } else if ((messageString.indexOf("RESTARTED") > 0) && (messageCategory != null) && (messageCategory.compareToIgnoreCase("BANDWIDTH") == 0)) {
                         isUpdateNeeded = true;
+                    } else {
+                        isUpdateNeeded = false;
                     }
-                    
-                    lastNotificationRecord = nr;
                 } else {
-                    isUpdateNeeded = false;
+                isUpdateNeeded = false;
                 }
             } else {
                 isUpdateNeeded = false;
@@ -426,28 +446,18 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         return(isUpdateNeeded);
     }
     
-    /**
-     * Updates the notification table and displays a balloon tool tip.
+    /*
+     * (non-Javadoc)
+     * 
+     * @seecom.raytheon.uf.common.jms.notification.INotificationObserver#
+     * notificationArrived
+     * (com.raytheon.uf.common.jms.notification.NotificationMessage[])
      */
     @Override
-    public void handleNotification(
-            ArrayList<NotificationRecord> notificationRecords) {
-        final ArrayList<NotificationRecord> records = notificationRecords;
-        boolean isUpdateNeeded = isUpdateableNotification(records);
+    public void notificationArrived(NotificationMessage[] messages) {
+        boolean isUpdateNeeded = isUpdateableNotification(messages);
         if (isUpdateNeeded == true) {
-            graphDataUtil.requestGraphDataUsingThread();
             dataUpdated();
-            fullUpdateMinuteCount = 0;
-        }
-    }
-
-    /**
-     * Removes data rows from the table.
-     */
-    @Override
-    public void deleteNotification(ArrayList<Integer> ids) {
-        if (isDisposed() == false) {
-            graphDataUtil.requestGraphDataUsingThread();  //Refresh on subscription deletion
         }
     }
 
@@ -1641,6 +1651,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 if (isDisposed()) {
                     return;
                 }
+                graphDataUtil.clearGraphDataData();
                 setGraphData(graphDataUtil.getGraphData());
                 updateCanvasSettings();
                 updateCanvases();

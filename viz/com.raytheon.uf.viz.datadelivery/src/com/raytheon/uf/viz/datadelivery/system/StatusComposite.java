@@ -64,6 +64,7 @@ import com.raytheon.uf.viz.core.image.StatusImages.StatusImage;
  * ------------ ---------- ----------- --------------------------
  * Aug 07, 2013    2180    mpduff      Initial creation
  * Nov 18, 2013    2387    skorolev    Add status refreshing
+ * Oct 03, 2014    2749    ccody       Correct minor logic error
  * 
  * </pre>
  * 
@@ -440,7 +441,7 @@ public class StatusComposite extends Composite implements ISystemStatusListener 
      */
     @Override
     public void timeLabelRefresh() {
-        if (timeLbl != null || !timeLbl.isDisposed()) {
+        if (timeLbl != null && !timeLbl.isDisposed()) {
             if (secCount < 120) {
                 timeLbl.setText(secCount + " sec.");
             } else {

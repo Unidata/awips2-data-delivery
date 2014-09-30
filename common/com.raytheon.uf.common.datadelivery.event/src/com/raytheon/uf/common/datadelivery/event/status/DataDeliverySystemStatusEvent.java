@@ -24,7 +24,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * System Status Event data object.
+ * Data Delivery System Status Event data object.
  * 
  * <pre>
  * 
@@ -32,7 +32,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 18, 2013    1655    mpduff     Initial creation.
+ * Jun 18, 2013    1655    mpduff      Initial creation.
+ * Sep 17, 2014    2749    ccody       Renamed from SystemStatusEvent
  * 
  * </pre>
  * 
@@ -40,7 +41,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * @version 1.0
  */
 @DynamicSerialize
-public class SystemStatusEvent extends Event {
+public class DataDeliverySystemStatusEvent extends Event {
 
     private static final long serialVersionUID = 6304253608858754280L;
 
