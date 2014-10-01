@@ -59,9 +59,9 @@ import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.common.util.file.FilenameFilters;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLinkStore;
-import com.raytheon.uf.edex.datadelivery.retrieval.Link;
 
 /**
  * A {@link File}-based communication strategy.

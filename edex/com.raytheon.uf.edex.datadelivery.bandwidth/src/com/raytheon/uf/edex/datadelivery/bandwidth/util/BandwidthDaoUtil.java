@@ -80,6 +80,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Apr 21, 2014 2887       dhladky      Missed start/end in previous call, needs shouldScheduleForTime();
  * Jun 09, 2014 3113       mpduff       Moved getRetrievalTimes to Subscription.
  * Jul 28, 2014 2752       dhladky      Greatly streamlined scheduling.
+ * Sept 14, 2014 2131      dhladky      PDA additions
  * </pre>
  * 
  * @author djohnson
@@ -192,6 +193,43 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
             }
 
         } else if (adhoc.getDataSetType() == DataType.GRID) {
+
+            DataSetMetaData dataSetMetaData = null;
+
+            try {
+                dataSetMetaData = DataDeliveryHandlers
+                        .getDataSetMetaDataHandler().getByDataSetDate(
+                                adhoc.getDataSetName(), adhoc.getProvider(),
+                                adhoc.getTime().getStart());
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "No DataSetMetaData matching query! DataSetName: "
+                                + adhoc.getDataSetName() + " Provider: "
+                                + adhoc.getProvider() + " Time: "
+                                + adhoc.getTime().getStart(), e);
+            }
+
+            if (dataSetMetaData == null) {
+                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                    statusHandler
+                            .debug(String
+                                    .format("There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
+                                            adhoc.getName()));
+                }
+            } else {
+                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                    statusHandler
+                            .debug(String
+                                    .format("Found most recent metadata for adhoc subscription [%s], using url [%s]",
+                                            adhoc.getName(),
+                                            dataSetMetaData.getUrl()));
+                }
+
+                adhoc.setUrl(dataSetMetaData.getUrl());
+                retVal = adhoc;
+            }
+
+        } else if (adhoc.getDataSetType() == DataType.PDA) {
 
             DataSetMetaData dataSetMetaData = null;
 

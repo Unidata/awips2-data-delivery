@@ -24,9 +24,10 @@ import java.util.Map;
 
 import org.apache.commons.lang.Validate;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.registry.GenericRegistry;
@@ -46,14 +47,14 @@ import com.raytheon.uf.common.util.registry.RegistryException;
  * May 12, 2013  753       dhladky      Added support for Madis
  * May 31, 2013 2038       djohnson     Plugin contributable registry.
  * Jun 11, 2013  2101      dhladky      Updated for Madis
+ * Sept 20, 2014 2131      dhladky      Make service type generics better.  Need to work on raw types more.
  * 
  * </pre>
  * 
- * @author unknown
+ * @author dhladky
  * @version 1.0
  */
-public abstract class AbstractMetadataAdapter<RecordKey> implements
-        ISerializableObject {
+public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C extends Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractMetadataAdapter.class);
@@ -62,19 +63,21 @@ public abstract class AbstractMetadataAdapter<RecordKey> implements
 
     protected PluginDataObject[] pdos;
 
-    protected RetrievalAttribute attXML;
+    protected RetrievalAttribute<T, C> attXML;
 
     protected static Map<String, String[]> parameterMap = new HashMap<String, String[]>();
 
-    protected static GenericRegistry<String, Class<AbstractMetadataAdapter<?>>> metadataAdapterRegistry = new GenericRegistry<String, Class<AbstractMetadataAdapter<?>>>() {
+    @SuppressWarnings("rawtypes")
+    //TODO Figure a way to not have to do raw types with AbstractMetadataAdapter
+    protected static GenericRegistry<String, Class<AbstractMetadataAdapter>> metadataAdapterRegistry = new GenericRegistry<String, Class<AbstractMetadataAdapter>>() {
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public Object register(String t, Class<AbstractMetadataAdapter<?>> s)
+        public Object register(String t, Class<AbstractMetadataAdapter> s)
                 throws RegistryException {
-
+            
             Validate.notNull(t);
             Validate.notNull(s);
 
@@ -86,11 +89,13 @@ public abstract class AbstractMetadataAdapter<RecordKey> implements
 
     };
 
-    public static AbstractMetadataAdapter<?> getMetadataAdapter(Class<?> clazz,
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    //TODO Figure a way to not have to do raw types with RecordKey, T, C
+    public static <RecordKey, T, C> AbstractMetadataAdapter<RecordKey, ?, ?> getMetadataAdapter(Class<?> clazz,
             RetrievalAttribute attXML) throws InstantiationException {
 
         final String className = clazz.getName();
-        Class<AbstractMetadataAdapter<?>> adapterClass = metadataAdapterRegistry
+        Class<AbstractMetadataAdapter> adapterClass = metadataAdapterRegistry
                 .getRegisteredObject(className);
 
         if (adapterClass == null) {
@@ -102,7 +107,7 @@ public abstract class AbstractMetadataAdapter<RecordKey> implements
         try {
             // Must return a new instance every time, because none of the
             // metadata adapters are thread safe
-            final AbstractMetadataAdapter<?> adapter = adapterClass
+            AbstractMetadataAdapter<RecordKey, ?, ?> adapter = (AbstractMetadataAdapter<RecordKey, ?, ?>) adapterClass
                     .newInstance();
             adapter.processAttributeXml(attXML);
             return adapter;
@@ -118,7 +123,7 @@ public abstract class AbstractMetadataAdapter<RecordKey> implements
      * 
      * @throws InstantiationException
      */
-    public abstract void processAttributeXml(RetrievalAttribute attXML)
+    public abstract void processAttributeXml(RetrievalAttribute<T,C> attXML)
             throws InstantiationException;
 
     // setup an individual record from the direct plugin translation
@@ -126,7 +131,7 @@ public abstract class AbstractMetadataAdapter<RecordKey> implements
 
     // set the size of the PDO array to return
     public abstract void allocatePdoArray(int size);
-
+    
     /**
      * get the PDO list
      * 
@@ -139,7 +144,9 @@ public abstract class AbstractMetadataAdapter<RecordKey> implements
     /**
      * @return the metadataAdapterRegistry
      */
-    public static GenericRegistry<String, Class<AbstractMetadataAdapter<?>>> getMetadataAdapterRegistry() {
+    @SuppressWarnings("rawtypes")
+    //TODO Figure a way to not have to do raw types with AbstractMetadataAdapter
+    public static GenericRegistry<String, Class<AbstractMetadataAdapter>> getMetadataAdapterRegistry() {
         return metadataAdapterRegistry;
     }
     
@@ -154,4 +161,5 @@ public abstract class AbstractMetadataAdapter<RecordKey> implements
     public boolean isPointData() {
         return isPointData;
     }
+   
 }

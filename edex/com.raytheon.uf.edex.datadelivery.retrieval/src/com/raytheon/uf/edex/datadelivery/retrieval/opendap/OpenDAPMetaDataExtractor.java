@@ -16,7 +16,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManage
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtracter;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ConnectionUtil;
 
 import dods.dap.DAS;
@@ -41,14 +41,15 @@ import dods.dap.parser.ParseException;
  * Jul 25, 2012    955      djohnson    Make package-private.
  * Aug 06, 2012   1022      djohnson    Cache a retrieved DAS instance.
  * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Jul 08, 2014  3120      dhladky      More generic
+ * Jul 08, 2014  3120      dhladky      Fix generics
  * 
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
  */
-class OpenDAPMetaDataExtracter extends MetaDataExtracter<String, DAS> {
+
+class OpenDAPMetaDataExtractor extends MetaDataExtractor<String, DAS> {
 
     private String url;
     
@@ -84,7 +85,7 @@ class OpenDAPMetaDataExtracter extends MetaDataExtracter<String, DAS> {
     }
 
     private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(OpenDAPMetaDataExtracter.class);
+            .getHandler(OpenDAPMetaDataExtractor.class);
 
     private String rootUrl;
 
@@ -93,7 +94,7 @@ class OpenDAPMetaDataExtracter extends MetaDataExtracter<String, DAS> {
     @Transient
     private transient DAS das;
 
-    OpenDAPMetaDataExtracter(Connection conn) {
+    OpenDAPMetaDataExtractor(Connection conn) {
         super(conn);
         serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.OPENDAP);

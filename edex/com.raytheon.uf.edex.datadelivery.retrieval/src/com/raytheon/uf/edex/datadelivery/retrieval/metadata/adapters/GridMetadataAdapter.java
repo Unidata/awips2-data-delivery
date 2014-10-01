@@ -56,10 +56,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * 
  * </pre>
  * 
- * @author unknown
+ * @author dhladky
  * @version 1.0
  */
-public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer> {
+public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, GriddedTime, GriddedCoverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(GridMetadataAdapter.class);
@@ -71,8 +71,9 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer> {
      * {@inheritDoc}
      */
     @Override
-    public void processAttributeXml(RetrievalAttribute attXML)
+    public void processAttributeXml(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML)
             throws InstantiationException {
+        this.attXML = attXML;
         Level[] levels = getLevels(attXML);
         int size = levels.length;
 
@@ -84,7 +85,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer> {
             ensembles = Arrays.asList((String) null);
         }
 
-        GriddedTime time = (GriddedTime)attXML.getTime();
+        GriddedTime time = attXML.getTime();
         
         if (time.getSelectedTimeIndices() != null) {
             if (levels.length > 1
@@ -94,8 +95,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer> {
         }
 
         allocatePdoArray(size);
-        GridCoverage gridCoverage = ((GriddedCoverage) attXML.getCoverage())
-                .getRequestGridCoverage();
+        GridCoverage gridCoverage = attXML.getCoverage().getRequestGridCoverage();
 
         if (time.getSelectedTimeIndices() != null) {
             int bin = 0;
@@ -141,7 +141,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer> {
     }
 
     @VisibleForTesting
-    Level[] getLevels(RetrievalAttribute attXML) {
+    Level[] getLevels(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
         ArrayList<Level> levels = ResponseProcessingUtilities
                 .getOpenDAPGridLevels(attXML.getParameter().getLevels());
         return levels.toArray(new Level[levels.size()]);
@@ -250,14 +250,16 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer> {
 
     @Override
     public PluginDataObject getRecord(Integer index) {
+
         if (pdos != null && index < pdos.length) {
             return pdos[index];
         }
         return null;
     }
-
+    
     @Override
     public void allocatePdoArray(int size) {
         pdos = new GridRecord[size];
     }
+
 }

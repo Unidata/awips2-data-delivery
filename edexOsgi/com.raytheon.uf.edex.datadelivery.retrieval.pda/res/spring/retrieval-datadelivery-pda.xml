@@ -6,5 +6,24 @@
         <constructor-arg value="PDA" />
         <constructor-arg value="com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAServiceFactory" type="java.lang.Class" />
     </bean>
-  
+    
+    <bean factory-bean="metadataAdapterRegistry" factory-method="register">
+        <constructor-arg value="com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord" /> 
+        <constructor-arg value="com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata.PDAMetaDataAdapter" type="java.lang.Class" />
+    </bean>
+    
+    <bean id="goesrPluginName" class="java.lang.String">
+		<constructor-arg type="java.lang.String" value="goesr" />
+	</bean>
+	
+	<bean id="goesrDecoder" class="com.raytheon.uf.edex.plugin.goesr.GOESRDecoder" />
+	
+	<bean id="satelliteDecoder" class="com.raytheon.edex.plugin.satellite.SatelliteDecoder">
+		<property name="dao" ref="satelliteDao" />
+	</bean>
+	
+	<bean id="satelliteDao" class="com.raytheon.edex.plugin.satellite.dao.SatelliteDao" depends-on="satelliteProperties">
+		<constructor-arg ref="satellitePluginName" />
+	</bean>
+	  
 </beans>

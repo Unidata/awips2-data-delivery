@@ -37,6 +37,7 @@ import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
 import com.raytheon.uf.common.datadelivery.service.subscription.GridSubscriptionOverlapConfig;
+import com.raytheon.uf.common.datadelivery.service.subscription.PDASubscriptionOverlapConfig;
 import com.raytheon.uf.common.datadelivery.service.subscription.PointSubscriptionOverlapConfig;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapConfig;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
@@ -79,6 +80,7 @@ import com.raytheon.uf.viz.datadelivery.utils.TypeOperationItems;
  * Jul 11, 2013   2106      djohnson   setAvailableBandwidth service now returns names of subscriptions.
  * Oct 03, 2013   2386      mpduff     Add overlap rules.
  * Nov 19, 2013   2387      skorolev   Add system status refresh listeners.
+ * Sept 04, 2014  2131      dhladky    PAD data type added.
  * 
  * </pre>
  * 
@@ -172,7 +174,8 @@ public class SystemRuleManager {
                 TypeOperationItems.class, NameOperationItems.class,
                 SubscriptionOverlapConfig.class,
                 GridSubscriptionOverlapConfig.class,
-                PointSubscriptionOverlapConfig.class };
+                PointSubscriptionOverlapConfig.class,
+                PDASubscriptionOverlapConfig.class};
 
         try {
             jax = JAXBContext.newInstance(classes);
@@ -556,6 +559,38 @@ public class SystemRuleManager {
         // Set default if none found
         return DataDeliveryUtils.POINT_DATASET_DEFAULT_LATENCY_IN_MINUTES;
     }
+    
+    /**
+     * Get latency value for point data.
+     * 
+     * @param sub
+     *            the subscription object
+     * @return the latency value
+     */
+    public int getPDADataLatency(Subscription sub) {
+        LatencyRulesXML rulesXml = this.getLatencyRules(false);
+
+        for (LatencyRuleXML rule : rulesXml.getRules()) {
+            if (OpsNetFieldNames.NAME.toString().equals(rule.getRuleField())) {
+                if (rule.matches(sub, null)) {
+                    return rule.getLatency();
+                }
+            } else if (OpsNetFieldNames.SIZE.toString().equals(
+                    rule.getRuleField())) {
+                if (rule.matches(sub, null)) {
+                    return rule.getLatency();
+                }
+            } else if (OpsNetFieldNames.TYPE.toString().equals(
+                    rule.getRuleField())) {
+                if (rule.matches(sub, null)) {
+                    return rule.getLatency();
+                }
+            }
+        }
+
+        // Set default if none found
+        return DataDeliveryUtils.PDA_DATASET_DEFAULT_LATENCY_IN_MINUTES;
+    }
 
     /**
      * Return the lowest latency value defined by the rules.
@@ -617,6 +652,37 @@ public class SystemRuleManager {
 
         return SubscriptionPriority.NORMAL;
     }
+    
+    /**
+     * Get the priority for the PDA data subscription.
+     * 
+     * @param sub
+     *            the subscription object
+     * @return the priority
+     */
+    public SubscriptionPriority getPDADataPriority(Subscription sub) {
+        PriorityRulesXML rulesXml = this.getPriorityRules(false);
+        for (PriorityRuleXML rule : rulesXml.getRules()) {
+            if (OpsNetFieldNames.NAME.toString().equals(rule.getRuleField())) {
+                if (rule.matches(sub, null)) {
+                    return rule.getPriority();
+                }
+            } else if (OpsNetFieldNames.SIZE.toString().equals(
+                    rule.getRuleField())) {
+                if (rule.matches(sub, null)) {
+                    return rule.getPriority();
+                }
+            } else if (OpsNetFieldNames.TYPE.toString().equals(
+                    rule.getRuleField())) {
+                if (rule.matches(sub, null)) {
+                    return rule.getPriority();
+                }
+            }
+        }
+
+        return SubscriptionPriority.NORMAL;
+    }
+
 
     /**
      * Return the lowest priority value defined by the rules.

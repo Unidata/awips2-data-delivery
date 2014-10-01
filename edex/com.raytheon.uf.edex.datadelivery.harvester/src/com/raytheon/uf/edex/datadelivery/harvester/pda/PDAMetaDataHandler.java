@@ -37,7 +37,9 @@ import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
 import com.raytheon.uf.common.datadelivery.harvester.PDAAgent;
 import com.raytheon.uf.common.datadelivery.harvester.PDACatalogServiceResponseWrapper;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
@@ -96,7 +98,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                 .getPDAConfiguration();
         PDAAgent agent = (PDAAgent) config.getAgent();
         Provider provider = config.getProvider();
-        IServiceFactory<?, ?> serviceFactory = ServiceTypeFactory
+        IServiceFactory<BriefRecordType, PDAMetaDataParser, Time, Coverage> serviceFactory = ServiceTypeFactory
                 .retrieveServiceFactory(config.getProvider());
         Date lastDate = TimeUtil.newGmtCalendar().getTime();
 
@@ -144,8 +146,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
 
         if (briefRecords != null) {
             // grab a parser instance
-            PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory
-                    .getParser(lastDate);
+            PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory.getParser(lastDate);
             // extract brief record(s) and send to parser
             List<JAXBElement<? extends AbstractRecordType>> briefs = briefRecords
                     .getSearchResults().getAbstractRecord();

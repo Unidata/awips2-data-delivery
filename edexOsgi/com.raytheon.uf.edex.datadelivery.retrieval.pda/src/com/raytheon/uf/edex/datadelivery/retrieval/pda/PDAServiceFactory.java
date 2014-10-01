@@ -20,12 +20,14 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  **/
 import java.util.Date;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
-import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAMetaDataParser;
+
 
 /**
  * {@link IServiceFactory} implementation for PDA.
@@ -44,9 +46,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAMetaDataParser;
  * @version 1.0
  */
 
-public class PDAServiceFactory implements IServiceFactory {
+public class PDAServiceFactory<O extends Object, D extends Object>
+        implements IServiceFactory<O, D, Time, Coverage> {
 
-    
     private Provider provider;
 
     public PDAServiceFactory() {
@@ -58,7 +60,8 @@ public class PDAServiceFactory implements IServiceFactory {
      * com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#getExtractor()
      */
     @Override
-    public IExtractMetaData getExtractor() {
+
+    public IExtractMetaData<O, D> getExtractor() {
         throw new UnsupportedOperationException("No Extractor Implemented");
     }
 
@@ -69,6 +72,7 @@ public class PDAServiceFactory implements IServiceFactory {
      * com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#getParser(
      * java.util.Date)
      */
+
     @Override
     public IParseMetaData getParser(Date lastUpdate) {
         // pda doesn't care about the date
@@ -79,7 +83,8 @@ public class PDAServiceFactory implements IServiceFactory {
      * {@inheritDoc}
      */
     @Override
-    public RetrievalGenerator getRetrievalGenerator() {
+
+    public RetrievalGenerator<Time, Coverage> getRetrievalGenerator() {
         return new PDARetrievalGenerator();
     }
 
@@ -89,6 +94,14 @@ public class PDAServiceFactory implements IServiceFactory {
     @Override
     public void setProvider(Provider provider) {
         this.provider = provider;
+    }
+    
+    /**
+     * Get the provider
+     * @return
+     */
+    public Provider getProvider() {
+        return provider;
     }
 
 }

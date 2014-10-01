@@ -43,13 +43,13 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestB
  */
 public abstract class RequestBuilder<T extends Time, C extends Coverage> implements IRetrievalRequestBuilder<T, C> {
 
-    private final RetrievalAttribute<T, C> ra;
+    protected final RetrievalAttribute<T, C> ra;
 
     protected RequestBuilder(RetrievalAttribute<T, C> ra) {
         this.ra = ra;
     }
 
-    public RetrievalAttribute<T, C> getRetrievalAttribute() {
+    public RetrievalAttribute<T, C> getAttribute() {
         return ra;
     }
 }

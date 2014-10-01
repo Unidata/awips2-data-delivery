@@ -58,6 +58,7 @@
     <mode name="dataDeliveryTemplate" template="true">
     	<include>edex-security.xml</include>
         <include>database-common.xml</include>
+        <include>dataaccess-common.xml</include>
         <include>.*datadelivery.*</include>
         <include>.*bandwidth.*</include>
         <!-- Exclude the inmemory versions of Spring files -->
@@ -67,10 +68,17 @@
         <include>time-common.xml</include>
         <include>auth-common.xml</include>
         <include>nwsauth-request.xml</include>
+        <!-- sat plugins -->
+        <include>satellite-common.xml</include>
+        <include>satellite-dataplugin-common.xml</include>
+        <!--  grid plugins -->
         <include>grid-common.xml</include>
         <include>grid-metadata.xml</include>
         <include>gridcoverage-common.xml</include>
-        <include>parameter-common.xml</include>     
+        <include>parameter-common.xml</include>  
+        <include>level-common.xml</include>
+        <include>levelhandler-common.xml</include>
+        <!-- obs plugins -->   
         <include>pointdata-common.xml</include>
         <include>obs-common.xml</include>
         <include>madis-common.xml</include>
@@ -82,6 +90,7 @@
         <include>purge-logs.xml</include>
         <include>geo-common.xml</include>
         <include>request-service-common.xml</include>
+
         <!-- 
             The pattern datadelivery-registry is used to signify spring configurations 
             that should be loaded when running datadelivery and the registry in a single JVM 

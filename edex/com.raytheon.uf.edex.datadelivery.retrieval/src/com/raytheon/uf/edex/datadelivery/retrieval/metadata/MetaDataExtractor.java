@@ -43,7 +43,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
  * @author dhladky
  * @version 1.0
  */
-public abstract class MetaDataExtracter<O extends Object, D extends Object> implements IExtractMetaData<O, D> {
+public abstract class MetaDataExtractor<O extends Object, D extends Object> implements IExtractMetaData<O, D> {
 
     protected Connection conn = null;
 
@@ -51,7 +51,7 @@ public abstract class MetaDataExtracter<O extends Object, D extends Object> impl
 
     protected ServiceConfig serviceConfig = null;
 
-    public MetaDataExtracter(Connection conn) {
+    public MetaDataExtractor(Connection conn) {
         this.conn = conn;
     }
 

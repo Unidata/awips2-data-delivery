@@ -64,6 +64,7 @@ import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * June 17, 2014 3120        dhladky     Initial creation
+ * Sept 04, 2014 3121        dhladky     Adjustments to parsing, simulation.
  * 
  * </pre>
  * 
@@ -159,16 +160,20 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
         // METADATA ID, unique to each record
         String metaDataID = record.getIdentifier().get(0).getValue().getContent().get(0);
         // physical path relative to root provider URL
-        String metaDataURL = record.getTitle().get(0).getValue().getContent().get(0);
+        String relativeDataURL = record.getTitle().get(0).getValue().getContent().get(0);
+        // metadata URL is the full URL path, (not relative) to the file
+        // tack on the root provider URL from the provider connection.
+        String metaDataURL = provider.getConnection().getUrl()+relativeDataURL;
+        // append the 
         // set date formatter
         setDateFormat(dateFormat);
         
         if (mode.equals(MODE.FILE.getMode())) {
             // interim mode for testing
-            extractor = new PDAFileMetaDataExtractor<String>();
+            extractor = new PDAFileMetaDataExtractor();
              
             try {
-                paramMap = extractor.extractMetaData(metaDataURL);
+                paramMap = extractor.extractMetaData(relativeDataURL);
                 // these aren't satisfied with the file format parsing, use defaults and pray
                 paramMap.put(fillValue, serviceConfig.getConstantValue("FILL_VALUE"));
                 paramMap.put(missingValue, serviceConfig.getConstantValue("MISSING_VALUE"));
@@ -176,19 +181,19 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 paramMap.put(format, serviceConfig.getConstantValue("DEFAULT_FORMAT"));
                 
             } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM, "MetaData extraction error, "+metaDataURL, e);
+                statusHandler.handle(Priority.PROBLEM, "MetaData extraction error, "+relativeDataURL, e);
                 // failure return
                 return;
             }
            
         } else {
             // assume OGC BriefRecord complete processing
-            extractor = new PDARecordMetaDataExtractor<BriefRecordType>();
+            extractor = new PDARecordMetaDataExtractor();
             
             try {
                 paramMap = extractor.extractMetaData(record);
             } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM, "MetaData extraction error, "+metaDataURL, e);
+                statusHandler.handle(Priority.PROBLEM, "MetaData extraction error, "+relativeDataURL, e);
                 // failure return
                 return;
             }
@@ -213,11 +218,33 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
         
         // set the time object
         if (startTime != null && endTime != null) {
-            time = getTime(myStartTime, myEndTime);
-            try {
-                idate = new ImmutableDate(time.parseDate(myDataTime));
-            } catch (ParseException e) {
-                statusHandler.handle(Priority.PROBLEM, "Couldn't parse dataTime, "+metaDataURL, e);
+            // If you are using "canned" data, it doesn't work with the subscription creation system
+            // based on a 48 hour window of retrievals.  Setup a simulated, recent time that does.
+            if (serviceConfig.getConstantValue("SIMULATE").equals("true")) {
+                // make up a recent time
+                long currtime = TimeUtil.currentTimeMillis();
+                // make it 5 minutes old
+                long etime = currtime - (1000 * 60 * 5);
+                // make it 10 minutes old
+                long stime = currtime - (1000 * 60 * 10);
+
+                time = new Time();
+                time.setFormat(getDateFormat());
+                time.setStart(new Date(stime));
+                time.setEnd(new Date(etime));
+                
+                idate = new ImmutableDate(time.getStart());
+
+            } else {
+                // use real time parsed from file
+                time = getTime(myStartTime, myEndTime);
+                
+                try {
+                    idate = new ImmutableDate(time.parseDate(myDataTime));
+                } catch (ParseException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Couldn't parse dataTime, " + relativeDataURL, e);
+                }
             }
         }
                
@@ -231,7 +258,7 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
         pdaDataSet.setTime(time);
         pdaDataSet.setArrivalTime(arrivalTime.getTime());
         // there is only one parameter per briefRecord at this point
-        Map<String, Parameter> parameters = getParameters(myParamName, myCollectionName, dataSet, myUnits, myFillValue, myMissingValue);
+        Map<String, Parameter> parameters = getParameters(myParamName, myCollectionName, provider.getName(), myUnits, myFillValue, myMissingValue);
         pdaDataSet.setParameters(parameters);
         // set the coverage
         pdaDataSet.setCoverage(coverage);
@@ -268,7 +295,7 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
 
 
         if (boundingBoxType.getCrs() == null) {
-            boundingBoxType.setCrs("crs:84");
+            boundingBoxType.setCrs(serviceConfig.getConstantValue("DEFAULT_CRS"));
         }
         
         ReferencedEnvelope envelope = null;
@@ -307,18 +334,19 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
 
         return time;
     }
-    
+
     private Map<String, Parameter> getParameters(String channelName, String collectionName,
-            String dataSet, String units, String fillValue, String missingValue) {
+            String provider, String units, String fillValue, String missingValue) {
 
         Map<String, Parameter> params = new HashMap<String, Parameter>(1);
 
         Parameter parm = new Parameter();
         parm = new Parameter();
-        parm.setName(channelName);
+        String paramName = channelName;
+        parm.setName(paramName);
         // in this case there isn't any diff
         parm.setProviderName(channelName);
-        parm.setDefinition(dataSet + "-" + channelName);
+        parm.setDefinition(provider + "-" + collectionName + "-" + paramName);
         parm.setBaseType(serviceConfig.getConstantValue("BASE_TYPE"));
         
         // fill value
@@ -350,7 +378,8 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
         types.add(dlt);
         // set the level types
         parm.setLevelType(types);
-        
+        // Set the data type
+        parm.setDataType(DataType.PDA);
         params.put(collectionName, parm);
 
         return params;

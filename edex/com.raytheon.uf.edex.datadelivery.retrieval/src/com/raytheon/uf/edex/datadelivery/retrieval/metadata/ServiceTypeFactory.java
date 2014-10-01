@@ -23,8 +23,10 @@ import java.util.EnumMap;
 
 import org.apache.commons.lang.Validate;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.ReflectionUtil;
@@ -48,6 +50,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
  * Mar 21, 2013 1794       djohnson     ServiceLoaderUtil now requires the requesting class.
  * May 31, 2013 2038       djohnson     Plugin contributable registry.
+ * Sept 27, 2014 3121      dhladky      Make service type generics better.  Need to work on raw types more.
  * 
  * </pre>
  * 
@@ -55,16 +58,18 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @version 1.0
  */
 
-public final class ServiceTypeFactory<O extends Object, D extends Object> {
+public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(ServiceTypeFactory.class);
 
+    @SuppressWarnings("rawtypes")
+    //TODO Figure a way to not have to do raw types with IServiceFactory
     private static class ServiceTypeRegistry extends
-            GenericRegistry<ServiceType, Class<IServiceFactory>> {
+             GenericRegistry<ServiceType, Class<IServiceFactory>> {
 
 
-        private ServiceTypeRegistry() {
+        private <O, D, T, C> ServiceTypeRegistry() {
             super(new EnumMap<ServiceType, Class<IServiceFactory>>(
                     ServiceType.class));
         }
@@ -91,8 +96,11 @@ public final class ServiceTypeFactory<O extends Object, D extends Object> {
     /**
      * Default {@link IServiceFactoryLookup} to be used in production code.
      */
-    private static class ServiceTypeFactoryLookup implements
-            IServiceFactoryLookup {
+    @SuppressWarnings("rawtypes")
+    //TODO Figure a way to not have to do raw types with IServiceFactory
+    private static class ServiceTypeFactoryLookup<O, D, T, C> implements
+      IServiceFactoryLookup {
+
         @Override
         public IServiceFactory getProviderServiceFactory(Provider provider) {
             final ServiceType serviceType = provider.getServiceType();
@@ -114,7 +122,8 @@ public final class ServiceTypeFactory<O extends Object, D extends Object> {
         }
     }
 
-    private static final IServiceFactoryLookup SERVICE_FACTORY_LOOKUP = ServiceLoaderUtil
+    @SuppressWarnings("rawtypes")
+    private static IServiceFactoryLookup SERVICE_FACTORY_LOOKUP = ServiceLoaderUtil
             .load(ServiceTypeFactory.class, IServiceFactoryLookup.class,
                     new ServiceTypeFactoryLookup());
 
@@ -130,8 +139,11 @@ public final class ServiceTypeFactory<O extends Object, D extends Object> {
      *            the provider
      * @return the factory
      */
-    public static IServiceFactory retrieveServiceFactory(Provider provider) {
-        return SERVICE_FACTORY_LOOKUP.getProviderServiceFactory(provider);
+
+    @SuppressWarnings("rawtypes")
+    //TODO Figure a way to not have to do raw types with IServiceFactory
+    public static <O, D, T, C> IServiceFactory retrieveServiceFactory(Provider provider) {
+        return (IServiceFactory) SERVICE_FACTORY_LOOKUP.getProviderServiceFactory(provider);
     }
 
     /**
@@ -142,7 +154,9 @@ public final class ServiceTypeFactory<O extends Object, D extends Object> {
      *            the service type
      * @return the retrieval adapter
      */
-    public static RetrievalAdapter retrieveServiceRetrievalAdapter(
+    @SuppressWarnings("rawtypes")
+    //TODO Figure why T,C can not be parameterized when erasure extends Time and Coverage
+    public static <T, C> RetrievalAdapter retrieveServiceRetrievalAdapter(
             ServiceType serviceType) {
         Provider provider = new Provider();
         provider.setServiceType(serviceType);
@@ -155,6 +169,8 @@ public final class ServiceTypeFactory<O extends Object, D extends Object> {
      * 
      * @return the registry
      */
+    @SuppressWarnings("rawtypes")
+    //TODO Figure a way to not have to do raw types with IServiceFactory
     public static GenericRegistry<ServiceType, Class<IServiceFactory>> getServiceTypeRegistry() {
         return serviceTypeRegistry;
     }

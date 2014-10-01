@@ -149,6 +149,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Mar 31, 2014   2889     dhladky     Added username for notification center tracking.
  * May 15, 2014   3113     mpduff      Don't display the gridded cycle composite if no cycles.
  * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
+ * Sept 05, 2014  2131     dhladky     Added PDA data type subscriptions
  * 
  * </pre>
  * 
@@ -317,6 +318,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             // For point the latency is the retrieval interval
             latencyRule = ((PointTime) subscription.getTime()).getInterval();
             priorityRule = ruleManager.getPointDataPriority(subscription);
+            isReadOnlyLatency = true;
+        } else if (this.subscription.getDataSetType() == DataType.PDA) {
+            // For PDA the latency is static
+            latencyRule = ruleManager.getPDADataLatency(subscription);
+            priorityRule = ruleManager.getPDADataPriority(subscription);
             isReadOnlyLatency = true;
         }
 
@@ -1337,6 +1343,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             maxLatency = DataDeliveryUtils.getMaxLatency(subscription);
         } else if (subscription.getDataSetType() == DataType.GRID) {
             maxLatency = DataDeliveryUtils.getMaxLatency(getCycleTimes());
+        } else if (subscription.getDataSetType() == DataType.PDA) {
+            maxLatency = DataDeliveryUtils.getMaxLatency(subscription);
         }
         latencyValid = DataDeliveryGUIUtils.latencyValidChk(
                 priorityComp.getLatencyValue(), maxLatency);

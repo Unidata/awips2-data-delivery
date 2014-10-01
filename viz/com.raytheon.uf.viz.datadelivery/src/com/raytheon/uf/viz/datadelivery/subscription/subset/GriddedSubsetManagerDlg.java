@@ -106,6 +106,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jul 18, 2013 2205       djohnson     If null time is selected from the dialog, return null for the adhoc.
  * Sept 25, 2013 1797      dhladky      Separated Time from GriddedTime
  * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
+ * Sept 04, 2014 2131      dhladky      Changes to allow for PDA data type
  * 
  * 
  * </pre>
@@ -116,8 +117,6 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
     private final String TIMING_TAB_GRID = "Forecast Hours";
-
-    private final String POPUP_TITLE = "Notice";
 
     private final String NO_DATA_FOR_DATE_AND_CYCLE = "No data is available for the specified date and cycle combination.";
 

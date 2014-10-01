@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.pda;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,18 +17,13 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-
-import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
-import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
+import com.raytheon.uf.common.dataplugin.PluginDataObject;
 
 /**
- * {@link ServiceFactory} implementation for PDA.
+ * 
+ * Help convert to good Satellite (PDA) Records.
  * 
  * <pre>
  * 
@@ -38,32 +31,20 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 13, 2014 3120       dhladky     Initial creation
- * 
+ * Aug 28, 2014   #3121    dhladky     Initial javadoc
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
  */
 
-@DynamicSerialize
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.NONE)
-public class PDARetrievalReponse extends RetrievalResponse {
-
-    @XmlElement
-    private Object payload;
+public interface IPDAMetaDataAdapter {
     
-    @Override
-    public void setPayLoad(Object payLoad) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public Object getPayLoad() {
-        // TODO Auto-generated method stub
-        return payload;
-    }
+    /**
+     * Gets the correct satellite decoder 
+     * @return
+     * @throws Exception
+     */
+    public PluginDataObject[] decodeObjects(String FileName) throws Exception;
 
 }

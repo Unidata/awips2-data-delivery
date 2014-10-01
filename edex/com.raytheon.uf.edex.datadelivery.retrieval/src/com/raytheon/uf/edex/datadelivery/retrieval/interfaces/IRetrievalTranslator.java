@@ -42,7 +42,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
  * @version 1.0
  */
 
-public interface IRetrievalTranslator<T extends Time, C extends Coverage> {
+public interface IRetrievalTranslator<T extends Time, C extends Coverage, RecordKey extends Object> {
 
     public void setAttribute(RetrievalAttribute<T, C> attribute);
 
@@ -52,7 +52,7 @@ public interface IRetrievalTranslator<T extends Time, C extends Coverage> {
 
     public void setPdoClass(String clazz) throws ClassNotFoundException;
 
-    public PluginDataObject getPdo(int index) throws InstantiationException,
+    public PluginDataObject getPdo(RecordKey key) throws InstantiationException,
             IllegalAccessException;
 
 }

@@ -33,6 +33,7 @@ import com.raytheon.uf.common.time.domain.api.IDuration;
  * Feb 16, 2012            dhladky     Initial creation
  * jun 11, 2013 2101       dhladky     Updated for username/password DPA exchanges
  * Dec 08, 2013 2584       dhladky     Version update
+ * Aug 14, 2013 2131       dhladky     PDA updates
  * 
  * </pre>
  * 
@@ -44,7 +45,7 @@ import com.raytheon.uf.common.time.domain.api.IDuration;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 @RegistryObject({ "name" })
-@RegistryObjectVersion(value = 1.0f)
+@RegistryObjectVersion(value = 1.1f)
 public class Provider {
 
     /**
@@ -72,9 +73,7 @@ public class Provider {
         // TODO: Only OPENDAP, WFS, and the PDA types have the correct amounts
         OPENDAP(5000, BYTES_IN_FLOAT), WCS(5000, BYTES_IN_FLOAT), WFS(355862,
                 OneByOneBox), WMS(5000, BYTES_IN_FLOAT), WXXM(5000,
-                BYTES_IN_FLOAT), FTPS(5000,
-                        BYTES_IN_FLOAT), PDA(5000,
-                                BYTES_IN_FLOAT);
+                BYTES_IN_FLOAT), PDA(5000, BYTES_IN_FLOAT);
 
         private final long requestOverheadInBytes;
 

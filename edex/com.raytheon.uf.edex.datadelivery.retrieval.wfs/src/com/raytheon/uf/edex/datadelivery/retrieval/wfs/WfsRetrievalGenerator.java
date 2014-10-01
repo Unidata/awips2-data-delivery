@@ -47,7 +47,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * @author djohnson
  * @version 1.0
  */
-class WfsRetrievalGenerator extends RetrievalGenerator {
+class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(WfsRetrievalGenerator.class);
@@ -180,12 +180,12 @@ class WfsRetrievalGenerator extends RetrievalGenerator {
      * {@inheritDoc}
      */
     @Override
-    public RetrievalAdapter getServiceRetrievalAdapter() {
+    public RetrievalAdapter<PointTime, Coverage> getServiceRetrievalAdapter() {
         return new WfsRetrievalAdapter();
     }
 
     @Override
-    protected Subscription<PointTime, Coverage> removeDuplicates(Subscription<?, ?> sub) {
+    protected Subscription<PointTime, Coverage> removeDuplicates(Subscription<PointTime, Coverage> sub) {
         throw new UnsupportedOperationException("Not implemented for WFS");
     }
    

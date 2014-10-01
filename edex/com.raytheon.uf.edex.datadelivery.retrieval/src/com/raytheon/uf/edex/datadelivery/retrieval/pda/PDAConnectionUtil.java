@@ -46,6 +46,7 @@ import com.raytheon.uf.edex.esb.camel.ftp.FTPRequest.FTPType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 12, 2014 3012         dhladky    initial release
+ * Sep 14, 2104  3121        dhladky    Added binary transfer switch
  * </pre>
  * 
  * @author dhladky
@@ -59,9 +60,7 @@ public class PDAConnectionUtil {
     
     private static final Pattern PATH_PATTERN = Pattern.compile(File.separator);
     
-    private static final String PROTOCOL_SUFFIX = "://";
-    
-    private static String PROTOCOL_PATTERN = null;
+    private static final Pattern PROTOCOL_SUFFIX = Pattern.compile("://");
     
     private static ServiceConfig serviceConfig;
     
@@ -69,10 +68,7 @@ public class PDAConnectionUtil {
     private PDAConnectionUtil() {
         serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.PDA);
-        StringBuilder sb = new StringBuilder();
-        sb.append(serviceConfig.getConstantValue("CONN_TYPE"));
-        sb.append(PROTOCOL_SUFFIX);
-        PROTOCOL_PATTERN = sb.toString();
+
     }
 
     /**
@@ -120,23 +116,25 @@ public class PDAConnectionUtil {
                         "Attempting credentialed request: " + providerName);
                 // Local Connection object contains the username, password and
                 // encryption method for password storage and decrypt.
-               
                 userName = localConnection.getUnencryptedUsername();
                 password = localConnection.getUnencryptedPassword();
                 String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(remoteFilename, rootUrl);
                 // Do this after you separate!
-                rootUrl = removeProtocolsFromRootUrl(rootUrl);
+                rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
                 remoteFileDirectory = remotePathAndFile[0];
                 fileName = remotePathAndFile[1];
                 localFileDirectory = serviceConfig.getConstantValue("FTPS_DROP_DIR");
                 String protocol = serviceConfig.getConstantValue("PROTOCOL");
                 String port = serviceConfig.getConstantValue("PORT");
                 ftpRequest = new FTPRequest(FTPType.FTP, rootUrl, userName, password, port);
-                // NO SSL yet
-                //ftpRequest.setSecurityProtocol(protocol);
+
+                // NO SSL yet, this is how you add additional parameters
+                //ftpRequest.addAdditionalParameter("securityProtocol", protocol);
                 ftpRequest.setDestinationDirectoryPath(localFileDirectory);
                 ftpRequest.setRemoteDirectoryPath(remoteFileDirectory);
                 ftpRequest.setFileName(fileName);
+                // PDA downloads are all binary
+                ftpRequest.addAdditionalParameter("binary", serviceConfig.getConstantValue("BINARY_TRANSFER"));
                 
                 FTP ftp = new FTP(ftpRequest);
                 localFileName = ftp.executeConsumer();
@@ -167,14 +165,26 @@ public class PDAConnectionUtil {
         
         try {
 
-            // first carve off the rootURL if it is listed as part of the remoteFilename
-            remoteFilePath = remoteFilePath.replaceAll(rootUrl, "");
+            int j;
+            
+            if (remoteFilePath.equals(rootUrl)) {
+                // skip first 2
+                j = 3;
+            } else {
+                // carve off the rootURL if it is listed as part of the remoteFilename
+                remoteFilePath = remoteFilePath.replaceAll(rootUrl, "");
+                j = 0;
+            }
             // then carve into it's pieces
             String[] parts = remoteFilePath.split(PATH_PATTERN.pattern());
             
             StringBuilder buf = new StringBuilder();
-            
-            for (int i = 0; i < parts.length; i++) {
+
+            if (j == 3) {
+               buf.append(File.separator);
+            }
+                        
+            for (int i = j;i < parts.length; i++) {
                 // this is the fileName
                 if (i == 0) {
                     // ignore first part
@@ -199,9 +209,12 @@ public class PDAConnectionUtil {
             //if (directory.endsWith(File.separator)) {
             //    directory = directory.substring(0, directory.length()-1);
             //}
-            
+           
             returnValues[0] = directory;
             
+            if (returnValues[0].endsWith(returnValues[1])) {
+                returnValues[0] = returnValues[0].replaceAll(returnValues[1], "");
+            }
 
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR, "Couldn't properly parse remoteFilePath: "+remoteFilePath, e);
@@ -215,11 +228,13 @@ public class PDAConnectionUtil {
      * @param rootUrl
      * @return
      */
-    private static String removeProtocolsFromRootUrl(String rootUrl) {
+
+    private static String removeProtocolsAndFilesFromRootUrl(String rootUrl) {
         
-        // first carve off any protocols
-        return rootUrl.replaceAll(PROTOCOL_PATTERN, "");
-        
+        //carve off any protocols
+        String[] chunks = PROTOCOL_SUFFIX.split(rootUrl);
+        String[] chunks2 = PATH_PATTERN.split(chunks[chunks.length-1]);
+        return chunks2[0];
     }
     
 }

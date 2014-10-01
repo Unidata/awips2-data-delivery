@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.adapters;
 
 import java.util.Map;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
@@ -46,21 +48,21 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * @version 1.0
  */
 
-public abstract class RetrievalAdapter implements IRetrievalAdapter {
+public abstract class RetrievalAdapter<T extends Time, C extends Coverage> implements IRetrievalAdapter<T, C> {
 
     protected Retrieval prxml;
 
     @Override
-    public abstract IRetrievalRequestBuilder createRequestMessage(
-            RetrievalAttribute prxml);
+    public abstract IRetrievalRequestBuilder<T, C> createRequestMessage(
+            RetrievalAttribute<T,C> prxml);
 
     @Override
-    public abstract RetrievalResponse performRequest(
-            IRetrievalRequestBuilder request);
+    public abstract RetrievalResponse<T,C> performRequest(
+            IRetrievalRequestBuilder<T,C> request);
 
     @Override
     public abstract Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse response) throws TranslationException;
+            IRetrievalResponse<T,C> response) throws TranslationException;
 
     /**
      * Set the main providerRetrieval XML file

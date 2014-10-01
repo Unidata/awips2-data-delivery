@@ -21,7 +21,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  **/
 
 import com.raytheon.uf.common.datadelivery.registry.Connection;
-import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtracter;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
 
 /**
  * Abstract Class for PDA MetaData extraction
@@ -37,14 +37,13 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtracter;
  * 
  * @author dhladky
  * @version 1.0
+ * @param <D>
  */
 
-public abstract class PDAMetaDataExtractor<O, D> extends MetaDataExtracter<O, D> {
+public abstract class PDAMetaDataExtractor<O, D> extends MetaDataExtractor<O, D> {
 
     public PDAMetaDataExtractor() {
         super(new Connection());
     }
-    
-    
 
 }

@@ -21,15 +21,22 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 import java.util.Date;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
+
+import dods.dap.DAS;
 
 /**
- * Implementation of {@link IServiceFactory} that handles OpenDAP. This should be
- * the ONLY non package-private class in this entire package.
+ * Implementation of {@link IServiceFactory} that handles OpenDAP. This should
+ * be the ONLY non package-private class in this entire package.
  * 
  * <pre>
  * 
@@ -46,7 +53,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-public class OpenDapServiceFactory implements IServiceFactory {
+
+public class OpenDapServiceFactory
+        implements IServiceFactory<String, DAS, GriddedTime, GriddedCoverage> {
 
     private static final OpenDAPMetaDataParser PARSER = new OpenDAPMetaDataParser();
 
@@ -63,8 +72,8 @@ public class OpenDapServiceFactory implements IServiceFactory {
      * #getExtractor()
      */
     @Override
-    public IExtractMetaData getExtractor() {
-        return new OpenDAPMetaDataExtracter(provider.getConnection());
+    public IExtractMetaData<String, DAS> getExtractor() {
+        return new OpenDAPMetaDataExtractor(provider.getConnection());
     }
 
     /*
@@ -86,7 +95,7 @@ public class OpenDapServiceFactory implements IServiceFactory {
      * getRetrievalGenerator()
      */
     @Override
-    public RetrievalGenerator getRetrievalGenerator() {
+    public RetrievalGenerator<GriddedTime, GriddedCoverage> getRetrievalGenerator() {
         return new OpenDAPRetrievalGenerator();
     }
 
@@ -96,5 +105,10 @@ public class OpenDapServiceFactory implements IServiceFactory {
     @Override
     public void setProvider(Provider provider) {
         this.provider = provider;
+    }
+
+    @Override
+    public Provider getProvider() {
+        return provider;
     }
 }

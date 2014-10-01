@@ -22,7 +22,9 @@ package com.raytheon.uf.edex.datadelivery.retrieval.interfaces;
 
 import java.util.Date;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 
 /**
@@ -43,7 +45,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
  * @author djohnson
  * @version 1.0
  */
-public interface IServiceFactory<O extends Object, D extends Object> {
+
+public interface IServiceFactory<O, D, T extends Time, C extends Coverage> {
 
     /**
      * Retrieve the metadata extractor.
@@ -59,14 +62,14 @@ public interface IServiceFactory<O extends Object, D extends Object> {
      *            the last update time
      * @return the parser
      */
-    IParseMetaData getParser(final Date lastUpdate);
+    IParseMetaData<O> getParser(final Date lastUpdate);
 
     /**
      * Retrieve the {@link RetrievalGenerator}.
      * 
      * @return the generator
      */
-    RetrievalGenerator getRetrievalGenerator();
+    RetrievalGenerator<T, C> getRetrievalGenerator();
 
     /**
      * Set the provider.
@@ -75,4 +78,10 @@ public interface IServiceFactory<O extends Object, D extends Object> {
      *            the provider
      */
     void setProvider(Provider provider);
+    
+    /**
+     * Get the provider for this service
+     * @return
+     */
+    Provider getProvider();
 }

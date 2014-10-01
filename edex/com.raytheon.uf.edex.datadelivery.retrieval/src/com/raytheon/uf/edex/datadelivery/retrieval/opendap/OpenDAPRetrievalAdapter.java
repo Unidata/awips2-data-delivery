@@ -23,6 +23,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.event.EventBus;
@@ -62,13 +64,13 @@ import dods.dap.DataDDS;
  * @version 1.0
  */
 
-class OpenDAPRetrievalAdapter extends RetrievalAdapter {
+class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCoverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPRetrievalAdapter.class);
 
     @Override
-    public OpenDAPRequestBuilder createRequestMessage(RetrievalAttribute attXML) {
+    public OpenDAPRequestBuilder createRequestMessage(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
 
         OpenDAPRequestBuilder reqBuilder = new OpenDAPRequestBuilder(this,
                 attXML);
@@ -77,8 +79,8 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter {
     }
 
     @Override
-    public RetrievalResponse performRequest(
-            IRetrievalRequestBuilder request) {
+    public RetrievalResponse<GriddedTime, GriddedCoverage> performRequest(
+            IRetrievalRequestBuilder<GriddedTime, GriddedCoverage> request) {
 
         DataDDS data = null;
 
@@ -90,7 +92,7 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter {
             EventBus.publish(new RetrievalEvent(e.getMessage()));
         }
 
-        RetrievalResponse pr = new OpenDapRetrievalResponse(
+        RetrievalResponse<GriddedTime, GriddedCoverage> pr = new OpenDapRetrievalResponse(
                 request.getAttribute());
         pr.setPayLoad(data);
 
@@ -99,7 +101,7 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter {
 
     @Override
     public Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse response) throws TranslationException {
+            IRetrievalResponse<GriddedTime, GriddedCoverage> response) throws TranslationException {
         Map<String, PluginDataObject[]> map = new HashMap<String, PluginDataObject[]>();
 
         OpenDAPTranslator translator;
@@ -135,7 +137,7 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter {
      * @param attribute
      * @return
      */
-    OpenDAPTranslator getOpenDapTranslator(RetrievalAttribute attribute)
+    OpenDAPTranslator getOpenDapTranslator(RetrievalAttribute<GriddedTime, GriddedCoverage> attribute)
             throws InstantiationException {
         return new OpenDAPTranslator(attribute);
     }

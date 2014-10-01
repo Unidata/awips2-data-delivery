@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
 /**
  * Extract File Name based info for MetaData in PDA
  * Fill in for Fall 2014 test, should NEVER go to production
@@ -34,6 +37,7 @@ import java.util.regex.Pattern;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * July 08, 2014 3120        dhladky     Initial creation
+ * Sept 04, 2014 3121        dhladky     Some rework on the parsing.
  * 
  * </pre>
  * 
@@ -41,11 +45,16 @@ import java.util.regex.Pattern;
  * @version 1.0
  */
 
-public class PDAFileMetaDataExtractor<O> extends PDAMetaDataExtractor<String, String> {
+public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, String> {
 
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(PDAFileMetaDataExtractor.class);
+    
     public static final Pattern separator = Pattern.compile("/");
     
     public static final Pattern paramSeperator = Pattern.compile("_");
+
+    public static final Pattern param2Seperator = Pattern.compile("-");
     
     public static final String nc = ".nc";
     
@@ -66,7 +75,7 @@ public class PDAFileMetaDataExtractor<O> extends PDAMetaDataExtractor<String, St
     String collectionName = GOES-R portion
     String satelliteName = GOES-16 portion
     String dataSetName = ABI-L2-ACMF portion
-    String paramterName = ABI-L2-ACMF-M4 portion parsed out
+    String paramterName = ABI-L2-ACMF-(M4) portion parsed out
     String startTime = 20132071413122 portion parsed out starting with lower case "s"
     String endTime = 20132071413122 portion parsed out starting with lower case "e"
     String dataTime = 20132071413122 portion parsed out starting with lower case "c"
@@ -78,28 +87,30 @@ public class PDAFileMetaDataExtractor<O> extends PDAMetaDataExtractor<String, St
         fileName = fileName.replace(nc, "");
         String[] separated = separator.split(fileName);
 
+        // we want just the file name at the end
+        String[] parsed = paramSeperator.split(separated[separated.length - 1]);
+
         // parse out fields
-        if (separated != null && separated.length > 0) {
-            // don't care about 0 -3
-            paramMap.put("collectionName", separated[4]);
-            paramMap.put("satelliteName", separated[5]);
-            paramMap.put("dataSetName", separated[6]);
-            // don't care about 7
-            String[] paramSeparated = paramSeperator.split(separated[8]);
-            // don't care about 0
-            paramMap.put("paramName", paramSeparated[1]);
-            // don't care about 2
+        if (parsed != null) {
+            // don't care about 1 right now
+            paramMap.put("collectionName", parsed[0]);
+            String[] paramSeparated = param2Seperator.split(parsed[1]);
+            paramMap.put("satelliteName", parsed[2]);
+            paramMap.put("dataSetName", paramSeparated[0]+"-"+paramSeparated[1]+"-"+paramSeparated[2]);
+            paramMap.put("paramName", paramSeparated[3]);
             // take three, chop off the "s"
-            String time = paramSeparated[3].substring(1);
+            String time = parsed[3].substring(1);
             // take four, chop off the "e"
-            String endTime = paramSeparated[4].substring(1);
+            String endTime = parsed[4].substring(1);
             // take five, chop off the "c"
-            String dataTime = paramSeparated[5].substring(1);
+            String dataTime = parsed[5].substring(1);
             
             paramMap.put("startTime", time);
             paramMap.put("endTime", endTime);
             paramMap.put("dataTime", dataTime);
            
+        } else {
+            statusHandler.error("Coudn't create parameter mappings from file!", fileName);
         }
         
         return paramMap;

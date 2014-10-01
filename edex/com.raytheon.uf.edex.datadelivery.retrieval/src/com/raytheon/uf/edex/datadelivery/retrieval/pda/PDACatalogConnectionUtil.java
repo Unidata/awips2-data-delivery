@@ -68,7 +68,7 @@ public class PDACatalogConnectionUtil {
 
             http = HttpClient.getInstance();
             // accept gzipped data for XML response
-            http.setGzipResponseHandling(true);
+            http.setCompressRequests(true);
             URI uri = new URI(cswURL);
             HttpPost post = new HttpPost(uri);
             post.setEntity(new StringEntity(request, "text/xml", "ISO-8859-1"));

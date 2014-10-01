@@ -19,6 +19,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
  * Mar 29, 2013 1841       djohnson    Remove JAXB annotations.
  * Jul 11, 2013 2106       djohnson    Use SubscriptionPriority.
+ * Sept 05, 2014 2131      dhladky     re-did the types.
  * 
  * </pre>
  * 
@@ -109,15 +110,7 @@ public class SubscriptionBundle {
      */
     public DataType getDataType() {
         if (subscription != null) {
-            if (subscription.getCoverage() instanceof GriddedCoverage) {
-                return DataType.GRID;
-            }
-            // TODO: Add more data types, currently defaulting to POINT only if
-            // not a GriddedCoverage, when there could be other data types than
-            // just Grid/Point
-            else {
-                return DataType.POINT;
-            }
+            return subscription.getDataSetType();
         }
         return null;
     }

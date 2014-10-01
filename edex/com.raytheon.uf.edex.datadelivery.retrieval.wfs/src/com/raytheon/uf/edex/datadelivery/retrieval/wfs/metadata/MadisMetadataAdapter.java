@@ -2,9 +2,12 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs.metadata;
 
 import javax.xml.bind.JAXBException;
 
+import net.opengis.gml.v_3_1_1.AbstractFeatureType;
 import net.opengis.ows.v_1_0_0.ExceptionReport;
 import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -42,7 +45,7 @@ import com.raytheon.uf.edex.wfs.reg.Unique;
  * @version 1.0
  */
 
-public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis>
+public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis, PointTime, Coverage>
         implements IWfsMetaDataAdapter {
 
     private static final IUFStatusHandler statusHandler = UFStatus
@@ -54,6 +57,16 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis>
     public PluginDataObject getRecord(Madis madis) {
         return madis.getRecord();
     }
+    
+    @Override
+    public PluginDataObject translateFeature(AbstractFeatureType feature) {
+        // For WFS features this is where the translation takes place.
+        if (feature instanceof Madis) {
+            return getRecord((Madis) feature);
+        } else {
+            throw new IllegalArgumentException("Feature is not of type Madis!");
+        }
+    }
 
     @Override
     public void allocatePdoArray(int size) {
@@ -64,7 +77,7 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis>
      * {@inheritDoc}
      */
     @Override
-    public void processAttributeXml(RetrievalAttribute attXML)
+    public void processAttributeXml(RetrievalAttribute<PointTime, Coverage> attXML)
             throws InstantiationException {
         this.attXML = attXML;
     }
@@ -128,5 +141,5 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis>
         mpdt.toPointData(pdos);
         return pdos;
     }
-    
+
 }

@@ -21,7 +21,9 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wms;
 
 import java.util.Date;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
@@ -44,7 +46,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-public class WmsServiceFactory implements IServiceFactory {
+
+public class WmsServiceFactory<O extends Object, D extends Object>
+        implements IServiceFactory<O, D, Time, Coverage> {
 
     /*
      * (non-Javadoc)
@@ -53,7 +57,7 @@ public class WmsServiceFactory implements IServiceFactory {
      * com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#getExtractor()
      */
     @Override
-    public IExtractMetaData getExtractor() {
+    public IExtractMetaData<O, D> getExtractor() {
         // TODO Auto-generated method stub
         return null;
     }
@@ -66,7 +70,7 @@ public class WmsServiceFactory implements IServiceFactory {
      * java.util.Date)
      */
     @Override
-    public IParseMetaData getParser(Date lastUpdate) {
+    public IParseMetaData<O> getParser(Date lastUpdate) {
         // TODO Auto-generated method stub
         return null;
     }
@@ -78,8 +82,8 @@ public class WmsServiceFactory implements IServiceFactory {
      * getRetrievalGenerator()
      */
     @Override
-    public RetrievalGenerator getRetrievalGenerator() {
-        return new WmsRetrievalGenerator();
+    public RetrievalGenerator<Time, Coverage> getRetrievalGenerator() {
+        return new WmsRetrievalGenerator<Time, Coverage>();
     }
 
     /**
@@ -88,5 +92,10 @@ public class WmsServiceFactory implements IServiceFactory {
     @Override
     public void setProvider(Provider provider) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Provider getProvider() {
+        return null;
     }
 }

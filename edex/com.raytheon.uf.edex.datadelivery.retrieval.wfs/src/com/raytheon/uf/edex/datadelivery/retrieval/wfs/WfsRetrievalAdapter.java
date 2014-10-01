@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.registry.Connection;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.event.EventBus;
@@ -58,7 +60,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * @version 1.0
  */
 
-public class WfsRetrievalAdapter extends RetrievalAdapter {
+public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(WfsRetrievalAdapter.class);
@@ -68,17 +70,17 @@ public class WfsRetrievalAdapter extends RetrievalAdapter {
     }
 
     @Override
-    public IRetrievalRequestBuilder createRequestMessage(
-            RetrievalAttribute attXML) {
+    public IRetrievalRequestBuilder<PointTime, Coverage> createRequestMessage(
+            RetrievalAttribute<PointTime, Coverage> attXML) {
 
-        WfsRequestBuilder reqBuilder = new WfsRequestBuilder(this, attXML);
+        WfsRequestBuilder<PointTime, Coverage> reqBuilder = new WfsRequestBuilder<PointTime, Coverage>(this, attXML);
 
         return reqBuilder;
     }
 
     @Override
     public Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse response) throws TranslationException {
+            IRetrievalResponse<PointTime, Coverage> response) throws TranslationException {
 
         Map<String, PluginDataObject[]> map = new HashMap<String, PluginDataObject[]>();
         WfsTranslator translator;
@@ -112,7 +114,7 @@ public class WfsRetrievalAdapter extends RetrievalAdapter {
     }
 
     @Override
-    public RetrievalResponse performRequest(IRetrievalRequestBuilder request) {
+    public RetrievalResponse<PointTime, Coverage> performRequest(IRetrievalRequestBuilder<PointTime, Coverage> request) {
 
         String xmlMessage = null;
         try {
@@ -125,7 +127,7 @@ public class WfsRetrievalAdapter extends RetrievalAdapter {
             EventBus.publish(new RetrievalEvent(e.getMessage()));
         }
 
-        RetrievalResponse pr = new WfsRetrievalResponse(request.getAttribute());
+        RetrievalResponse<PointTime, Coverage> pr = new WfsRetrievalResponse(request.getAttribute());
         pr.setPayLoad(xmlMessage);
 
         return pr;
@@ -135,7 +137,7 @@ public class WfsRetrievalAdapter extends RetrievalAdapter {
      * @param attribute
      * @return
      */
-    WfsTranslator getWfsTranslator(RetrievalAttribute attribute)
+    WfsTranslator getWfsTranslator(RetrievalAttribute<PointTime, Coverage> attribute)
             throws InstantiationException {
         return new WfsTranslator(attribute);
     }

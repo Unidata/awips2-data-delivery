@@ -4,7 +4,7 @@
 	<!-- Provider information -->
 	<provider serviceType="PDA" name="PDA">
 		<!-- Primary type for PDA is satellite, will be more -->
-		<providerType dataType="PDA" plugin="sat" availabilityDelay="100" />
+		<providerType dataType="PDA" plugin="satellite" availabilityDelay="100" />
 		<projection type="LatLon">
 			<name>PDALatLon</name>
 			<description>Test LatLonGrid Coverage for PDA</description>

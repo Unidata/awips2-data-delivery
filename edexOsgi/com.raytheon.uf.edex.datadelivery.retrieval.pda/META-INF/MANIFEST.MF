@@ -10,4 +10,14 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.
  com.raytheon.uf.common.dataplugin;bundle-version="1.12.1174",
  com.raytheon.uf.common.datadelivery.registry;bundle-version="1.0.0",
  com.raytheon.uf.common.serialization;bundle-version="1.14.0",
- net.opengis;bundle-version="1.0.2"
+ net.opengis;bundle-version="1.0.2",
+ com.raytheon.uf.common.status;bundle-version="1.14.0",
+ com.google.guava;bundle-version="11.0.2",
+ com.raytheon.uf.common.event;bundle-version="1.14.0",
+ com.raytheon.uf.edex.core;bundle-version="1.14.1",
+ com.raytheon.uf.edex.plugin.goesr;bundle-version="1.13.0",
+ com.raytheon.uf.common.dataplugin.satellite;bundle-version="1.14.0",
+ com.raytheon.edex.plugin.satellite;bundle-version="1.14.0"
+Import-Package: com.raytheon.uf.common.util
+Export-Package: com.raytheon.uf.edex.datadelivery.retrieval.pda,
+ com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata

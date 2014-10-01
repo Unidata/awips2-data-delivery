@@ -21,6 +21,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs;
 
 import java.util.Date;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
@@ -46,7 +48,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-public class WfsServiceFactory implements IServiceFactory {
+public class WfsServiceFactory<O extends Object, D extends Object> implements IServiceFactory<O , D, PointTime, Coverage> {
 
     private Provider provider;
     
@@ -57,7 +59,7 @@ public class WfsServiceFactory implements IServiceFactory {
      * com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#getExtractor()
      */
     @Override
-    public IExtractMetaData getExtractor() {
+    public IExtractMetaData<O, D> getExtractor() {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -69,7 +71,7 @@ public class WfsServiceFactory implements IServiceFactory {
      * java.util.Date)
      */
     @Override
-    public IParseMetaData getParser(Date lastUpdate) {
+    public IParseMetaData<O> getParser(Date lastUpdate) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -80,7 +82,7 @@ public class WfsServiceFactory implements IServiceFactory {
      * getRetrievalGenerator()
      */
     @Override
-    public RetrievalGenerator getRetrievalGenerator() {
+    public RetrievalGenerator<PointTime, Coverage> getRetrievalGenerator() {
         return new WfsRetrievalGenerator(provider);
     }
 
@@ -90,5 +92,10 @@ public class WfsServiceFactory implements IServiceFactory {
     @Override
     public void setProvider(Provider provider) {
         this.provider = provider;
+    }
+
+    @Override
+    public Provider getProvider() {
+        return provider;
     }
 }

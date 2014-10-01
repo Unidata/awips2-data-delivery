@@ -12,6 +12,8 @@ import java.util.Set;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Utils;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
@@ -166,11 +168,11 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                 if (store != null && collection != null) {
 
                     Provider provider = hc.getProvider();
-                    @SuppressWarnings("unchecked")
-                    IServiceFactory<String, DAS> serviceFactory = ServiceTypeFactory
+                    IServiceFactory<String, DAS, GriddedTime, GriddedCoverage> serviceFactory =  ServiceTypeFactory
                             .retrieveServiceFactory(provider);
 
-                    IExtractMetaData<String, DAS> mde = serviceFactory.getExtractor();
+                    IExtractMetaData<String, DAS> mde = serviceFactory
+                            .getExtractor();
 
                     // remove previous run
                     store.getLinkKeys().removeAll(previousRun);

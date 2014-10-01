@@ -19,8 +19,9 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.interfaces;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 
 /**
  * Lookup {@link IServiceFactory} implementations for {@link Provider}s.
@@ -39,7 +40,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
  * @version 1.0
  */
 
-public interface IServiceFactoryLookup {
+public interface IServiceFactoryLookup<O, D, T extends Time, C extends Coverage> {
 
     /**
      * Retrieve the {@link IServiceFactory} for a {@link Provider}.
@@ -48,5 +49,6 @@ public interface IServiceFactoryLookup {
      *            the provider
      * @return the {@link IServiceFactory}
      */
-    IServiceFactory getProviderServiceFactory(Provider provider);
+    IServiceFactory<O, D, T, C> getProviderServiceFactory(Provider provider);
+
 }

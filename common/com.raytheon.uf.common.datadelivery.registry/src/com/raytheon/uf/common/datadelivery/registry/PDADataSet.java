@@ -17,6 +17,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 14, 2014 3120        dhladky     Initial creation
+ * Aug 14, 2014 3121        dhladky     minor update
  * 
  * </pre>
  * 
@@ -35,7 +36,8 @@ public class PDADataSet extends DataSet<Time, Coverage> {
 
     @Override
     public ServiceType getServiceType() {
-        return ServiceType.FTPS;
+
+        return ServiceType.PDA;
     }
 
 }

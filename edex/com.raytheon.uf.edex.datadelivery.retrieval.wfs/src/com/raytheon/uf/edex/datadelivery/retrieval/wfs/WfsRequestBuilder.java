@@ -275,11 +275,6 @@ public class WfsRequestBuilder<T extends Time, C extends Coverage> extends Reque
     public String getRequest() {
         return wfsURL;
     }
-
-    @Override
-    public RetrievalAttribute<T, C> getAttribute() {
-        return getRetrievalAttribute();
-    }
     
     /**
      * Get the instance of the service config

@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wxxm;
 
 import java.util.HashMap;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
@@ -46,29 +48,29 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * @version 1.0
  */
 
-class WXXMRetrievalAdapter extends RetrievalAdapter {
+class WXXMRetrievalAdapter<T extends Time, C extends Coverage> extends RetrievalAdapter<T, C> {
 
     WXXMRetrievalAdapter() {
 
     }
 
     @Override
-    public IRetrievalRequestBuilder createRequestMessage(
-           RetrievalAttribute prxml) {
+    public IRetrievalRequestBuilder<T, C> createRequestMessage(
+           RetrievalAttribute<T, C> prxml) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public HashMap<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse response) {
+            IRetrievalResponse<T, C> response) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public RetrievalResponse performRequest(
-            IRetrievalRequestBuilder request) {
+    public RetrievalResponse<T, C> performRequest(
+            IRetrievalRequestBuilder<T, C> request) {
         // TODO Auto-generated method stub
         return null;
     }

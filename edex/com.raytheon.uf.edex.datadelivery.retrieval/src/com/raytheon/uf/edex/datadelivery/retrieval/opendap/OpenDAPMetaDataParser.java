@@ -62,7 +62,7 @@ import com.raytheon.uf.common.util.GridUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
-import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDAPMetaDataExtracter.DAP_TYPE;
+import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDAPMetaDataExtractor.DAP_TYPE;
 import com.vividsolutions.jts.geom.Coordinate;
 
 import dods.dap.AttributeTable;

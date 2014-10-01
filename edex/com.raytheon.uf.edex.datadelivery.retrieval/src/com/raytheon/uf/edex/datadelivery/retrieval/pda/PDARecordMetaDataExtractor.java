@@ -48,7 +48,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * @version 1.0
  */
 
-public class PDARecordMetaDataExtractor<O> extends PDAMetaDataExtractor<BriefRecordType, String> {
+public class PDARecordMetaDataExtractor extends PDAMetaDataExtractor<BriefRecordType, String> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARecordMetaDataExtractor.class);
