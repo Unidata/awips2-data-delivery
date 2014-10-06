@@ -34,6 +34,9 @@ import org.eclipse.swt.widgets.Composite;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthBucketDescription;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphSection;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphType;
@@ -48,6 +51,7 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphType
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 20, 2013   2430     mpduff      Initial creation
+ * Sep 22, 2014   3607     ccody       Handle uncaught Exception and RuntimeException objects 
  * 
  * </pre>
  * 
@@ -56,6 +60,10 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphType
  */
 
 public class UtilizationGraphImage extends AbstractCanvasImage {
+    /** UFStatus handler */
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(GraphDataUtil.class);
+
     /** Lower percent limit line */
     private int lowerLimitLine;
 
@@ -188,10 +196,23 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
         gc.setForeground(display.getSystemColor(SWT.COLOR_BLACK));
         gc.setBackground(display.getSystemColor(SWT.COLOR_BLACK));
 
-        Map<Network, SortedSet<BandwidthBucketDescription>> dataMap = this.graphData
-                .getNetworkBucketMap();
-        SortedSet<BandwidthBucketDescription> data = dataMap.get(imageMgr
-                .getNetwork());
+        Map<Network, SortedSet<BandwidthBucketDescription>> dataMap = null;
+        SortedSet<BandwidthBucketDescription> data = null;
+        if (this.graphData != null) {
+            Network network = imageMgr.getNetwork();
+            dataMap = this.graphData.getNetworkBucketMap();
+            if (dataMap != null) {
+                data = dataMap.get(network);
+            } else {
+                String debugMessage = "UtilizationGraphImage.drawData graphData Network Bucket Map is NULL";
+                statusHandler.handle(Priority.DEBUG, debugMessage);
+                return;
+            }
+        } else {
+            String debugMessage = "UtilizationGraphImage.drawData graphData is NULL";
+            statusHandler.handle(Priority.DEBUG, debugMessage);
+            return;
+        }
         if (data == null || data.isEmpty()) {
             return;
         }

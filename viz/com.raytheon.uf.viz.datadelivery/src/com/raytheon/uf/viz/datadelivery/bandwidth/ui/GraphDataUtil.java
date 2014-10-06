@@ -30,6 +30,7 @@ import com.raytheon.uf.common.serialization.comm.RequestRouter;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.exception.VizCommunicationException;
 
 /**
  * 
@@ -140,6 +141,10 @@ public class GraphDataUtil implements Runnable {
         try {
             return (GraphDataResponse) RequestRouter.route(req,
                     DataDeliveryConstants.DATA_DELIVERY_SERVER);
+        } catch (VizCommunicationException vizEx) {
+            Throwable vizCause = vizEx.getCause();
+            String commMessage = vizCause.getMessage();
+            statusHandler.handle(Priority.ERROR, commMessage, vizEx);
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR, "Error Requesting Data", e);
         }

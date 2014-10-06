@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jul 26, 2031 2232       mpduff       Refactored Data Delivery permissions.
  * Sep 04, 2013 2330       bgonzale     execute now filters subscriptions by current site id.
  * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
+ * Sep 22, 2014 3607       ccody        Handle uncaught Exception objects 
  * 
  * 
  * </pre>
@@ -81,8 +82,17 @@ public class SubscriptionManagerAction extends AbstractHandler {
 
     @Override
     public Object execute(ExecutionEvent arg0) {
-        return loadSubscriptionManager(SubscriptionManagerFilters
-                .getBySiteId(DataDeliveryUtils.getDataDeliveryId()));
+
+        try {
+            String dataDeliveryId = DataDeliveryUtils.getDataDeliveryId();
+            ISubscriptionManagerFilter subManagerFilter  = SubscriptionManagerFilters.getBySiteId(dataDeliveryId);
+            return(loadSubscriptionManager(subManagerFilter) );
+        }
+        catch(Exception ex) {
+            statusHandler.handle(Priority.ERROR, "Unable to start Subscription Manager", ex);
+        }
+        
+        return(null);
     }
 
     /**
@@ -111,7 +121,7 @@ public class SubscriptionManagerAction extends AbstractHandler {
                 }
             }
         } catch (AuthException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
+            statusHandler.handle(Priority.PROBLEM, "Error checking permissions", e);
         }
 
         return null;
