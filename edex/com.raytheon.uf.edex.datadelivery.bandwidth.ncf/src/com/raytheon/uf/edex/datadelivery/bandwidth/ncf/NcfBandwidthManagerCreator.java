@@ -22,18 +22,14 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.ncf;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.eventbus.AllowConcurrentEvents;
-import com.google.common.eventbus.Subscribe;
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataDeliveryRegistryObjectTypes;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
-import com.raytheon.uf.common.registry.event.UpdateRegistryEvent;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthContextFactory.IEdexBandwidthManagerCreator;
@@ -67,6 +63,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Dec 04, 2013 2566       bgonzale     use bandwidthmanager method to retrieve spring files.
  * Jan 14, 2014 2692       dhladky      AdhocSubscription handler
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
+ * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
  * 
  * </pre>
  * 
@@ -109,26 +106,6 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
                     dataSetMetaDataHandler, subscriptionHandler,
                     adhocSubscriptionHandler, subscriptionNotificationService,
                     findSubscriptionsStrategy);
-        }
-
-        /**
-         * Listen for Registry update events. Filter for subscription specific
-         * events. Sends corresponding subscription notification events.
-         * 
-         * @param event
-         */
-        @Override
-        @Subscribe
-        @AllowConcurrentEvents
-        public void registryEventListener(UpdateRegistryEvent event) {
-            super.registryEventListener(event);
-            if (DataDeliveryRegistryObjectTypes.SHARED_SUBSCRIPTION
-                    .equals(event.getObjectType())) {
-                Subscription<T, C> subscription = getRegistryObjectById(
-                        getSubscriptionHandler(), event.getId());
-                subscriptionUpdated(subscription);
-                sendSubscriptionNotificationEvent(event, subscription);
-            }
         }
 
         @Override

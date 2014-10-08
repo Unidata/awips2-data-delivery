@@ -139,7 +139,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
  * May 22, 2014 2808       dhladky      schedule unscheduled when a sub is deactivated
  * Jul 28, 2014 2752       dhladky      Fixed bad default user for registry.
- * Oct 03, 2014 2749       ccody        Add code to allow a full refresh (reshuffle) of Retrieval Plans
+ * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
  * </pre>
  * 
  * @author djohnson
@@ -529,14 +529,34 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         }
     }
 
-    protected void registryEventListener(UpdateRegistryEvent event) {
+    /**
+    * Listen for Registry update events. Filter for subscription specific
+    * events. Sends corresponding subscription notification events.
+    * 
+    * @param event
+    */
+    @Subscribe
+    @AllowConcurrentEvents
+    public void registryEventListener(UpdateRegistryEvent event) {
         final String objectType = event.getObjectType();
-
         if (DataDeliveryRegistryObjectTypes.DATASETMETADATA.equals(objectType)) {
             publishDataSetMetaDataEvent(event);
         }
-    }
+        if ((DataDeliveryRegistryObjectTypes.SHARED_SUBSCRIPTION.equals(objectType)) ||
+            (DataDeliveryRegistryObjectTypes.SITE_SUBSCRIPTION.equals(objectType))) {
+            Subscription<T, C> subscription = getRegistryObjectById(
+                    getSubscriptionHandler(), event.getId());
+            boolean isLocalOrigination = subscription.getOriginatingSite()
+                   .equals(RegistryIdUtil.getId());
 
+            if (isLocalOrigination) {
+                subscriptionUpdated(subscription);
+            } else {
+                sendSubscriptionNotificationEvent(event, subscription);
+            }
+        }
+    }
+    
     protected void sendSubscriptionNotificationEvent(RegistryEvent event,
             Subscription<T, C> sub) {
         final String objectType = event.getObjectType();
