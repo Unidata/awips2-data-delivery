@@ -24,8 +24,6 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
 
 /**
@@ -40,6 +38,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
  * ------------ ---------- ----------- --------------------------
  * Jun 12, 2014 3120        dhladky      created.
  * Sept 04, 2014 3121       dhladky     Clarified and sharpened creation, largely un-implemented at this point.
+ * Sept 27, 2014 3127       dhladky     Geographic subsetting.
  * 
  * </pre>
  * 
@@ -47,15 +46,17 @@ import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
  * @version 1.0
  */
 
-public class PDARequestBuilder extends RequestBuilder<Time,Coverage> {
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(PDARequestBuilder.class);
+public class PDARequestBuilder extends RequestBuilder<Time,Coverage> {
     
     protected static ServiceConfig pdaServiceConfig;
     
     private String request = null;
     
+    public static final String CRS = getServiceConfig().getConstantValue("DEFAULT_CRS");
+    
+    public static final String BLANK = getServiceConfig().getConstantValue("BLANK");
+        
     protected PDARequestBuilder(RetrievalAttribute<Time,Coverage> ra) {
 
         super(ra);
@@ -63,36 +64,22 @@ public class PDARequestBuilder extends RequestBuilder<Time,Coverage> {
 
     @Override
     public String processTime(Time prtXML) {
-
-        // Currently in PDA, Nothing to process
-        return null;
+        throw new UnsupportedOperationException("Not implemented for PDA!");
     }
-
+    
     @Override
     public String processCoverage(Coverage Coverage) {
-        // Currently in PDA, Nothing to process
-        return null;
+        throw new UnsupportedOperationException("Not implemented for this portion of PDA!");
     }
 
     @Override
     public String getRequest() {
-
-        //TODO Since there exists no ability to subset by time or by coverage.
-        // the only thing that differentiates a PDA dataset is the parameter.
-        // So, at this point all the request is is a essentially the FTP(S) 
-        // filepath that comes with the BriefRecord. This is totally lame.
-        
-        // Someday...In the near future, this would be anticipated to be a 
-        // WCS request that might return an FTP path or even better, the actual 
-        // data.  For now it's just an FTP filepath with no switches at all.
-        
+        // There are no switches for full data set PDA. 
         return request;
     }
     
     /**
      * Sets the request string
-     * This is temporary, until PDA becomes a real service
-     * with actual switches for coverage, time, etc
      * @param request
      */
     public void setRequest(String request) {
@@ -103,7 +90,7 @@ public class PDARequestBuilder extends RequestBuilder<Time,Coverage> {
      * Get the instance of the service config
      * @return
      */
-    private static ServiceConfig getServiceConfig() {
+    protected static ServiceConfig getServiceConfig() {
         
         if (pdaServiceConfig == null) {
             pdaServiceConfig = HarvesterServiceManager.getInstance()

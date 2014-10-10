@@ -47,6 +47,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
  * May 12, 2013 753         dhladky     address field
  * Sept 25, 2013 1797       dhladky     separated time from gridded time
  * Sept 27, 2014 2131       dhladky     removed un-needed casting.
+ * Oct 14, 2014 3127        dhladky     Fixed stack overflow.
  * 
  * </pre>
  * 
@@ -228,11 +229,6 @@ class OpenDAPRequestBuilder extends RequestBuilder<GriddedTime, GriddedCoverage>
     @Override
     public String getRequest() {
         return openDAPURL;
-    }
-
-    @Override
-    public RetrievalAttribute<GriddedTime, GriddedCoverage> getAttribute() {
-        return getAttribute();
     }
 
 }

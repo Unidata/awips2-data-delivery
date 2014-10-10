@@ -55,9 +55,11 @@ import com.raytheon.uf.common.datadelivery.registry.DataDeliveryRegistryObjectTy
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
+import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -661,6 +663,87 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      */
     public ISubscriptionHandler getSubscriptionHandler() {
         return subscriptionHandler;
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Subscribe 
+    public void updatePDADataSetMetaData(PDADataSetMetaData dataSetMetaData) {
+        
+        bandwidthDao.newBandwidthDataSetUpdate((DataSetMetaData<T>) dataSetMetaData);
+
+        // Looking for active subscriptions to the dataset.
+        try {
+            @SuppressWarnings("rawtypes")
+            List<Subscription> subscriptions = subscriptionHandler
+                    .getActiveByDataSetAndProvider(
+                            dataSetMetaData.getDataSetName(),
+                            dataSetMetaData.getProviderName());
+
+            if (subscriptions.isEmpty()) {
+                return;
+            }
+
+            statusHandler
+                    .info(String
+                            .format("Found [%s] subscriptions that will have an "
+                                    + "adhoc subscription generated and scheduled for url [%s].",
+                                    subscriptions.size(),
+                                    dataSetMetaData.getUrl()));
+
+            // Create an adhoc for each one, and schedule it
+            for (Subscription<T, C> subscription : subscriptions) {
+
+                // both of these are handled identically, 
+                // The only difference is logging.
+
+                if (subscription instanceof SiteSubscription) {
+                    if (subscription.getOfficeIDs().contains(
+                            RegistryIdUtil.getId())) {
+
+                        Subscription<T, C> sub = updateSubscriptionWithDataSetMetaData(
+                                subscription, dataSetMetaData);
+                        statusHandler
+                                .info("Updating subscription metadata: "
+                                        + sub.getName()
+                                        + " dataSetMetadata: "
+                                        + sub.getDataSetName()
+                                        + " scheduling SITE subscription for retrieval.");
+
+                        scheduleAdhoc(new AdhocSubscription<T, C>(
+                                (SiteSubscription<T, C>) sub));
+                    } else {
+                        // Fall through! doesn't belong to this site, so we
+                        // won't retrieve it.
+                    }
+
+                } else if (subscription instanceof SharedSubscription) {
+                    // check to see if this site is the NCF
+                    if (RegistryIdUtil.getId().equals(RegistryUtil.defaultUser)) {
+
+                        Subscription<T, C> sub = updateSubscriptionWithDataSetMetaData(
+                                subscription, dataSetMetaData);
+                        statusHandler
+                                .info("Updating subscription metadata: "
+                                        + sub.getName()
+                                        + " dataSetMetadata: "
+                                        + sub.getDataSetName()
+                                        + " scheduling SHARED subscription for retrieval.");
+                        scheduleAdhoc(new AdhocSubscription<T, C>(
+                                (SharedSubscription<T, C>) sub));
+                    } else {
+                     // Fall through! doesn't belong to this site, so we
+                        // won't retrieve it.
+                    }
+                } else {
+                    throw new IllegalStateException(
+                            "Unexpected state: Subscription type other than Shared or Site encountered! "
+                                    + subscription.getName());
+                }
+            }
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Failed to lookup subscriptions. dataSet: "+dataSetMetaData.getDataSetName(), e);
+        }
     }
 
     /**

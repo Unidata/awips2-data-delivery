@@ -20,6 +20,9 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  **/
 import java.util.Date;
 
+
+import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
+
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -39,6 +42,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 13, 2014 3120       dhladky     Initial creation
+ * Oct 14, 2014 3127       dhladky     Additional types added.
  * 
  * </pre>
  * 
@@ -74,9 +78,9 @@ public class PDAServiceFactory<O extends Object, D extends Object>
      */
 
     @Override
-    public IParseMetaData getParser(Date lastUpdate) {
+    public IParseMetaData<O> getParser(Date lastUpdate) {
         // pda doesn't care about the date
-        return new PDAMetaDataParser();
+        return (IParseMetaData<O>) new PDAMetaDataParser<BriefRecordType>();
     }
 
     /**

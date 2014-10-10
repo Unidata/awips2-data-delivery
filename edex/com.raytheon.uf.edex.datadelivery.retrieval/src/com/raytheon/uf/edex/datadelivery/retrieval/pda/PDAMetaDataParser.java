@@ -65,14 +65,14 @@ import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
  * ------------ ---------- ----------- --------------------------
  * June 17, 2014 3120        dhladky     Initial creation
  * Sept 04, 2014 3121        dhladky     Adjustments to parsing, simulation.
- * 
+ * Sept 27, 2014 3127        dhladky     Added metaDataID for geographic subsetting.
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
  */
 
-public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
+public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDAMetaDataParser.class);
@@ -271,6 +271,7 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
         
         // create Data Set MetaData
         PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
+        pdadsmd.setMetaDataID(metaDataID);
         pdadsmd.setArrivalTime(arrivalTime.getTime());
         pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(myCollectionName, time.getStart().getTime()));
         pdadsmd.setDataSetName(dataSetName);

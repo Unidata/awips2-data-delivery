@@ -24,18 +24,23 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import org.geotools.geometry.jts.ReferencedEnvelope;
+
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
+import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
@@ -51,6 +56,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * ------------ ---------- ----------- --------------------------
  * Jun 13, 2014 3120       dhladky     Initial creation
  * Sept 14, 2104 3121      dhladky     Sharpened Retrieval generation.
+ * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
  * 
  * </pre>
  * 
@@ -128,6 +134,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         retrieval.setSubscriptionName(sub.getName());
         retrieval.setServiceType(getServiceType());
         retrieval.setConnection(bundle.getConnection());
+
         // this is the filepath in PDA retrievals, this is essentially the request!
         retrieval.getConnection().setUrl(sub.getUrl());
         retrieval.setOwner(sub.getOwner());
@@ -135,6 +142,9 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         retrieval.setNetwork(sub.getRoute());
 
         // Coverage and type processing
+        retrieval.setSubscriptionType(getSubscriptionType(sub));
+        retrieval.setNetwork(sub.getRoute());
+
         Coverage cov = sub.getCoverage();
 
         if (cov instanceof Coverage) {
@@ -151,7 +161,21 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         // Attribute processing
         RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<Time, Coverage>();
         att.setCoverage(cov);
-        
+ 
+        /*
+         * Coverage and type processing
+         * 
+         * PDA retrievals work in two modes, full dataset requests are
+         * passed directly to the PDA ConnectionUtil and FTPS'd down.
+         * geographically Sub-setted requests make a WCS request and retrieve
+         * the URL returned by that request. 
+         */
+        String url = determineSubsetting(sub, time.getRequestStart(), att);
+        // This is the filepath in PDA retrievals, this is essentially the request!
+        retrieval.getConnection().setUrl(url);
+        retrieval.setSubscriptionType(getSubscriptionType(sub));
+        retrieval.setNetwork(sub.getRoute());
+                
         if (param != null) {
             
             Parameter lparam = processParameter(param);
@@ -176,6 +200,62 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
     @Override
     protected Subscription<Time, Coverage> removeDuplicates(Subscription<Time, Coverage> sub) {
         throw new UnsupportedOperationException("Not implemented for PDA at this time!");
+    }
+    
+    /**
+     * Check to see if this coverage is subsetted
+     * @param coverage
+     * @return
+     */
+    private boolean isSubsetted(Coverage coverage) {
+        
+        ReferencedEnvelope requestEnv = coverage.getRequestEnvelope();
+        ReferencedEnvelope fullEnv = coverage.getEnvelope();
+          
+        return !fullEnv.equals(requestEnv);
+    }
+
+    /**
+     * Determine whether a dataset has been subsetted.
+     * If so, a query is made to PDA for the URL of the subset
+     * which is then retrieved during retrieval processing.
+     * @param sub
+     * @param dataSetTime
+     * @param ra
+     * @return String (URL)
+     */
+    private String determineSubsetting(Subscription<Time, Coverage> sub,
+            Date dataSetTime, RetrievalAttribute<Time, Coverage> ra) {
+
+        String url = null;
+
+        // If they are equal, it's a full dataSet retrieval, no subset
+        // necessary. Otherwise you have to do this.
+        if (isSubsetted(sub.getCoverage())) {
+
+            String metaDataKey = null;
+            PDASubsetRequest request = null;
+
+            try {
+                PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
+                        .getDataSetMetaDataHandler().getByDataSetDate(
+                                sub.getDataSetName(), sub.getProvider(),
+                                dataSetTime);
+                metaDataKey = pdadsmd.getMetaDataID();
+                request = new PDASubsetRequest(ra, metaDataKey);
+                url = request.performSubsetRequest();
+
+            } catch (Exception e) {
+                statusHandler.handle(Priority.ERROR,
+                        "Couldn not perform Subset request: " + metaDataKey
+                                + " : " + sub.getName(), e);
+            }
+        } else {
+            // no subset
+            url = sub.getUrl();
+        }
+
+        return url;
     }
 
 }

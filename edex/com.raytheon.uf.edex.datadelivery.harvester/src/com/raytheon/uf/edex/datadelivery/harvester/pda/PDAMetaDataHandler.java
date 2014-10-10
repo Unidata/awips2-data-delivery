@@ -29,6 +29,8 @@ import java.util.List;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
+import org.apache.commons.io.FileDeleteStrategy;
+
 import net.opengis.cat.csw.v_2_0_2.AbstractRecordType;
 import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
 import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
@@ -60,6 +62,7 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * June 13, 2014 3120      dhladky     Initial creation
+ * Oct 14, 2014  3127      dhladky     Improved deletion of used files.
  * 
  * </pre>
  * 
@@ -87,8 +90,10 @@ public class PDAMetaDataHandler extends MetaDataHandler {
      * Process PDA metadata records
      * 
      * @param bytes
+     * @throws IOException 
      */
-    public void process(byte[] bytes) {
+    @SuppressWarnings("rawtypes")
+    public void process(byte[] bytes) throws IOException {
 
         GetRecordsResponseType briefRecords = null;
         String filePath = "unknown";
@@ -98,6 +103,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                 .getPDAConfiguration();
         PDAAgent agent = (PDAAgent) config.getAgent();
         Provider provider = config.getProvider();
+        @SuppressWarnings("unchecked")
         IServiceFactory<BriefRecordType, PDAMetaDataParser, Time, Coverage> serviceFactory = ServiceTypeFactory
                 .retrieveServiceFactory(config.getProvider());
         Date lastDate = TimeUtil.newGmtCalendar().getTime();
@@ -174,12 +180,16 @@ public class PDAMetaDataHandler extends MetaDataHandler {
 
             // If parse was completely successful, cleanup file directory when
             // finished with it. No longer needed.
-            // We'll keep the one's that failed around so we can use them to diagnose trouble.
             if (parsed) {
-                if (directory != null) {
-                    if (directory.isDirectory()) {
-                        directory.delete();
-                        statusHandler.info("Deleted parsed file:  " + filePath);
+                File file = new File(fileName);
+                if (file.exists()) {
+                    File dir = new File(file.getParent());
+                    if (dir.isDirectory()) {
+                        // force delete it, no excuses.
+                        statusHandler
+                                .info("Deleting processed metadata file directory. "
+                                        + dir.getName());
+                        FileDeleteStrategy.FORCE.delete(dir);
                     }
                 }
             }

@@ -41,7 +41,6 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse.FILE
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 
-
 /**
  * {@link IServiceFactory} implementation for PDA.
  * 
@@ -53,6 +52,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * ------------ ---------- ----------- --------------------------
  * Jun 13, 2014 3120       dhladky     Initial creation
  * Sept 04, 2014 3121      dhladky     Sharpened the retrieval mechanism.
+ * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
  * 
  * </pre>
  * 
@@ -69,14 +69,13 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
     @Override
     public IRetrievalRequestBuilder<Time, Coverage> createRequestMessage(
             RetrievalAttribute<Time, Coverage> prxml) {
-        // this is actually pretty useless right now, 
-        // it doesn't really create anything because PDA is very limited.
-        // Right now all we need is the filepath URL from the metadata object
+         
         PDARequestBuilder reqBuilder = new PDARequestBuilder(prxml);
         reqBuilder.setRequest(this.getProviderRetrievalXMl().getConnection().getUrl());
+
         return reqBuilder;
     }
-
+         
     @Override
     public RetrievalResponse<Time, Coverage> performRequest(IRetrievalRequestBuilder<Time, Coverage> request) {
         
@@ -85,9 +84,8 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         String fileName = null;
         
         try {
-            //TODO THIS IS ONLY DONE UNTIL WE HAVE REAL REQUEST SWITCHES
-            // Right now all we have is an FTP(S) filepath for each type.
-            // So we take that path and set it as the request.  Simple.
+
+            //
             String providerName = request.getAttribute().getProvider();
             localFilePath = PDAConnectionUtil.ftpsConnect(this.getProviderRetrievalXMl().getConnection(),
                     providerName, request.getRequest());
@@ -115,6 +113,7 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         // We have to do this in order to allow for Shared Subscription delivery of 
         // PDA data which must be serialized and delivered via SBN, which isn't going
         // to give us a nice pretty file we can access.
+
          PDARetrievalResponse pr = new PDARetrievalResponse(
                 request.getAttribute());
 
@@ -129,6 +128,9 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                 statusHandler.handle(Priority.PROBLEM,
                         "Problem setting payload object for PDA!", e);
             }
+        } else {
+            statusHandler.handle(Priority.PROBLEM,
+                    "FileName for object pulled from PDA server is null!");
         }
        
         return pr;
@@ -141,6 +143,7 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
 
         Map<String, PluginDataObject[]> map = new HashMap<String, PluginDataObject[]>();
         PDATranslator translator;
+
         try {
             translator = getPDATranslator(response.getAttribute());
         } catch (InstantiationException e) {

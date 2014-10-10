@@ -21,6 +21,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  **/
 
 import java.io.File;
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 import com.raytheon.uf.common.datadelivery.registry.Connection;
@@ -35,6 +36,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 import com.raytheon.uf.edex.esb.camel.ftp.FTP;
 import com.raytheon.uf.edex.esb.camel.ftp.FTPRequest;
 import com.raytheon.uf.edex.esb.camel.ftp.FTPRequest.FTPType;
+import com.raytheon.uf.edex.security.SecurityConfiguration;
 
 /**
  * Utility for FTPS connection
@@ -47,6 +49,7 @@ import com.raytheon.uf.edex.esb.camel.ftp.FTPRequest.FTPType;
  * ------------ ---------- ----------- --------------------------
  * Jun 12, 2014 3012         dhladky    initial release
  * Sep 14, 2104  3121        dhladky    Added binary transfer switch
+ * Oct 14, 2014  3127        dhladky    Fine tuning for FTPS
  * </pre>
  * 
  * @author dhladky
@@ -64,11 +67,13 @@ public class PDAConnectionUtil {
     
     private static ServiceConfig serviceConfig;
     
+    private static SecurityConfiguration sc;
+    
     /* Private Constructor */
     private PDAConnectionUtil() {
         serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.PDA);
-
+        sc = getSecurityConfiguration();
     }
 
     /**
@@ -124,18 +129,41 @@ public class PDAConnectionUtil {
                 remoteFileDirectory = remotePathAndFile[0];
                 fileName = remotePathAndFile[1];
                 localFileDirectory = serviceConfig.getConstantValue("FTPS_DROP_DIR");
-                String protocol = serviceConfig.getConstantValue("PROTOCOL");
                 String port = serviceConfig.getConstantValue("PORT");
-                ftpRequest = new FTPRequest(FTPType.FTP, rootUrl, userName, password, port);
 
-                // NO SSL yet, this is how you add additional parameters
-                //ftpRequest.addAdditionalParameter("securityProtocol", protocol);
+                ftpRequest = new FTPRequest(FTPType.FTPS, rootUrl, userName, password, port);
+      
+                // These only apply to FTPS
+                if (ftpRequest.getType() == FTPType.FTPS) {
+
+                    String protocol = serviceConfig.getConstantValue("PROTOCOL");
+                    String implict = serviceConfig.getConstantValue("IMPLICIT_SECURITY");
+                    
+                    // Only use these if they are supplied
+                    String keyStore = serviceConfig.getConstantValue("KEYSTORE_FILE");
+                    if (keyStore != null) {
+                        ftpRequest.addAdditionalParameter("ftpClient.KeyStore.file", keyStore);
+                        String keyPass = sc.getProperty("edex.security.keystore.password");
+                        ftpRequest.addAdditionalParameter("ftpClient.KeyStore.keyPassword", keyPass);
+                    }
+                    String trustStore = serviceConfig.getConstantValue("TRUSTSTORE_FILE");
+                    if (trustStore != null) {
+                        ftpRequest.addAdditionalParameter("ftpClient.trustStore.file", trustStore);
+                        String trustStorePass = sc.getProperty("edex.security.truststore.password");
+                        ftpRequest.addAdditionalParameter("ftpClient.trustStore.password", trustStorePass);
+                    }
+                   
+                    ftpRequest.addAdditionalParameter("securityProtocol", protocol);
+                    ftpRequest.addAdditionalParameter("isImplicit", implict);
+                }
+                
                 ftpRequest.setDestinationDirectoryPath(localFileDirectory);
                 ftpRequest.setRemoteDirectoryPath(remoteFileDirectory);
                 ftpRequest.setFileName(fileName);
-                // PDA downloads are all binary
+                // PDA downloads are all binary and passive
                 ftpRequest.addAdditionalParameter("binary", serviceConfig.getConstantValue("BINARY_TRANSFER"));
-                
+                ftpRequest.addAdditionalParameter("passiveMode", serviceConfig.getConstantValue("PASSIVE_MODE"));
+
                 FTP ftp = new FTP(ftpRequest);
                 localFileName = ftp.executeConsumer();
 
@@ -200,17 +228,8 @@ public class PDAConnectionUtil {
                     buf.append(File.separator);
                 }
             }
-            
-            // hack off any straggling path separators
-            String directory = buf.toString();
-            //if (directory.startsWith(File.separator)) {
-            //    directory = directory.substring(1, directory.length());
-            //}
-            //if (directory.endsWith(File.separator)) {
-            //    directory = directory.substring(0, directory.length()-1);
-            //}
-           
-            returnValues[0] = directory;
+
+            returnValues[0] = buf.toString();
             
             if (returnValues[0].endsWith(returnValues[1])) {
                 returnValues[0] = returnValues[0].replaceAll(returnValues[1], "");
@@ -235,6 +254,22 @@ public class PDAConnectionUtil {
         String[] chunks = PROTOCOL_SUFFIX.split(rootUrl);
         String[] chunks2 = PATH_PATTERN.split(chunks[chunks.length-1]);
         return chunks2[0];
+    }
+    
+    /**
+     * Get the active security configuration
+     * @return
+     */
+    private static SecurityConfiguration getSecurityConfiguration() {
+        if (sc == null) {
+            try {
+                sc = new SecurityConfiguration();
+            } catch (IOException ioe) {
+                statusHandler.handle(Priority.PROBLEM, "Couldn't access the security configuration!", ioe);
+            }
+        }
+        
+        return sc;
     }
     
 }

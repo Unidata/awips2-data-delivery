@@ -33,7 +33,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * 
- * PDA catalog Connection.
+ * Make requests to PDA for Data (Catalog/Subset/etc) etc.
  * 
  * <pre>
  * 
@@ -42,6 +42,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * June 14, 2014 3120       dhladky     created.
+ * Sept 27, 2014 3127       dhladky    updated deprecation methods.
  * </pre>
  * 
  * @author dhladky
@@ -49,35 +50,41 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  */
 
 
-public class PDACatalogConnectionUtil {
+public class PDARequestConnectionUtil {
     
     private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(PDACatalogConnectionUtil.class);
+            .getHandler(PDARequestConnectionUtil.class);
+    
+    protected static final String charset = "ISO-8859-1";
+    
+    protected static final String contentType = "text/xml";
+    
     /**
-     * Connect to the CSW catalog service of PDA
-     * @param request
-     * @param cswURL
+     * Connect to the PDA service
+     * @param request (XML)
+     * @param serviceURL
      * @return
      */
-    public static String connect(String request, String cswURL) {
+    public static String connect(String request, String serviceURL) {
 
         String xmlResponse = null;
-        HttpClient http = null;
 
         try {
 
-            http = HttpClient.getInstance();
+            HttpClient http = HttpClient.getInstance();
             // accept gzipped data for XML response
             http.setCompressRequests(true);
-            URI uri = new URI(cswURL);
+            URI uri = new URI(serviceURL);
             HttpPost post = new HttpPost(uri);
-            post.setEntity(new StringEntity(request, "text/xml", "ISO-8859-1"));
+            StringEntity entity = new StringEntity(request, charset);
+            entity.setContentType(contentType);
+            post.setEntity(entity);
             HttpClientResponse response = http.executeRequest(post);
             xmlResponse = new String(response.data);
 
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't connect to PDA server: " + cswURL, e);
+                    "Couldn't connect to PDA server: " + serviceURL, e);
         }
 
         return xmlResponse;

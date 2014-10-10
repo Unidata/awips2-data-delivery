@@ -21,6 +21,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata;
 
 import java.io.File;
 
+import org.apache.commons.io.FileDeleteStrategy;
+
 import com.raytheon.edex.plugin.satellite.SatelliteDecoder;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -46,6 +48,7 @@ import com.raytheon.uf.edex.plugin.goesr.GOESRDecoder;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 28, 2014 #3121       dhladky     Initial javadoc
+ * Oct 14, 2014  #3127      dhladky     Improved deletion of files
  * 
  * </pre>
  * 
@@ -108,12 +111,17 @@ public class PDAMetaDataAdapter extends
         } catch (Exception e) {
             statusHandler.error("Couldn't decode PDA data! " + fileName, e);
         } finally {
-            // Done! dispose of this file
+            // Done! dispose of this file and it's directory
             File file = new File(fileName);
             if (file.exists()) {
-                statusHandler.info("Deleting processed retrieval file. "
-                        + file.getName());
-                file.delete();
+                File dir = new File(file.getParent());
+                if (dir.isDirectory()) {
+                    // force delete it, no excuses.
+                    statusHandler
+                            .info("Deleting processed retrieval file directory. "
+                                    + dir.getName());
+                    FileDeleteStrategy.FORCE.delete(dir);
+                }
             }
         }
 

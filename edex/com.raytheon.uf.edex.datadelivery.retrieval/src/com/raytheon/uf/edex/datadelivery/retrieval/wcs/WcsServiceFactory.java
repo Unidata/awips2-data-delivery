@@ -21,9 +21,11 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wcs;
 
 import java.util.Date;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
@@ -81,6 +83,7 @@ public class WcsServiceFactory<O extends Object, D extends Object>
     @Override
     public RetrievalGenerator<GriddedTime, GriddedCoverage> getRetrievalGenerator() {
         return new WCSRetrievalGenerator();
+
     }
 
     /**
