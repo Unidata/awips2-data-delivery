@@ -34,6 +34,7 @@ import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
 import com.raytheon.uf.common.datadelivery.bandwidth.util.LogUtil;
 import com.raytheon.uf.common.datadelivery.event.retrieval.AdhocSubscriptionRequestEvent;
 import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionRequestEvent;
+import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionStatusEvent;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
@@ -163,7 +164,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                      changes and updates itself so that attempts to connect with them 
  *                                      do not result in errors and exceptions.
  *                                      @see com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager.resetBandwidthManager
- * 
+ * Oct 15, 2014 3664       ccody        Add notification event for unscheduled Subscriptions at startup
  * </pre>
  * 
  * @author dhladky
@@ -207,8 +208,10 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
     @VisibleForTesting
     final RetrievalManager retrievalManager;
-    
-    /** Map of application contexts used for starting bandwidth manager instances */
+
+    /**
+     * Map of application contexts used for starting bandwidth manager instances
+     */
     private ConcurrentHashMap<String[], ClassPathXmlApplicationContext> appContextMap = new ConcurrentHashMap<String[], ClassPathXmlApplicationContext>();
 
     public BandwidthManager(IBandwidthDbInit dbInit,
@@ -451,14 +454,17 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription
                 .getRoute());
         List<DataSetMetaData> dsmdList = new ArrayList<DataSetMetaData>(0);
-        
+
         try {
             dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
                     .getDataSetMetaDataToDate(subscription.getDataSetName(),
-                            subscription.getProvider(), plan.getPlanEnd().getTime());
+                            subscription.getProvider(),
+                            plan.getPlanEnd().getTime());
         } catch (RegistryHandlerException e1) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unable to look-up list of DataSetMetData during scheduling. ", e1);
+            statusHandler
+                    .handle(Priority.PROBLEM,
+                            "Unable to look-up list of DataSetMetData during scheduling. ",
+                            e1);
         }
 
         SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
@@ -469,6 +475,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         // add an adhoc if one exists and isn't in startup mode
         if (EDEXUtil.isRunning()) {
+            unscheduled = new ArrayList<BandwidthAllocation>(); // Reallocate to
+                                                                // get a MUTABLE
+                                                                // object
             if (subscription.getDataSetType() == DataType.GRID) {
                 unscheduled.addAll(getMostRecent(subscription, true));
             } else if (subscription.getDataSetType() == DataType.POINT) {
@@ -488,17 +497,21 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            The subscription that needs its scheduling updated
      */
     private void updateSchedule(Subscription<T, C> subscription) {
-        
-        RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription.getRoute());
+
+        RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription
+                .getRoute());
         List<DataSetMetaData> dsmdList = new ArrayList<DataSetMetaData>(0);
-        
+
         try {
             dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
                     .getDataSetMetaDataToDate(subscription.getDataSetName(),
-                            subscription.getProvider(), plan.getPlanEnd().getTime());
+                            subscription.getProvider(),
+                            plan.getPlanEnd().getTime());
         } catch (RegistryHandlerException e1) {
             statusHandler
-                    .handle(Priority.PROBLEM, "Unable to look-up list of DataSetMetData during schedule updating. ", e1);
+                    .handle(Priority.PROBLEM,
+                            "Unable to look-up list of DataSetMetData during schedule updating. ",
+                            e1);
         }
         SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
                 plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
@@ -533,17 +546,18 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
     /*
      * (non-Javadoc)
+     * 
      * @see com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager#
      * updateSchedule(com.raytheon.uf.common.datadelivery.registry.Network)
      */
     @Override
     public int updateSchedule(Network network) {
-        List<Subscription<T,C>> subsToSchedule = getSubscriptionsToSchedule(network);
+        List<Subscription<T, C>> subsToSchedule = getSubscriptionsToSchedule(network);
         if (CollectionUtil.isNullOrEmpty(subsToSchedule)) {
             return 0;
         }
 
-        for (Subscription<T,C> subscription : subsToSchedule) {
+        for (Subscription<T, C> subscription : subsToSchedule) {
             updateSchedule(subscription);
         }
 
@@ -557,7 +571,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            The network
      * @return List of subscriptions for the network
      */
-    protected abstract List<Subscription<T,C>> getSubscriptionsToSchedule(
+    protected abstract List<Subscription<T, C>> getSubscriptionsToSchedule(
             Network network);
 
     /**
@@ -718,7 +732,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         // Create an adhoc subscription based on the new subscription,
         // and set it to retrieve the most recent cycle (or most recent
         // url if a daily product)
-        if (subscription instanceof RecurringSubscription && subscription.isActive()) {
+        if (subscription instanceof RecurringSubscription
+                && subscription.isActive()) {
 
             AdhocSubscription<T, C> adhoc = new AdhocSubscription<T, C>(
                     (RecurringSubscription<T, C>) subscription);
@@ -756,7 +771,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 }
             }
         } else {
-            throw new IllegalArgumentException("Unable to create adhoc queries for this type of subscription.  "+subscription.getSubscriptionType().name());
+            throw new IllegalArgumentException(
+                    "Unable to create adhoc queries for this type of subscription.  "
+                            + subscription.getSubscriptionType().name());
         }
         return unscheduled;
     }
@@ -962,7 +979,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         InMemoryBandwidthContextFactory.deleteInMemoryBandwidthConfigFile();
 
         if (resetManager == true) {
-            resetBandwidthManager(requestNetwork, "Bandwidth changed to " + bandwidth + " KBps");
+            resetBandwidthManager(requestNetwork, "Bandwidth changed to "
+                    + bandwidth + " KBps");
 
         }
         timer.stop();
@@ -972,21 +990,22 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         return response;
     }
-    
-    /** 
+
+    /**
      * Reset specifically the EdexBandwidthManager.
      * 
      * This method must be implemented in EdexBandwidthManager so that it can
-     * "reshuffle the deck" of Retrieval Plans, etc.
-     * It is empty for this implementation.
-     * <p>  
-     * The EdexBandwidthManageris the only BandwidthManager class that needs to be able
-     * to reset itself in response to operations from within the abstract 
-     * BandwidthManager.handleRequest method processing.
-     * Presently, this method must be empty in all other implementations.
+     * "reshuffle the deck" of Retrieval Plans, etc. It is empty for this
+     * implementation.
+     * <p>
+     * The EdexBandwidthManageris the only BandwidthManager class that needs to
+     * be able to reset itself in response to operations from within the
+     * abstract BandwidthManager.handleRequest method processing. Presently,
+     * this method must be empty in all other implementations.
      */
-    protected void resetBandwidthManager(Network requestNetwork, String resetReasonMessage) {
-        //Do nothing.
+    protected void resetBandwidthManager(Network requestNetwork,
+            String resetReasonMessage) {
+        // Do nothing.
     }
 
     /**
@@ -1029,7 +1048,23 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             proposeResponse.setRequiredLatency(requiredLatency);
             long requiredDataSetSize = determineRequiredDataSetSize(subscription);
             proposeResponse.setRequiredDataSetSize(requiredDataSetSize);
+        } else {
+            Map<String, Subscription<T, C>> allSubscriptionMap = new HashMap<String, Subscription<T, C>>();
+            String name = null;
+            for (Subscription<T, C> sub : subscriptions) {
+                name = sub.getName();
+                allSubscriptionMap.put(name, sub);
+            }
+
+            // Publish Notification events
+            String msg = " is unscheduled.";
+            Subscription<T, C> unSchedSub = null;
+            for (String unSchedSubName : subscriptionsUnscheduled) {
+                unSchedSub = allSubscriptionMap.get(unSchedSubName);
+                EventBus.publish(new SubscriptionStatusEvent(unSchedSub, msg));
+            }
         }
+
         return proposeResponse;
     }
 
@@ -1323,45 +1358,44 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     /**
      * Starts the new bandwidth manager.
      * 
-     * Making changes to preference settings; particularly Bandwidth settinds; in CAVE 
-     * results in a forced refresh of the Spring .xml configuration.
-     * (ex. CAVE->Data Delivery->System Management:: Settings->Bandwidth)
-     * The call path of the Spring refresh looks like:  
-     * [ ... -> setBandwidth() -> startNewBandwidthManager() -> startBandwidthManager(...) ]
-     * and uses the full list of EDEX Spring .xml files. 
-     * This operation fails.<p>
-     * 1. There are presently a total of 73 .xml files that are included in the EDEX
-     * Spring configuration. Using the full list of files results in (non terminal, but 
-     * repeating) exception errors.<p>
-     * 
-     * 2. Removing the following files from the EDEX file list will allow this method to 
-     * complete execution without failure, but results in Bandwidth Manager not
-     * restarting properly. i.e. Exceptions result elsewhere.
-     *      /res/spring/harvester-datadelivery-registry.xml
-     *      /res/spring/harvester-datadelivery.xml
-     *      /spring/datadelivery-subscription-verification.xml
-     *      /spring/bandwidth-datadelivery-edex-impl-wfo.xml
-     *      /spring/bandwidth-datadelivery-edex-impl.xml
-     *      /spring/bandwidth-datadelivery-edex-impl-monolithic.xml
-     *      /res/spring/purge-logs.xml
-     *      /res/spring/ebxml-garbagecollector-edex-impl.xml
-     *      /res/spring/ebxml-webserver.xml
-     *      /spring/datadelivery-cron.xml
-     *      /spring/datadelivery-wfo-cron.xml
-     *      /spring/retrieval-datadelivery.xml
-     *      /res/spring/request-service-common.xml
-     *<p>
-     * 3. Using ONLY the Spring files for the "memory" configuration
-     *    e.g. InMemoryBandwidthManager.IN_MEMORY_BANDWIDTH_MANAGER_FILES
-     *    (@see BandwidthManager.startProposedBandwidthManager)
-     *    will cause the Spring component environment to restart properly.
-     *    This does not appear to negatively impact other parts of the system.
+     * Making changes to preference settings; particularly Bandwidth settinds;
+     * in CAVE results in a forced refresh of the Spring .xml configuration.
+     * (ex. CAVE->Data Delivery->System Management:: Settings->Bandwidth) The
+     * call path of the Spring refresh looks like: [ ... -> setBandwidth() ->
+     * startNewBandwidthManager() -> startBandwidthManager(...) ] and uses the
+     * full list of EDEX Spring .xml files. This operation fails.
      * <p>
-     *  
+     * 1. There are presently a total of 73 .xml files that are included in the
+     * EDEX Spring configuration. Using the full list of files results in (non
+     * terminal, but repeating) exception errors.
+     * <p>
+     * 
+     * 2. Removing the following files from the EDEX file list will allow this
+     * method to complete execution without failure, but results in Bandwidth
+     * Manager not restarting properly. i.e. Exceptions result elsewhere.
+     * /res/spring/harvester-datadelivery-registry.xml
+     * /res/spring/harvester-datadelivery.xml
+     * /spring/datadelivery-subscription-verification.xml
+     * /spring/bandwidth-datadelivery-edex-impl-wfo.xml
+     * /spring/bandwidth-datadelivery-edex-impl.xml
+     * /spring/bandwidth-datadelivery-edex-impl-monolithic.xml
+     * /res/spring/purge-logs.xml
+     * /res/spring/ebxml-garbagecollector-edex-impl.xml
+     * /res/spring/ebxml-webserver.xml /spring/datadelivery-cron.xml
+     * /spring/datadelivery-wfo-cron.xml /spring/retrieval-datadelivery.xml
+     * /res/spring/request-service-common.xml
+     * <p>
+     * 3. Using ONLY the Spring files for the "memory" configuration e.g.
+     * InMemoryBandwidthManager.IN_MEMORY_BANDWIDTH_MANAGER_FILES (@see
+     * BandwidthManager.startProposedBandwidthManager) will cause the Spring
+     * component environment to restart properly. This does not appear to
+     * negatively impact other parts of the system.
+     * <p>
+     * 
      * @return true if the new bandwidth manager was started
      */
     private boolean startNewBandwidthManager() {
-        
+
         BandwidthManager<T, C> bandwidthManager = startBandwidthManager(
                 InMemoryBandwidthManager.IN_MEMORY_BANDWIDTH_MANAGER_FILES,
                 false, "EDEX");
@@ -1388,16 +1422,16 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             final String[] springFiles, boolean close, String type) {
         ITimer timer = TimeUtil.getTimer();
         timer.start();
-    
+
         ClassPathXmlApplicationContext ctx = appContextMap.get(springFiles);
         try {
-            if(ctx == null){
+            if (ctx == null) {
                 ctx = new ClassPathXmlApplicationContext(springFiles,
                         EDEXUtil.getSpringContext());
                 appContextMap.put(springFiles, ctx);
             }
             BandwidthManager<T, C> bwManager = null;
-                bwManager = ctx.getBean("bandwidthManager", BandwidthManager.class);
+            bwManager = ctx.getBean("bandwidthManager", BandwidthManager.class);
             try {
                 bwManager.initializer.executeAfterRegistryInit();
                 return bwManager;
@@ -1748,5 +1782,5 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         return dates;
     }
-    
+
 }

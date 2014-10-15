@@ -40,6 +40,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 04, 2013 1441       djohnson     Initial creation
  * Jan 17, 2013 1501       djohnson     Route to datadelivery.
  * Jan 21, 2013 1501       djohnson     Include subscription on all requests.
+ * Oct 15, 2014 3664       ccody        Add Subscription unscheduled notification method
  * 
  * </pre>
  * 
@@ -227,6 +228,19 @@ public class SendToServerSubscriptionNotificationService implements
         req.setCategory("Subscription");
         req.setPriority(3);
         req.setMessage(subscription.getName() + " Deactivated");
+        req.setSubscription(subscription);
+
+        sendRequest(req);
+    }
+
+    public void sendSubscriptionUnscheduledNotification(
+            Subscription subscription, String message, String username) {
+
+        SubscriptionNotificationRequest req = new SubscriptionNotificationRequest();
+        req.setUserId(username);
+        req.setCategory("Subscription");
+        req.setPriority(3);
+        req.setMessage(subscription.getName() + message);
         req.setSubscription(subscription);
 
         sendRequest(req);

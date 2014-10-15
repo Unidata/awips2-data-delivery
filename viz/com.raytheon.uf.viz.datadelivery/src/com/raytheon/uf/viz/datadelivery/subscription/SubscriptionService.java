@@ -24,7 +24,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
@@ -98,7 +100,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Nov 07, 2013  2291      skorolev     Used showText() method for "Shared Subscription" message.
  * Jan 26, 2014  2259      mpduff       Turn off subs to be deactivated.
  * Feb 04, 2014  2677      mpduff       Don't do overlap checks when deactivating subs.
- * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
+ * Oct 15, 2014  3664      ccody        Added notification for scheduling status of subscriptions changes
  * 
  * </pre>
  * 
@@ -313,7 +316,8 @@ public class SubscriptionService implements ISubscriptionService {
      * {@inheritDoc}
      */
     @Override
-    public SubscriptionServiceResult store(final String username, final Subscription subscription,
+    public SubscriptionServiceResult store(final String username,
+            final Subscription subscription,
             IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
 
@@ -323,14 +327,14 @@ public class SubscriptionService implements ISubscriptionService {
         final ServiceInteraction action = new ServiceInteraction() {
             @Override
             public String call() throws RegistryHandlerException {
-                DataDeliveryHandlers.getSubscriptionHandler().store(username, 
+                DataDeliveryHandlers.getSubscriptionHandler().store(username,
                         subscription);
                 return successMessage;
             }
         };
 
-        SubscriptionServiceResult result = performAction(username, subscriptions, action,
-                displayTextStrategy);
+        SubscriptionServiceResult result = performAction(username,
+                subscriptions, action, displayTextStrategy);
 
         if (!result.isAllowFurtherEditing()) {
             result.setSubscriptionStatusSummary(bandwidthService
@@ -345,7 +349,8 @@ public class SubscriptionService implements ISubscriptionService {
      * 
      */
     @Override
-    public SubscriptionServiceResult update(final String username, final Subscription subscription,
+    public SubscriptionServiceResult update(final String username,
+            final Subscription subscription,
             IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
 
@@ -356,20 +361,22 @@ public class SubscriptionService implements ISubscriptionService {
             @Override
             public String call() throws RegistryHandlerException {
                 subscription.setUnscheduled(false);
-                DataDeliveryHandlers.getSubscriptionHandler().update(username, 
+                DataDeliveryHandlers.getSubscriptionHandler().update(username,
                         subscription);
                 return successMessage;
             }
         };
 
-        return performAction(username, subscriptions, action, displayTextStrategy);
+        return performAction(username, subscriptions, action,
+                displayTextStrategy);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public SubscriptionServiceResult update(final String username, final List<Subscription> subs,
+    public SubscriptionServiceResult update(final String username,
+            final List<Subscription> subs,
             IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
 
@@ -379,7 +386,8 @@ public class SubscriptionService implements ISubscriptionService {
             public String call() throws RegistryHandlerException {
                 for (Subscription sub : subs) {
                     sub.setUnscheduled(false);
-                    DataDeliveryHandlers.getSubscriptionHandler().update(username, sub);
+                    DataDeliveryHandlers.getSubscriptionHandler().update(
+                            username, sub);
                 }
                 return successMessage;
             }
@@ -392,7 +400,7 @@ public class SubscriptionService implements ISubscriptionService {
      * {@inheritDoc}
      */
     @Override
-    public SubscriptionServiceResult updateWithPendingCheck(String username, 
+    public SubscriptionServiceResult updateWithPendingCheck(String username,
             final List<Subscription> subscriptions,
             IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
@@ -488,14 +496,16 @@ public class SubscriptionService implements ISubscriptionService {
             }
         };
 
-        return performAction(username, subscriptions, action, displayTextStrategy);
+        return performAction(username, subscriptions, action,
+                displayTextStrategy);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public SubscriptionServiceResult store(final String username, final AdhocSubscription sub,
+    public SubscriptionServiceResult store(final String username,
+            final AdhocSubscription sub,
             IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
 
@@ -505,13 +515,14 @@ public class SubscriptionService implements ISubscriptionService {
         final ServiceInteraction action = new ServiceInteraction() {
             @Override
             public String call() throws RegistryHandlerException {
-                DataDeliveryHandlers.getSubscriptionHandler().store(username, sub);
+                DataDeliveryHandlers.getSubscriptionHandler().store(username,
+                        sub);
                 return successMessage;
             }
         };
 
-        SubscriptionServiceResult result = performAction(username, subscriptions, action,
-                displayTextStrategy);
+        SubscriptionServiceResult result = performAction(username,
+                subscriptions, action, displayTextStrategy);
         if (!result.isAllowFurtherEditing()) {
             Date date = bandwidthService.getEstimatedCompletionTime(sub);
             if (date != null) {
@@ -539,7 +550,7 @@ public class SubscriptionService implements ISubscriptionService {
      * @return the result object
      * @throws RegistryHandlerException
      */
-    private SubscriptionServiceResult performAction(String username, 
+    private SubscriptionServiceResult performAction(String username,
             List<Subscription> subscriptions, ServiceInteraction action,
             final IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
@@ -596,10 +607,27 @@ public class SubscriptionService implements ISubscriptionService {
                         forceApplyPrompt.displayForceApplyPrompt(result.config);
                     }
                 });
+
+                StringBuilder notificationSB = new StringBuilder();
+                ForceApplyPromptResponse theResult = forceApplyPrompt
+                        .getForceApplyPromptResponse();
                 switch (forceApplyPrompt.getForceApplyPromptResponse()) {
                 case INCREASE_LATENCY:
+                    int oldLatency = subscription.getLatencyInMinutes();
                     subscription
                             .setLatencyInMinutes(result.config.requiredLatency);
+                    notificationSB
+                            .append(" Bandwidth Latency has been modified from ");
+                    notificationSB.append(oldLatency);
+                    notificationSB.append(" to ");
+                    notificationSB.append(subscription.getLatencyInMinutes());
+                    notificationSB
+                            .append(" (minutes) to fit in available bandwidth.");
+                    notificationService
+                            .sendSubscriptionUnscheduledNotification(
+                                    subscription, notificationSB.toString(),
+                                    username);
+
                     // Intentional fall-through
                 case FORCE_APPLY:
                     // Have to make sure we set them to not be unscheduled, let
@@ -611,10 +639,33 @@ public class SubscriptionService implements ISubscriptionService {
 
                     final Set<String> unscheduled = bandwidthService
                             .schedule(subscriptions);
-                    updateSubscriptionsByNameToUnscheduled(username, unscheduled);
+
+                    updateSubscriptionsByNameToUnscheduled(username,
+                            unscheduled);
 
                     StringBuilder sb = new StringBuilder(successMessage);
                     getUnscheduledSubscriptionsPortion(sb, unscheduled);
+
+                    if ((unscheduled != null)
+                            && (unscheduled.isEmpty() == false)) {
+
+                        Map<String, Subscription> allSubscriptionMap = new HashMap<String, Subscription>();
+                        String name = null;
+                        for (Subscription sub : subscriptions) {
+                            name = sub.getName();
+                            allSubscriptionMap.put(name, sub);
+                        }
+
+                        // Publish Notification events
+                        String msg = " is unscheduled.";
+                        for (String unSchedSubName : unscheduled) {
+                            Subscription unSchedSub = allSubscriptionMap
+                                    .get(unSchedSubName);
+                            notificationService
+                                    .sendSubscriptionUnscheduledNotification(
+                                            unSchedSub, msg, username);
+                        }
+                    }
 
                     return new SubscriptionServiceResult(sb.toString());
                 case CANCEL:
@@ -630,6 +681,7 @@ public class SubscriptionService implements ISubscriptionService {
                             }
                         });
                     }
+
                     return new SubscriptionServiceResult(true);
                 default:
                     throw new IllegalArgumentException(
@@ -768,7 +820,8 @@ public class SubscriptionService implements ISubscriptionService {
      */
     private void savePendingSub(PendingSubscription pendingSub, String username)
             throws RegistryHandlerException {
-        DataDeliveryHandlers.getPendingSubscriptionHandler().store(username, pendingSub);
+        DataDeliveryHandlers.getPendingSubscriptionHandler().store(username,
+                pendingSub);
 
         notificationService
                 .sendCreatedPendingSubscriptionForSubscriptionNotification(
