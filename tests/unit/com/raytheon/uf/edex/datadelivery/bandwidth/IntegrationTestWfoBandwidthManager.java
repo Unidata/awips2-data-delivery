@@ -28,7 +28,7 @@ import com.raytheon.uf.common.util.SpringFiles;
 import com.raytheon.uf.edex.datadelivery.bandwidth.WfoBandwidthManagerCreator.WfoBandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsForScheduling;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -83,7 +83,7 @@ public class IntegrationTestWfoBandwidthManager extends WfoBandwidthManager {
             ISubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
             ISubscriptionNotificationService subscriptionNotificationService,
-            IFindSubscriptionsForScheduling findSubscriptionStrategy) {
+            ISubscriptionFinder findSubscriptionStrategy) {
         super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil, 
                 dataSetMetaDataHandler, subscriptionHandler,
                 adhocSubscriptionHandler, subscriptionNotificationService,

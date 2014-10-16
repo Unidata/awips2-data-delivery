@@ -13,9 +13,9 @@ import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
 import com.raytheon.uf.common.serialization.comm.RequestRouter;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.viz.core.notification.INotificationObserver;
-import com.raytheon.uf.viz.core.notification.NotificationException;
-import com.raytheon.uf.viz.core.notification.NotificationMessage;
+import com.raytheon.uf.common.jms.notification.INotificationObserver;
+import com.raytheon.uf.common.jms.notification.NotificationException;
+import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.viz.datadelivery.notification.xml.MessageLoadXML;
 
 /**
@@ -32,6 +32,7 @@ import com.raytheon.uf.viz.datadelivery.notification.xml.MessageLoadXML;
  * Jan 22, 2013 1501       djohnson     Route requests to datadelivery.
  * Sep 05, 2013 2314       mpduff       support the load all messages option.
  * Feb 07, 2014 2453       mpduff       Remove username query param.
+ * Oct 03, 2014 2749       ccody        Replace deprecated references to non-deprecated classes
  * 
  * </pre>
  * 

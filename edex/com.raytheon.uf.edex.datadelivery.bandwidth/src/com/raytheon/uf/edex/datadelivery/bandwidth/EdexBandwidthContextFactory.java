@@ -37,7 +37,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthContextFactory;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsForScheduling;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
@@ -97,7 +97,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
                 ISubscriptionHandler subscriptionHandler,
                 IAdhocSubscriptionHandler adhocSubscriptionHandler,
                 ISubscriptionNotificationService notificationService,
-                IFindSubscriptionsForScheduling findSubscriptionsStrategy);
+                ISubscriptionFinder findSubscriptionsStrategy);
     }
 
     private static EdexBandwidthManager instance;
@@ -120,7 +120,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
 
     private final ISubscriptionNotificationService notificationService;
 
-    private final IFindSubscriptionsForScheduling findSubscriptionsStrategy;
+    private final ISubscriptionFinder findSubscriptionsStrategy;
 
     /**
      * Intentionally package-private constructor, as it is created from Spring
@@ -145,7 +145,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
             ISubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
             ISubscriptionNotificationService notificationService,
-            IFindSubscriptionsForScheduling findSubscriptionsStrategy) {
+            ISubscriptionFinder findSubscriptionsStrategy) {
         this.bandwidthDao = bandwidthDao;
         this.bandwidthBucketDao = bandwidthBucketDao;
         this.bandwidthInitializer = bandwidthInitializer;

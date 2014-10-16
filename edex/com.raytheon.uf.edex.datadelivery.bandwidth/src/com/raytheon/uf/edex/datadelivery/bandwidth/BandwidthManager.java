@@ -156,11 +156,14 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * May 15, 2014   3113     mpduff       Schedule subscriptions for gridded datasets without cycles.
  * Jul 28, 2014 2752       dhladky      Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
  * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
- * Sep 17, 2014 2749       ccody        Changes to startNewBandwidthManager
- *                                      @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager#
- *                                      to refresh spring components so that attempts to connect with them 
- *                                      do not result in errors and exceptions.
  * Sept 14, 2014 2131      dhladky      PDA updates
+ * Oct 03, 2014 2749       ccody        Changes to startBandwidthManager 
+ *                                      to refresh only necessary spring components 
+ *                                      @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.startNewBandwidthManager
+ *                                      Changes to handleRequest so that after restarting that the EdexBandwidthManager
+ *                                      changes and updates itself so that attempts to connect with them 
+ *                                      do not result in errors and exceptions.
+ *                                      @see com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager.resetBandwidthManager
  * 
  * </pre>
  * 
@@ -555,12 +558,12 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     @Override
     public int updateSchedule(Network network) {
-        List<Subscription> subsToSchedule = getSubscriptionsToSchedule(network);
+        List<Subscription<T,C>> subsToSchedule = getSubscriptionsToSchedule(network);
         if (CollectionUtil.isNullOrEmpty(subsToSchedule)) {
             return 0;
         }
 
-        for (Subscription subscription : subsToSchedule) {
+        for (Subscription<T,C> subscription : subsToSchedule) {
             updateSchedule(subscription);
         }
 
@@ -574,7 +577,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            The network
      * @return List of subscriptions for the network
      */
-    protected abstract List<Subscription> getSubscriptionsToSchedule(
+    protected abstract List<Subscription<T,C>> getSubscriptionsToSchedule(
             Network network);
 
     /**
@@ -857,6 +860,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         ITimer timer = TimeUtil.getTimer();
         timer.start();
 
+        boolean resetManager = false;
         Object response = null;
 
         final Network requestNetwork = request.getNetwork();
@@ -924,23 +928,23 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 // This is a safe operation as all subscriptions will remain
                 // scheduled, just apply
                 setBandwidth(requestNetwork, bandwidth);
+                resetManager = true;
             }
             break;
         case FORCE_SET_BANDWIDTH:
             boolean setBandwidthBool = setBandwidth(requestNetwork, bandwidth);
             response = setBandwidthBool;
+            resetManager = true;
             break;
         case SHOW_ALLOCATION:
             break;
 
         case SHOW_BUCKET:
-
             long bucketId = request.getId();
             RetrievalPlan plan = retrievalManager.getPlan(requestNetwork);
             BandwidthBucket bucket = plan.getBucket(bucketId);
             response = plan.showBucket(bucket);
             break;
-
         case SHOW_DEFERRED:
             StringBuilder sb = new StringBuilder();
             List<BandwidthAllocation> z = bandwidthDao.getDeferred(
@@ -977,12 +981,32 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         // Clean up any in-memory bandwidth configuration files
         InMemoryBandwidthContextFactory.deleteInMemoryBandwidthConfigFile();
 
+        if (resetManager == true) {
+            resetBandwidthManager(requestNetwork, "Bandwidth changed to " + bandwidth + " KBps");
+
+        }
         timer.stop();
 
         statusHandler.info("Processed request of type [" + requestType
                 + "] in [" + timer.getElapsedTime() + "] ms");
 
         return response;
+    }
+    
+    /** 
+     * Reset specifically the EdexBandwidthManager.
+     * 
+     * This method must be implemented in EdexBandwidthManager so that it can
+     * "reshuffle the deck" of Retrieval Plans, etc.
+     * It is empty for this implementation.
+     * <p>  
+     * The EdexBandwidthManageris the only BandwidthManager class that needs to be able
+     * to reset itself in response to operations from within the abstract 
+     * BandwidthManager.handleRequest method processing.
+     * Presently, this method must be empty in all other implementations.
+     */
+    protected void resetBandwidthManager(Network requestNetwork, String resetReasonMessage) {
+        //Do nothing.
     }
 
     /**
@@ -1319,7 +1343,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     /**
      * Starts the new bandwidth manager.
      * 
-     * 2014-09-17 CCODY Developer's Notes: (Issue #2749)
      * Making changes to preference settings; particularly Bandwidth settinds; in CAVE 
      * results in a forced refresh of the Spring .xml configuration.
      * (ex. CAVE->Data Delivery->System Management:: Settings->Bandwidth)
@@ -1746,4 +1769,5 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         return dates;
     }
+    
 }

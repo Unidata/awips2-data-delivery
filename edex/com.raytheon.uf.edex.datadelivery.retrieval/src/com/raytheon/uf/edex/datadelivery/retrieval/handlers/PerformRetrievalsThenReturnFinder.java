@@ -24,7 +24,7 @@ import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusDefinition;
-import com.raytheon.uf.common.datadelivery.event.status.SystemStatusEvent;
+import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusEvent;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
@@ -60,6 +60,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jul 16, 2013 1655       mpduff       Send a system status event based on the response from the provider.
  * Jan 15, 2014 2678       bgonzale     Retrieve RetrievalRequestRecords from a Queue for processing.
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
+ * Sep 17, 2014 2749       ccody        Renamed SystemStatusEvent to DataDeliverySystemStatusEvent 
+ * 
  * </pre>
  * 
  * @author djohnson
@@ -202,7 +204,7 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
                 .setSuccess(requestRecord.getState() == State.COMPLETED);
 
         // Create system status event
-        SystemStatusEvent event = new SystemStatusEvent();
+        DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();
         event.setName(requestRecord.getProvider());
         event.setSystemType("Provider");
         if (requestRecord.getState() == State.COMPLETED

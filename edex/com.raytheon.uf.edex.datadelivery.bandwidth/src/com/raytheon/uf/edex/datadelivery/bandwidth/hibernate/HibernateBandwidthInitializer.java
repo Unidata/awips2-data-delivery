@@ -50,7 +50,7 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(HibernateBandwidthInitializer.class);
 
-    private final IFindSubscriptionsForScheduling findSubscriptionsStrategy;
+    private final ISubscriptionFinder findSubscriptionsStrategy;
 
     private final String site;
 
@@ -60,7 +60,7 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
      * @param strategy
      */
     public HibernateBandwidthInitializer(
-            IFindSubscriptionsForScheduling findSubscriptionsStrategy) {
+            ISubscriptionFinder findSubscriptionsStrategy) {
         this(findSubscriptionsStrategy, RegistryIdUtil.getId());
     }
 
@@ -69,7 +69,7 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
      * @param strategy
      */
     HibernateBandwidthInitializer(
-            IFindSubscriptionsForScheduling findSubscriptionsStrategy,
+            ISubscriptionFinder findSubscriptionsStrategy,
             String site) {
         this.findSubscriptionsStrategy = findSubscriptionsStrategy;
         this.site = site;

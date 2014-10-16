@@ -77,12 +77,11 @@
 	<classpathentry kind="src" path="/javax.jms"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.uf.common.jms"/>
 	<classpathentry kind="src" path="/com.raytheon.uf.common.wmo"/>
-	<classpathentry kind="lib" path="/common/ccody/workspace/AWIPS2_foss/lib/org.hamcrest/hamcrest-all-1.3.jar"/>
-	<classpathentry kind="lib" path="/common/ccody/workspace/AWIPS2_foss/lib/org.hamcrest/hamcrest-all-1.3-sources.jar"/>
 	<classpathentry kind="src" path="/com.raytheon.uf.edex.datadelivery.retrieval.wfs"/>
 	<classpathentry kind="src" path="/com.raytheon.uf.edex.plugin.nwsauth"/>
 	<classpathentry kind="src" path="/com.raytheon.uf.edex.registry.ebxml"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/com.raytheon.edex.plugin.gfe"/>
 	<classpathentry kind="src" path="/com.raytheon.uf.edex.requestsrv"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.hamcrest"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -48,6 +48,7 @@ import com.raytheon.uf.viz.core.exception.VizCommunicationException;
  * Feb 14, 2013 1596       djohnson     Remove sysouts, correct statusHandler class, handle null response.
  * Mar 26, 2013 1827       djohnson     Graph data should be requested from data delivery.
  * Jan 29, 2014 2722       mpduff       Callback is now passed in.
+ * Oct 03, 2014 2749       ccody        Add clearGraphData method
  * 
  * </pre>
  * 
@@ -114,6 +115,17 @@ public class GraphDataUtil implements Runnable {
         return graphData;
     }
 
+    /**
+     * Clear the graph data.
+     * 
+     * Method to clear all Graph data for force a requery when getGraphData is called.
+     * 
+     */
+    public void clearGraphDataData() {
+        this.graphData = null;
+    }
+
+    
     /**
      * Request retrieving graph data using a thread. When the thread is complete
      * a data updated callback is called notifying the data retrieval has

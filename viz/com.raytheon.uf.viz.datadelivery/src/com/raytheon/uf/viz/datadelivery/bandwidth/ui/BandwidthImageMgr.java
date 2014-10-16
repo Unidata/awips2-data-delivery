@@ -45,15 +45,14 @@ import com.raytheon.uf.viz.core.RGBColors;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 28, 2012   1269     lvenable     Initial creation
- * Dec 13, 2012   1269     lvenable     Fixes and updates.
- * Jan 25, 2013   1528     djohnson     Subscription priority is now an enum on subscriptions.
+ * Nov 28, 2012   1269     lvenable    Initial creation
+ * Dec 13, 2012   1269     lvenable    Fixes and updates.
+ * Jan 25, 2013   1528     djohnson    Subscription priority is now an enum on subscriptions.
  * Jan 28, 2013   1529     djohnson    Add hasSubscriptionNameChecked().
  * Oct 28, 2013   2430     mpduff      Add % of bandwidth utilized graph.
  * Nov 19, 2013   1531     mpduff      Update the settings.
  * Dec 17, 2013   2633     mpduff      Keep data used to regenerate images.
  * Sep 22, 2014   3607     ccody       Prevent NullPointerException on image regeneration for populateCanvasMap
- * 
  * </pre>
  * 
  * @author lvenable
@@ -270,6 +269,7 @@ public class BandwidthImageMgr implements IGraphOptions {
             canvasImgMap.get(ci).regenerateImage(graphData);
         }
     }
+    
 
     /**
      * Update the canvas settings for the specified canvas.

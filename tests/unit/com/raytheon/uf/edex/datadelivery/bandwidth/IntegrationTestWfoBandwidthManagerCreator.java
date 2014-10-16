@@ -26,7 +26,7 @@ import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationServ
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthContextFactory.IEdexBandwidthManagerCreator;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IFindSubscriptionsForScheduling;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -68,7 +68,7 @@ public class IntegrationTestWfoBandwidthManagerCreator implements
             ISubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
             ISubscriptionNotificationService subscriptionNotificationService,
-            IFindSubscriptionsForScheduling findSubscriptionStrategy) {
+            ISubscriptionFinder findSubscriptionStrategy) {
         return new IntegrationTestWfoBandwidthManager(dbInit, bandwidthDao,
                 retrievalManager, bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
                 subscriptionHandler, adhocSubscriptionHandler,
