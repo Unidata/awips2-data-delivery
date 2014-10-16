@@ -20,7 +20,7 @@
 
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import org.hibernate.cfg.AnnotationConfiguration;
+import org.hibernate.cfg.Configuration;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +45,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttr
  * Jun 24, 2013 2106        djohnson    Add {@link BandwidthBucket} to annotated classes.
  * Jul 11, 2013 2106        djohnson    Add {@link SubscriptionRetrievalAttributes}.
  * Jan 08, 2013 2645        bgonzale    Added RegistryBandwidthRecord to configuration annotated class list.
+ * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
  * </pre>
  * 
  * @author jspinks
@@ -71,12 +72,12 @@ public class HibernateBandwidthDbInit extends DbInit implements
      * {@inheritDoc}
      */
     @Override
-    protected AnnotationConfiguration getAnnotationConfiguration() {
+    protected Configuration getConfiguration() {
         /*
          * Create a new configuration object which holds all the classes that
          * this Hibernate SessionFactory is aware of
          */
-        AnnotationConfiguration aConfig = new AnnotationConfiguration();
+        Configuration aConfig = new Configuration();
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket.class);
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate.class);
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription.class);

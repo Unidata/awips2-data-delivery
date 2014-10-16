@@ -36,6 +36,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.Sta
  * Feb 13, 2013 1543       djohnson     Exported interface which is now implemented.
  * Feb 22, 2013 1543       djohnson     Made public as YAJSW doesn't like Spring exceptions.
  * May 22, 2014 2808       dhladky      Fixed notification upon SBN delivery
+ * 10/16/2014   3454       bphillip     Upgrading to Hibernate 4
  * 
  * </pre>
  * 
@@ -67,7 +68,7 @@ public class RetrievalDao extends
         RetrievalRequestRecord rval = null;
 
         try {
-            sess = template.getSessionFactory().getCurrentSession();
+            sess = getCurrentSession();
 
             final String minPriHql = "select min(rec.priority) from RetrievalRequestRecord rec "
                     + "where rec.state = :statePending and rec.network = :network";
@@ -186,7 +187,7 @@ public class RetrievalDao extends
         try {
             String hql = "update RetrievalRequestRecord rec set rec.state = :pendState where rec.state = :runState";
 
-            Query query = template.getSessionFactory().getCurrentSession()
+            Query query = getCurrentSession()
                     .createQuery(hql);
             query.setParameter("pendState", State.PENDING);
             query.setParameter("runState", State.RUNNING);
@@ -211,7 +212,7 @@ public class RetrievalDao extends
         try {
             String hql = "select rec.state, count(rec.id.subscriptionName) from RetrievalRequestRecord rec "
                     + "where rec.id.subscriptionName = :subName group by rec.state";
-            Query query = template.getSessionFactory().getCurrentSession()
+            Query query = getCurrentSession()
                     .createQuery(hql);
             query.setString("subName", subName);
             @SuppressWarnings("unchecked")
@@ -247,7 +248,7 @@ public class RetrievalDao extends
     public List<RetrievalRequestRecord> getFailedRequests(String subName)
             throws DataAccessLayerException {
         try {
-            Criteria query = template.getSessionFactory().getCurrentSession()
+            Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
             query.add(Restrictions.eq("state", State.FAILED));
             query.add(Restrictions.eq("id.subscriptionName", subName));
@@ -271,7 +272,7 @@ public class RetrievalDao extends
         try {
             String hql = "delete from RetrievalRequestRecord rec "
                     + "where rec.id.subscriptionName = :subName";
-            Query query = template.getSessionFactory().getCurrentSession()
+            Query query = getCurrentSession()
                     .createQuery(hql);
             query.setString("subName", subName);
             query.executeUpdate();
@@ -292,7 +293,7 @@ public class RetrievalDao extends
     public List<RetrievalRequestRecord> getRequests(String subName)
             throws DataAccessLayerException {
         try {
-            Criteria query = template.getSessionFactory().getCurrentSession()
+            Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
             query.add(Restrictions.eq("id.subscriptionName", subName));
             List<RetrievalRequestRecord> rval = query.list();
