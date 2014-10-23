@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.registry.federation;
 
-import org.hibernate.cfg.AnnotationConfiguration;
+import org.hibernate.cfg.Configuration;
 
 import com.raytheon.uf.edex.database.init.DbInit;
 
@@ -33,6 +33,7 @@ import com.raytheon.uf.edex.database.init.DbInit;
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * 2/19/2014    2769       bphillip    Initial Creation
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * </pre>
  * 
  * @author bphillip
@@ -53,12 +54,12 @@ public class FederationDbInit extends DbInit {
     }
 
     @Override
-    protected AnnotationConfiguration getAnnotationConfiguration() {
+    protected Configuration getConfiguration() {
         /*
          * Create a new configuration object which holds all the classes that
          * this Hibernate SessionFactory is aware of
          */
-        AnnotationConfiguration aConfig = new AnnotationConfiguration();
+        Configuration aConfig = new Configuration();
         aConfig.addAnnotatedClass(ReplicationEvent.class);
         return aConfig;
     }

@@ -54,6 +54,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Dec 11, 2013   2625     mpduff      Add error handling for no data conditions.
  * Jan 17, 2014   2678     bgonzale    Changed merge to not check for existing network
  *                                     mapping since SBN will be in the OPSNET mapping
+ * Oct 17, 2014   2753     ccody       Sorting by Ascending Subscription Name in the BUG
+ *                                     does not sort properly
  * 
  * </pre>
  * 
@@ -138,15 +140,14 @@ public class BandwidthGraphData {
         for (SubscriptionWindowData s : subList) {
             subNameList.add(s.getSubscriptionName());
         }
-
         /*
          * Since the data will be drawn from the bottom up, ascending is
-         * actually reverse order of the sort.
+         * actually reverse order of the sort. User will still see ordering of:
+         * 1 2 3 A B C a b c for ascending.
          */
+        Collections.sort(subNameList);
         if (ascending) {
             Collections.reverse(subNameList);
-        } else {
-            Collections.sort(subNameList);
         }
 
         return subNameList;

@@ -31,7 +31,8 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 04, 2013 1441      djohnson     Initial creation
+ * Jan 04, 2013 1441       djohnson    Initial creation
+ * Oct 15, 2014 3664       ccody       Add Subscription unscheduled notification method
  * 
  * </pre>
  * 
@@ -153,4 +154,16 @@ public interface ISubscriptionNotificationService {
      */
     void sendSubscriptionDeactivatedNotification(Subscription subscription,
             String username);
+
+    /**
+     * Send a notification that the Subscription Bandwidth latency and
+     * scheduling have been changed.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
+     */
+    void sendSubscriptionUnscheduledNotification(Subscription subscription,
+            String message, String username);
 }

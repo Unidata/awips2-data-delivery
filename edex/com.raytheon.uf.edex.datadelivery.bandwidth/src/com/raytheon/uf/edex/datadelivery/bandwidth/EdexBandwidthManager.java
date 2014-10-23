@@ -46,6 +46,7 @@ import com.google.common.eventbus.Subscribe;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest.RequestType;
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
+import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionStatusEvent;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusDefinition;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusEvent;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
@@ -96,6 +97,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetriev
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
+
 /**
  * Implementation of {@link BandwidthManager} that isolates EDEX specific
  * functionality. This keeps things out of the {@link InMemoryBandwidthManager}
@@ -140,6 +142,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * May 22, 2014 2808       dhladky      schedule unscheduled when a sub is deactivated
  * Jul 28, 2014 2752       dhladky      Fixed bad default user for registry.
  * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
+ * Oct 15, 2014 3664       ccody        Add notification event for unscheduled Subscriptions at startup
  * </pre>
  * 
  * @author djohnson
@@ -161,9 +164,10 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     private final ISubscriptionNotificationService subscriptionNotificationService;
 
-    private final ISubscriptionFinder<Subscription<T,C>> findSubscriptionsStrategy;
+    private final ISubscriptionFinder<Subscription<T, C>> findSubscriptionsStrategy;
 
     private static final String UNKNOWN = "UNKNOWN";
+
     @VisibleForTesting
     final Runnable watchForConfigFileChanges = new Runnable() {
 
@@ -217,13 +221,13 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             for (Network key : subMap.keySet()) {
                 List<Subscription<T, C>> subscriptions = new ArrayList<Subscription<T, C>>();
                 // this loop is here only because of the generics mess
-                for (Subscription s : subMap.get(key)) {
+                for (Subscription<T, C> s : subMap.get(key)) {
                     subscriptions.add(s);
                 }
                 ProposeScheduleResponse response = proposeScheduleSubscriptions(subscriptions);
                 Set<String> unscheduled = response
                         .getUnscheduledSubscriptions();
-                List<Subscription> unScheduledSubs = new ArrayList<Subscription>();
+                List<Subscription<T, C>> unScheduledSubs = new ArrayList<Subscription<T, C>>();
 
                 if (!unscheduled.isEmpty()) {
                     // if proposed was unable to schedule some subscriptions it
@@ -244,11 +248,15 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     // Update unscheduled subscriptions to reflect reality of
                     // condition
                     if (!CollectionUtils.isEmpty(unScheduledSubs)) {
-                        for (Subscription sub : unScheduledSubs) {
+                        SubscriptionStatusEvent sse = null;
+                        for (Subscription<T, C> sub : unScheduledSubs) {
                             try {
                                 sub.setUnscheduled(true);
                                 subscriptionHandler.update(
                                         RegistryUtil.defaultUser, sub);
+                                sse = new SubscriptionStatusEvent(sub,
+                                        " is unscheduled. Insufficient bandwidth at startup.");
+                                EventBus.publish(sse);
                             } catch (RegistryHandlerException e) {
                                 statusHandler.handle(Priority.PROBLEM,
                                         "Unable to update subscription scheduling status: "
@@ -268,79 +276,89 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         return unscheduledNames;
     }
 
-    
-    /** 
+    /**
      * Reset specifically the EdexBandwidthManager.
      * 
-     * This method is abstract here so that the handleRequest implemented in the 
-     * abstract BandwidthManager class is able to make a call the instance of the
-     * EdexBandwidthManager so that it can "reshuffle the deck" of Retrieval Plans, etc.
-     * <p>  
-     * The EdexBandwidthManageris the only BandwidthManager class that needs to be able
-     * to reset itself in response to operations from within the abstract 
-     * BandwidthManager.handleRequest method processing.
-     * Presently, this method must be implemented but empty in all other implementations.
+     * This method is abstract here so that the handleRequest implemented in the
+     * abstract BandwidthManager class is able to make a call the instance of
+     * the EdexBandwidthManager so that it can "reshuffle the deck" of Retrieval
+     * Plans, etc.
+     * <p>
+     * The EdexBandwidthManageris the only BandwidthManager class that needs to
+     * be able to reset itself in response to operations from within the
+     * abstract BandwidthManager.handleRequest method processing. Presently,
+     * this method must be implemented but empty in all other implementations.
+     * 
      * @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.resetBandwidthManager
      */
     @Override
-    protected void resetBandwidthManager(Network requestNetwork, String resetReasonMessage) {
-        
-        statusHandler.info("EdexBandwidthManager: Restoring Subscriptions for Bandwidth Manager Reset. START");
-        Map<Network, List<Subscription<T,C>>>  networkToSubscriptionSetMap = null;
-        List<Subscription<T,C>> subscriptionList = null;
-        
+    protected void resetBandwidthManager(Network requestNetwork,
+            String resetReasonMessage) {
+
+        statusHandler
+                .info("EdexBandwidthManager: Restoring Subscriptions for Bandwidth Manager Reset. START");
+        Map<Network, List<Subscription<T, C>>> networkToSubscriptionSetMap = null;
+        List<Subscription<T, C>> subscriptionList = null;
+
         if (findSubscriptionsStrategy != null) {
             try {
-                networkToSubscriptionSetMap = findSubscriptionsStrategy.findSubscriptionsToSchedule();
-            }
-            catch(Exception ex) {
-                statusHandler.error("Error occurred searching for subscriptions. Falling back to backup files.", ex);
+                networkToSubscriptionSetMap = findSubscriptionsStrategy
+                        .findSubscriptionsToSchedule();
+            } catch (Exception ex) {
+                statusHandler
+                        .error("Error occurred searching for subscriptions. Falling back to backup files.",
+                                ex);
                 networkToSubscriptionSetMap = null;
             }
         }
-        
-        if ((networkToSubscriptionSetMap != null) && (networkToSubscriptionSetMap.isEmpty() == false)) {
-            
-            //Remove ALL BANDWIDTH Subscriptions
-            List<BandwidthSubscription> removeBandwidthSubscriptionList = 
-                    this.bandwidthDao.getBandwidthSubscriptions();
+
+        if ((networkToSubscriptionSetMap != null)
+                && (networkToSubscriptionSetMap.isEmpty() == false)) {
+
+            // Remove ALL BANDWIDTH Subscriptions
+            List<BandwidthSubscription> removeBandwidthSubscriptionList = this.bandwidthDao
+                    .getBandwidthSubscriptions();
             if (removeBandwidthSubscriptionList.isEmpty() == false) {
                 remove(removeBandwidthSubscriptionList);
             }
-            
-            //Restore ALL Subscriptions
+
+            // Restore ALL Subscriptions
             String networkName;
             for (Network network : networkToSubscriptionSetMap.keySet()) {
                 networkName = network.name();
                 subscriptionList = networkToSubscriptionSetMap.get(network);
                 if (subscriptionList != null) {
-                    for (Subscription<T,C> subscription : subscriptionList) {
-                        
+                    for (Subscription<T, C> subscription : subscriptionList) {
+
                         restoreSubscription(subscription);
                         try {
-                            statusHandler.info("\tScheduling: " + subscription.getName());                        
+                            statusHandler.info("\tScheduling: "
+                                    + subscription.getName());
                             List<BandwidthAllocation> unscheduledList = schedule(subscription);
-                            logSubscriptionListUnscheduled(networkName, unscheduledList);
-                        }
-                        catch(Exception ex) {
-                            statusHandler.error("Error occurred restarting EdexBandwidthManager for Network: " + network +
-                                    " Subscription: " + subscription.getName(), ex);
+                            logSubscriptionListUnscheduled(networkName,
+                                    unscheduledList);
+                        } catch (Exception ex) {
+                            statusHandler.error(
+                                    "Error occurred restarting EdexBandwidthManager for Network: "
+                                            + network + " Subscription: "
+                                            + subscription.getName(), ex);
                         }
                     }
                 }
             }
         } else {
-            statusHandler.error("Error occurred restarting EdexBandwidthManager: unable to find subscriptions to reschedule");
+            statusHandler
+                    .error("Error occurred restarting EdexBandwidthManager: unable to find subscriptions to reschedule");
             return;
         }
-        
-        statusHandler.info("END EdexBandwidthManager: Restoring Subscriptions for Bandwidth Manager Reset.");
 
-        
+        statusHandler
+                .info("END EdexBandwidthManager: Restoring Subscriptions for Bandwidth Manager Reset.");
+
         // Create system status event
         Calendar now = TimeUtil.newGmtCalendar();
         DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();
-        event.setName( requestNetwork.name() );
+        event.setName(requestNetwork.name());
         event.setDate(now);
         event.setSystemType("Bandwidth");
         event.setStatus(DataDeliverySystemStatusDefinition.RESTART);
@@ -348,8 +366,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         EventBus.publish(event);
     }
 
-    private void restoreSubscription(Subscription<T,C> subscription) {
-        
+    private void restoreSubscription(Subscription<T, C> subscription) {
+
         String subscriptionName = UNKNOWN;
         String networkName = UNKNOWN;
         try {
@@ -359,17 +377,19 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 networkName = subscriptionNetwork.name();
             }
             List<BandwidthAllocation> unscheduledList = null;
-            statusHandler.info("\tScheduling: " +subscriptionName);                        
+            statusHandler.info("\tScheduling: " + subscriptionName);
             unscheduledList = schedule(subscription);
             logSubscriptionListUnscheduled(networkName, unscheduledList);
-        }
-        catch(Exception ex) {
-            statusHandler.error("Error occurred restarting EdexBandwidthManager for Network: " + networkName +
-                    " Subscription: " + subscriptionName, ex);
+        } catch (Exception ex) {
+            statusHandler.error(
+                    "Error occurred restarting EdexBandwidthManager for Network: "
+                            + networkName + " Subscription: "
+                            + subscriptionName, ex);
         }
     }
-    
-    private void logSubscriptionListUnscheduled(String subscriptionNetwork, List<BandwidthAllocation> unscheduledList) {
+
+    private void logSubscriptionListUnscheduled(String subscriptionNetwork,
+            List<BandwidthAllocation> unscheduledList) {
         if (unscheduledList != null) {
             StringBuffer sb = new StringBuffer();
             sb.append("The following subscriptions for Network: ");
@@ -381,14 +401,13 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 if (i > 0) {
                     sb.append(", ");
                 }
-                sb.append( ba.getId() );
+                sb.append(ba.getId());
             }
             statusHandler.info(sb.toString());
         }
-        
+
     }
-    
-    
+
     /**
      * {@inheritDoc}
      */
@@ -530,11 +549,11 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     }
 
     /**
-    * Listen for Registry update events. Filter for subscription specific
-    * events. Sends corresponding subscription notification events.
-    * 
-    * @param event
-    */
+     * Listen for Registry update events. Filter for subscription specific
+     * events. Sends corresponding subscription notification events.
+     * 
+     * @param event
+     */
     @Subscribe
     @AllowConcurrentEvents
     public void registryEventListener(UpdateRegistryEvent event) {
@@ -542,12 +561,14 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         if (DataDeliveryRegistryObjectTypes.DATASETMETADATA.equals(objectType)) {
             publishDataSetMetaDataEvent(event);
         }
-        if ((DataDeliveryRegistryObjectTypes.SHARED_SUBSCRIPTION.equals(objectType)) ||
-            (DataDeliveryRegistryObjectTypes.SITE_SUBSCRIPTION.equals(objectType))) {
+        if ((DataDeliveryRegistryObjectTypes.SHARED_SUBSCRIPTION
+                .equals(objectType))
+                || (DataDeliveryRegistryObjectTypes.SITE_SUBSCRIPTION
+                        .equals(objectType))) {
             Subscription<T, C> subscription = getRegistryObjectById(
                     getSubscriptionHandler(), event.getId());
             boolean isLocalOrigination = subscription.getOriginatingSite()
-                   .equals(RegistryIdUtil.getId());
+                    .equals(RegistryIdUtil.getId());
 
             if (isLocalOrigination) {
                 subscriptionUpdated(subscription);
@@ -556,7 +577,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             }
         }
     }
-    
+
     protected void sendSubscriptionNotificationEvent(RegistryEvent event,
             Subscription<T, C> sub) {
         final String objectType = event.getObjectType();
@@ -935,8 +956,16 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         }
 
         for (Subscription<T, C> subscription : subscriptions) {
+            boolean origSchedStatus = subscription.isUnscheduled();
             subscription.setUnscheduled(true);
+
             subscriptionUpdated(subscription);
+
+            if (origSchedStatus == false) {
+                SubscriptionStatusEvent sse = new SubscriptionStatusEvent(
+                        subscription, " is unscheduled.");
+                EventBus.publish(sse);
+            }
         }
     }
 
@@ -987,10 +1016,11 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * (com.raytheon.uf.common.datadelivery.registry.Network)
      */
     @Override
-    protected List<Subscription<T,C>> getSubscriptionsToSchedule(Network network) {
-        List<Subscription<T,C>> subList = new ArrayList<Subscription<T,C>>(0);
+    protected List<Subscription<T, C>> getSubscriptionsToSchedule(
+            Network network) {
+        List<Subscription<T, C>> subList = new ArrayList<Subscription<T, C>>(0);
         try {
-            Map<Network, List<Subscription<T,C>>> activeSubs = findSubscriptionsStrategy
+            Map<Network, List<Subscription<T, C>>> activeSubs = findSubscriptionsStrategy
                     .findSubscriptionsToSchedule();
             if (activeSubs.get(network) != null) {
                 subList = activeSubs.get(network);
@@ -1013,7 +1043,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
         // With the removal of allocations, try now to add any subs that might
         // not have had room to schedule.
-        Map<Network, List<Subscription<T,C>>> subMap = null;
+        Map<Network, List<Subscription<T, C>>> subMap = null;
         try {
             subMap = findSubscriptionsStrategy.findSubscriptionsToSchedule();
         } catch (Exception e) {
@@ -1023,20 +1053,23 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         }
         if (subMap != null) {
             statusHandler.info("Finding any unscheduled subscriptions...");
-            List<Subscription<T,C>> unschedSubs = new ArrayList<Subscription<T,C>>();
+            List<Subscription<T, C>> unschedSubs = new ArrayList<Subscription<T, C>>();
             for (Network route : subMap.keySet()) {
-                for (Subscription<T,C> sub : subMap.get(route)) {
+                for (Subscription<T, C> sub : subMap.get(route)) {
                     // look for unscheduled subs, try to schedule them.
                     if (!sub.getName().equals(deactivatedSubName)
-                            && ((RecurringSubscription<T,C>) sub).shouldSchedule()
-                            && sub.isUnscheduled()) {
+                            && ((RecurringSubscription<T, C>) sub)
+                                    .shouldSchedule() && sub.isUnscheduled()) {
                         unschedSubs.add(sub);
                     }
                 }
             }
 
             if (!CollectionUtil.isNullOrEmpty(unschedSubs)) {
+                boolean modIsUnSched = false;
+                String msg = null;
                 for (Subscription sub : unschedSubs) {
+
                     statusHandler
                             .info("Attempting to Schedule unscheduled subscription: "
                                     + sub.getName());
@@ -1058,6 +1091,17 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     try {
                         subscriptionHandler.update(RegistryUtil.registryUser,
                                 sub);
+                        // Send notification if its scheduling status has
+                        // changed
+                        modIsUnSched = sub.isUnscheduled();
+                        if (modIsUnSched == true) {
+                            msg = " is unscheduled.";
+                        } else {
+                            msg = " is scheduled.";
+                        }
+                        SubscriptionStatusEvent sse = new SubscriptionStatusEvent(
+                                sub, msg);
+                        EventBus.publish(sse);
                     } catch (RegistryHandlerException e) {
                         statusHandler
                                 .handle(Priority.PROBLEM,
