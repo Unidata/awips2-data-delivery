@@ -19,12 +19,12 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * further licensing information.
  **/
 
-import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.PDAAgent;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARequestConnectionUtil;
 
 /**
  * PDA Catalog Service Harvester
@@ -80,21 +80,27 @@ public class PDACatalogHarvester {
         PDAAgent pda = (PDAAgent) getHc().getAgent();
         String catalogServerURL = pda.getCswURL();
         String responseHandlerURL = pda.getResponseHandler();
-        
-        PDACatalogRequestBuilder pcrb = new PDACatalogRequestBuilder(responseHandlerURL);
-        String xml = pcrb.getXMLMessage();
-        statusHandler.debug("Sending request to Catalog Server: \n"+xml);
-        
-        HttpClient connect = HttpClient.getInstance();
-        
+        String xml = null;
+
         try {
-            connect.post(catalogServerURL, xml);
+            PDACatalogRequestBuilder pcrb = new PDACatalogRequestBuilder(
+                    responseHandlerURL);
+            xml = pcrb.getXMLMessage();
+            statusHandler.info("Sending request to Catalog Server: \n" + xml);
+
+            String response = PDARequestConnectionUtil.connect(xml,
+                    catalogServerURL);
+            
+            statusHandler.info("Catalog Server response: \n" + response);
             status = true;
+
         } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR, "Error requesting PDA Catalog: "+catalogServerURL+"\n "+xml, e);
+            statusHandler.handle(Priority.ERROR,
+                    "Error requesting PDA Catalog: " + catalogServerURL + "\n "
+                            + xml, e);
             status = false;
         }
-        
+
         return status;
     }
 
