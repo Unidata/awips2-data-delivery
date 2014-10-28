@@ -607,7 +607,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         // Store the AdhocSubscription with a base time of now..
         subscriptions.add(bandwidthDao.newBandwidthSubscription(subscription,
                 baseReferenceTime));
-  
+
         /**
          * This check allows for retrieval of data older than current for grid.
          * This is not allowed for pointdata types, they must grab current URL
@@ -774,7 +774,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             throw new IllegalArgumentException(
                     "Unable to create adhoc queries for this type of subscription.  "
                             + subscription.getSubscriptionType().name());
-        } 
+        }
         return unscheduled;
     }
 
@@ -1757,7 +1757,5 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         return dataSetMetaDataTime;
     }
-     * 
-            Calendar baseReferenceTime) {
 
 }

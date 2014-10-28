@@ -58,6 +58,7 @@ import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
+import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -690,7 +691,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
             if (subscriptions.isEmpty()) {
                 return;
-            } 
+            }
 
             statusHandler.info(String.format(
                     "Found [%s] subscriptions subscribed to "
@@ -700,7 +701,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             // Create an adhoc for each one, and schedule it
             for (Subscription<T, C> subscription : subscriptions) {
 
-                // both of these are handled identically, 
+                // both of these are handled identically,
                 // The only difference is logging.
 
                 if (subscription instanceof SiteSubscription) {
@@ -738,7 +739,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         scheduleAdhoc(new AdhocSubscription<T, C>(
                                 (SharedSubscription<T, C>) sub));
                     } else {
-                     // Fall through! doesn't belong to this site, so we
+                        // Fall through! doesn't belong to this site, so we
                         // won't retrieve it.
                     }
                 } else {
@@ -860,13 +861,6 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         }
     }
 
-         * the hour.
-         */
-        Map<String, Date> timeRange = getBaseReferenceTimeDateRange(dataset
-                .getDataSetBaseTime());
-                        timeRange.get(MIN_RANGE_TIME),
-                        timeRange.get(MAX_RANGE_TIME));
-    
     /**
      * {@inheritDoc}
      */
