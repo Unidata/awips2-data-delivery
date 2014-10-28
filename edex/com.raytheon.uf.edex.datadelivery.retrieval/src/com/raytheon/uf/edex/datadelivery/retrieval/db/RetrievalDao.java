@@ -36,6 +36,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.Sta
  * Feb 13, 2013 1543       djohnson     Exported interface which is now implemented.
  * Feb 22, 2013 1543       djohnson     Made public as YAJSW doesn't like Spring exceptions.
  * May 22, 2014 2808       dhladky      Fixed notification upon SBN delivery
+ * Oct 13, 2014 3707       dhladky      Shared subscription delivery requires you to create a new record.
  * 10/16/2014   3454       bphillip     Upgrading to Hibernate 4
  * 
  * </pre>
