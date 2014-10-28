@@ -47,6 +47,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
  * Dec 13, 2012   1269     lvenable    Fixes and updates.
  * Jan 25, 2013   1528     djohnson    Subscription priority is now an enum.
  * Oct 28, 2013   2430     mpduff      Changed labels.
+ * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
  * 
  * </pre>
  * 
@@ -63,9 +64,6 @@ public class XHeaderImage extends AbstractCanvasImage {
 
     /** Colon constant */
     private final String colon = ": ";
-
-    /** Live update constant */
-    private final String liveUpdate = "Live Update: ";
 
     /** On constant */
     private final String on = "On";
@@ -152,16 +150,7 @@ public class XHeaderImage extends AbstractCanvasImage {
         }
 
         gc.setBackground(bgColor);
-        xCoord += 50;
-
-        if (imageMgr.isLiveUpdate()) {
-            gc.drawString(liveUpdate + on, xCoord, yCoord);
-        } else {
-            gc.drawString(liveUpdate + off, xCoord, yCoord);
-        }
-
-        xCoord += 150;
-
+        xCoord += 200;
         gc.drawString(sortBy + imageMgr.getSortBy().getSortByString(), xCoord,
                 yCoord);
 

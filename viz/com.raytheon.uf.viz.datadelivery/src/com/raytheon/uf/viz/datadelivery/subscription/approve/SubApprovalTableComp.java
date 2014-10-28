@@ -32,6 +32,8 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
+import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
+import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionStatusEvent;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -75,6 +77,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Apr 05, 2013 1841       djohnson     Refresh entire table on receiving a notification of the correct type.
  * Apr 10, 2013 1891       djohnson     Move logic to get column display text to the column definition, fix sorting.
  * Apr 18, 2014  3012      dhladky      Null check.
+ * Oct 28, 2014  2748      ccody        Changes for receiving Subscription Status changes
  * </pre>
  * 
  * @author lvenable
@@ -124,11 +127,12 @@ public class SubApprovalTableComp extends TableComp {
             PendingSubscription.class,
             PendingSubscriptionNotificationResponse.class,
             ApprovedPendingSubscriptionNotificationResponse.class,
-            DeniedPendingSubscriptionNotificationResponse.class);
+            DeniedPendingSubscriptionNotificationResponse.class,
+            SubscriptionStatusEvent.class, NotificationRecord.class);
 
     /**
      * Constructor.
-     *
+     * 
      * @param parent
      *            Parent composite.
      * @param tableConfig
@@ -166,8 +170,7 @@ public class SubApprovalTableComp extends TableComp {
         try {
             // Get all pending subscriptions
             List<InitialPendingSubscription> results = DataDeliveryHandlers
-                    .getPendingSubscriptionHandler()
-                    .getAll();
+                    .getPendingSubscriptionHandler().getAll();
             for (InitialPendingSubscription pendingSub : results) {
                 addSubscription(pendingSub);
             }
@@ -180,7 +183,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Add a subscription to the list of data.
-     *
+     * 
      * @param subscription
      *            Subscription to add.
      */
@@ -193,7 +196,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Get the cell text.
-     *
+     * 
      * @param columnName
      *            Column Name.
      * @param rd
@@ -208,7 +211,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Update the table.
-     *
+     * 
      * @param updatedSubscriptions
      *            Updated subscriptions.
      */
@@ -276,16 +279,15 @@ public class SubApprovalTableComp extends TableComp {
         }
         // Get the subscription object
         InitialPendingSubscription pendingSub = rowData.getSubscription();
-        diffDetails.append("Subscription Name: ")
-                .append(pendingSub.getName()).append(nl);
+        diffDetails.append("Subscription Name: ").append(pendingSub.getName())
+                .append(nl);
         diffDetails.append("Dataset Name: ")
                 .append(pendingSub.getDataSetName()).append(nl);
         diffDetails.append("Subscription Owner: ")
                 .append(pendingSub.getOwner()).append(nl);
         if (pendingSub.getChangeReason() != null) {
             diffDetails.append("Reason for Change: ")
-                    .append(pendingSub.getChangeReason())
-                    .append(nl);
+                    .append(pendingSub.getChangeReason()).append(nl);
         }
 
         // Only PendingSubscriptions area associated to Subscriptions, not
@@ -320,7 +322,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Handle the column selection.
-     *
+     * 
      * @param event
      *            Selection event.
      */
@@ -356,7 +358,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#getCurrentSortDirection
      * ()
@@ -368,12 +370,13 @@ public class SubApprovalTableComp extends TableComp {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#createColumns()
      */
     @Override
     protected void createColumns() {
-        final PendingSubColumnNames[] columnNames = PendingSubColumnNames.values();
+        final PendingSubColumnNames[] columnNames = PendingSubColumnNames
+                .values();
 
         for (int i = 0; i < columnNames.length; i++) {
             TableColumn tc = new TableColumn(table, SWT.LEFT);
@@ -398,7 +401,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#populateTable()
      */
     @Override
@@ -440,7 +443,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#handleTableMouseClick
      * (org.eclipse.swt.events.MouseEvent)
@@ -491,7 +494,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#
      * handleTableSelectionChange(org.eclipse.swt.events.SelectionEvent)
      */
@@ -502,7 +505,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see com.raytheon.uf.viz.core.notification.INotificationObserver#
      * notificationArrived
      * (com.raytheon.uf.viz.core.notification.NotificationMessage[])
@@ -523,7 +526,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Get a reference to the table.
-     *
+     * 
      * @return table
      */
     public Table getTable() {
@@ -532,7 +535,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Get the table data.
-     *
+     * 
      * @return TableDataManager<SubscriptionApprovalRowData>
      */
     public TableDataManager<SubscriptionApprovalRowData> getPendingSubData() {

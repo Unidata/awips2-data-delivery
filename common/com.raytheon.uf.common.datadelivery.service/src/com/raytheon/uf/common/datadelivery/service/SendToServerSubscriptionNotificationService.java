@@ -41,6 +41,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 17, 2013 1501       djohnson     Route to datadelivery.
  * Jan 21, 2013 1501       djohnson     Include subscription on all requests.
  * Oct 15, 2014 3664       ccody        Add Subscription unscheduled notification method
+ * Oct 28, 2014 2748       ccody       Remove incorrect update notification for completion of Async operations
  * 
  * </pre>
  * 
@@ -68,7 +69,6 @@ public class SendToServerSubscriptionNotificationService implements
         BaseSubscriptionNotificationRequest<Subscription> req = new SubscriptionNotificationRequest();
         req.setUserId(username);
         req.setCategory("Subscription");
-
         String msg = "Subscription " + subscription.getName()
                 + " has been created.";
         req.setMessage(msg);
@@ -92,25 +92,6 @@ public class SendToServerSubscriptionNotificationService implements
         req.setPriority(2);
         req.setMessage("Pending Subscription " + subscription.getName()
                 + " has been created.");
-
-        sendRequest(req);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void sendUpdatedSubscriptionNotification(Subscription subscription,
-            String username) {
-        BaseSubscriptionNotificationRequest<Subscription> req = new SubscriptionNotificationRequest();
-        req.setUserId(username);
-        req.setCategory("Subscription");
-
-        String msg = "Subscription " + subscription.getName()
-                + " has been updated.";
-        req.setMessage(msg);
-        req.setSubscription(subscription);
-        req.setPriority(3);
 
         sendRequest(req);
     }
