@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -31,6 +32,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Mar 1, 2012             jsanchez     Initial creation
  * 3/18/2012    1802       bphillip    Modified to implement IPersistableDataObject
  * Aug 18, 2014 2746       ccody       Non-local Subscription changes not updating dialogs
+ * 10/28/2014   3454       bphillip    Added sequence for id generation
  * 
  * </pre>
  * 
@@ -45,8 +47,9 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class NotificationRecord implements ISerializableObject,
         IPersistableDataObject<Integer> {
 
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Id
+    @GeneratedValue(strategy=GenerationType.AUTO, generator="notification_seq")
+    @SequenceGenerator(name="notification_seq", sequenceName="notification_seq")
     @DynamicSerializeElement
     private Integer id;
 
