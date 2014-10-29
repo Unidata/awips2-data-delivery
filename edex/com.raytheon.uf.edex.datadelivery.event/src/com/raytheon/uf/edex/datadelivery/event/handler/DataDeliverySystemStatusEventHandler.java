@@ -29,8 +29,8 @@ import com.google.common.eventbus.Subscribe;
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatus;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusDefinition;
-import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusId;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusEvent;
+import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusId;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -38,6 +38,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.datadelivery.event.dao.DataDeliverySystemStatusDao;
+import com.raytheon.uf.edex.datadelivery.event.notification.NotificationDao;
 
 /**
  * Event bus message handler class.
@@ -65,8 +66,11 @@ public class DataDeliverySystemStatusEventHandler {
 
     private String uri;
 
-    /** The Data Access Object */
+    /** The Status Data Access Object */
     private DataDeliverySystemStatusDao statusDao;
+
+    /** The Notification Data Access Object */
+    private NotificationDao notificationDao;
 
     /**
      * Gets called when Event Bus publishes a DataDeliverySystemStatus event
@@ -89,9 +93,13 @@ public class DataDeliverySystemStatusEventHandler {
     }
 
     /**
-     * Stores the record in the notification table.
+     * Stores the record in the statusDao and notificationDao tables and sends
+     * the NotificationRecord to the given endpoint.
      * 
      * @param record
+     *            DataDeliverySystemStatus status record
+     * @param endpoint
+     *            Destination endpoint for the NotificationRecord
      */
     protected void storeAndSend(DataDeliverySystemStatus ddssRecord,
             String endpoint) {
@@ -99,6 +107,7 @@ public class DataDeliverySystemStatusEventHandler {
 
         DataDeliverySystemStatusId id = ddssRecord.getKey();
         String systemType = id.getSystemType();
+
         NotificationRecord notificationRecord = new NotificationRecord();
         notificationRecord.setDate(Calendar.getInstance());
         notificationRecord.setCategory(systemType);
@@ -107,7 +116,10 @@ public class DataDeliverySystemStatusEventHandler {
 
         String ddssName = id.getName();
         String ddssRecordStatus = ddssRecord.getStatus();
-        notificationRecord.setMessage("Bandwidth Manager "+ ddssName + " System Event " + ddssRecordStatus);
+        notificationRecord.setMessage("Bandwidth Manager " + ddssName
+                + " System Event " + ddssRecordStatus);
+
+        notificationDao.createOrUpdate(notificationRecord);
 
         send(notificationRecord, endpoint);
     }
@@ -145,7 +157,22 @@ public class DataDeliverySystemStatusEventHandler {
     public void setStatusDao(DataDeliverySystemStatusDao statusDao) {
         this.statusDao = statusDao;
     }
-    
+
+    /**
+     * @return the notificationDao
+     */
+    public NotificationDao getNotificationDao() {
+        return notificationDao;
+    }
+
+    /**
+     * @param notificationDao
+     *            the notificationDao to set
+     */
+    public void setNotificationDao(NotificationDao notificationDao) {
+        this.notificationDao = notificationDao;
+    }
+
     /**
      * @return the uri
      */
@@ -160,5 +187,5 @@ public class DataDeliverySystemStatusEventHandler {
     public void setUri(String uri) {
         this.uri = uri;
     }
-    
+
 }
