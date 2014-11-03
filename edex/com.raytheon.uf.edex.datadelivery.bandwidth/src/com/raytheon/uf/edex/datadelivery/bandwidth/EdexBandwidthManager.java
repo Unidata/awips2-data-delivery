@@ -103,45 +103,47 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * that could interfere with garbage collection/threading concerns.
  * 
  * <pre>
- * 
- * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 10, 2013 2106       djohnson     Extracted from {@link BandwidthManager}.
- * Jul 11, 2013 2106       djohnson     Look up subscription from the handler directly.
- * Jul 19, 2013 2209       dhladky      Fixed un-serialized subscription for pointData.
- * Sep 13, 2013 2267       bgonzale     Check for no subscription retrieval attribute found.
- * Sep 16, 2013 2383       bgonzale     Add exception information for no subscription found.
- *                                      Add throws to updatePointDataSetMetaData.
- * Oct 1 2013   1797       dhladky      Time and GriddedTime separation
- * Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
- * 10/23/2013   2385       bphillip     Change schedule method to scheduleAdhoc
- * Nov 04, 2013 2506       bgonzale     Added removeBandwidthSubscriptions method.
- *                                      Added subscriptionNotificationService field.
- *                                      Send notifications.
- * Nov 15, 2013 2545       bgonzale     Added check for subscription events before sending
- *                                      notifications.  Republish dataset metadata registry
- *                                      insert and update events as dataset metadata events.
- * Jan 13, 2014 2679       dhladky      Small Point data updates.   
- * Jan 14, 2014 2692       dhladky      AdhocSubscription handler
- * Jan 20, 2013 2398       dhladky      Fixed rescheduling beyond active period/expired window.                                 
- * Jan 24, 2013 2709       bgonzale     Changed parameter to shouldScheduleForTime to a Calendar.
- * Jan 29, 2014 2636       mpduff       Scheduling refactor.
- * Jan 30, 2014 2686       dhladky      refactor of retrieval.
- * Feb 06, 2014 2636       bgonzale     Added initializeScheduling method that uses the in-memory
- *                                      bandwidth manager to perform the scheduling initialization
- *                                      because of efficiency.
- * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
- * Feb 10, 2014 2636       mpduff       Pass Network map to be scheduled.
- * Feb 21, 2014, 2636      dhladky      Try catch to keep MaintTask from dying.
- * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
- * Apr 09, 2014 3012       dhladky      Range the queries for metadata checks, adhoc firing prevention.
- * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
- * May 22, 2014 2808       dhladky      schedule unscheduled when a sub is deactivated
- * Jul 28, 2014 2752       dhladky      Fixed bad default user for registry.
- * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
- * Oct 15, 2014 3664       ccody        Add notification event for unscheduled Subscriptions at startup
+ *  SOFTWARE HISTORY
+ *  
+ *  Date         Ticket#    Engineer    Description
+ *  ------------ ---------- ----------- --------------------------
+ *  Jul 10, 2013 2106       djohnson     Extracted from {@link BandwidthManager}.
+ *  Jul 11, 2013 2106       djohnson     Look up subscription from the handler directly.
+ *  Jul 19, 2013 2209       dhladky      Fixed un-serialized subscription for pointData.
+ *  Sep 13, 2013 2267       bgonzale     Check for no subscription retrieval attribute found.
+ *  Sep 16, 2013 2383       bgonzale     Add exception information for no subscription found.
+ *                                       Add throws to updatePointDataSetMetaData.
+ *  Oct 1 2013   1797       dhladky      Time and GriddedTime separation
+ *  Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
+ *  10/23/2013   2385       bphillip     Change schedule method to scheduleAdhoc
+ *  Nov 04, 2013 2506       bgonzale     Added removeBandwidthSubscriptions method.
+ *                                       Added subscriptionNotificationService field.
+ *                                       Send notifications.
+ *  Nov 15, 2013 2545       bgonzale     Added check for subscription events before sending
+ *                                       notifications.  Republish dataset metadata registry
+ *                                       insert and update events as dataset metadata events.
+ *  Jan 13, 2014 2679       dhladky      Small Point data updates.   
+ *  Jan 14, 2014 2692       dhladky      AdhocSubscription handler
+ *  Jan 20, 2013 2398       dhladky      Fixed rescheduling beyond active period/expired window.                                 
+ *  Jan 24, 2013 2709       bgonzale     Changed parameter to shouldScheduleForTime to a Calendar.
+ *  Jan 29, 2014 2636       mpduff       Scheduling refactor.
+ *  Jan 30, 2014 2686       dhladky      refactor of retrieval.
+ *  Feb 06, 2014 2636       bgonzale     Added initializeScheduling method that uses the in-memory
+ *                                       bandwidth manager to perform the scheduling initialization
+ *                                       because of efficiency.
+ *  Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
+ *  Feb 10, 2014 2636       mpduff       Pass Network map to be scheduled.
+ *  Feb 21, 2014, 2636      dhladky      Try catch to keep MaintTask from dying.
+ *  Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ *  Apr 09, 2014 3012       dhladky      Range the queries for metadata checks, adhoc firing prevention.
+ *  Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
+ *  May 22, 2014 2808       dhladky      schedule unscheduled when a sub is deactivated
+ *  Jul 28, 2014 2752       dhladky      Fixed bad default user for registry.
+ *  Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
+ *  Oct 15, 2014 3664       ccody        Add notification event for unscheduled Subscriptions at startup
+ *  Oct 12, 2014 3707       dhladky      Changed the way gridded subscriptions are triggerd for retrieval.
+ *  Oct 28, 2014 2748       ccody        Add notification event for Subscription modifications.
+ *                                       Add Thread.sleep to mitigate registry update race condition.
  * </pre>
  * 
  * @author djohnson
@@ -564,6 +566,21 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 .equals(objectType))
                 || (DataDeliveryRegistryObjectTypes.SITE_SUBSCRIPTION
                         .equals(objectType))) {
+
+            /*
+             * This Thread.sleep() is here because at the present time: the
+             * UpdateRegistryEvent is received BEFORE the updated data in the
+             * Registry can be queried. Without this wait, we are very likely to
+             * receive stale data and begin propagating a corrupt data and
+             * system state. A separate issue; #2414; has been created to
+             * mitigate this problem.
+             */
+            try {
+                Thread.sleep(500); // A .5 second wait mitigates the race
+                                   // condition.
+            } catch (Exception ex) {
+
+            }
             Subscription<T, C> subscription = getRegistryObjectById(
                     getSubscriptionHandler(), event.getId());
             boolean isLocalOrigination = subscription.getOriginatingSite()
@@ -571,6 +588,14 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
             if (isLocalOrigination) {
                 subscriptionUpdated(subscription);
+
+                // Create Subscription Status event (async operation complete)
+                Calendar now = TimeUtil.newGmtCalendar();
+                SubscriptionStatusEvent subscriptionEvent = new SubscriptionStatusEvent(
+                        subscription, "" + subscription.getName()
+                                + " update complete");
+                subscriptionEvent.setDate(now);
+                EventBus.publish(subscriptionEvent);
             } else {
                 sendSubscriptionNotificationEvent(event, subscription);
             }
@@ -588,9 +613,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 if (isApplicableForTheLocalSite) {
                     switch (event.getAction()) {
                     case UPDATE:
-                        subscriptionNotificationService
-                                .sendUpdatedSubscriptionNotification(sub,
-                                        event.getUsername());
+                        /*
+                         * Remove send to prevent (nearly) duplicate
+                         * notification events. subscriptionNotificationService
+                         * .sendUpdatedSubscriptionNotification(sub,
+                         * event.getUsername());
+                         */
                         break;
                     case INSERT:
                         subscriptionNotificationService

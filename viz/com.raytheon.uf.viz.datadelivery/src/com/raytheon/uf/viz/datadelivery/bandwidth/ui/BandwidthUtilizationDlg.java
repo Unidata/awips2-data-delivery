@@ -54,6 +54,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Oct 28, 2013   2430     mpduff      Add % of bandwidth utilized graph.
  * Nov 19, 2013   1531     mpduff      Made resizable.
  * Jan 29, 2014   2722     mpduff      GraphDataUtil not in this class.
+ * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven. Added 'Refresh' option
  * 
  * </pre>
  * 
@@ -65,9 +66,6 @@ public class BandwidthUtilizationDlg extends CaveSWTDialog {
 
     /** Menu bar */
     private Menu menuBar;
-
-    /** Live update menu */
-    private MenuItem liveUpdateMI;
 
     /** Color by priority menu */
     private MenuItem colorByPriorityMI;
@@ -193,6 +191,16 @@ public class BandwidthUtilizationDlg extends CaveSWTDialog {
             }
         });
 
+        MenuItem refreshMI = new MenuItem(fileMenu, SWT.NONE);
+        refreshMI.setText("&Refresh Graph\tCtrl+R");
+        refreshMI.setAccelerator(SWT.CTRL + 'R');
+        refreshMI.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                redrawGraph();
+            }
+        });
+
         MenuItem exitMI = new MenuItem(fileMenu, SWT.NONE);
         exitMI.setText("&Quit\tCtrl+Q");
         exitMI.setAccelerator(SWT.CTRL + 'Q');
@@ -236,17 +244,6 @@ public class BandwidthUtilizationDlg extends CaveSWTDialog {
         });
 
         new MenuItem(graphMenu, SWT.SEPARATOR);
-
-        liveUpdateMI = new MenuItem(graphMenu, SWT.CHECK);
-        liveUpdateMI.setText("Live Update");
-        liveUpdateMI.setSelection(true);
-        liveUpdateMI.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent event) {
-                canvasComp.setLiveUpdate(liveUpdateMI.getSelection());
-            }
-        });
-
         colorByPriorityMI = new MenuItem(graphMenu, SWT.CHECK);
         colorByPriorityMI.setText("Color By Priority/Percentage");
         colorByPriorityMI.setSelection(true);
@@ -311,7 +308,7 @@ public class BandwidthUtilizationDlg extends CaveSWTDialog {
      */
     public void redrawGraph() {
         if (canvasComp != null) {
-            canvasComp.updateCanvases();
+            canvasComp.dataUpdated();
         }
     }
 }

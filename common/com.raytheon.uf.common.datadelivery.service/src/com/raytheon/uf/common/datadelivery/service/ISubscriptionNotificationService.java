@@ -33,7 +33,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
  * ------------ ---------- ----------- --------------------------
  * Jan 04, 2013 1441       djohnson    Initial creation
  * Oct 15, 2014 3664       ccody       Add Subscription unscheduled notification method
- * 
+ * Oct 28, 2014 2748       ccody       Remove incorrect update notification for completion of Async operations
  * </pre>
  * 
  * @author djohnson
@@ -62,17 +62,6 @@ public interface ISubscriptionNotificationService {
      *            the username
      */
     void sendCreatedSubscriptionNotification(Subscription subscription,
-            String username);
-
-    /**
-     * Send a notification that a subscription was updated.
-     * 
-     * @param subscription
-     *            the subscription
-     * @param username
-     *            the username
-     */
-    void sendUpdatedSubscriptionNotification(Subscription subscription,
             String username);
 
     /**

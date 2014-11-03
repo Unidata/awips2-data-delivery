@@ -36,6 +36,7 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphSect
  * Dec 4, 2012     1269    mpduff      Initial creation.
  * Dec 13, 2012   1269     lvenable    Fixes and updates.
  * Oct 28, 2013   2430     mpduff      Add % of bandwidth utilized graph.
+ * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
  * 
  * </pre>
  * 
@@ -71,20 +72,6 @@ public interface IGraphOptions {
      * @param colorByPriority
      */
     void setColorByPriority(boolean colorByPriority);
-
-    /**
-     * Get the live update flag.
-     * 
-     * @return true if dialog auto-updates
-     */
-    boolean isLiveUpdate();
-
-    /**
-     * Set the live update flag.
-     * 
-     * @param autoUpdate
-     */
-    void setLiveUpdate(boolean autoUpdate);
 
     /**
      * Get the current time in millis

@@ -19,8 +19,8 @@
  **/
 package com.raytheon.uf.viz.datadelivery.bandwidth.ui;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -64,16 +64,24 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Slider;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
+import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
+import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
+import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionStatusEvent;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.service.BaseSubscriptionNotificationResponse;
+import com.raytheon.uf.common.datadelivery.service.SubscriptionNotificationResponse;
 import com.raytheon.uf.common.jms.notification.INotificationObserver;
 import com.raytheon.uf.common.jms.notification.NotificationException;
 import com.raytheon.uf.common.jms.notification.NotificationMessage;
-
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.VizApp;
+import com.raytheon.uf.viz.core.notification.NotificationMessageContainsType;
+import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.CanvasImages;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphSection;
 import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphType;
@@ -81,8 +89,6 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.SortBy;
 import com.raytheon.uf.viz.datadelivery.common.ui.IDialogClosed;
 import com.raytheon.uf.viz.datadelivery.common.ui.SubscriptionViewer;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
-
 
 /**
  * 
@@ -93,37 +99,44 @@ import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
  * 
  * <pre>
  * 
- * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 6, 2012    1269     lvenable    Initial creation.
- * Dec 13, 2012   1269     lvenable    Fixes and updates.
- * Jan 07, 2013   1451     djohnson    Use TimeUtil.newGmtCalendar().
- * Jan 28, 2013   1529     djohnson    Disable menu items if no subscriptions selected.
- * Oct 28, 2013   2430     mpduff      Add % of bandwidth utilized graph.
- * Nov 19, 2013   1531     mpduff      Made graph resizable.
- * Nov 25, 2013   2545     mpduff      Default to Opsnet if Network not available yet.
- * Dec 17, 2013   2633     mpduff      Fix redraw problems..
- * Jan 09, 2014   2633     mpduff      On resize keep graph at bottom so data are always visible.
- * Jan 29, 2014   2722     mpduff      Changed how graph data are requested.
- * Mar 24, 2014   2951     lvenable    Added dispose checks for SWT widgets.
- * Apr 21, 2014   2891     mpduff      Add Y Label canvas to redraw on refresh.
- * Aug 05, 2014   2748     ccody       Add GRAPH canvas to redraw on refresh.
- * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
- * Sep 22, 2014   3607     ccody       Add checks to prevent NullPointerException
- * Oct 03, 2014   2749     ccody       Unable to change the OPSNET Bandwidth value for Data Delivery
+ *  SOFTWARE HISTORY
+ *  
+ *  Date         Ticket#    Engineer    Description
+ *  ------------ ---------- ----------- --------------------------
+ *  Nov 6, 2012    1269     lvenable    Initial creation.
+ *  Dec 13, 2012   1269     lvenable    Fixes and updates.
+ *  Jan 07, 2013   1451     djohnson    Use TimeUtil.newGmtCalendar().
+ *  Jan 28, 2013   1529     djohnson    Disable menu items if no subscriptions selected.
+ *  Oct 28, 2013   2430     mpduff      Add % of bandwidth utilized graph.
+ *  Nov 19, 2013   1531     mpduff      Made graph resizable.
+ *  Nov 25, 2013   2545     mpduff      Default to Opsnet if Network not available yet.
+ *  Dec 17, 2013   2633     mpduff      Fix redraw problems..
+ *  Jan 09, 2014   2633     mpduff      On resize keep graph at bottom so data are always visible.
+ *  Jan 29, 2014   2722     mpduff      Changed how graph data are requested.
+ *  Mar 24, 2014   2951     lvenable    Added dispose checks for SWT widgets.
+ *  Apr 21, 2014   2891     mpduff      Add Y Label canvas to redraw on refresh.
+ *  Aug 05, 2014   2748     ccody       Add GRAPH canvas to redraw on refresh.
+ *  Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
+ *  Sep 22, 2014   3607     ccody       Add checks to prevent NullPointerException
+ *  Oct 03, 2014   2749     ccody       Unable to change the OPSNET Bandwidth value for Data Delivery
+ *  Oct 28, 2014   2748     ccody       Changes for receiving Subscription Status changes
+ *                                      Add configurable graph update latency
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
 public class BandwidthCanvasComp extends Composite implements IDialogClosed,
-                    INotificationObserver, IDataUpdated {
+        INotificationObserver, IDataUpdated {
 
     /** UFStatus handler. */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BandwidthCanvasComp.class);
+
+    /** Checks for the notification message to be those we care about. **/
+    private final NotificationMessageContainsType notificationMessageChecker = new NotificationMessageContainsType(
+            BaseSubscriptionNotificationResponse.class,
+            SubscriptionStatusEvent.class, NotificationRecord.class);
 
     /** Missing value */
     private final int MISSING = -999;
@@ -194,20 +207,17 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** The subscription names */
     private Collection<String> subscriptionNames;
 
-    /** The live update timer */
+    /** The update timer */
     private ScheduledExecutorService timer;
 
-    /** Current time object for the live update timer */
-    private Calendar currentTime;
+    /** Graph Update Interval */
+    private long updateIntervalMils = 0;
 
-    /** The previous minute used in the live update timer */
-    private int previousMinute;
+    /** Last graph update time */
+    private long lastUpdateTime = 0L;
 
     /** Graph data utility */
     private final GraphDataUtil graphDataUtil;
-
-    /** Counts the minutes until the next full update. */
-    private int fullUpdateMinuteCount = 0;
 
     /** Vertical line marking the mouse pointer's location */
     private int mouseMarker;
@@ -253,11 +263,11 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /** JMS Message topic */
     private static final String NOTIFY_MESSAGE_TOPIC = "notify.msg";
-    
+
     /** Last NotificationRecord Message */
     private NotificationRecord lastNotificationRecord = null;
 
-    /** The current instance (Used to remove this as an event listener) */ 
+    /** The current instance (Used to remove this as an event listener) */
     BandwidthCanvasComp bandwidthCanvasComp = null;
 
     /**
@@ -289,10 +299,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         this.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
 
         generateCanvasSettings();
-        currentTime = TimeUtil.newGmtCalendar();
+        lastUpdateTime = System.currentTimeMillis();
 
         imageMgr = new BandwidthImageMgr(parentComp, canvasSettingsMap, bgd,
-                currentTime.getTimeInMillis());
+                lastUpdateTime);
         subscriptionNames = imageMgr.getSubscriptionNames();
 
         getAllCanvasImages();
@@ -345,10 +355,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
         imageMgr.setCheckMap(checkMap);
 
-        // Setup the live update
-        previousMinute = currentTime.get(Calendar.MINUTE);
-        createTimer();
-
         this.addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent e) {
@@ -358,7 +364,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 if (timer != null) {
                     timer.shutdown();
                 }
-                NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC, bandwidthCanvasComp);
+                NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC,
+                        bandwidthCanvasComp);
             }
         });
 
@@ -375,24 +382,63 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 }
             }
         });
-        
+
+        /** Set Bandwidth Graph Update Latency **/
+        updateIntervalMils = retrieveBandwidthBucketSizeMils();
+
+        createTimer();
+        /** Listen for NotificationMessage events */
         NotificationManagerJob.addObserver(NOTIFY_MESSAGE_TOPIC, this);
     }
 
-    protected boolean isUpdateableNotification(NotificationMessage[] notificationMessages) {
-        boolean isUpdateNeeded = false;
-        if ((isDisposed() == true) || (notificationMessages == null) || (notificationMessages.length == 0)) {
-            return(false);
+    /**
+     * Retrieve graph update latency from "datadelivery/bandwidthmap.xml" file.
+     * 
+     * @return Bandwidth Update Latency in milliseconds
+     */
+    private long retrieveBandwidthBucketSizeMils() {
+        long bandwidthGraphLatency = 3 * TimeUtil.MILLIS_PER_MINUTE;
+        long bucketSizeMinutes = 0;
+
+        IPathManager pm = PathManagerFactory.getPathManager();
+        File bandwidthFile = pm.getStaticFile("datadelivery/bandwidthmap.xml");
+        if (bandwidthFile != null) {
+            BandwidthMap copyOfBandwidthMap = BandwidthMap.load(bandwidthFile);
+            if (copyOfBandwidthMap != null) {
+                BandwidthRoute route = copyOfBandwidthMap
+                        .getRoute(Network.OPSNET);
+                if (route != null) {
+                    bucketSizeMinutes = route.getBucketSizeMinutes();
+                }
+            }
         }
 
-        //Update the graph for: Activation, Deactivation, Insert (Create), Update, and Delete Notification Records
-        //                      Bandwidth Manager Restart
-        String messageString = null;
-        String messageCategory = null;
+        if (bucketSizeMinutes > 0) {
+            bandwidthGraphLatency = bucketSizeMinutes
+                    * TimeUtil.MILLIS_PER_MINUTE;
+        }
+
+        return (bandwidthGraphLatency);
+    }
+
+    protected boolean isUpdateableNotification(
+            NotificationMessage[] notificationMessages) {
+        boolean isUpdateNeeded = false;
+        if ((isDisposed() == true) || (notificationMessages == null)
+                || (notificationMessages.length == 0)) {
+            return (false);
+        }
+
+        // Update the graph for all Notification Records
+        if (notificationMessageChecker.matchesCondition(notificationMessages) == false) {
+            return (false);
+        }
+
+        // Remove possible duplicate Notification Messages
         Object obj = null;
         Object payloadObj = null;
-        
-        NotificationMessage notificationMessage = null; 
+
+        NotificationMessage notificationMessage = null;
         NotificationRecord notificationRecord = null;
         int notificationRecordListSize = notificationMessages.length;
         for (int i = 0; ((isUpdateNeeded == false) && (i < notificationRecordListSize)); i++) {
@@ -401,51 +447,39 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 notificationMessage = (NotificationMessage) obj;
                 try {
                     payloadObj = notificationMessage.getMessagePayload();
-                }
-                catch(NotificationException ne) {
-                    statusHandler.error("Error Extracting data from Notification Message: \n" + notificationMessage.toString(), ne);
+                } catch (NotificationException ne) {
+                    statusHandler.error(
+                            "Error Extracting data from Notification Message: \n"
+                                    + notificationMessage.toString(), ne);
                     payloadObj = null;
                 }
-                if ((payloadObj != null)  && (payloadObj instanceof NotificationRecord)) {
-                    notificationRecord = (NotificationRecord) payloadObj;
-                    messageCategory = notificationRecord.getCategory();
-                    messageCategory = messageCategory.toUpperCase(); //make case insensitive
-                    messageString = notificationRecord.getMessage();
-                    messageString = messageString.toUpperCase(); //make case insensitive
-                    if ((messageString != null) &&
-                        ((messageString.indexOf("ACTIVATE") > 0) || (messageString.indexOf("DEACTIVATE") > 0) ||
-                        (messageString.indexOf("UPDATE") > 0) || (messageString.indexOf("DELETE") > 0) ||
-                        (messageString.indexOf("CREATE") > 0) || (messageString.indexOf("INSERT") > 0))) {
-                        
+                if (payloadObj != null) {
+                    if (payloadObj instanceof NotificationRecord) {
+                        notificationRecord = (NotificationRecord) payloadObj;
                         if (lastNotificationRecord != null) {
-                            boolean areEquivalent = lastNotificationRecord.areFunctionallyEquivalent(notificationRecord);
+                            boolean areEquivalent = lastNotificationRecord
+                                    .areFunctionallyEquivalent(notificationRecord);
                             if (areEquivalent == true) {
-                                //This is a repeated NotificationRecord. Do not update.
+                                // This is a repeated NotificationRecord. Do not
+                                // update.
                                 isUpdateNeeded = false;
-                            } else { 
+                            } else {
                                 isUpdateNeeded = true;
                             }
                         } else {
                             isUpdateNeeded = true;
                         }
-                        
                         lastNotificationRecord = notificationRecord;
-                    } else if ((messageString.indexOf("RESTARTED") > 0) && (messageCategory != null) && (messageCategory.compareToIgnoreCase("BANDWIDTH") == 0)) {
+                    } else if (payloadObj instanceof SubscriptionNotificationResponse) {
                         isUpdateNeeded = true;
-                    } else {
-                        isUpdateNeeded = false;
                     }
-                } else {
-                isUpdateNeeded = false;
                 }
-            } else {
-                isUpdateNeeded = false;
             }
         }
-        
-        return(isUpdateNeeded);
+
+        return (isUpdateNeeded);
     }
-    
+
     /*
      * (non-Javadoc)
      * 
@@ -465,10 +499,9 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      * Create the live update timer.
      */
     private void createTimer() {
-        long updateRate = TimeUtil.MILLIS_PER_SECOND * 5;
         timer = Executors.newSingleThreadScheduledExecutor();
-        timer.scheduleAtFixedRate(new UpdateTask(), updateRate, updateRate,
-                TimeUnit.MILLISECONDS);
+        timer.scheduleAtFixedRate(new UpdateTask(), this.updateIntervalMils,
+                this.updateIntervalMils, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -1223,8 +1256,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             }
         }
 
-        redrawImage(CanvasImages.GRAPH); 
-        redrawImage(CanvasImages.Y_LABEL); 
+        redrawImage(CanvasImages.GRAPH);
+        redrawImage(CanvasImages.Y_LABEL);
     }
 
     /**
@@ -1422,8 +1455,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             imageMgr.setChecked(name, selectAll);
         }
 
-        redrawImage(CanvasImages.GRAPH); 
-        redrawImage(CanvasImages.Y_LABEL); 
+        redrawImage(CanvasImages.GRAPH);
+        redrawImage(CanvasImages.Y_LABEL);
     }
 
     /**
@@ -1484,26 +1517,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     }
 
     /**
-     * Set the live update flag.
-     * 
-     * @param liveUpdate
-     *            true to auto-update
-     */
-    public void setLiveUpdate(boolean liveUpdate) {
-        imageMgr.setLiveUpdate(liveUpdate);
-        if (liveUpdate) {
-            fullUpdateMinuteCount = 0;
-            graphDataUtil.requestGraphDataUsingThread();
-            if (timer.isShutdown() || timer.isTerminated()) {
-                createTimer();
-            }
-        } else {
-            timer.shutdown();
-        }
-        updateCanvases();
-    }
-
-    /**
      * Set the graph data, recalculate the graph sizes to compensate for any
      * subscription additions or deletions, and redraw the images.
      * 
@@ -1519,9 +1532,9 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 .entrySet()) {
             imageMgr.setCanvasSetting(entry.getKey(), entry.getValue());
         }
+        imageMgr.generateImages(bgd);
 
         updateCanvases();
-        imageMgr.generateImages(bgd);
     }
 
     /**
@@ -1603,56 +1616,44 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     private class UpdateTask extends TimerTask {
         @Override
         public void run() {
-            currentTime.setTimeInMillis(TimeUtil.currentTimeMillis());
-            if (currentTime.get(Calendar.MINUTE) == 0 && previousMinute != 0) {
-                previousMinute = -1;
-            }
-            if (currentTime.get(Calendar.MINUTE) > previousMinute) {
-                fullUpdateMinuteCount++;
-                previousMinute = currentTime.get(Calendar.MINUTE);
-                VizApp.runAsync(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (isDisposed()) {
-                            return;
-                        }
-                        imageMgr.setCurrentTimeMillis(currentTime
-                                .getTimeInMillis());
-                        redrawImage(CanvasImages.GRAPH);
-                        redrawImage(CanvasImages.X_LABEL);
-                        redrawImage(CanvasImages.UTILIZATION_GRAPH);
-                        redrawImage(CanvasImages.Y_LABEL);
-                        canvasMap.get(CanvasImages.GRAPH).redraw();
-                        canvasMap.get(CanvasImages.X_LABEL).redraw();
-                        canvasMap.get(CanvasImages.UTILIZATION_GRAPH).redraw();
-                        canvasMap.get(CanvasImages.Y_LABEL).redraw();
-                    }
-                });
-
-                // Do a full update every 10 minutes
-                if (fullUpdateMinuteCount > 10) {
-                    graphDataUtil.requestGraphDataUsingThread();
-                    fullUpdateMinuteCount = 0;
-                }
+            long currentDateTime = System.currentTimeMillis();
+            // Timer fires every 2 minutes.
+            // Allow for some "latency" (2 sec)
+            long modCurrentDateTime = currentDateTime - 2000;
+            if ((lastUpdateTime + updateIntervalMils) >= (modCurrentDateTime)) {
+                lastUpdateTime = currentDateTime;
+                dataUpdated();
             }
         }
     }
 
-
     /**
      * This will update the graph as the data has been updated.
+     * 
+     * This method runs asynchronously.
      */
     @Override
-    public void dataUpdated() {
-        fullUpdateMinuteCount = 0;
+    public synchronized void dataUpdated() {
         VizApp.runAsync(new Runnable() {
             @Override
             public void run() {
                 if (isDisposed()) {
                     return;
                 }
+
+                lastUpdateTime = System.currentTimeMillis();
+                imageMgr.setCurrentTimeMillis(lastUpdateTime);
                 graphDataUtil.clearGraphDataData();
-                setGraphData(graphDataUtil.getGraphData());
+
+                try {
+                    BandwidthGraphData tempData = graphDataUtil.getGraphData();
+
+                    setGraphData(tempData);
+                } catch (Exception ex) {
+                    statusHandler
+                            .error("Exception caught retrieving Bandwidth Utilization Graph Data ",
+                                    ex);
+                }
                 updateCanvasSettings();
                 updateCanvases();
                 layout();
