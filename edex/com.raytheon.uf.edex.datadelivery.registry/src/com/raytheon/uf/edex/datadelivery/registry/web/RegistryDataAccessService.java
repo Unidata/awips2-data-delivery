@@ -345,8 +345,7 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
                 Object subObj = subscriptionJaxbManager
                         .unmarshalFromXml(subscriptionXML);
                 lcm.submitObjects(submitRequest);
-                EDEXUtil.getMessageProducer().sendSync("scheduleSubscription",
-                        new Object[] {subObj, false});
+                EDEXUtil.getMessageProducer().sendSync("scheduleSubscription",subObj);
                 subscriptionFile.delete();
                 response.append(
                         "Subscription successfully restored from file [")
