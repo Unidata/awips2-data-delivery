@@ -66,6 +66,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Dec 17, 2013 2636       bgonzale     Refactored bucket fill in edex.
  * Jan 23, 2014 2636       mpduff       Changed download window generation.
  * Feb 03, 2014 2745       mpduff       Don't display fulfilled or cancelled allocations.
+ * Nov 03, 2014 2414       dhladky      Better error handling.
  * 
  * </pre>
  * 
@@ -119,11 +120,17 @@ class BandwidthGraphDataAdapter {
             // % utilized graph data
             SortedSet<BandwidthBucketDescription> buckets = toDescriptions(bandwidthBuckets);
             bandwidthGraphData.addBucketDescriptions(network, buckets);
-
+            
+            List<BandwidthAllocation> allocationList = null;
+            try {
             // Latency window data
-            List<BandwidthAllocation> allocationList = EdexBandwidthContextFactory
+                allocationList = EdexBandwidthContextFactory
                     .getInstance().bandwidthDao
                     .getBandwidthAllocations(network);
+            } catch (Exception e) {
+                allocationList = new ArrayList<BandwidthAllocation>(0);
+                statusHandler.error("Unable to retrieve BandwidthAlloactions!", e);
+            }
 
             for (BandwidthAllocation allocation : allocationList) {
                 if (allocation instanceof SubscriptionRetrieval) {

@@ -95,6 +95,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalPlan;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalFulfilled;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
+import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
@@ -144,6 +145,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Oct 12, 2014 3707       dhladky      Changed the way gridded subscriptions are triggerd for retrieval.
  *  Oct 28, 2014 2748       ccody        Add notification event for Subscription modifications.
  *                                       Add Thread.sleep to mitigate registry update race condition.
+ *  Nov 03, 2014 2214       dhladky      Refactored and better documented, fixed event handling, fixed race conditions.
  * </pre>
  * 
  * @author djohnson
@@ -152,23 +154,34 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         extends BandwidthManager<T, C> {
 
+    /** pattern to id RAP and RAP_F datasets */
     private static final Pattern RAP_PATTERN = Pattern
             .compile(".*rap_f\\d\\d$");
 
+    /** handler for DataSetMeataData objects from the registry **/
     private final IDataSetMetaDataHandler dataSetMetaDataHandler;
 
+    /** handler for Subscription objects from the registry **/
     private final ISubscriptionHandler subscriptionHandler;
 
+    /** handler for ADHOC subscription objects from the registry **/
     private final IAdhocSubscriptionHandler adhocSubscriptionHandler;
 
+    /** The scheduler for retrievals **/
     private final ScheduledExecutorService scheduler;
 
+    /** Notification handler for sending messages from BWM to CAVE/EDEX **/
     private final ISubscriptionNotificationService subscriptionNotificationService;
 
+    /** Interface for finding subscriptions **/
     private final ISubscriptionFinder<Subscription<T, C>> findSubscriptionsStrategy;
 
+    /** unknown string **/
     private static final String UNKNOWN = "UNKNOWN";
 
+    /**
+     * Update the BWM if any of it's config files change 
+     */
     @VisibleForTesting
     final Runnable watchForConfigFileChanges = new Runnable() {
 
@@ -185,6 +198,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     };
 
     /**
+     * Primary spring utilized constructor
+     * 
      * @param dbInit
      * @param bandwidthDao
      * @param retrievalManager
@@ -212,69 +227,52 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
+    /**
+     * Shutdown the BWM
+     */
     @Override
-    public List<String> initializeScheduling(
-            Map<Network, List<Subscription>> subMap)
-            throws SerializationException {
-        List<String> unscheduledNames = new ArrayList<String>(0);
+    protected void shutdownInternal() {
+        unregisterFromEventBus();
+        unregisterFromBandwidthEventBus();
 
         try {
-            for (Network key : subMap.keySet()) {
-                List<Subscription<T, C>> subscriptions = new ArrayList<Subscription<T, C>>();
-                // this loop is here only because of the generics mess
-                for (Subscription<T, C> s : subMap.get(key)) {
-                    subscriptions.add(s);
-                }
-                ProposeScheduleResponse response = proposeScheduleSubscriptions(subscriptions);
-                Set<String> unscheduled = response
-                        .getUnscheduledSubscriptions();
-                List<Subscription<T, C>> unScheduledSubs = new ArrayList<Subscription<T, C>>();
-
-                if (!unscheduled.isEmpty()) {
-                    // if proposed was unable to schedule some subscriptions it
-                    // will schedule nothing. schedule any that can be scheduled
-                    // here.
-                    List<Subscription<T, C>> subsToSchedule = new ArrayList<Subscription<T, C>>();
-                    for (Subscription<T, C> s : subscriptions) {
-                        if (!unscheduled.contains(s.getName())) {
-                            subsToSchedule.add(s);
-                        } else {
-                            unScheduledSubs.add(s);
-                        }
-                    }
-
-                    unscheduled.addAll(scheduleSubscriptions(subsToSchedule));
-                    unscheduledNames.addAll(unscheduled);
-
-                    // Update unscheduled subscriptions to reflect reality of
-                    // condition
-                    if (!CollectionUtils.isEmpty(unScheduledSubs)) {
-                        SubscriptionStatusEvent sse = null;
-                        for (Subscription<T, C> sub : unScheduledSubs) {
-                            try {
-                                sub.setUnscheduled(true);
-                                subscriptionHandler.update(
-                                        RegistryUtil.defaultUser, sub);
-                                sse = new SubscriptionStatusEvent(sub,
-                                        " is unscheduled. Insufficient bandwidth at startup.");
-                                EventBus.publish(sse);
-                            } catch (RegistryHandlerException e) {
-                                statusHandler.handle(Priority.PROBLEM,
-                                        "Unable to update subscription scheduling status: "
-                                                + sub.getName(), e);
-                            }
-                        }
-                    }
-                }
-            }
-        } finally {
-
-            scheduler.scheduleAtFixedRate(watchForConfigFileChanges, 1, 1,
-                    TimeUnit.MINUTES);
-            scheduler.scheduleAtFixedRate(new MaintenanceTask(), 30, 30,
-                    TimeUnit.MINUTES);
+            scheduler.shutdownNow();
+        } catch (Exception e) {
+            statusHandler.handle(Priority.WARN,
+                    "Unable to shutdown the scheduler.", e);
         }
-        return unscheduledNames;
+        EventBus.unregister(retrievalManager);
+    }
+
+    /**
+     * Unregister from the {@link EventBus}.
+     */
+    private void unregisterFromEventBus() {
+        EventBus.unregister(this);
+    }
+
+    /**
+     * Unregister from the {@link BandwidthEventBus}.
+     */
+    private void unregisterFromBandwidthEventBus() {
+        BandwidthEventBus.unregister(this);
+    }
+    
+    
+    /**
+     * Signals the bandwidth map localization file is updated, perform a
+     * reinitialize operation.
+     */
+    private void bandwidthMapConfigurationUpdated() {
+        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        request.setRequestType(RequestType.REINITIALIZE);
+
+        try {
+            handleRequest(request);
+        } catch (Exception e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error while reinitializing the bandwidth manager.", e);
+        }
     }
 
     /**
@@ -367,6 +365,14 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         EventBus.publish(event);
     }
 
+    /**
+     ************************ Subscription Related Methods **************************************
+     */
+
+    /**
+     * Restores a subscription from the Web interface GUI, placing it in an active state in applicable.
+     * @param subscription
+     */
     private void restoreSubscription(Subscription<T, C> subscription) {
 
         String subscriptionName = UNKNOWN;
@@ -388,7 +394,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                             + subscriptionName, ex);
         }
     }
-
+           
+    /**
+     * Give a listing of the unscheduled subscriptions.
+     * @param subscriptionNetwork
+     * @param unscheduledList
+     */
     private void logSubscriptionListUnscheduled(String subscriptionNetwork,
             List<BandwidthAllocation> unscheduledList) {
         if (unscheduledList != null) {
@@ -410,42 +421,65 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Get the spring injected subscription object handler.
+     * @return the subscriptionHandler
      */
-    @Override
-    protected void shutdownInternal() {
-        unregisterFromEventBus();
-        unregisterFromBandwidthEventBus();
-
-        try {
-            scheduler.shutdownNow();
-        } catch (Exception e) {
-            statusHandler.handle(Priority.WARN,
-                    "Unable to shutdown the scheduler.", e);
-        } finally {
-            // TODO: Remove this finally block when fully switched over to Java
-            // 1.7. See TODO comment in the constructor.
-            if (scheduler != null
-                    && scheduler instanceof ScheduledThreadPoolExecutor) {
-                ((ScheduledThreadPoolExecutor) scheduler).getQueue().clear();
+    public ISubscriptionHandler getSubscriptionHandler() {
+        return subscriptionHandler;
+    }
+    
+    /**
+     * Get the subscription if it is part of a client subscription request.
+     * @param subId
+     * @return
+     */
+    protected Subscription<T, C> getRequestSubscription(String subId) {
+        Subscription<T, C> subscription = null;
+        if (requestSubscriptions != null) {
+            if (requestSubscriptions.containsKey(subId)) {
+                subscription = requestSubscriptions.get(subId);
             }
         }
-        EventBus.unregister(retrievalManager);
+        return subscription;
+    }
+    
+   /**
+    *********************** Registry Object Lookup Related Methods ****************************
+    */
+            
+    
+    /**
+     * Query the registry for any stored object by it's ID.
+     * @param handler
+     * @param id
+     * @return
+     */
+    protected static <M> M getRegistryObjectById(
+            IRegistryObjectHandler<M> handler, String id) {
+        try {
+            return handler.getById(id);
+        } catch (RegistryHandlerException e) {
+            statusHandler.error("Error attempting to retrieve RegistryObject["
+                    + id + "] from Registry.", e);
+            return null;
+        }
     }
 
     /**
-     * Unregister from the {@link EventBus}.
+     * Gets the id'd dataSetMetaData object from the registry.
+     * @param id
+     * @return
      */
-    private void unregisterFromEventBus() {
-        EventBus.unregister(this);
+    @SuppressWarnings("unchecked")
+    private DataSetMetaData<T> getDataSetMetaData(String id) {
+        return getRegistryObjectById(dataSetMetaDataHandler, id);
     }
 
     /**
-     * Unregister from the {@link BandwidthEventBus}.
+     * ********************* BANDWIDTH BUS related methods * *********************************
+     * These will all carry the @Subscribe notation.
+     * This means they will deliver objects of their type that have been placed on the Bus.
      */
-    private void unregisterFromBandwidthEventBus() {
-        BandwidthEventBus.unregister(this);
-    }
 
     /**
      * The callback method for BandwidthEventBus to use to notify
@@ -502,17 +536,22 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     public void subscriptionRemoved(RemoveRegistryEvent event) {
         String objectType = event.getObjectType();
         if (objectType != null) {
+            // For removes we only care about Subscriptions. DSMD is un-flagged.
             if (DataDeliveryRegistryObjectTypes.isRecurringSubscription(event
                     .getObjectType())) {
                 statusHandler
                         .info("Received Subscription removal notification for Subscription ["
                                 + event.getId() + "]");
+                
                 removeBandwidthSubscriptions(event.getId());
 
                 try {
+                    // You have to construct this object from JAXB because it has been deleted 
+                    // by the registry by the time you get it here for BWM and Client notification.
                     Subscription<T, C> sub = (Subscription<T, C>) RegistryEncoders
                             .ofType(JAXB)
                             .decodeObject(event.getRemovedObject());
+                    statusHandler.info("Subscription removed: "+event.getId());
                     sendSubscriptionNotificationEvent(event, sub);
                 } catch (SerializationException e) {
                     statusHandler
@@ -537,15 +576,25 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     public void registryEventListener(InsertRegistryEvent re) {
         final String objectType = re.getObjectType();
 
+        // All DSMD updates go to BUS and circuit back to BWM
         if (DataDeliveryRegistryObjectTypes.DATASETMETADATA.equals(objectType)) {
             publishDataSetMetaDataEvent(re);
         }
+         // Want ALL subs here, regardless of origination.
         if (DataDeliveryRegistryObjectTypes.isRecurringSubscription(re
                 .getObjectType())) {
-            Subscription<T, C> sub = getRegistryObjectById(subscriptionHandler,
-                    re.getId());
-            sendSubscriptionNotificationEvent(re, sub);
+            
+            // A subscription found in the request cache means that the update was made "locally".
+            Subscription<T, C> subscription = getRequestSubscription(re.getId());
+            
+            // Non-locally effected subscriptions are queried directly from the registry.
+            if (subscription == null) {
+                subscription = getRegistryObjectById(
+                        getSubscriptionHandler(), re.getId());
+            }
 
+            statusHandler.info("Subscription Inserted: "+subscription.getName());
+            sendSubscriptionNotificationEvent(re, subscription);
         }
     }
 
@@ -559,96 +608,50 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @AllowConcurrentEvents
     public void registryEventListener(UpdateRegistryEvent event) {
         final String objectType = event.getObjectType();
+        // All DSMD updates go to BUS and circuit back to BWM
         if (DataDeliveryRegistryObjectTypes.DATASETMETADATA.equals(objectType)) {
             publishDataSetMetaDataEvent(event);
         }
+        // Only want Shared and Site subs here, no Pending or Adhoc's.
         if ((DataDeliveryRegistryObjectTypes.SHARED_SUBSCRIPTION
                 .equals(objectType))
                 || (DataDeliveryRegistryObjectTypes.SITE_SUBSCRIPTION
                         .equals(objectType))) {
-
-            /*
-             * This Thread.sleep() is here because at the present time: the
-             * UpdateRegistryEvent is received BEFORE the updated data in the
-             * Registry can be queried. Without this wait, we are very likely to
-             * receive stale data and begin propagating a corrupt data and
-             * system state. A separate issue; #2414; has been created to
-             * mitigate this problem.
-             */
-            try {
-                Thread.sleep(500); // A .5 second wait mitigates the race
-                                   // condition.
-            } catch (Exception ex) {
-
+            
+            // A subscription found in the request cache means that the update was made "locally".
+            Subscription<T, C> subscription = getRequestSubscription(event.getId());
+            
+            // Non-locally effected subscriptions are queried directly from the registry.
+            if (subscription == null) {
+                subscription = getRegistryObjectById(
+                        getSubscriptionHandler(), event.getId());
             }
-            Subscription<T, C> subscription = getRegistryObjectById(
-                    getSubscriptionHandler(), event.getId());
-            boolean isLocalOrigination = subscription.getOriginatingSite()
-                    .equals(RegistryIdUtil.getId());
+            
+            // Checks to see if this registry node has any relevance to this updated subscription.
+            // This way even updates to SHARED subs will be shown as updated.
+            boolean isLocalOrigination = subscription.getOriginatingSite().equals(RegistryIdUtil.getId());
 
+            // Only subscriptions local to this BWM get processed for scheduling updates.
             if (isLocalOrigination) {
                 subscriptionUpdated(subscription);
-
-                // Create Subscription Status event (async operation complete)
-                Calendar now = TimeUtil.newGmtCalendar();
-                SubscriptionStatusEvent subscriptionEvent = new SubscriptionStatusEvent(
-                        subscription, "" + subscription.getName()
-                                + " update complete");
-                subscriptionEvent.setDate(now);
-                EventBus.publish(subscriptionEvent);
-            } else {
-                sendSubscriptionNotificationEvent(event, subscription);
-            }
+            } 
+            
+            statusHandler.info("Subscription Updated: "+subscription.getName());
+            sendSubscriptionNotificationEvent(event, subscription);
         }
     }
 
-    protected void sendSubscriptionNotificationEvent(RegistryEvent event,
-            Subscription<T, C> sub) {
-        final String objectType = event.getObjectType();
-
-        if (DataDeliveryRegistryObjectTypes.isRecurringSubscription(objectType)) {
-            if (sub != null) {
-                boolean isApplicableForTheLocalSite = sub.getOfficeIDs()
-                        .contains(RegistryIdUtil.getId());
-                if (isApplicableForTheLocalSite) {
-                    switch (event.getAction()) {
-                    case UPDATE:
-                        /*
-                         * Remove send to prevent (nearly) duplicate
-                         * notification events. subscriptionNotificationService
-                         * .sendUpdatedSubscriptionNotification(sub,
-                         * event.getUsername());
-                         */
-                        break;
-                    case INSERT:
-                        subscriptionNotificationService
-                                .sendCreatedSubscriptionNotification(sub,
-                                        event.getUsername());
-                        break;
-                    case DELETE:
-                        subscriptionNotificationService
-                                .sendDeletedSubscriptionNotification(sub,
-                                        event.getUsername());
-                        break;
-                    default:
-                        statusHandler.handle(
-                                Priority.PROBLEM,
-                                "Invalid RegistryEvent action: "
-                                        + event.getAction());
-                    }
-                }
-            }
-        }
-    }
-
+    /***
+     * Filter for DataSetMetaData Objects received from registry.
+     * Publish to BandwidthEventBus for further downstream processing
+     * by specific type of DataSetMetaData object.
+     * @param re
+     */
     private void publishDataSetMetaDataEvent(RegistryEvent re) {
         final String id = re.getId();
         DataSetMetaData<T> dsmd = getDataSetMetaData(id);
 
         if (dsmd != null) {
-            // Repost the Object to the BandwidthEventBus to free
-            // the notification thread.
-
             // TODO: A hack to prevent rap_f and rap datasets being
             // Identified as the
             // same dataset...
@@ -667,29 +670,6 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private DataSetMetaData<T> getDataSetMetaData(String id) {
-        return getRegistryObjectById(dataSetMetaDataHandler, id);
-    }
-
-    protected static <M> M getRegistryObjectById(
-            IRegistryObjectHandler<M> handler, String id) {
-        try {
-            return handler.getById(id);
-        } catch (RegistryHandlerException e) {
-            statusHandler.error("Error attempting to retrieve RegistryObject["
-                    + id + "] from Registry.", e);
-            return null;
-        }
-    }
-
-    /**
-     * @return the subscriptionHandler
-     */
-    public ISubscriptionHandler getSubscriptionHandler() {
-        return subscriptionHandler;
-    }
-
     /**
      * Process a {@link GriddedDataSetMetaData} that was received from the event
      * bus.
@@ -703,12 +683,10 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             GriddedDataSetMetaData dataSetMetaData) throws ParseException {
 
         /*
-         * Looking for active subscriptions to the dataset. #3707 Simplified the
-         * triggering mechanism for Gridded subs. It all but guarantees the
-         * retrieval of a given subscription subscribed to a given dataset. This
-         * should be the core concept of the #2414 BandwidthManager re-design.
+         * Looking for active subscriptions to the dataset. Creates an ADHOC
+         * subscription replacing the allocations from scheduling and guarantees
+         * an active retrieval will be processed.
          */
-
         try {
 
             @SuppressWarnings("rawtypes")
@@ -736,7 +714,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     if (subscription.getOfficeIDs().contains(
                             RegistryIdUtil.getId())) {
 
-                        Subscription<T, C> sub = updateSubscriptionWithDataSetMetaData(
+                        Subscription<T, C> sub = BandwidthUtil.updateSubscriptionWithDataSetMetaData(
                                 subscription, dataSetMetaData);
                         statusHandler
                                 .info("Updating subscription metadata: "
@@ -756,7 +734,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     // check to see if this site is the NCF
                     if (RegistryIdUtil.getId().equals(RegistryUtil.defaultUser)) {
 
-                        Subscription<T, C> sub = updateSubscriptionWithDataSetMetaData(
+                        Subscription<T, C> sub = BandwidthUtil.updateSubscriptionWithDataSetMetaData(
                                 subscription, dataSetMetaData);
                         statusHandler
                                 .info("Updating subscription metadata: "
@@ -888,9 +866,174 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             }
         }
     }
+    
+    /**
+     ******************************* Notification Related Methods **************************
+     */
 
     /**
-     * {@inheritDoc}
+     * Send out subscription notifications to listening CAVE clients and EDEX
+     * components.
+     * 
+     * @param event
+     * @param sub
+     */
+    protected void sendSubscriptionNotificationEvent(RegistryEvent event,
+            Subscription<T, C> sub) {
+        final String objectType = event.getObjectType();
+
+        if (DataDeliveryRegistryObjectTypes.isRecurringSubscription(objectType)) {
+            if (sub != null) {
+                // Send out a subscription update notification for CAVE clients.
+                // We want only shared subs that are locally relevant and local subs.
+                boolean isApplicableForTheLocalSite = sub.getOfficeIDs()
+                        .contains(RegistryIdUtil.getId());
+                if (isApplicableForTheLocalSite) {
+                    switch (event.getAction()) {
+                    case UPDATE:
+                        subscriptionNotificationService
+                                .sendUpdatedSubscriptionNotification(sub,
+                                        event.getUsername());
+                        break;
+                    case INSERT:
+                        subscriptionNotificationService
+                                .sendCreatedSubscriptionNotification(sub,
+                                        event.getUsername());
+                        break;
+                    case DELETE:
+                        subscriptionNotificationService
+                                .sendDeletedSubscriptionNotification(sub,
+                                        event.getUsername());
+                        break;
+                    default:
+                        statusHandler.handle(
+                                Priority.PROBLEM,
+                                "Invalid RegistryEvent action: "
+                                        + event.getAction());
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Send out subscription status event to listening CAVE and EDEX components.
+     * components.
+     * 
+     * @param event
+     * @param sub
+     */
+    protected void sendSubscriptionStatusEvent(String message,
+            Subscription<T, C> sub) {
+        SubscriptionStatusEvent sse = new SubscriptionStatusEvent(
+                sub, message);
+        EventBus.publish(sse);
+    }
+ 
+
+    /**
+     ********************************** Scheduling Related methods *******************************
+     */
+
+    /**
+     * This method is called at EDEX (hibernate) BWM initialization.  
+     * It attempts to schedule the subscriptions available to it.
+     * It allows adds the timer tasks for the Maintenance Task which keep scheduling current.
+     * 
+     * @param Map<Network, List<Subscription>> subMap
+     */
+     public List<String> initializeScheduling(
+             Map<Network, List<Subscription>> subMap)
+             throws SerializationException {
+         List<String> unscheduledNames = new ArrayList<String>(0);
+
+         try {
+             for (Network key : subMap.keySet()) {
+                 List<Subscription<T, C>> subscriptions = new ArrayList<Subscription<T, C>>();
+                 // this loop is here only because of the generics mess
+                 for (Subscription<T, C> s : subMap.get(key)) {
+                     subscriptions.add(s);
+                 }
+                 ProposeScheduleResponse response = proposeScheduleSubscriptions(subscriptions);
+                 Set<String> unscheduled = response
+                         .getUnscheduledSubscriptions();
+                 List<Subscription<T, C>> unScheduledSubs = new ArrayList<Subscription<T, C>>();
+
+                 if (!unscheduled.isEmpty()) {
+                     // if proposed was unable to schedule some subscriptions it
+                     // will schedule nothing. schedule any that can be scheduled
+                     // here.
+                     List<Subscription<T, C>> subsToSchedule = new ArrayList<Subscription<T, C>>();
+                     for (Subscription<T, C> s : subscriptions) {
+                         if (!unscheduled.contains(s.getName())) {
+                             subsToSchedule.add(s);
+                         } else {
+                             unScheduledSubs.add(s);
+                         }
+                     }
+
+                     unscheduled.addAll(scheduleSubscriptions(subsToSchedule));
+                     unscheduledNames.addAll(unscheduled);
+
+                     // Update unscheduled subscriptions to reflect reality of
+                     // condition
+                     if (!CollectionUtils.isEmpty(unScheduledSubs)) {
+                         SubscriptionStatusEvent sse = null;
+                         for (Subscription<T, C> sub : unScheduledSubs) {
+                             try {
+                                 sub.setUnscheduled(true);
+                                 subscriptionHandler.update(
+                                         RegistryUtil.defaultUser, sub);
+                                 sse = new SubscriptionStatusEvent(sub,
+                                         " is unscheduled. Insufficient bandwidth at startup.");
+                                 EventBus.publish(sse);
+                             } catch (RegistryHandlerException e) {
+                                 statusHandler.handle(Priority.PROBLEM,
+                                         "Unable to update subscription scheduling status: "
+                                                 + sub.getName(), e);
+                             }
+                         }
+                     }
+                 }
+             }
+         } finally {
+
+             scheduler.scheduleAtFixedRate(watchForConfigFileChanges, 1, 1,
+                     TimeUnit.MINUTES);
+             scheduler.scheduleAtFixedRate(new MaintenanceTask(), 30, 30,
+                     TimeUnit.MINUTES);
+         }
+         return unscheduledNames;
+     }
+    
+    /**
+     * Get's the list of subscriptions to schedule by network type.
+     * 
+     * @param network
+     */
+    @Override
+    protected List<Subscription<T, C>> getSubscriptionsToSchedule(
+            Network network) {
+        List<Subscription<T, C>> subList = new ArrayList<Subscription<T, C>>(0);
+        try {
+            Map<Network, List<Subscription<T, C>>> activeSubs = findSubscriptionsStrategy
+                    .findSubscriptionsToSchedule();
+            if (activeSubs.get(network) != null) {
+                subList = activeSubs.get(network);
+            }
+        } catch (Exception e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error retrieving subscriptions.", e);
+        }
+
+        return subList;
+    }
+    
+    /**
+     * For a given block of allocations.
+     * Un-schedule it's subscriptions and remove
+     * it's Retrieval Attributes.
+     * @param List<BandwidthAllocation> unscheduled
      */
     @Override
     protected void unscheduleSubscriptionsForAllocations(
@@ -928,82 +1071,18 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             subscriptionUpdated(subscription);
 
             if (origSchedStatus == false) {
-                SubscriptionStatusEvent sse = new SubscriptionStatusEvent(
-                        subscription, " is unscheduled.");
-                EventBus.publish(sse);
+                sendSubscriptionStatusEvent(" is unscheduled.", subscription);
             }
         }
     }
-
-    /**
-     * Updates a {@link Subscription) to reflect important attributes of the
-     * specified {@link DataSetMetaData}.
-     * 
-     * @param sub
-     *            the subscription
-     * @param dataSetMetaData
-     *            the datasetmetadata update
-     * @return the subscription
-     */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static Subscription updateSubscriptionWithDataSetMetaData(
-            Subscription sub, DataSetMetaData dataSetMetaData) {
-        // TODO perfect candidate for the factory for time and coverage
-        Time dsmdTime = dataSetMetaData.getTime();
-        final Time subTime = sub.getTime();
-        dsmdTime = handleCyclesAndSequences(subTime, dsmdTime);
-        sub.setTime(dsmdTime);
-        sub.setUrl(dataSetMetaData.getUrl());
-
-        return sub;
-    }
-
-    /**
-     * Signals the bandwidth map localization file is updated, perform a
-     * reinitialize operation.
-     */
-    private void bandwidthMapConfigurationUpdated() {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
-        request.setRequestType(RequestType.REINITIALIZE);
-
-        try {
-            handleRequest(request);
-        } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error while reinitializing the bandwidth manager.", e);
-        }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager#
-     * getSubscriptionsToSchedule
-     * (com.raytheon.uf.common.datadelivery.registry.Network)
-     */
-    @Override
-    protected List<Subscription<T, C>> getSubscriptionsToSchedule(
-            Network network) {
-        List<Subscription<T, C>> subList = new ArrayList<Subscription<T, C>>(0);
-        try {
-            Map<Network, List<Subscription<T, C>>> activeSubs = findSubscriptionsStrategy
-                    .findSubscriptionsToSchedule();
-            if (activeSubs.get(network) != null) {
-                subList = activeSubs.get(network);
-            }
-        } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error retrieving subscriptions.", e);
-        }
-
-        return subList;
-    }
+  
 
     /**
      * Try to schedule other subs when another deactivates
      * 
      * @param deactivatedSubName
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void scheduleUnscheduledSubscriptions(String deactivatedSubName) {
 
@@ -1065,9 +1144,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         } else {
                             msg = " is scheduled.";
                         }
-                        SubscriptionStatusEvent sse = new SubscriptionStatusEvent(
-                                sub, msg);
-                        EventBus.publish(sse);
+                        sendSubscriptionStatusEvent(msg, sub);
+ 
                     } catch (RegistryHandlerException e) {
                         statusHandler
                                 .handle(Priority.PROBLEM,
@@ -1083,6 +1161,9 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Private inner work thread used to keep the RetrievalPlans up to date.
+     * This fired off in a crontab every 30 minutes.  
+     * What it does is keep all of the subscriptions scheduled out to the 
+     * Retrieval Plan maximum window value.  (Default is 48 hours)
      */
     private class MaintenanceTask implements Runnable {
         @Override

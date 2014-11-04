@@ -1,15 +1,35 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.regex.Pattern;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.JarUtil;
+import com.raytheon.uf.common.util.algorithm.AlgorithmUtil;
+import com.raytheon.uf.common.util.algorithm.AlgorithmUtil.IBinarySearchResponse;
+import com.raytheon.uf.edex.core.modes.EDEXModesUtil;
+import com.raytheon.uf.edex.datadelivery.bandwidth.FindSubscriptionRequiredLatency;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
+import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 
 /**
  * Bandwidth Manager utility methods.
@@ -33,6 +53,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * Jan 08, 2014 2615       bgonzale    Moved Calendar min and max methods to TimeUtil.
  * Apr 09, 2014 3012       dhladky     GMT Calendar use.
  * Jun 09, 2014 3113       mpduff      Moved getDataSetAvailablityOffset to SubscriptionUtil.
+ * Nov 03, 2014 2414       dhladky     Refactored and moved some BWM methods.
  * </pre>
  * 
  * @version 1.0
@@ -47,6 +68,9 @@ public class BandwidthUtil {
             Calendar.FEBRUARY, Calendar.MARCH, Calendar.APRIL, Calendar.MAY,
             Calendar.JUNE, Calendar.JULY, Calendar.AUGUST, Calendar.SEPTEMBER,
             Calendar.OCTOBER, Calendar.NOVEMBER, Calendar.DECEMBER };
+    
+    /** BWM XML pattern **/
+    private static final Pattern RES_PATTERN = Pattern.compile("^res");
 
     // Create an 'instance' Object so that implementations of some
     // algorithms can be injected with Spring..
@@ -55,6 +79,9 @@ public class BandwidthUtil {
     private ISubscriptionLatencyCalculator subscriptionLatencyCalculator;
 
     private ISubscriptionRescheduleStrategy subscriptionRescheduleStrategy;
+    
+    protected static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(BandwidthUtil.class);
 
     private BandwidthUtil() {
     };
@@ -228,5 +255,101 @@ public class BandwidthUtil {
         cal.set(Calendar.DAY_OF_MONTH, activePeriod.get(Calendar.DAY_OF_MONTH));
 
         return cal;
+    }
+    
+    /**
+     * Special handling for Gridded Times with cycles and time indicies
+     * 
+     * @param subTime
+     * @param dataSetMetaDataTime
+     * @return
+     */
+    private static Time handleCyclesAndSequences(Time subTime,
+            Time dataSetMetaDataTime) {
+
+        if (subTime instanceof GriddedTime) {
+            GriddedTime time = (GriddedTime) subTime;
+            GriddedTime dsmTime = (GriddedTime) dataSetMetaDataTime;
+            dsmTime.setSelectedTimeIndices(time.getSelectedTimeIndices());
+            dsmTime.setCycleTimes(time.getCycleTimes());
+        }
+
+        return dataSetMetaDataTime;
+    }
+    
+    /**
+     * Updates a {@link Subscription) to reflect important attributes of the
+     * specified {@link DataSetMetaData}.
+     * 
+     * @param sub
+     *            the subscription
+     * @param dataSetMetaData
+     *            the datasetmetadata update
+     * @return the subscription
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static Subscription updateSubscriptionWithDataSetMetaData(
+            Subscription sub, DataSetMetaData dataSetMetaData) {
+        // TODO perfect candidate for the factory for time and coverage
+        Time dsmdTime = dataSetMetaData.getTime();
+        final Time subTime = sub.getTime();
+        dsmdTime = handleCyclesAndSequences(subTime, dsmdTime);
+        sub.setTime(dsmdTime);
+        sub.setUrl(dataSetMetaData.getUrl());
+
+        return sub;
+    }
+    
+    /**
+     * Get the list of mode configured spring file names for the named mode.
+     * 
+     * @param modeName
+     *            retrieve the spring files configured for this mode
+     * @return list of spring files configured for the given mode
+     */
+    public static String[] getSpringFileNamesForMode(String modeName) {
+        List<String> fileList = new ArrayList<String>();
+        try {
+            EDEXModesUtil.extractSpringXmlFiles(fileList, modeName);
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to determine spring files for mode " + modeName, e);
+        }
+
+        String[] result = new String[fileList.size()];
+        int i = 0;
+        for (String fileName : fileList) {
+            String name = RES_PATTERN.matcher(fileName).replaceFirst("");
+            name = JarUtil.getResResourcePath(name);
+            result[i++] = name;
+            statusHandler.info("Spring file added: " + name + " for mode "
+                    + modeName);
+        }
+        return result;
+    }
+    
+
+    /**
+     * Convert List of subscriptions to a Map.
+     * This is used in request handler portion of the BWM.
+     * 
+     * @param List<Subscription> list
+     * @return Map<String, Subscription>
+     */
+
+    public static <T extends Time, C extends Coverage> Map<String, Subscription<T, C>> getMapFromRequestList(
+            List<Subscription<T, C>> list) {
+
+        Map<String, Subscription<T, C>> requestMap = null;
+        
+        if (list != null) {
+            requestMap = new HashMap<String, Subscription<T, C>>(list.size());
+
+            for (Subscription<T, C> sub : list) {
+                requestMap.put(sub.getId(), sub);
+            }
+        }
+
+        return requestMap;
     }
 }

@@ -609,6 +609,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         }
 
         for (NotificationRecord record : notificationList) {
+            
             NotificationRowData rd = new NotificationRowData();
             Integer recordId = record.getId();
             Calendar recordCalendarDate = record.getDate();
@@ -642,6 +643,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             // Apply filter
             if (passesFilter(record)) {
                 filteredTableList.addDataRow(rd);
+
             }
         }
 

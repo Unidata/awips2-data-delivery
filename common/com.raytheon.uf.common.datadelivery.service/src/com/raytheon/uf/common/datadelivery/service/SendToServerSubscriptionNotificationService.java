@@ -42,6 +42,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 21, 2013 1501       djohnson     Include subscription on all requests.
  * Oct 15, 2014 3664       ccody        Add Subscription unscheduled notification method
  * Oct 28, 2014 2748       ccody       Remove incorrect update notification for completion of Async operations
+ * Nov 03, 2014 2414       dhladky     Brought back update.  turns out we still need it.
  * 
  * </pre>
  * 
@@ -181,6 +182,22 @@ public class SendToServerSubscriptionNotificationService implements
 
         sendRequest(req);
     }
+    
+
+    @Override
+    public void sendUpdatedSubscriptionNotification(Subscription subscription,
+            String username) {
+        SubscriptionNotificationRequest req = new SubscriptionNotificationRequest();
+        req.setUserId(username);
+        req.setCategory("Subscription");
+        req.setPriority(3);
+        req.setMessage(subscription.getName() + " Updated");
+        subscription.setDeleted(true);
+        req.setSubscription(subscription);
+
+        sendRequest(req);
+        
+    }
 
     /**
      * {@inheritDoc}
@@ -240,4 +257,5 @@ public class SendToServerSubscriptionNotificationService implements
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
     }
+
 }

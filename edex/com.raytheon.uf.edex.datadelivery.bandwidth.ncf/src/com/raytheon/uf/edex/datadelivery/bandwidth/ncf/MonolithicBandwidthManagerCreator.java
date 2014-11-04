@@ -33,6 +33,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
+import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
@@ -72,7 +73,7 @@ public class MonolithicBandwidthManagerCreator<T extends Time, C extends Coverag
 
         public static final String MODE_NAME = "devRegistry";
 
-        private static final String[] BANDWIDTH_MANAGER_FILES = getSpringFileNamesForMode(MODE_NAME);
+        private static final String[] BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
 
         /**
          * Constructor.

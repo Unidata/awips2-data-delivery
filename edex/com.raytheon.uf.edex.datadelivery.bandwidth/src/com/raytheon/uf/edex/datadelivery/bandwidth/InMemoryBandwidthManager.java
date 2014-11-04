@@ -38,6 +38,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
+import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
@@ -62,6 +63,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Feb 12, 2014 2636       mpduff       Override getSubscriptionsToSchedule
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
  * May 22, 2014 2808       dhladky      Scheduling unscheduled
+ * Nov 03, 2014 2414       dhladky      refactoring some methods in BWM.
  * 
  * </pre>
  * 
@@ -79,7 +81,7 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
     // NOTE: NEVER add the bandwidth-datadelivery-eventbus.xml file to this
     // array, in-memory versions should not coordinate with the event bus in any
     // fashion
-    public static final String[] IN_MEMORY_BANDWIDTH_MANAGER_FILES = getSpringFileNamesForMode(MODE_NAME);
+    public static final String[] IN_MEMORY_BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
 
     /**
      * {@link IBandwidthInitializer} which will make a copy of the current
@@ -200,6 +202,12 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
     @Override
     public void scheduleUnscheduledSubscriptions(String subUnscheduledName) {
         // The in-memory bandwidth manager will never schedule unscheduled subscriptions
+    }
+
+    @Override
+    protected void resetBandwidthManager(Network requestNetwork,
+            String resetReasonMessage) {
+        // No in memory implementation.
     }
 
 }
