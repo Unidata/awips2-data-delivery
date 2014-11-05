@@ -44,6 +44,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 22, 2013   1531     mpduff      Initial creation
+ * Oct 28, 2014   2748     ccody       Remove Live Update
  * 
  * </pre>
  * 
@@ -60,9 +61,6 @@ public class XHeaderCanvas extends Canvas {
 
     /** Colon constant */
     private final String colon = ": ";
-
-    /** Live update constant */
-    private final String liveUpdate = "Live Update: ";
 
     /** On constant */
     private final String on = "On";
@@ -140,11 +138,7 @@ public class XHeaderCanvas extends Canvas {
         }
 
         gc.setBackground(bgColor);
-        xCoord += 50;
-
-        gc.drawString(liveUpdate + on, xCoord, yCoord);
-
-        xCoord += 150;
+        xCoord += 200;
 
         gc.drawString(sortBy, xCoord, yCoord);
 

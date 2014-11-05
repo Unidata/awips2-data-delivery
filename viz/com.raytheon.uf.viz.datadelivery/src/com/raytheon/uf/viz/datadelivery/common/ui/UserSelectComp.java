@@ -42,6 +42,7 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
+import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
@@ -101,6 +102,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Feb 11, 2014  2771      bgonzale     Use Data Delivery ID instead of Site.
  * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
  * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
+ * Oct 28, 2014   2748     ccody        Remove Live update. Updates are event driven.
  * </pre>
  * 
  * @author jpiatt
@@ -422,18 +424,20 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
         }
 
         try {
-            
-            List<Subscription> pendingSubscriptionList = new ArrayList<Subscription>( 
-                            Sets.union(groupSubscriptions, removeFromGroupSubscriptions));
+
+            List<Subscription> pendingSubscriptionList = new ArrayList<Subscription>(
+                    Sets.union(groupSubscriptions, removeFromGroupSubscriptions));
             final SubscriptionServiceResult result = DataDeliveryServices
                     .getSubscriptionService().updateWithPendingCheck(
                             currentUser, pendingSubscriptionList, this);
 
-            ISubscriptionNotificationService subscriptionNotificationService = 
-                            DataDeliveryServices.getSubscriptionNotificationService();
+            ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+                    .getSubscriptionNotificationService();
             for (Subscription pendingSubscription : pendingSubscriptionList) {
-                subscriptionNotificationService.
-                        sendUpdatedSubscriptionNotification(pendingSubscription, currentUser);
+                subscriptionNotificationService
+                        .sendUpdatedPendingSubscriptionNotification(
+                                (InitialPendingSubscription) pendingSubscription,
+                                currentUser);
             }
 
             if (result.hasMessageToDisplay()) {

@@ -166,6 +166,8 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                      do not result in errors and exceptions.
  *                                      @see com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager.resetBandwidthManager
  * Oct 15, 2014 3664       ccody        Add notification event for unscheduled Subscriptions at startup
+ * Oct 12, 2014 3707       dhladky      Changed the way gridded subscriptions are triggerd for retrieval.
+ * Oct 28, 2017 2748       ccody        Subscription outside of Active period should not throw an exception
  * </pre>
  * 
  * @author dhladky
@@ -785,9 +787,18 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     }
                 }
             }
-            throw new IllegalArgumentException(
-                    "Unable to create adhoc queries for this type of subscription.  "
-                            + subscription.getSubscriptionType().name());
+        } else {
+            if (!subscription.isActive()) {
+                statusHandler
+                        .info(String.format(
+                                "Time frame outside of subscription active time frame [%s].  "
+                                        + "No adhoc requested.",
+                                subscription.getName()));
+            } else {
+                throw new IllegalArgumentException(
+                        "Unable to create adhoc queries for this type of subscription.  "
+                                + subscription.getSubscriptionType().name());
+            }
         }
         return unscheduled;
     }
@@ -1397,7 +1408,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * /res/spring/ebxml-garbagecollector-edex-impl.xml
      * /res/spring/ebxml-webserver.xml /spring/datadelivery-cron.xml
      * /spring/datadelivery-wfo-cron.xml /spring/retrieval-datadelivery.xml
-     * /res/spring/request-service-common.xml
      * <p>
      * 3. Using ONLY the Spring files for the "memory" configuration e.g.
      * InMemoryBandwidthManager.IN_MEMORY_BANDWIDTH_MANAGER_FILES (@see
@@ -1405,6 +1415,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * component environment to restart properly. This does not appear to
      * negatively impact other parts of the system.
      * <p>
+     * always sync up with download time windows
      * 
      * @return true if the new bandwidth manager was started
      */

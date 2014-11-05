@@ -5,6 +5,10 @@
     <bean id="statusDao" class="com.raytheon.uf.edex.datadelivery.event.dao.DataDeliverySystemStatusDao">
         <property name="sessionFactory" ref="metadataSessionFactory" />
     </bean>
+
+    <bean id="notificationDao" class="com.raytheon.uf.edex.datadelivery.event.notification.NotificationDao">
+        <property name="sessionFactory" ref="metadataSessionFactory" />
+    </bean>
   
     <bean id="systemStatusHandler" class="com.raytheon.uf.edex.datadelivery.event.handler.SystemStatusRequestHandler" >
         <property name="statusDao" ref="statusDao" />
@@ -16,6 +20,7 @@
     <bean id="dataDeliverySystemStatusEventHandler" class="com.raytheon.uf.edex.datadelivery.event.handler.DataDeliverySystemStatusEventHandler">
         <property name="uri" value="jms-generic:topic:notify.msg" />
         <property name="statusDao" ref="statusDao" />
+        <property name="notificationDao" ref="notificationDao" />
     </bean>
     
     <bean factory-bean="eventBus" factory-method="register">

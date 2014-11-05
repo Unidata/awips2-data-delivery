@@ -45,6 +45,7 @@ import org.eclipse.swt.widgets.TableItem;
 
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.user.IUser;
+import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -114,6 +115,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Feb 11, 2014  2771      bgonzale     Use Data Delivery ID instead of Site.
  * Mar 24, 2014  #2951     lvenable     Added dispose checks for SWT widgets.
  * Apr 18, 2014  3012      dhladky      Null check.
+ * Oct 28, 2014  2748      ccody       Changes for receiving Subscription Status changes
  * @version 1.0
  */
 
@@ -140,7 +142,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /** Checks for the notification message to be those we care about. **/
     private final NotificationMessageContainsType notificationMessageChecker = new NotificationMessageContainsType(
-            BaseSubscriptionNotificationResponse.class);
+            BaseSubscriptionNotificationResponse.class,
+            NotificationRecord.class);
 
     /** Filters out which subscriptions to show **/
     private ISubscriptionManagerFilter subscriptionFilter;

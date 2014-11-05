@@ -69,6 +69,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
  * Sep 16, 2013   2383     bgonzale    Start time precedes end time.
  * Oct 10, 2013   1797     bgonzale    Refactored registry Time objects.
  * Oct 11, 2013   2386     mpduff      Refactor DD Front end.
+ * Oct 30, 2014   2706     ccody       Add Check for changes on Dialog close
  * 
  * </pre>
  * 
@@ -310,4 +311,34 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
     protected TimeXML getDataTimeInfo() {
         return timingTabControls.getSaveInfo();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean isDirty() {
+        if (super.isDirty()) {
+            return true;
+        }
+
+        if ((timingTabControls != null) && (timingTabControls.isDirty())) {
+            return true;
+        }
+
+        return false;
+
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void setClean() {
+        super.setClean();
+
+        if (timingTabControls != null) {
+            timingTabControls.setDirty(false);
+        }
+    }
+
 }

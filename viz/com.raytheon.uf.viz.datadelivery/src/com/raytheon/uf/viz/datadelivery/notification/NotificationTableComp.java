@@ -21,6 +21,7 @@ package com.raytheon.uf.viz.datadelivery.notification;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +43,8 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.viz.core.notification.NotificationMessage;
@@ -88,6 +91,7 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * Feb 07, 2014  2453      mpduff       Refactored.
  * Apr 18, 2014  3012      dhladky      Null check.
  * Aug 18, 2014  2746      ccody        Non-local Subscription changes not updating dialogs
+ * Oct 29, 2014  2749      ccody        Unable to change the OPSNET Bandwidth value for Data Delivery
  * </pre>
  * 
  * @author lvenable
@@ -95,6 +99,10 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  */
 
 public class NotificationTableComp extends TableComp implements ITableFind {
+
+    /** UFStatus handler. */
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(NotificationTableComp.class);
 
     /** Priority image creation class */
     private PriorityImages pImage = null;
@@ -602,8 +610,27 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
         for (NotificationRecord record : notificationList) {
             NotificationRowData rd = new NotificationRowData();
-            rd.setId(record.getId());
-            rd.setDate(record.getDate().getTime());
+            Integer recordId = record.getId();
+            Calendar recordCalendarDate = record.getDate();
+            if ((recordId == null) || (recordCalendarDate == null)) {
+                statusHandler
+                        .error("Error Extracting data from Notification Message: One or more mandatory values are null.\n"
+                                + "ID: "
+                                + record.getId()
+                                + "  Date: "
+                                + record.getDate()
+                                + "  Category: "
+                                + record.getCategory()
+                                + "\nPriority: "
+                                + record.getPriority()
+                                + "  User: "
+                                + record.getUsername()
+                                + "\nMessage: "
+                                + record.getMessage());
+                continue;
+            }
+            rd.setId(recordId.intValue());
+            rd.setDate(recordCalendarDate.getTime());
             rd.setCategory(record.getCategory());
             rd.setMessage(record.getMessage());
             rd.setPriority(record.getPriority());
@@ -702,7 +729,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
      *            subscription category table data
      * @return boolean true if passes value filter
      */
-    public boolean passesValueFilter(String username, Integer priority, String category) {
+    public boolean passesValueFilter(String username, Integer priority,
+            String category) {
         boolean filterFlag = false;
         boolean userFlag = false;
         boolean subscriptionFlag = false;
@@ -729,7 +757,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             }
         }
 
-        if (subscriptionCategoryList == null || subscriptionCategoryList.isEmpty()
+        if (subscriptionCategoryList == null
+                || subscriptionCategoryList.isEmpty()
                 || subscriptionCategoryList.equals("")
                 || subscriptionCategoryList.contains(category)) {
             subscriptionFlag = true;
@@ -743,29 +772,29 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             filterFlag = true;
         }
 
-        return(filterFlag);
+        return (filterFlag);
     }
-    
+
     private boolean passesFilter(NotificationRecord notificationRecord) {
 
         boolean filterFlag = false;
 
         if (notificationRecord == null) {
-            return(false);
+            return (false);
         }
 
         String nrUsername = notificationRecord.getUsername();
         Integer nrPriority = notificationRecord.getPriority();
         String nrCategory = notificationRecord.getCategory();
-        
+
         filterFlag = passesValueFilter(nrUsername, nrPriority, nrCategory);
 
         if (filterFlag == true) {
-            //Check to see if we already HAVE this message
+            // Check to see if we already HAVE this message
             NotificationRowData rd = null;
             int filteredTableListSize = this.filteredTableList.getSize();
             for (int i = 0; ((i < filteredTableListSize) && (filterFlag == true)); i++) {
-                rd  = (NotificationRowData) this.filteredTableList.getDataRow(i);
+                rd = (NotificationRowData) this.filteredTableList.getDataRow(i);
                 String rdCategory = rd.getCategory();
                 Integer rdPriority = rd.getPriority();
                 String rdMessage = rd.getMessage();
@@ -775,15 +804,16 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 if (rdDate != null) {
                     rdTimeInMils = rdDate.getTime();
                 }
-                boolean areEquivalent = notificationRecord.areFunctionallyEquivalent(rdCategory, rdPriority,
-                                            rdMessage, rdUsername, rdTimeInMils);
+                boolean areEquivalent = notificationRecord
+                        .areFunctionallyEquivalent(rdCategory, rdPriority,
+                                rdMessage, rdUsername, rdTimeInMils);
                 if (areEquivalent == true) {
                     filterFlag = false;
                     break;
                 }
             }
         }
-        
+
         return filterFlag;
     }
 

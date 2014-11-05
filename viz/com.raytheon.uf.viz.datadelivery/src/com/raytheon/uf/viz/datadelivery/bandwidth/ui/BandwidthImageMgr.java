@@ -53,6 +53,7 @@ import com.raytheon.uf.viz.core.RGBColors;
  * Nov 19, 2013   1531     mpduff      Update the settings.
  * Dec 17, 2013   2633     mpduff      Keep data used to regenerate images.
  * Sep 22, 2014   3607     ccody       Prevent NullPointerException on image regeneration for populateCanvasMap
+ * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
  * </pre>
  * 
  * @author lvenable
@@ -108,9 +109,6 @@ public class BandwidthImageMgr implements IGraphOptions {
 
     /** Map of Rectangle object -> Subscription name */
     private Map<Rectangle, String> checkBoxMap = new HashMap<Rectangle, String>();
-
-    /** Live update flag */
-    private boolean liveUpdate = true;
 
     /** Color by priority flag */
     private boolean colorByPriority = true;
@@ -269,7 +267,6 @@ public class BandwidthImageMgr implements IGraphOptions {
             canvasImgMap.get(ci).regenerateImage(graphData);
         }
     }
-    
 
     /**
      * Update the canvas settings for the specified canvas.
@@ -394,22 +391,6 @@ public class BandwidthImageMgr implements IGraphOptions {
      */
     public Map<Rectangle, String> getCheckBoxMap() {
         return checkBoxMap;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean isLiveUpdate() {
-        return liveUpdate;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setLiveUpdate(boolean liveUpdate) {
-        this.liveUpdate = liveUpdate;
     }
 
     /**
