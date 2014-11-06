@@ -23,7 +23,6 @@ import java.io.File;
 
 import org.apache.commons.io.FileDeleteStrategy;
 
-import com.raytheon.edex.plugin.satellite.SatelliteDecoder;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
@@ -36,6 +35,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMet
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.IPDAMetaDataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 //import com.raytheon.uf.edex.plugin.goesr.GOESRDecoder;
+import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
 
 /**
  * 
@@ -72,7 +72,7 @@ public class PDAMetaDataAdapter extends
     //private GOESRDecoder goesrDecoder = null;
 
     /** satellite decoder **/
-    private SatelliteDecoder satelliteDecoder = null;
+    private GiniSatelliteDecoder satelliteDecoder = null;
 
     // decoder operating type
     private String type = null;
@@ -155,9 +155,9 @@ public class PDAMetaDataAdapter extends
      * get an ESB instance of the SAT decoder
      * @return
      */
-    private SatelliteDecoder getSatDecoder() {
+    private GiniSatelliteDecoder getSatDecoder() {
         if (satelliteDecoder == null) {
-            satelliteDecoder = (SatelliteDecoder) EDEXUtil.getESBComponent("satelliteDecoder");
+            satelliteDecoder = (GiniSatelliteDecoder) EDEXUtil.getESBComponent("giniDecoder");
         }
         return satelliteDecoder;
     }
