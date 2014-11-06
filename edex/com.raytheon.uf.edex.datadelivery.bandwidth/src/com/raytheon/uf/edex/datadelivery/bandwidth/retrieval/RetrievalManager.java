@@ -9,7 +9,6 @@ import java.util.TreeMap;
 
 import com.google.common.eventbus.Subscribe;
 import com.raytheon.uf.common.datadelivery.registry.Network;
-import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
@@ -43,6 +42,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
  * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
  * Apr 02, 2014  2810      dhladky      Priority sorting of allocations.
+ * Sept 14, 2014 2131      dhladky      PDA additions
  * 
  * </pre>
  * 

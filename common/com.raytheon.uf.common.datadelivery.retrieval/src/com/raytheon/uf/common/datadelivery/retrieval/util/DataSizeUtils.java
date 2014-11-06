@@ -26,6 +26,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
+import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSet;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
@@ -50,6 +51,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jun 14, 2013  2108      mpduff     Abstracted the class.
  * Sept 09, 2013 2351      dhladky    Fixed incorrect calculation for default pointdata overhead
  * Nov 20, 2013   2554     dhladky    Generics
+ * Sept 19, 2014 3121      dhladky    PDA data sizes.
  * 
  * </pre>
  * 
@@ -75,6 +77,8 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
             dsu = new GriddedDataSizeUtils((GriddedDataSet) dataSet);
         } else if (subscription.getDataSetType() == DataType.POINT) {
             dsu = new PointDataSizeUtils((PointDataSet) dataSet);
+        } else if (subscription.getDataSetType() == DataType.PDA) {
+            dsu = new PDADataSizeUtils((PDADataSet) dataSet);
         }
 
         return dsu;
@@ -118,7 +122,19 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
             long l = st.getRequestBytesPerLatLonBoxAndTime(latSpan, lonSpan,
                     time.getInterval());
             return l;
-        } else {
+            
+        } else if (st == ServiceType.PDA) {
+
+            ReferencedEnvelope re = ra.getCoverage().getRequestEnvelope();
+            Coordinate ur = EnvelopeUtils.getUpperRightLatLon(re);
+            Coordinate ll = EnvelopeUtils.getLowerLeftLatLon(re);
+            int lonSpan = (int) Math.abs(ll.x - ur.x);
+            int latSpan = (int) Math.abs(ll.y - ur.y);
+            // TODO calculate this
+            return lonSpan * latSpan;
+        }
+        
+        else {
             throw new IllegalStateException(
                     "Couldn't calculate the retrieval size for a retrieval of type "
                             + st.name() + "!");

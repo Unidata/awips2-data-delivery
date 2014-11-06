@@ -80,6 +80,8 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * May 20, 2014 3113       mpduff       Add the functionality that the subscription itself provides the retrieval times.
  * Jul 28, 2014 2765       dhladky      No setOwner() in the setup super() method.
  * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
+ * Sept 05, 2014 2131      dhladky      Added PDA data types
+ * Sept 14, 2014 2131      dhladky      PDA updates
  * 
  * </pre>
  * 
@@ -1167,6 +1169,15 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         case POINT:
             int interval = this.getLatencyInMinutes();
             retrievalTimes = getTimes(interval, planStart, planEnd);
+            break;
+        case PDA:
+            int pdainterval = subUtil.calculateInterval(dsmdList);
+            Date lastArrivalTime = subUtil.getLatestArrivalTime(dsmdList);
+            Calendar lastArrival = TimeUtil.newGmtCalendar(lastArrivalTime);
+            if (lastArrival == null) {
+                return new TreeSet<Calendar>();
+            }
+            retrievalTimes = getTimes(pdainterval, lastArrival, planEnd);
             break;
         default:
             throw new IllegalArgumentException(

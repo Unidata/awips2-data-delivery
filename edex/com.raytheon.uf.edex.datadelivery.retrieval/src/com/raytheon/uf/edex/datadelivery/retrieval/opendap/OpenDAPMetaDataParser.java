@@ -47,7 +47,6 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
 import com.raytheon.uf.common.gridcoverage.Corner;
@@ -60,10 +59,10 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.GridUtil;
-import com.raytheon.uf.edex.datadelivery.retrieval.Link;
-import com.raytheon.uf.edex.datadelivery.retrieval.LinkStore;
-import com.raytheon.uf.edex.datadelivery.retrieval.MetaDataParser;
-import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDAPMetaDataExtracter.DAP_TYPE;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
+import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDAPMetaDataExtractor.DAP_TYPE;
 import com.vividsolutions.jts.geom.Coordinate;
 
 import dods.dap.AttributeTable;
@@ -98,14 +97,16 @@ import dods.dap.DAS;
  * Dec 18, 2013 2636       mpduff       Calculate a data availability delay for the dataset and dataset meta data.
  * Jan 14, 2014            dhladky      Data set info used for availability delay calculations.
  * Jun 09, 2014  3113      mpduff       Save the ArrivalTime.
+ * Jul 08, 2014  3120      dhladky      Generics, interface realignment
  * 
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
+ * @param <O>
  */
 
-class OpenDAPMetaDataParser extends MetaDataParser {
+class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPMetaDataParser.class);
@@ -746,36 +747,7 @@ class OpenDAPMetaDataParser extends MetaDataParser {
                         "The time cannot be null for a DataSet object!");
             }
 
-            // Calculate dataset availability delay
-            DataSetInformation dsi = LookupManager.getInstance()
-                    .getDataSetInformation(gdsmd.getDataSetName());
-            long offset = 0l;
-            long startMillis = gdsmd.getTime().getStart().getTime();
-            long endMillis = TimeUtil.newGmtCalendar().getTimeInMillis();
-
-            /**
-             * This is here for if no one has configured this particular model
-             * They are gross defaults and will not guarantee this model working
-             */
-            if (dsi == null) {
-                Double multi = Double.parseDouble(serviceConfig
-                        .getConstantValue("DEFAULT_MULTIPLIER"));
-                Integer runIncrement = Integer.parseInt(serviceConfig
-                        .getConstantValue("DEFAULT_RUN_INCREMENT"));
-                Integer defaultOffest = Integer.parseInt(serviceConfig
-                        .getConstantValue("DEFAULT_OFFSET"));
-                dsi = new DataSetInformation(gdsmd.getDataSetName(), multi,
-                        runIncrement, defaultOffest);
-                // writes out a place holder DataSetInformation object in the
-                // file
-                LookupManager.getInstance().modifyDataSetInformationLookup(dsi);
-            }
-
-            offset = (endMillis - startMillis) / TimeUtil.MILLIS_PER_MINUTE;
-            // this is the actually ranging check
-            if (dsi.getRange() < offset) {
-                offset = dsi.getDefaultOffset();
-            }
+            int offset = getDataSetAvailabilityTime(gdsmd.getDataSetName(), gdsmd.getTime().getStart().getTime());
             long arrivalTime = TimeUtil.currentTimeMillis();
             dataSet.setArrivalTime(arrivalTime);
             dataSet.setAvailabilityOffset((int) offset);
@@ -814,4 +786,12 @@ class OpenDAPMetaDataParser extends MetaDataParser {
 
         return parsedMetadatas;
     }
+
+    @Override
+    public void parseMetaData(Provider provider, String dataDateFormat,
+            LinkStore object) throws Exception {
+        throw new UnsupportedOperationException("Not implemented for this type");
+        
+    }
+
 }

@@ -38,6 +38,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------ ---------- ----------- --------------------------
  * 12 Sept, 2012   1038      dhladky   Initial creation
  * 23 Oct,  2013   2361      njensen   Remove ISerializableObject
+ * 14 June, 2014   2130      dhladky   PDA Agent
  * 
  * </pre>
  * 
@@ -47,8 +48,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-@XmlSeeAlso({ CrawlAgent.class, OGCAgent.class })
+@XmlSeeAlso({ CrawlAgent.class, OGCAgent.class, PDAAgent.class })
 public abstract class Agent {
+    /** external address from properties **/
+    protected static final String externalAddress = System.getProperty("harvester.external.address");
+    /** external address pattern for replacement **/
+    protected static final String externalAddressPattern = "${harvester.external.address}";
 
     @XmlElement(name = "dateFormat", required = true)
     @DynamicSerializeElement

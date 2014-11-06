@@ -1,7 +1,15 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
+import org.apache.commons.io.IOUtils;
+
+import com.google.common.io.Files;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Levels;
@@ -54,6 +62,7 @@ import com.raytheon.uf.common.time.DataTime;
  * Sept 25, 2013 1797      dhladky     separated time from gridded time
  * Oct 10, 2013 1797       bgonzale    Refactored registry Time objects.
  * Apr 22, 2014 3046       dhladky     Sample URI creation for DD dupe check got broken.
+ * Sep 14, 2014 2131       dhladky     PDA file compression, decompression, writing and reading tools.
  * 
  * </pre>
  * 
@@ -182,6 +191,113 @@ public class ResponseProcessingUtilities {
 
         return levels;
 
+    }
+    
+    /**
+     * Simple way to convert a file into a byte[]
+     * 
+     * @param fileName
+     * @return
+     */
+    public static byte[] getBytes(String fileName)
+            throws Exception {
+
+        File f = new File(fileName);
+        return Files.toByteArray(f);
+    }
+
+    /**
+     * Reads a file, compresses it.
+     * 
+     * @param fileName
+     * @return
+     */
+    public static byte[] getCompressedFile(String fileName)
+            throws Exception {
+
+        byte[] bytes = getBytes(fileName);
+        return compress(bytes);
+    }
+
+    /**
+     * Decodes, de-compresses and writes the gzipped bytes.
+     * 
+     * @param encodedFile
+     * @param filePath
+     * @throws Exception
+     */
+    public static void writeCompressedFile(byte[] zippedFile, String filePath)
+            throws Exception {
+
+        File file = new File(filePath);
+        byte[] fileBytes = decompress(zippedFile);
+        writeFileBytes(fileBytes, file);
+
+    }
+
+    /**
+     * Decodes and writes the byte[] encoded into file
+     * 
+     * @param encodedFile
+     * @param file
+     * @throws Exception
+     */
+    public static void writeFileBytes(byte[] bytes, File file) throws Exception {
+
+        Files.write(bytes, file);
+    }
+
+    /**
+     * Used by PDA to compress file byte[] for SBN delivery
+     * 
+     * @param content
+     * @return
+     */
+    public static byte[] compress(byte[] content) throws Exception {
+
+        GZIPOutputStream gzipOutputStream = null;
+        ByteArrayOutputStream byteArrayOutputStream = null;
+
+        try {
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream);
+            gzipOutputStream.write(content);
+
+        } finally {
+            if (gzipOutputStream != null) {
+                gzipOutputStream.flush();
+                gzipOutputStream.close();
+            }
+        }
+
+        return byteArrayOutputStream.toByteArray();
+    }
+
+    /**
+     * Used by PDA to de-compress file byte[] from SBN
+     * 
+     * @param contentBytes
+     * @return
+     */
+    public static byte[] decompress(byte[] contentBytes) throws Exception {
+
+        ByteArrayOutputStream out = null;
+        
+        try {
+            out = new ByteArrayOutputStream();
+            ByteArrayInputStream byteStreamer = new ByteArrayInputStream(
+                    contentBytes);
+            GZIPInputStream gzipper = new GZIPInputStream(byteStreamer);
+            IOUtils.copy(gzipper, out);
+            
+        } finally {
+            if (out != null) {
+                out.flush();
+                out.close();
+            }
+        }
+
+        return out.toByteArray();
     }
 
 }

@@ -53,6 +53,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jun 06, 2013 2038        djohnson    Remove throws ParseException.
  * Sept 26, 2013 1797       dhladky     Separated Gridded fields from this class once and for all.
  * Oct 10, 2013 1797        bgonzale    Refactored registry Time objects.
+ * June 29, 2014 3120       dhladky     No need for abstract, can be directly instantiated too.
  * 
  * </pre>
  * 
@@ -63,7 +64,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 @XmlSeeAlso({ GriddedTime.class, PointTime.class})
-public abstract class Time implements Serializable {
+public class Time implements Serializable {
 
     private static final long serialVersionUID = -7032078355732493125L;
  
@@ -283,7 +284,7 @@ public abstract class Time implements Serializable {
      * 
      * @throws ParseException
      */
-    private Date parseDate(String date) throws ParseException {
+    public Date parseDate(String date) throws ParseException {
         if (this.format != null) {
             SimpleDateFormat dateFormat = new SimpleDateFormat(this.format);
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));

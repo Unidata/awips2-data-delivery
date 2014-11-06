@@ -3,8 +3,10 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wms;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
@@ -27,7 +29,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * @author djohnson
  * @version 1.0
  */
-class WmsRetrievalGenerator extends RetrievalGenerator {
+class WmsRetrievalGenerator<T extends Time, C extends Coverage> extends RetrievalGenerator<T, C> {
 
     WmsRetrievalGenerator() {
         super(ServiceType.WMS);
@@ -42,12 +44,13 @@ class WmsRetrievalGenerator extends RetrievalGenerator {
      * {@inheritDoc}
      */
     @Override
-    protected RetrievalAdapter getServiceRetrievalAdapter() {
-        return new WMSRetrievalAdapter();
+
+    public RetrievalAdapter<T, C> getServiceRetrievalAdapter() {
+        return new WMSRetrievalAdapter<T, C>();
     }
 
     @Override
-    protected Subscription removeDuplicates(Subscription sub) {
+    protected Subscription<T, C> removeDuplicates(Subscription<T, C> sub) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

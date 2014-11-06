@@ -21,13 +21,11 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
  **/
 
 import com.google.common.annotations.VisibleForTesting;
-import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Levels;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
-import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.gridcoverage.GridCoverage;
 import com.raytheon.uf.common.gridcoverage.subgrid.SubGrid;
@@ -48,13 +46,15 @@ import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
  * Dec 10, 2012 1259        bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
  * May 12, 2013 753         dhladky     address field
  * Sept 25, 2013 1797       dhladky     separated time from gridded time
+ * Sept 27, 2014 2131       dhladky     removed un-needed casting.
+ * Oct 14, 2014 3127        dhladky     Fixed stack overflow.
  * 
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
  */
-class OpenDAPRequestBuilder<T extends Time, C extends Coverage> extends RequestBuilder<T, C> {
+class OpenDAPRequestBuilder extends RequestBuilder<GriddedTime, GriddedCoverage> {
 
     private final String openDAPURL;
 
@@ -63,22 +63,22 @@ class OpenDAPRequestBuilder<T extends Time, C extends Coverage> extends RequestB
      * 
      * @param prXML
      */
-    OpenDAPRequestBuilder(OpenDAPRetrievalAdapter adapter,
-            RetrievalAttribute<T, C> ra) {
+    OpenDAPRequestBuilder(OpenDAPRetrievalAdapter openDAPRetrievalAdapter,
+            RetrievalAttribute<GriddedTime, GriddedCoverage> ra) {
         super(ra);
 
         // Create URL
         // this works in this order
         // Ensemble TIME LEVELS Y X
         StringBuilder buffer = new StringBuilder();
-        buffer.append(adapter.getProviderRetrievalXMl().getConnection()
+        buffer.append(openDAPRetrievalAdapter.getProviderRetrievalXMl().getConnection()
                 .getUrl());
         buffer.append("?");
-        buffer.append(getRetrievalAttribute().getParameter().getProviderName());
+        buffer.append(getAttribute().getParameter().getProviderName());
         // process ensemble first
         buffer.append(processEnsemble());
         // process time second
-        buffer.append(processTime(getRetrievalAttribute().getTime()));
+        buffer.append(processTime(getAttribute().getTime()));
         // process the coverage, w/levels
         buffer.append(processCoverage(ra.getCoverage()));
 
@@ -121,7 +121,7 @@ class OpenDAPRequestBuilder<T extends Time, C extends Coverage> extends RequestB
     }
 
     @Override
-    public String processTime(Time time) {
+    public String processTime(GriddedTime time) {
 
         StringBuilder buf = new StringBuilder();
         GriddedTime gtime = (GriddedTime)time;
@@ -145,19 +145,12 @@ class OpenDAPRequestBuilder<T extends Time, C extends Coverage> extends RequestB
     }
 
     @Override
-    public String processCoverage(C coverage) {
-        
-        StringBuilder sb = new StringBuilder();
+    public String processCoverage(GriddedCoverage coverage) {
 
-        if (coverage instanceof GriddedCoverage) {
-            // manage the vertical levels
-            sb.append(processDAPLevels(getRetrievalAttribute()
-                    .getParameter()));
-            sb.append(getCoverageString((GriddedCoverage) coverage));
-        } else {
-            // TODO: MADIS POINT DATA, If available in OPenDap?
-        }
-           
+        StringBuilder sb = new StringBuilder();
+        sb.append(processDAPLevels(getAttribute().getParameter()));
+        sb.append(getCoverageString(coverage));
+
         return sb.toString();
     }
 
@@ -220,8 +213,8 @@ class OpenDAPRequestBuilder<T extends Time, C extends Coverage> extends RequestB
      */
     public String processEnsemble() {
 
-        if (getRetrievalAttribute().getEnsemble() != null) {
-            Ensemble e = getRetrievalAttribute().getEnsemble();
+        if (getAttribute().getEnsemble() != null) {
+            Ensemble e = getAttribute().getEnsemble();
             int[] range = e.getSelectedRange();
             if (range[0] == range[1]) {
                 return "[" + range[0] + "]";
@@ -236,11 +229,6 @@ class OpenDAPRequestBuilder<T extends Time, C extends Coverage> extends RequestB
     @Override
     public String getRequest() {
         return openDAPURL;
-    }
-
-    @Override
-    public RetrievalAttribute<T, C> getAttribute() {
-        return getRetrievalAttribute();
     }
 
 }

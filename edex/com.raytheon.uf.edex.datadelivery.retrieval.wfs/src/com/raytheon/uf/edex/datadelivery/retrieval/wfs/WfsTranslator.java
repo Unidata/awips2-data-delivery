@@ -8,6 +8,8 @@ import net.opengis.ows.v_1_0_0.ExceptionReport;
 import net.opengis.ows.v_1_0_0.ExceptionType;
 import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -30,43 +32,44 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
  * May 31, 2013 2038       djohnson     Move to correct repo.
  * May 31, 2013 1763       dhladky      Fixed up merge, made operational.
  * Jul 24, 2014 3441       dhladky      Sharpen error handling for WFS
+ * Sept 22, 2014 3121      dhladky      Generic clean up.
  * 
  * </pre>
  * 
- * @author unknown
+ * @author dhladky
  * @version 1.0
  */
 
-public class WfsTranslator extends RetrievalTranslator {
+public class WfsTranslator extends RetrievalTranslator<PointTime, Coverage, AbstractFeatureType> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
     .getHandler(WfsTranslator.class);
     
-    WfsTranslator(RetrievalAttribute attXML, String className)
+    WfsTranslator(RetrievalAttribute<PointTime,Coverage> attXML, String className)
             throws InstantiationException {
  
         super(attXML, className);
     }
 
-    public WfsTranslator(RetrievalAttribute attXML) throws InstantiationException {
+    public WfsTranslator(RetrievalAttribute<PointTime,Coverage> attXML) throws InstantiationException {
         super(attXML);
     }
 
     @Override
     protected int getSubsetNumTimes() {
-        // TODO Auto-generated method stub
+        // unimplemented by WFS
         return 0;
     }
 
     @Override
     protected int getSubsetNumLevels() {
-        // TODO Auto-generated method stub
+        // unimplemented by WFS
         return 0;
     }
 
     @Override
     protected List<DataTime> getTimes() {
-        // TODO Auto-generated method stub
+        // unimplemented by WFS
         return null;
     }
 
@@ -75,7 +78,7 @@ public class WfsTranslator extends RetrievalTranslator {
      * @param payload
      * @return
      */
-    @SuppressWarnings("unchecked")
+
     public PluginDataObject[] asPluginDataObjects(String payload) {
         
         try {
@@ -93,8 +96,7 @@ public class WfsTranslator extends RetrievalTranslator {
                             .getFeatureMember()) {
                         AbstractFeatureType feature = type.getFeature()
                                 .getValue();
-                        metadataAdapter.getPdos()[i] = metadataAdapter
-                                .getRecord(feature);
+                        metadataAdapter.getPdos()[i] = wfsAdapter.translateFeature(feature);
                         i++;
                     }
                 }

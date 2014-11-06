@@ -25,6 +25,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
@@ -51,7 +53,7 @@ import dods.dap.DataDDS;
 @DynamicSerializeTypeAdapter(factory = OpenDapRetrievalResponseSerializer.class)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
-public class OpenDapRetrievalResponse extends RetrievalResponse {
+public class OpenDapRetrievalResponse extends RetrievalResponse<GriddedTime, GriddedCoverage> {
 
     @XmlElement
     @XmlJavaTypeAdapter(value = OpenDapRetrievalResponseSerializer.class)
@@ -69,7 +71,7 @@ public class OpenDapRetrievalResponse extends RetrievalResponse {
      * 
      * @param attribute
      */
-    public OpenDapRetrievalResponse(RetrievalAttribute attribute) {
+    public OpenDapRetrievalResponse(RetrievalAttribute<GriddedTime, GriddedCoverage> attribute) {
         super(attribute);
     }
 

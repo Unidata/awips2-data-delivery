@@ -20,6 +20,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.interfaces;
  * further licensing information.
  **/
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 
 /**
@@ -42,14 +44,14 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
  * @version 1.0
  */
 
-public interface IRetrievalResponse {
+public interface IRetrievalResponse<T extends Time, C extends Coverage> {
 
     void setPayLoad(Object payLoad);
 
     Object getPayLoad();
 
-    RetrievalAttribute getAttribute();
+    RetrievalAttribute<T, C> getAttribute();
 
-    void setAttribute(RetrievalAttribute object);
+    void setAttribute(RetrievalAttribute<T, C> attribute);
 
 }

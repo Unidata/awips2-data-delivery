@@ -22,17 +22,20 @@ package com.raytheon.uf.edex.datadelivery.retrieval;
 
 import java.util.List;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 
 /**
  * Generate Retrieval
@@ -53,7 +56,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * @author dhladky
  * @version 1.0
  */
-public abstract class RetrievalGenerator {
+public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
 
     private final ServiceType serviceType;
 
@@ -83,14 +86,14 @@ public abstract class RetrievalGenerator {
      */
     public abstract List<Retrieval> buildRetrieval(SubscriptionBundle bundle);
 
-    protected abstract RetrievalAdapter getServiceRetrievalAdapter();
+    public abstract RetrievalAdapter<T, C> getServiceRetrievalAdapter();
 
     /**
      * Check for duplicates;
      * 
      * @return
      */
-    protected abstract Subscription<?, ?> removeDuplicates(Subscription<?, ?> sub);
+    protected abstract Subscription<T, C> removeDuplicates(Subscription<T, C> sub);
 
     /**
      * Gets the type of subscription based on the subscription object type
@@ -98,7 +101,7 @@ public abstract class RetrievalGenerator {
      * @param sub
      * @return
      */
-    public SubscriptionType getSubscriptionType(Subscription<?, ?> sub) {
+    public SubscriptionType getSubscriptionType(Subscription<T, C> sub) {
         
         if (sub instanceof AdhocSubscription) {
             return SubscriptionType.AD_HOC;

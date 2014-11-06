@@ -5,7 +5,7 @@
 
     <bean id="crawlerCommunicationStrategy" class="com.raytheon.uf.edex.datadelivery.harvester.crawler.FileCommunicationStrategy" />
 
-    <bean id="MetaDataProcessor" class="com.raytheon.uf.edex.datadelivery.harvester.CrawlMetaDataHandler" depends-on="registryInit">
+    <bean id="CrawlMetaDataProcessor" class="com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlMetaDataHandler" depends-on="registryInit">
         <constructor-arg ref="crawlerCommunicationStrategy" />
         <constructor-arg ref="ProviderHandler" />
     </bean>
@@ -42,30 +42,84 @@
 
     </camelContext>
     
-    <camelContext id="MetaData-context"
+    <!-- Crawler metadata processor -->
+    <camelContext id="CralwerMetaData-context"
         xmlns="http://camel.apache.org/schema/spring"
         errorHandlerRef="errorHandler">
 
-        <endpoint id="metaDataCron" uri="quartz://datadelivery/harvester/?cron=${metadata-process.cron}"/>
-        <endpoint id="harvesterProcessWorkEndpoint" uri="jms-generic:queue:metaDataProcessWork?concurrentConsumers=${metadata-process.threads}&amp;threadName=harvester"/>
+        <endpoint id="crawlMetaDataCron" uri="quartz://datadelivery/harvester/?cron=${metadata-process.cron}"/>
+        <endpoint id="harvesterProcessWorkEndpoint" uri="jms-generic:queue:crawlMetaDataProcessWork?concurrentConsumers=${metadata-process.threads}&amp;threadName=harvester"/>
 
-        <route id="metaDataProcess">
-            <from uri="metaDataCron" />
-            <to uri="jms-generic:queue:metaDataProcessWork" />
+        <route id="crawlMetaDataProcess">
+            <from uri="crawlMetaDataCron" />
+            <to uri="jms-generic:queue:crawlMetaDataProcessWork" />
         </route>
                 
-        <route id="metaDataProcessWork">
+        <route id="crawlMetaDataProcessWork">
             <from uri="harvesterProcessWorkEndpoint" />
             <doTry>
                 <pipeline>
-                    <bean ref="MetaDataProcessor" method="metaDataCheck" />
+                    <bean ref="CrawlMetaDataProcessor" method="metaDataCheck" />
                 </pipeline>
                 <doCatch>
                     <exception>java.lang.Throwable</exception>
-                    <to uri="log:metaDataProcess?level=ERROR"/>
+                    <to uri="log:crawlMetaDataProcess?level=ERROR"/>
                 </doCatch>
             </doTry>
         </route>
 
     </camelContext>
+
+    <!-- retrieves getRecords response -->
+	<bean id="RetrievePDACatalogServiceRecord"
+		class="com.raytheon.uf.edex.datadelivery.harvester.pda.RetrievePDACatalogServiceResultsRecord" />
+	
+	<!-- PDA metadata handler -->
+	<bean id="PDAMetaDataHandler"
+		class="com.raytheon.uf.edex.datadelivery.harvester.pda.PDAMetaDataHandler" depends-on="registryInit">
+		<constructor-arg ref="ProviderHandler" />
+    </bean>
+    
+	<!-- PDA metadata processor -->
+	<camelContext id="PDAMetaData-context" xmlns="http://camel.apache.org/schema/spring"
+		errorHandlerRef="errorHandler">
+				
+		<!-- PDA catalog service results file download queue -->
+		<endpoint id="getRecordResultsDownloadQueue"
+			uri="jms-durable:queue:downloadPDACatalogFile?concurrentConsumers=${metadata-process.threads}" />
+		<!-- PDA catalog service results file metadata process queue -->
+		<endpoint id="pdaMetaDataProcessQueue"
+			uri="jms-durable:queue:pdaMetaDataProcessQueue?concurrentConsumers=${metadata-process.threads}" />
+			
+		<!-- Catalog Service record result link is sent to this route for retrieval -->
+		<route id="downloadPDACatalogFile">
+			<from ref="getRecordResultsDownloadQueue" />
+			<doTry>
+				<pipeline>
+					<bean ref="RetrievePDACatalogServiceRecord" method="getRecordFile" />
+					<to uri="pdaMetaDataProcessQueue" />
+				</pipeline>
+				<doCatch>
+					<exception>java.lang.Throwable</exception>
+					<to uri="log:downloadPDACatalogFile?level=ERROR" />
+				</doCatch>
+			</doTry>
+		</route>
+		
+		<!-- Catalog Service record result files are sent to this route for processing -->
+		<route id="pdaMetadataProcess">
+			<from ref="pdaMetaDataProcessQueue" />
+			<doTry>
+				<pipeline>
+					<bean ref="PDAMetaDataHandler" method="process" />
+				</pipeline>
+				<doCatch>
+					<exception>java.lang.Throwable</exception>
+					<to uri="log:pdaMetadataProcess?level=ERROR" />
+				</doCatch>
+			</doTry>
+		</route>
+
+	</camelContext>
+    
 </beans>

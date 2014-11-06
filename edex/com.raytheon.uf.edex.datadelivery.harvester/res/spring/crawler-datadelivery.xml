@@ -15,5 +15,6 @@
     <!--  These beans have internal cron triggering now, read directly from the harvester config files -->
     <bean id="MainCrawler" class="com.raytheon.uf.edex.datadelivery.harvester.crawler.MainSequenceCrawlLauncher"/>
     <bean id="SeedCrawler" class="com.raytheon.uf.edex.datadelivery.harvester.crawler.SeedCrawlLauncher"/>
-  	
+    <bean id="PDALauncher" class="com.raytheon.uf.edex.datadelivery.harvester.pda.PDALauncher"/>  	
+    
 </beans>

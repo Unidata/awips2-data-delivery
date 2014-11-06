@@ -10,4 +10,9 @@
 		<filterID>Data Provider</filterID>
 		<filterID>Data Set</filterID>
 	</DataType>
+	<DataType Name="PDA">
+		<filterID>Data Provider</filterID>
+		<filterID>Data Set</filterID>
+		<filterID>Parameter</filterID>
+	</DataType>
 </DataTypeFilterList>

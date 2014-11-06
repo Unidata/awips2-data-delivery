@@ -5,6 +5,9 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.PointTime;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
@@ -31,7 +34,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 @DynamicSerialize
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
-public class WfsRetrievalResponse extends RetrievalResponse {
+public class WfsRetrievalResponse extends RetrievalResponse<PointTime, Coverage> {
 
     @XmlElement
     private String payload;
@@ -47,7 +50,7 @@ public class WfsRetrievalResponse extends RetrievalResponse {
      * 
      * @param attribute
      */
-    public WfsRetrievalResponse(RetrievalAttribute attribute) {
+    public WfsRetrievalResponse(RetrievalAttribute<PointTime, Coverage> attribute) {
     }
 
     @Override

@@ -8,8 +8,8 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.harvester.interfaces.IStoreLink;
-import com.raytheon.uf.edex.datadelivery.retrieval.Link;
-import com.raytheon.uf.edex.datadelivery.retrieval.LinkStore;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 
 import edu.uci.ics.crawler4j.crawler.WebCrawler;
 import edu.uci.ics.crawler4j.url.WebURL;

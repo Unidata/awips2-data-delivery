@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wcs;
 
 import java.util.HashMap;
 
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
@@ -45,25 +47,25 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * @author dhladky
  * @version 1.0
  */
-class WCSRetrievalAdapter extends RetrievalAdapter {
+class WCSRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCoverage> {
 
     @Override
-    public IRetrievalRequestBuilder createRequestMessage(
-            RetrievalAttribute prxml) {
+    public IRetrievalRequestBuilder<GriddedTime, GriddedCoverage> createRequestMessage(
+            RetrievalAttribute<GriddedTime, GriddedCoverage> prxml) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public HashMap<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse response) {
+            IRetrievalResponse<GriddedTime, GriddedCoverage> response) {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public RetrievalResponse performRequest(
-            IRetrievalRequestBuilder request) {
+    public RetrievalResponse<GriddedTime, GriddedCoverage> performRequest(
+            IRetrievalRequestBuilder<GriddedTime, GriddedCoverage> request) {
         // TODO Auto-generated method stub
         return null;
     }

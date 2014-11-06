@@ -32,7 +32,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.ProviderCollectionLinkStore;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLinkStore;
 
 /**
  * Decorates a {@link CommunicationStrategy} to use an {@link ExecutorService}

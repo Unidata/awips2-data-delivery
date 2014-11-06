@@ -94,6 +94,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 2,  2014 2974       dhladky      DD ID added to list for dropdowns in DD.
  * Apr 22, 2014 2992       dhladky      Unique list of all registries with data in this node.
  * May 22, 2014 2808       dhladky      Fixed static final problem with DD ID
+ * Sept 04, 2014 2131      dhladky      Added PDa data type
  * </pre>
  * 
  * @author mpduff
@@ -116,6 +117,11 @@ public class DataDeliveryUtils {
      * Required default latency value for point data.
      */
     public static final int POINT_DATASET_DEFAULT_LATENCY_IN_MINUTES = 15;
+    
+    /**
+     * Required default latency value for PDA (Sat) data.
+     */
+    public static final int PDA_DATASET_DEFAULT_LATENCY_IN_MINUTES = 15;
 
     private static final int UNSET = -1;
 
@@ -796,6 +802,9 @@ public class DataDeliveryUtils {
         } else if (subscription.getDataSetType() == DataType.GRID) {
             return getMaxLatency(((GriddedTime) subscription.getTime())
                     .getCycleTimes());
+        } if (subscription.getDataSetType() == DataType.PDA) {
+            //TODO: Figure a method for actually calculating this.
+            return 45;
         } else {
             throw new IllegalArgumentException("Invalid Data Type: "
                     + subscription.getDataSetType().name());

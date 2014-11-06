@@ -50,6 +50,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSet;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
@@ -150,6 +151,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 31, 2014   2889     dhladky      Added username for notification center tracking.
  * Apr 10, 2014   2864     mpduff       Changed how saved subset files are stored.
  * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
+ * Sept 04, 2014  3121     dhladky      Setup for PDA data type
  * 
  * </pre>
  * 
@@ -161,6 +163,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     /** constant */
     private final static String DATASETS_NOT_SUPPORTED = "Datasets of type [%s] are currently not supported!";
 
+    protected final String POPUP_TITLE = "Notice";
+    
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubsetManagerDlg.class);
@@ -920,6 +924,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             return new GriddedSubsetManagerDlg(shell, (GriddedDataSet) dataSet);
         } else if (dataSet.getDataSetType() == DataType.POINT) {
             return new PointSubsetManagerDlg(shell, (PointDataSet) dataSet);
+        } else if (dataSet.getDataSetType() == DataType.PDA) {
+            return new PDASubsetManagerDlg(shell, (PDADataSet) dataSet);
         }
         throw new IllegalArgumentException(String.format(
                 DATASETS_NOT_SUPPORTED, dataSet.getClass().getName()));
@@ -943,6 +949,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             return new GriddedSubsetManagerDlg(shell, loadDataSet, subscription);
         } else if (DataType.POINT == subscription.getDataSetType()) {
             return new PointSubsetManagerDlg(shell, loadDataSet, subscription);
+        } else if (DataType.PDA == subscription.getDataSetType()) {
+            return new PDASubsetManagerDlg(shell, loadDataSet, subscription);
         }
 
         throw new IllegalArgumentException(String.format(
@@ -963,7 +971,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      *            Subset XML
      * @return SubsetManagerDlg
      */
-    @SuppressWarnings("unchecked")
+
     public static SubsetManagerDlg fromSubsetXML(Shell shell, DataSet data,
             boolean loadDataSet, SubsetXML subset) {
         if (data instanceof GriddedDataSet) {
@@ -971,6 +979,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                     loadDataSet, subset);
         } else if (data instanceof PointDataSet) {
             return new PointSubsetManagerDlg(shell, (PointDataSet) data, true,
+                    subset);
+        } else if (data instanceof PDADataSet) {
+            return new PDASubsetManagerDlg(shell, (PDADataSet) data, true,
                     subset);
         }
         throw new IllegalArgumentException(String.format(

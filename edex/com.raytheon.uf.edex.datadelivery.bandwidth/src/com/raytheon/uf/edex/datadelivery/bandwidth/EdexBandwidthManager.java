@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,6 +54,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataDeliveryRegistryObjectTy
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
@@ -671,16 +671,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     }
 
     /**
-     * Process a {@link GriddedDataSetMetaData} that was received from the event
-     * bus.
+     * Process a general DataSetMetaData object for update.
      * 
-     * @param dataSetMetaData
-     *            the metadadata
+     * @param dataSetMetaData the metadadata
      */
-    @SuppressWarnings("unchecked")
-    @Subscribe
-    public void updateGriddedDataSetMetaData(
-            GriddedDataSetMetaData dataSetMetaData) throws ParseException {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void updateDataSetMetaData(DataSetMetaData dataSetMetaData) throws ParseException {
 
         /*
          * Looking for active subscriptions to the dataset. Creates an ADHOC
@@ -688,8 +684,6 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
          * an active retrieval will be processed.
          */
         try {
-
-            @SuppressWarnings("rawtypes")
             List<Subscription> subscriptions = subscriptionHandler
                     .getActiveByDataSetAndProvider(
                             dataSetMetaData.getDataSetName(),
@@ -757,6 +751,40 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Failed to lookup subscriptions.", e);
+        }
+    }
+        
+    /**
+     * Process a {@link PDADataSetMetaData} that was received from the event
+     * bus.
+     * 
+     * @param dataSetMetaData
+     *            the metadadata
+     * @throws ParseException
+     */
+    @Subscribe
+    public void updatePDADataSetMetaData(PDADataSetMetaData dataSetMetaData)
+            throws ParseException {
+
+        if (dataSetMetaData != null) {
+            updateDataSetMetaData(dataSetMetaData);
+        }
+    }
+
+    /**
+     * Process a {@link GriddedDataSetMetaData} that was received from the event
+     * bus.
+     * 
+     * @param dataSetMetaData
+     *            the metadadata
+     * @throws ParseException
+     */
+    @Subscribe
+    public void updateGriddedDataSetMetaData(
+            GriddedDataSetMetaData dataSetMetaData) throws ParseException {
+
+        if (dataSetMetaData != null) {
+            updateDataSetMetaData(dataSetMetaData);
         }
     }
 

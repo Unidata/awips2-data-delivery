@@ -49,6 +49,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Jun 17, 2013    2106     djohnson    Check for encryption to not be null, getPassword() must be left alone for dynamic serialize.
  * Aug 08, 2013    2108     mpduff      Serialize the provider key.
  * 7/10/2014       1717     bphillip    Changed import of relocated AESEncryptor class
+ * Aug 19, 2014    3120     dhladky     URL remapping for properties
  * </pre>
  * 
  * @author dhladky
@@ -58,6 +59,11 @@ import com.raytheon.uf.common.status.UFStatus;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class Connection implements Serializable {
+    
+    /** external address from properties **/
+    protected static final String externalAddress = System.getProperty("harvester.external.address");
+    /** external address pattern for replacement **/
+    protected static final String externalAddressPattern = "${harvester.external.address}";
 
     private static final long serialVersionUID = 8223819912383198409L;
 
@@ -103,10 +109,16 @@ public class Connection implements Serializable {
     private String url;
 
     public String getUrl() {
+        if (url != null && url.startsWith(externalAddressPattern)){
+            url = url.replace(externalAddressPattern, externalAddress);
+        }
         return url;
     }
 
     public void setUrl(String url) {
+        if (url != null && url.startsWith(externalAddressPattern)){
+            url = url.replace(externalAddressPattern, externalAddress);
+        }
         this.url = url;
     }
 

@@ -21,14 +21,18 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wcs;
 
 import java.util.Date;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
-import com.raytheon.uf.edex.datadelivery.retrieval.IExtractMetaData;
-import com.raytheon.uf.edex.datadelivery.retrieval.IParseMetaData;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
-import com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
- * {@link ServiceFactory} implementation for WCS.
+ * {@link IServiceFactory} implementation for WCS.
  * 
  * <pre>
  * 
@@ -44,7 +48,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-public class WcsServiceFactory implements ServiceFactory {
+public class WcsServiceFactory<O extends Object, D extends Object>
+        implements IServiceFactory<O, D, GriddedTime, GriddedCoverage> {
 
     /*
      * (non-Javadoc)
@@ -53,7 +58,7 @@ public class WcsServiceFactory implements ServiceFactory {
      * com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#getExtractor()
      */
     @Override
-    public IExtractMetaData getExtractor() {
+    public IExtractMetaData<O, D> getExtractor() {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -65,7 +70,7 @@ public class WcsServiceFactory implements ServiceFactory {
      * java.util.Date)
      */
     @Override
-    public IParseMetaData getParser(Date lastUpdate) {
+    public IParseMetaData<O> getParser(Date lastUpdate) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -76,8 +81,9 @@ public class WcsServiceFactory implements ServiceFactory {
      * getRetrievalGenerator()
      */
     @Override
-    public RetrievalGenerator getRetrievalGenerator() {
+    public RetrievalGenerator<GriddedTime, GriddedCoverage> getRetrievalGenerator() {
         return new WCSRetrievalGenerator();
+
     }
 
     /**
@@ -86,6 +92,11 @@ public class WcsServiceFactory implements ServiceFactory {
     @Override
     public void setProvider(Provider provider) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public Provider getProvider() {
+        return null;
     }
 
 }

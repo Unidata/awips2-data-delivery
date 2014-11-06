@@ -25,6 +25,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
@@ -51,27 +53,27 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public abstract class RetrievalResponse implements IRetrievalResponse {
+public abstract class RetrievalResponse<T extends Time, C extends Coverage> implements IRetrievalResponse<T, C> {
 
     @XmlElement
     @DynamicSerializeElement
-    private RetrievalAttribute attribute;
+    private RetrievalAttribute<T, C> attribute;
 
     public RetrievalResponse() {
 
     }
 
-    public RetrievalResponse(RetrievalAttribute attribute) {
+    public RetrievalResponse(RetrievalAttribute<T, C> attribute) {
         this.attribute = attribute;
     }
 
     @Override
-    public RetrievalAttribute getAttribute() {
+    public RetrievalAttribute<T, C> getAttribute() {
         return attribute;
     }
 
     @Override
-    public void setAttribute(RetrievalAttribute attribute) {
+    public void setAttribute(RetrievalAttribute<T, C> attribute) {
         this.attribute = attribute;
     }
 

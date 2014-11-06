@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.response;
 
 import java.util.List;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.time.DataTime;
@@ -42,6 +44,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMet
  * Feb 12, 2013 1543       djohnson     Pass the exception as the cause for instantiation exceptions.
  * May 31, 2013 2038       djohnson     Protected access for constructor.
  * Jun 11, 2013  2101      dhladky      Imports
+ * Sept 24, 2014 3121      dhladky      try to improve generic usage.
  * 
  * </pre>
  * 
@@ -49,20 +52,20 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMet
  * @version 1.0
  */
 
-public abstract class RetrievalTranslator implements IRetrievalTranslator {
+public abstract class RetrievalTranslator<T extends Time, C extends Coverage, RecordKey> implements IRetrievalTranslator<T, C, RecordKey> {
 
     protected Class<?> recordClass;
 
-    protected RetrievalAttribute attXML;
+    protected RetrievalAttribute<T, C> attXML;
 
-    protected AbstractMetadataAdapter metadataAdapter;
+    protected AbstractMetadataAdapter<RecordKey, T, C> metadataAdapter;
 
     /**
      * Used by all translators
      * 
      * @param attXML
      */
-    public RetrievalTranslator(RetrievalAttribute attXML)
+    public RetrievalTranslator(RetrievalAttribute<T, C> attXML)
             throws InstantiationException {
         this.attXML = attXML;
 
@@ -76,7 +79,7 @@ public abstract class RetrievalTranslator implements IRetrievalTranslator {
         }
     }
 
-    protected RetrievalTranslator(RetrievalAttribute attXML, String className)
+    protected RetrievalTranslator(RetrievalAttribute<T, C> attXML, String className)
             throws InstantiationException {
         this.attXML = attXML;
         try {
@@ -88,21 +91,21 @@ public abstract class RetrievalTranslator implements IRetrievalTranslator {
         }
     }
    
+    @SuppressWarnings("unchecked")
     protected void configureFromPdoClassName(String className)
             throws InstantiationException, ClassNotFoundException {
         setPdoClass(className);
-        metadataAdapter = AbstractMetadataAdapter.getMetadataAdapter(
-                getPdoClass(), attXML);
+        metadataAdapter =   (AbstractMetadataAdapter<RecordKey, T, C>) AbstractMetadataAdapter.getMetadataAdapter(getPdoClass(), attXML);
 
     }
   
     @Override
-    public void setAttribute(RetrievalAttribute attXML) {
+    public void setAttribute(RetrievalAttribute<T, C> attXML) {
         this.attXML = attXML;
     }
 
     @Override
-    public RetrievalAttribute getAttribute() {
+    public RetrievalAttribute<T, C> getAttribute() {
         return attXML;
     }
 
@@ -117,16 +120,15 @@ public abstract class RetrievalTranslator implements IRetrievalTranslator {
     }
 
     @Override
-    public PluginDataObject getPdo(int index) throws InstantiationException,
+    public PluginDataObject getPdo(RecordKey key) throws InstantiationException,
             IllegalAccessException {
         PluginDataObject pdo = null;
 
         if (metadataAdapter != null) {
-            pdo = metadataAdapter.getRecord(index);
+            pdo = metadataAdapter.getRecord(key);
         }
 
         return pdo;
-
     }
 
     /**

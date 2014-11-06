@@ -25,12 +25,10 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.DataTime;
@@ -62,17 +60,17 @@ import dods.dap.PrimitiveVector;
  * @version 1.0
  */
 
-public class OpenDAPTranslator extends RetrievalTranslator {
+public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedCoverage, Integer> {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPTranslator.class);
 
-    public OpenDAPTranslator(RetrievalAttribute attXML)
+    public OpenDAPTranslator(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML)
             throws InstantiationException {
         super(attXML);
     }
 
-    OpenDAPTranslator(RetrievalAttribute attXML, String className)
+    OpenDAPTranslator(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML, String className)
             throws InstantiationException {
         super(attXML, className);
     }
@@ -179,8 +177,6 @@ public class OpenDAPTranslator extends RetrievalTranslator {
                     PluginDataObject record = getPdo(bin);
                     record.setDataTime(dataTime);
 
-                    constructDataUri(record);
-
                     int end = start + gridSize;
 
                     float[] subValues = Arrays.copyOfRange(values, start, end);
@@ -203,22 +199,12 @@ public class OpenDAPTranslator extends RetrievalTranslator {
     }
 
     /**
-     * @param record
-     * @throws PluginException
-     */
-    @VisibleForTesting
-    void constructDataUri(PluginDataObject record)
-            throws PluginException {
-        record.constructDataURI();
-    }
-
-    /**
      * get # of subset times
      */
     @Override
     protected int getSubsetNumTimes() {
 
-        return ResponseProcessingUtilities.getOpenDAPGridNumTimes((GriddedTime)attXML
+        return ResponseProcessingUtilities.getOpenDAPGridNumTimes(attXML
                 .getTime());
     }
 
@@ -238,7 +224,7 @@ public class OpenDAPTranslator extends RetrievalTranslator {
     @Override
     protected ArrayList<DataTime> getTimes() {
 
-        return ResponseProcessingUtilities.getOpenDAPGridDataTimes((GriddedTime)attXML
+        return ResponseProcessingUtilities.getOpenDAPGridDataTimes(attXML
                 .getTime());
     }
 

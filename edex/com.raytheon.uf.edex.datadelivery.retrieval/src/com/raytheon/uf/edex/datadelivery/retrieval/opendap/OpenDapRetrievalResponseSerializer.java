@@ -21,6 +21,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.serialization.IDeserializationContext;
 import com.raytheon.uf.common.serialization.ISerializationContext;
@@ -67,11 +69,12 @@ public class OpenDapRetrievalResponseSerializer extends
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unchecked")
     @Override
     public OpenDapRetrievalResponse deserialize(
             IDeserializationContext deserializer) throws SerializationException {
         OpenDapRetrievalResponse response = new OpenDapRetrievalResponse();
-        response.setAttribute((RetrievalAttribute) deserializer.readObject());
+        response.setAttribute((RetrievalAttribute<GriddedTime, GriddedCoverage>) deserializer.readObject());
         try {
             response.setPayLoad(unmarshal(deserializer.readBinary()));
         } catch (Exception e) {

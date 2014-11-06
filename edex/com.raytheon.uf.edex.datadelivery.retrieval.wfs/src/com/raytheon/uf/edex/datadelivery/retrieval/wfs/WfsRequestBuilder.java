@@ -39,6 +39,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
  * Oct 28, 2013 2448       dhladky      Request start time incorrectly used subscription start time.
  * Nov 20, 2013 2554       dhladky      MaxFeatures was misplaced.
+ * Sept 27, 2014 3127      dhladky      Moved some constants to super class.
  * 
  * </pre>
  * 
@@ -73,52 +74,6 @@ public class WfsRequestBuilder<T extends Time, C extends Coverage> extends Reque
     
     public static final String VERSION = getServiceConfig().getConstantValue("VERSION");
     
-    public static final String AMPERSAND = "&";
-    
-    public static final String SPACE = " ";
-    
-    public static final String NEW_LINE = "\n";
-    
-    public static final String PROPERTTY_OPEN = "<ogc:PropertyName>";
-    
-    public static final String PROPERTTY_CLOSE = "</ogc:PropertyName>";
-    
-    public static final String PROPRERTYISGREATERTHAN_OPEN = "<ogc:PropertyIsGreaterThan>";
-    
-    public static final String PROPRERTYISGREATERTHAN_CLOSE = "</ogc:PropertyIsGreaterThan>";
-    
-    public static final String PROPRERTYISLESSTHAN_OPEN = "<ogc:PropertyIsLessThan>";
-    
-    public static final String PROPRERTYISLESSTHAN_CLOSE = "</ogc:PropertyIsLessThan>";
-    
-    public static final String ISLITERAL_OPEN = "<ogc:Literal>";
-    
-    public static final String ISLITERAL_CLOSE = "</ogc:Literal>";
-    
-    public static final String LOWER_CORNER_OPEN = "<gml:lowerCorner>";
-    
-    public static final String LOWER_CORNER_CLOSE = "</gml:lowerCorner>";
-    
-    public static final String UPPER_CORNER_OPEN = "<gml:upperCorner>";
-    
-    public static final String UPPER_CORNER_CLOSE = "</gml:upperCorner>";
-    
-    public static final String WITHIN_OPEN = "<ogc:Within>";
-    
-    public static final String WITHIN_CLOSE = "</ogc:Within>";
-    
-    public static final String AND_OPEN = "<ogc:And>";
-    
-    public static final String AND_CLOSE = "</ogc:And>";
-    
-    public static final String FILTER_OPEN = "<ogc:Filter>";
-    
-    public static final String FILTER_CLOSE = "</ogc:Filter>";
-    
-    public static final String ENVELOPE_OPEN = "<gml:Envelope";
-    
-    public static final String ENVELOPE_CLOSE = "</gml:Envelope>";
-
     private final String wfsURL;
     
     private String typeName = null;
@@ -274,11 +229,6 @@ public class WfsRequestBuilder<T extends Time, C extends Coverage> extends Reque
     @Override
     public String getRequest() {
         return wfsURL;
-    }
-
-    @Override
-    public RetrievalAttribute<T, C> getAttribute() {
-        return getRetrievalAttribute();
     }
     
     /**

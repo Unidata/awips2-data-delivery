@@ -32,10 +32,10 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
-import com.raytheon.uf.edex.datadelivery.retrieval.ServiceTypeFactory;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilities;
 
 /**

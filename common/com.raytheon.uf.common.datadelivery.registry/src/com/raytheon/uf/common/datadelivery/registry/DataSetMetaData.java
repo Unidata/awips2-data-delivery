@@ -53,7 +53,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso({ GriddedDataSetMetaData.class,
-        OpenDapGriddedDataSetMetaData.class, PointDataSetMetaData.class })
+        OpenDapGriddedDataSetMetaData.class, PointDataSetMetaData.class, PDADataSetMetaData.class })
 @RegistryObject({ "url" })
 @RegistryObjectVersion(value = 1.1f)
 public abstract class DataSetMetaData<T extends Time> {

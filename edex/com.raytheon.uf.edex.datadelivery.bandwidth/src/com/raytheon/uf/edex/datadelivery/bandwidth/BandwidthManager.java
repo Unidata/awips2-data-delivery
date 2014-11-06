@@ -140,6 +140,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * May 15, 2014   3113     mpduff       Schedule subscriptions for gridded datasets without cycles.
  * Jul 28, 2014 2752       dhladky      Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
  * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
+ * Sept 14, 2014 2131      dhladky      PDA updates
  * Oct 03, 2014 2749       ccody        Changes to startBandwidthManager 
  *                                      to refresh only necessary spring components 
  *                                      @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.startNewBandwidthManager
@@ -593,25 +594,32 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         }
         RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription
                 .getRoute());
-        List<DataSetMetaData> dsmdList = new ArrayList<DataSetMetaData>(0);
+        
+        if (plan != null) {
 
-        try {
-            dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
-                    .getDataSetMetaDataToDate(subscription.getDataSetName(),
-                            subscription.getProvider(),
-                            plan.getPlanEnd().getTime());
-        } catch (RegistryHandlerException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Unable to look-up list of DataSetMetData during scheduling. ",
-                            e1);
+            List<DataSetMetaData> dsmdList = null;
+
+            try {
+                dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                        .getDataSetMetaDataToDate(
+                                subscription.getDataSetName(),
+                                subscription.getProvider(),
+                                plan.getPlanEnd().getTime());
+
+            } catch (RegistryHandlerException e1) {
+                dsmdList = new ArrayList<DataSetMetaData>(0);
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "Unable to look-up list of DataSetMetData during scheduling. ",
+                                e1);
+            }
+
+            SortedSet<Calendar> retrievalTimes = subscription
+                    .getRetrievalTimes(plan.getPlanStart(), plan.getPlanEnd(),
+                            dsmdList, SubscriptionUtil.getInstance());
+
+            scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
         }
-
-        SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
-                plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
-                SubscriptionUtil.getInstance());
-
-        scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
 
         // add an adhoc if one exists and isn't in startup mode
         if (EDEXUtil.isRunning()) {
@@ -622,6 +630,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 unscheduled.addAll(getMostRecent(subscription, true));
             } else if (subscription.getDataSetType() == DataType.POINT) {
                 unscheduled.addAll(getMostRecent(subscription, false));
+            } else if (subscription.getDataSetType() == DataType.PDA) {
+                unscheduled.addAll(getMostRecent(subscription, true));
             }
         }
 
@@ -651,53 +661,58 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @param subscription
      *            The subscription that needs its scheduling updated
      */
+    @SuppressWarnings({ "rawtypes" })
     private void updateSchedule(Subscription<T, C> subscription) {
 
         RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription
                 .getRoute());
         List<DataSetMetaData> dsmdList = null;
 
-        try {
-            dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
-                    .getDataSetMetaDataToDate(subscription.getDataSetName(),
-                            subscription.getProvider(),
-                            plan.getPlanEnd().getTime());
-        } catch (RegistryHandlerException e1) {
-            dsmdList = new ArrayList<DataSetMetaData>(0);
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Unable to look-up list of DataSetMetData during schedule updating. ",
-                            e1);
-        }
-        SortedSet<Calendar> retrievalTimes = subscription.getRetrievalTimes(
-                plan.getPlanStart(), plan.getPlanEnd(), dsmdList,
-                SubscriptionUtil.getInstance());
-        List<BandwidthSubscription> currentBandwidthSubscriptions = bandwidthDao
-                .getBandwidthSubscription(subscription);
+        if (plan != null) {
 
-        // Get the latest/max scheduled time
-        Calendar max = currentBandwidthSubscriptions.get(0)
-                .getBaseReferenceTime();
-        for (BandwidthSubscription bs : currentBandwidthSubscriptions) {
-            if (bs.getBaseReferenceTime().after(max)) {
-                max = bs.getBaseReferenceTime();
+            try {
+                dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                        .getDataSetMetaDataToDate(
+                                subscription.getDataSetName(),
+                                subscription.getProvider(),
+                                plan.getPlanEnd().getTime());
+            } catch (RegistryHandlerException e1) {
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "Unable to look-up list of DataSetMetData during schedule updating. ",
+                                e1);
             }
-        }
+            SortedSet<Calendar> retrievalTimes = subscription
+                    .getRetrievalTimes(plan.getPlanStart(), plan.getPlanEnd(),
+                            dsmdList, SubscriptionUtil.getInstance());
+            List<BandwidthSubscription> currentBandwidthSubscriptions = bandwidthDao
+                    .getBandwidthSubscription(subscription);
 
-        /*
-         * Add 2 minutes to the max to cover averaged values that increased and
-         * remove any retrieval times before the last scheduled time (max)
-         */
-        max.add(Calendar.MINUTE, 2);
-        Iterator<Calendar> iter = retrievalTimes.iterator();
-        while (iter.hasNext()) {
-            Calendar c = iter.next();
-            if (c.before(max)) {
-                iter.remove();
+            // Get the latest/max scheduled time
+            Calendar max = currentBandwidthSubscriptions.get(0)
+                    .getBaseReferenceTime();
+            for (BandwidthSubscription bs : currentBandwidthSubscriptions) {
+                if (bs.getBaseReferenceTime().after(max)) {
+                    max = bs.getBaseReferenceTime();
+                }
             }
-        }
 
-        scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
+            /*
+             * Add 2 minutes to the max to cover averaged values that increased
+             * and remove any retrieval times before the last scheduled time
+             * (max)
+             */
+            max.add(Calendar.MINUTE, 2);
+            Iterator<Calendar> iter = retrievalTimes.iterator();
+            while (iter.hasNext()) {
+                Calendar c = iter.next();
+                if (c.before(max)) {
+                    iter.remove();
+                }
+            }
+
+            scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
+        }
     }
 
     /*

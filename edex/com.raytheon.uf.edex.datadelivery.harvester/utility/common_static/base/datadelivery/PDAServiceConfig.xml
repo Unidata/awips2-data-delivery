@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<serviceConfig name="PDA">
+    <!--  Date format used by PDA provider -->
+	<dateConfig>
+		<format>yyyyDDDHHmmssSSS</format>
+	</dateConfig>
+	
+	<constant name="MODE" value="file"/>
+	<constant name="BLANK" value=""/>
+	<constant name="PROTOCOL" value="SSL"/>
+	<constant name="CONN_TYPE" value="ftps"/>
+	<constant name="PORT" value="21"/>
+	<constant name="FTPS_DROP_DIR" value="/awips2/edex/data/ftps" />
+	<constant name="MISSING_VALUE" value="-999999"/>
+	<constant name="FILL_VALUE" value="-888888"/>
+	<constant name="DEFAULT_MULTIPLIER" value="0.5"/>
+    <constant name="DEFAULT_RUN_INCREMENT" value="1"/>
+    <constant name="DEFAULT_OFFSET" value="30"/>
+    <constant name="SEPARATOR" value="-"/>
+    <constant name="BASE_TYPE" value="Float"/>
+    <constant name="UNITS" value="NONE"/>
+    <constant name="DEFAULT_FORMAT" value="NETCDF"/>
+    <constant name="DEFAULT_CRS" value="crs:84"/>
+    <constant name="SIMULATE" value="true"/>
+    <constant name="BINARY_TRANSFER" value="true"/>
+    <constant name="IMPLICIT_SECURITY" value="false" />
+    <constant name="PASSIVE_MODE" value="true" />
+    <constant name="SUBSET_REQUEST_URL" value="https://pda.espds.com" />
+    <!--
+    <constant name="KEYSTORE_FILE" value="/awips2/edex/conf/security/keystore.jks" />
+    <constant name="TRUSTSTORE_FILE" value="/awips2/edex/conf/security/truststore.jks" />
+     -->
+
+</serviceConfig>
