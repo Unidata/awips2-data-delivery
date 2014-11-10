@@ -20,6 +20,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * further licensing information.
  **/
 
+import java.io.IOException;
 import java.net.URI;
 import java.security.KeyStore;
 
@@ -31,15 +32,13 @@ import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.HttpsUtils;
 import com.raytheon.uf.common.comm.IHttpsHandler;
-import com.raytheon.uf.common.datadelivery.registry.Connection;
-import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
+import com.raytheon.uf.edex.security.SecurityConfiguration;
 
 /**
  * 
@@ -71,14 +70,19 @@ public class PDARequestConnectionUtil {
     
     protected static final String contentType = "text/xml";
     
-    /** trustore path set by Data Delivery in the serviceConfig XML */
+    /** truststore path set by Data Delivery in the serviceConfig XML */
     protected static final String truststore = "TRUSTSTORE_FILE";
     
+    /** truststore type **/
     protected static final String storeType = "pkcs12";
     
     protected static final String providerName = "PDA";
     
+    /** HTTP connection client **/
     private static volatile HttpClient httpClient;
+    
+    /** truststore password AES encrypted in security properties file **/
+    private static final String TRUSTSTORE_PASS = "edex.security.truststore.password";
     
     /**
      * Connect to the PDA service
@@ -126,10 +130,13 @@ public class PDARequestConnectionUtil {
         return httpClient;
     }
     
+    /**
+     * HTTPS handler for PDA
+     */
     private static final IHttpsHandler httpsHandler = new IHttpsHandler() {
 
-        final ServiceConfig sc = getServiceConfig();
-        final Connection conn = getLocalConnection();
+        final ServiceConfig serviceConfig = getServiceConfig();
+        final SecurityConfiguration sc = getSecurityConfiguration();
         
         @Override
         public String[] getCredentials(String host, int port, String authValue) {
@@ -149,12 +156,12 @@ public class PDARequestConnectionUtil {
         public KeyStore getTruststore() {
 
             KeyStore trustStore = null;
-            String filePath = sc.getConstantValue(truststore);
+            String filePath = serviceConfig.getConstantValue(truststore);
             // Check to see if it's enabled
-            if (filePath != null && conn != null) {
+            if (filePath != null && sc != null) {
                 try {
                     trustStore = HttpsUtils.loadKeystore(filePath, storeType,
-                            conn.getUnencryptedPassword());
+                            sc.getProperty(TRUSTSTORE_PASS));
                 } catch (Exception e) {
                     statusHandler.error("Couldn't load truststore!", e);
                 }
@@ -166,7 +173,7 @@ public class PDARequestConnectionUtil {
         @Override
         public boolean isValidateCertificates() {
             
-            String filePath = sc.getConstantValue(truststore);
+            String filePath = serviceConfig.getConstantValue(truststore);
             
             if (filePath != null) {
                 return true;
@@ -186,26 +193,24 @@ public class PDARequestConnectionUtil {
         return HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.PDA);
     }
-    
+
     /**
-     * Get the local encrypted connection object
+     * Get the active security configuration
      * 
      * @return
      */
-    private static Connection getLocalConnection() {
-
-        Connection connection = null;
-
-        try {
-            ProviderCredentials creds = ProviderCredentialsUtil
-                    .retrieveCredentials(providerName);
-            connection = creds.getConnection();
-        } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR,
-                    "No local Connection file available! " + providerName);
-        }
+    private static SecurityConfiguration getSecurityConfiguration() {
         
-        return connection;
+        SecurityConfiguration sc = null;
+        
+        try {
+            sc = new SecurityConfiguration();
+        } catch (IOException ioe) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Couldn't access the security configuration!", ioe);
+        }
+
+        return sc;
     }
 
 }
