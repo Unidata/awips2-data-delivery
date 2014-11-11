@@ -93,15 +93,5 @@
 		<constructor-arg ref="BandwidthMap"/>
 		<constructor-arg ref="bandwidthBucketDao"/>
 	</bean>
-    
-    <camelContext id="datadelivery-bandwidth" xmlns="http://camel.apache.org/schema/spring"
-		errorHandlerRef="errorHandler">
-		<endpoint id="scheduleBandwidthQueue"
-			uri="vm://scheduleBandwidth" />
-		<route id="scheduleSubscription">
-			<from uri="scheduleBandwidthQueue" />
-			<bean ref="bandwidthManager" method="schedule"/>
-		</route>
-	</camelContext>
 
 </beans>
