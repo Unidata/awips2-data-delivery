@@ -38,6 +38,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * ------------ ---------- ----------- --------------------------
  * July 08, 2014 3120        dhladky     Initial creation
  * Sept 04, 2014 3121        dhladky     Some rework on the parsing.
+ * Nov 10, 2014  3826        dhladky     Added more logging, improved versatility of parser.
  * 
  * </pre>
  * 
@@ -56,8 +57,9 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
 
     public static final Pattern param2Seperator = Pattern.compile("-");
     
-    public static final String nc = ".nc";
-    
+    /**  remove extension  **/
+    public static final String extensionSeparator = ".";
+          
     public PDAFileMetaDataExtractor() {
     
     }
@@ -84,7 +86,10 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
                
         Map<String, String> paramMap = new HashMap<String, String>(7);
         String fileName = (String)file;
-        fileName = fileName.replace(nc, "");
+        // Remove the extension, we don't want it.
+        int index = fileName.indexOf(extensionSeparator);
+        fileName = fileName.substring(0, index);
+        statusHandler.info("Extracting MetaData from: "+fileName);
         String[] separated = separator.split(fileName);
 
         // we want just the file name at the end
@@ -94,10 +99,14 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
         if (parsed != null) {
             // don't care about 1 right now
             paramMap.put("collectionName", parsed[0]);
+            statusHandler.info("collectionName: "+parsed[0]);
             String[] paramSeparated = param2Seperator.split(parsed[1]);
             paramMap.put("satelliteName", parsed[2]);
+            statusHandler.info("satelliteName: "+parsed[2]);
             paramMap.put("dataSetName", paramSeparated[0]+"-"+paramSeparated[1]+"-"+paramSeparated[2]);
+            statusHandler.info("dataSetName: "+paramSeparated[0]+"-"+paramSeparated[1]+"-"+paramSeparated[2]);
             paramMap.put("paramName", paramSeparated[3]);
+            statusHandler.info("paramName: "+paramSeparated[3]);
             // take three, chop off the "s"
             String time = parsed[3].substring(1);
             // take four, chop off the "e"
@@ -106,8 +115,11 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
             String dataTime = parsed[5].substring(1);
             
             paramMap.put("startTime", time);
+            statusHandler.info("startTime: "+time);
             paramMap.put("endTime", endTime);
+            statusHandler.info("endTime: "+endTime);
             paramMap.put("dataTime", dataTime);
+            statusHandler.info("dataTime: "+dataTime);
            
         } else {
             statusHandler.error("Coudn't create parameter mappings from file!", fileName);

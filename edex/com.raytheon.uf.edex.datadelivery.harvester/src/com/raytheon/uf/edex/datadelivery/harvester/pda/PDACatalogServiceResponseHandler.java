@@ -48,6 +48,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 16, 2014 3120       dhladky     Initial creation
+ * Nov 10, 2014 3826       dhladky     Added more logging.
  * 
  * </pre>
  * 
@@ -88,6 +89,7 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
                         + HarvesterConfigurationManager.getPDAConfiguration().getProvider().getName());
                 // we have an actual result link
                 String recordFilePath = srt.getResultSetId();
+                statusHandler.info("Record File Path: " + recordFilePath);
                 // send to download the actual file
                 try {
                     sendToFileRetrieval(recordFilePath);

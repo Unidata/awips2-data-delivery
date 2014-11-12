@@ -20,7 +20,7 @@
 		<dateFormat>YYYYDDDHHmmSSS</dateFormat>
 		<!-- CSW (catalog service) return URL, Will be the external URL of the 
 			NCF central registry when running in production -->
-		<responseHandler>${harvester.external.address}:8082/PDAHarvesterResponseHandler</responseHandler>
+		<responseHandler>https://${harvester.external.address}:8082/PDAHarvesterResponseHandler</responseHandler>
 		<!-- CSW (catalog service) URL -->
 		<cswURL>https://pda.espds.noaa.gov</cswURL>
 		<!-- Collect records every 15 minutes -->

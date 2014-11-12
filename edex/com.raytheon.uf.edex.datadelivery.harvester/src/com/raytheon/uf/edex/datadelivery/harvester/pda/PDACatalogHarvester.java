@@ -35,6 +35,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARequestConnectionUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * June 13, 2014 3120      dhladky     Initial creation
+ * Nov 10, 2014  3826      dhladky     Added more logging.
  * 
  * </pre>
  * 
@@ -86,11 +87,13 @@ public class PDACatalogHarvester {
             PDACatalogRequestBuilder pcrb = new PDACatalogRequestBuilder(
                     responseHandlerURL);
             xml = pcrb.getXMLMessage();
-            statusHandler.info("Sending request to Catalog Server: \n" + xml);
+
+            statusHandler.info("Sending request to Catalog Server: "
+                    + catalogServerURL + "\n" + xml);
 
             String response = PDARequestConnectionUtil.connect(xml,
                     catalogServerURL);
-            
+
             statusHandler.info("Catalog Server response: \n" + response);
             status = true;
 

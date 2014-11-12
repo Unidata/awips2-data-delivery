@@ -50,6 +50,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Jun 12, 2014 3012         dhladky    initial release
  * Sep 14, 2104  3121        dhladky    Added binary transfer switch
  * Oct 14, 2014  3127        dhladky    Fine tuning for FTPS
+ * Nov 10, 2014  3826        dhladky     Added more logging.
  * </pre>
  * 
  * @author dhladky
@@ -168,6 +169,8 @@ public class PDAConnectionUtil {
                 localFileName = ftp.executeConsumer();
 
             } else {
+                statusHandler.handle(Priority.ERROR,
+                        "No local Connection file available! " + providerName);
                 throw new IllegalArgumentException(
                         "No username and password for FTPS server available! "
                                 + rootUrl + " provider: " + providerName);
