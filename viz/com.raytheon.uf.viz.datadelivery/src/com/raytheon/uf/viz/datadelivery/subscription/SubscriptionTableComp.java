@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.datadelivery.subscription;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +65,7 @@ import com.raytheon.uf.viz.core.auth.UserController;
 import com.raytheon.uf.viz.core.notification.NotificationMessage;
 import com.raytheon.uf.viz.core.notification.NotificationMessageContainsType;
 import com.raytheon.uf.viz.datadelivery.common.ui.IGroupAction;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
+import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableCompConfig;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableDataManager;
@@ -115,8 +116,12 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Feb 11, 2014  2771      bgonzale     Use Data Delivery ID instead of Site.
  * Mar 24, 2014  #2951     lvenable     Added dispose checks for SWT widgets.
  * Apr 18, 2014  3012      dhladky      Null check.
- * Oct 28, 2014  2748      ccody       Changes for receiving Subscription Status changes
+ * Oct 28, 2014  2748      ccody        Changes for receiving Subscription Status changes
  * Nov 19, 2014  3852      dhladky      Fixed message overload problem.
+ * Dec 03, 2014  3840      ccody        Correct sorting "contract violation" issue
+ * 
+ * </pre>
+ * 
  * @version 1.0
  */
 
@@ -148,8 +153,11 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /** Filters out which subscriptions to show **/
     private ISubscriptionManagerFilter subscriptionFilter;
-    
-    /** Subscription Data Update Interval / Protection from server update overload */
+
+    /**
+     * Subscription Data Update Interval / Protection from server update
+     * overload
+     */
     private long updateIntervalMils = 30000l;
 
     /**
@@ -372,19 +380,19 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      *            Table column.
      */
     private void handleColumnSelection(TableColumn tc) {
-        SortDirection sortDirection = updateSortDirection(tc, subManagerData,
-                true);
+        SortDirection sortDirection = updateSortDirection(tc, true);
 
         // update the xml
         SubscriptionConfigurationManager man = SubscriptionConfigurationManager
                 .getInstance();
-        man.setSortedColumn(tc.getText(), sortDirection);
+        boolean sortOrder = true;
+        if (sortDirection == SortDirection.DESCENDING) {
+            sortOrder = false;
+        }
+        man.setSortedColumn(tc.getText(), sortOrder);
 
         // Populate the data
         populateData();
-
-        // Sort the table data.
-        // sortTableData(tc);
 
         populateTable();
 
@@ -556,18 +564,6 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#getCurrentSortDirection
-     * ()
-     */
-    @Override
-    protected SortDirection getCurrentSortDirection() {
-        return subManagerData.getSortDirection();
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
      * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#createColumns()
      */
     @Override
@@ -587,11 +583,12 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                 tc.setText(column.getName());
                 tc.setAlignment(alignmentMap.get(column.getName()));
                 if (column.isSortColumn()) {
-                    SortDirection direction = column.isSortAsc() ? SortDirection.ASCENDING
-                            : SortDirection.DESCENDING;
                     sortedColumn = tc;
-                    subManagerData.setSortDirection(direction);
-                    subManagerData.setSortColumn(column.getName());
+                    SortDirection sortDirection = SortDirection.ASCENDING;
+                    if (column.isSortAsc() == false) {
+                        sortDirection = SortDirection.ASCENDING;
+                    }
+                    this.sortDirectionMap.put(tc.getText(), sortDirection);
                 }
                 tc.addSelectionListener(new SelectionAdapter() {
                     @Override
@@ -600,10 +597,6 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                     }
                 });
             }
-        }
-
-        for (TableColumn tc : table.getColumns()) {
-            sortDirectionMap.put(tc.getText(), SortDirection.ASCENDING);
         }
 
         // If no sorted column specified then use the first column
@@ -625,7 +618,33 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
         table.clearAll();
         table.removeAll();
 
-        subManagerData.sortData();
+        // Get sorted column and direction
+        for (TableColumn column : columns) {
+            ColumnXML columnXml = getColumnData(column.getText());
+            if (columnXml != null) {
+                if (columnXml.isVisible()) {
+                    if (columnXml.isSortColumn()) {
+                        this.sortedColumn = column;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (sortedColumn == null || sortedColumn.isDisposed()) {
+            if (table.getItemCount() > 0) {
+                // use default sort column settings
+                TableColumn column = table.getColumn(0);
+                this.sortedColumn = column;
+            }
+        }
+
+        // Sort the TableDataManager table data
+        String sortedColumnText = this.sortedColumn.getText();
+        SortDirection sortDirection = getCurrentSortDirection();
+        Comparator<SubscriptionManagerRowData> sortComparator = SubscriptionManagerRowDataComparators
+                .getComparator(sortedColumnText, sortDirection);
+        subManagerData.sortData(sortComparator);
 
         for (SubscriptionManagerRowData rd : subManagerData.getDataArray()) {
             int idx = 0;
@@ -634,33 +653,17 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                 ColumnXML columnXml = getColumnData(column.getText());
                 if (columnXml != null) {
                     if (columnXml.isVisible()) {
-
                         String text = getCellText(columnXml.getName(), rd);
                         if (text == null) {
                             item.setText(idx++, "");
                         } else {
                             item.setText(idx++, text);
                         }
-                        if (columnXml.isSortColumn()) {
-                            SortDirection direction = columnXml.isSortAsc() ? SortDirection.ASCENDING
-                                    : SortDirection.DESCENDING;
-                            sortedColumn = column;
-                            subManagerData.setSortDirection(direction);
-                            subManagerData.setSortColumn(columnXml.getName());
-                        }
                     }
                 }
             }
         }
 
-        if (table.getItemCount() > 0) {
-            if (sortedColumn == null || sortedColumn.isDisposed()) {
-                // use default sort column settings
-                TableColumn column = table.getColumn(0);
-                subManagerData.setSortDirection(SortDirection.ASCENDING);
-                subManagerData.setSortColumn(column.getText());
-            }
-        }
         updateColumnSortImage();
     }
 
@@ -780,8 +783,10 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
             VizApp.runAsync(new Runnable() {
                 @Override
                 public void run() {
-                    // Protection to keep server updates from swamping the dialog
-                    long TimeDiff = TimeUtil.currentTimeMillis() - getLastUpdateTime();
+                    // Protection to keep server updates from swamping the
+                    // dialog
+                    long TimeDiff = TimeUtil.currentTimeMillis()
+                            - getLastUpdateTime();
                     if (!isDisposed() && (TimeDiff > updateIntervalMils)) {
                         handleRefresh();
                     }

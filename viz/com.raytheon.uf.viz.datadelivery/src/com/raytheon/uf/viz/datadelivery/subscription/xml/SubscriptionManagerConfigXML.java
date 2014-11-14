@@ -28,7 +28,6 @@ import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.serialization.ISerializableObject;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.xml.ColumnXML;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
@@ -46,6 +45,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Jan 07, 2013 1437       bgonzale   Set default sort column and direction. Added
  *                                    getColumn(String), setSorColumn(String, SortDirection),
  *                                    and removeColumn(ColumnXML).
+ * Dec 03, 2014 3840       ccody      Implement Comparator based sorting
  * 
  * </pre>
  * 
@@ -99,7 +99,8 @@ public class SubscriptionManagerConfigXML implements ISerializableObject {
     }
 
     private void createDefault() {
-        String[] titles = DataDeliveryUtils.getColumnTitles(TABLE_TYPE.SUBSCRIPTION);
+        String[] titles = DataDeliveryUtils
+                .getColumnTitles(TABLE_TYPE.SUBSCRIPTION);
         for (String title : titles) {
             ColumnXML col = new ColumnXML(title, true);
             this.addColumn(col);
@@ -130,10 +131,11 @@ public class SubscriptionManagerConfigXML implements ISerializableObject {
      * Set the named column to the current sort column with the given direction.
      * 
      * @param columnName
-     * @param sortDirection
+     * @param isSortAsc
+     *            Ordering of the Sorted rows (Ascending : true, Descending :
+     *            false)
      */
-    public void setSortColumn(String columnName, SortDirection sortDirection) {
-        boolean isSortAsc = SortDirection.ASCENDING.equals(sortDirection);
+    public void setSortColumn(String columnName, boolean isSortAsc) {
         for (ColumnXML column : columnList) {
             if (column.getName().equals(columnName)) {
                 column.setSortColumn(true);

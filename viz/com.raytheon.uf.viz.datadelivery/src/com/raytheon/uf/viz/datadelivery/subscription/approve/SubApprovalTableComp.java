@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.approve;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -48,7 +49,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.notification.NotificationMessage;
 import com.raytheon.uf.viz.core.notification.NotificationMessageContainsType;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
+import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableCompConfig;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableDataManager;
@@ -78,6 +79,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Apr 10, 2013 1891       djohnson     Move logic to get column display text to the column definition, fix sorting.
  * Apr 18, 2014  3012      dhladky      Null check.
  * Oct 28, 2014  2748      ccody        Changes for receiving Subscription Status changes
+ * Dec 03, 2014  3840      ccody        Correct sorting "contract violation" issue
+ * 
  * </pre>
  * 
  * @author lvenable
@@ -152,6 +155,7 @@ public class SubApprovalTableComp extends TableComp {
      * Initialize method.
      */
     private void init() {
+
         pendingSubData = new TableDataManager<SubscriptionApprovalRowData>(
                 TABLE_TYPE.PENDING_SUBSCRIPTION);
 
@@ -334,7 +338,7 @@ public class SubApprovalTableComp extends TableComp {
 
         TableColumn tc = (TableColumn) event.getSource();
 
-        updateSortDirection(tc, pendingSubData, true);
+        updateSortDirection(tc, true);
 
         sortTable();
         updateColumnSortImage();
@@ -346,7 +350,11 @@ public class SubApprovalTableComp extends TableComp {
     private void sortTable() {
         table.removeAll();
 
-        pendingSubData.sortData();
+        String sortedColumnText = sortedColumn.getText();
+        SortDirection sortDirection = getCurrentSortDirection();
+        Comparator<SubscriptionApprovalRowData> sortComparator = SubscriptionApprovalRowDataComparators
+                .getComparator(sortedColumnText, sortDirection);
+        pendingSubData.sortData(sortComparator);
 
         List<SubscriptionApprovalRowData> sardArray = pendingSubData
                 .getDataArray();
@@ -354,18 +362,6 @@ public class SubApprovalTableComp extends TableComp {
         for (SubscriptionApprovalRowData sard : sardArray) {
             convertRowDataToTableItem(table.getColumns(), sard);
         }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#getCurrentSortDirection
-     * ()
-     */
-    @Override
-    protected SortDirection getCurrentSortDirection() {
-        return pendingSubData.getSortDirection();
     }
 
     /*
@@ -410,8 +406,6 @@ public class SubApprovalTableComp extends TableComp {
         table.clearAll();
         table.removeAll();
 
-        pendingSubData.sortData();
-
         for (SubscriptionApprovalRowData rd : this.pendingSubData
                 .getDataArray()) {
             convertRowDataToTableItem(columns, rd);
@@ -419,10 +413,13 @@ public class SubApprovalTableComp extends TableComp {
 
         if (sortedColumn == null) {
             sortedColumn = table.getColumn(0);
-            pendingSubData.setSortColumn(sortedColumn.getText());
-        } else {
-            pendingSubData.setSortColumn(sortedColumn.getText());
         }
+
+        String sortedColumnText = sortedColumn.getText();
+        SortDirection sortDirection = getCurrentSortDirection();
+        Comparator<SubscriptionApprovalRowData> sortComparator = SubscriptionApprovalRowDataComparators
+                .getComparator(sortedColumnText, sortDirection);
+        pendingSubData.sortData(sortComparator);
 
         updateColumnSortImage();
     }

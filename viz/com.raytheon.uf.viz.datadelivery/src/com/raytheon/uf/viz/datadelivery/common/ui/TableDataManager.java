@@ -31,7 +31,8 @@ package com.raytheon.uf.viz.datadelivery.common.ui;
  * Jun 06, 2012            lvenable     Initial creation
  * Apr 10, 2013   1891     djohnson     Declare variable as List.
  * Feb 07, 2014   2453     mpduff       Added getSize().
- * Apr 18, 2014  3012      dhladky      Null check.
+ * Apr 18, 2014   3012     dhladky      Null check.
+ * Dec 03, 2014   3840     ccody        Correct sorting "contract violation" issue
  *
  * </pre>
  *
@@ -41,13 +42,12 @@ package com.raytheon.uf.viz.datadelivery.common.ui;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 
-public class TableDataManager<T extends ITableData<T>> implements ISortTable {
+public class TableDataManager<T extends ITableData> {
 
     /**
      * Array of data.
@@ -55,29 +55,18 @@ public class TableDataManager<T extends ITableData<T>> implements ISortTable {
     private final List<T> tableData;
 
     /**
-     * Column name.
-     */
-    private String currentSortColumnName = "";
-
-    /**
-     * Current sort direction.
-     */
-    private SortDirection currentSortDirection = SortDirection.ASCENDING;
-
-    /**
      * Constructor.
      * 
      * @param tableType
      *            Type of table the data will be use for.
+     * @param defaultSortColumnText
+     *            Default field to sort on
+     * @param defaultSortOrder
+     *            Default order to sort in
      */
     public TableDataManager(TABLE_TYPE tableType) {
         tableData = new ArrayList<T>();
 
-        String[] columns = DataDeliveryUtils.getColumnTitles(tableType);
-
-        if (columns.length > 0) {
-            currentSortColumnName = columns[0];
-        }
     }
 
     /**
@@ -87,7 +76,6 @@ public class TableDataManager<T extends ITableData<T>> implements ISortTable {
      *            Data to be added to the data array.
      */
     public void addDataRow(T data) {
-        data.setSortCallback(this);
         tableData.add(data);
     }
 
@@ -103,8 +91,9 @@ public class TableDataManager<T extends ITableData<T>> implements ISortTable {
     /**
      * Sort the data array.
      */
-    public void sortData() {
-        Collections.sort(tableData);
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void sortData(Comparator comparator) {
+        Collections.sort(this.tableData, comparator);
     }
 
     /**
@@ -153,44 +142,6 @@ public class TableDataManager<T extends ITableData<T>> implements ISortTable {
         if (index >= 0 && index < tableData.size()) {
             tableData.remove(index);
         }
-    }
-
-    /**
-     * Set the sort column.
-     * 
-     * @param columnName
-     *            The column name to sort on.
-     */
-    @Override
-    public void setSortColumn(String columnName) {
-        currentSortColumnName = columnName;
-    }
-
-    /**
-     * Set the sort direction.
-     * 
-     * @param direction
-     *            Sort direction (ascending or descending).
-     */
-    @Override
-    public void setSortDirection(SortDirection direction) {
-        currentSortDirection = direction;
-    }
-
-    /**
-     * Get the sort column text.
-     */
-    @Override
-    public String getSortColumnText() {
-        return currentSortColumnName;
-    }
-
-    /**
-     * Get the sort direction.
-     */
-    @Override
-    public SortDirection getSortDirection() {
-        return currentSortDirection;
     }
 
     /**

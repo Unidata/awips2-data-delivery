@@ -24,9 +24,7 @@ import java.util.Set;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.util.StringUtil;
-import com.raytheon.uf.viz.datadelivery.common.ui.ISortTable;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableData;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionManagerDlg.FullDataset;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
@@ -51,14 +49,14 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Apr 08, 2013  1826      djohnson   Remove delivery options.
  * May 15, 2013  1040      mpduff     Change Office IDs to set.
  * Jan 14, 2014  2459      mpduff     Change Subscription status code
+ * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
  * </pre>
  * 
  * @author mpduff
  * @version 1.0
  */
 
-public class SubscriptionManagerRowData implements
-        ITableData<SubscriptionManagerRowData> {
+public class SubscriptionManagerRowData implements ITableData {
 
     /** Dataset id. */
     private String dataSetID = null;
@@ -115,19 +113,11 @@ public class SubscriptionManagerRowData implements
     /** Subscription group name. */
     private String groupName;
 
-    /** Sort callback. */
-    private ISortTable sortCallback = null;
-
     /**
      * Constructor
      */
     public SubscriptionManagerRowData() {
 
-    }
-
-    @Override
-    public void setSortCallback(ISortTable sortCallback) {
-        this.sortCallback = sortCallback;
     }
 
     /**
@@ -477,115 +467,6 @@ public class SubscriptionManagerRowData implements
     }
 
     /**
-     * Get the sort value.
-     * 
-     * @param columnName
-     *            The name of the table column.
-     * 
-     * @return sort value
-     */
-    public String getSortValue(String columnName) {
-        int cIndex = -1;
-        if (columnName.equals(columns[++cIndex])) {
-            return this.name;
-        } else if (columnName.equals(columns[++cIndex])) {
-            return this.owner;
-        } else if (columnName.equals(columns[++cIndex])) {
-            return this.getStatus().toString();
-        } else if (columnName.equals(columns[++cIndex])) {
-            return String.valueOf(this.priority);
-        } else if (columnName.equals(columns[++cIndex])) {
-            return this.description;
-        } else if (columnName.equals(columns[++cIndex])) {
-            return columnName;
-        } else if (columnName.equals(columns[++cIndex])) {
-            return columnName;
-        } else if (columnName.equals(columns[++cIndex])) {
-            return columnName;
-        } else if (columnName.equals(columns[++cIndex])) {
-            return columnName;
-        } else if (columnName.equals(columns[++cIndex])) {
-            return this.getOfficeIdsAsList();
-        } else if (columnName.equals(columns[++cIndex])) {
-            return fullDataSet.toString();
-        } else if (columnName.equals(columns[++cIndex])) {
-            return String.valueOf(this.dataSetSize);
-        } else if (columnName.equals(columns[++cIndex])) {
-            return groupName;
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Check date values.
-     */
-    private int checkDate(Date d1, Date d2) {
-        // handle empty date cells
-        if ((d1 == null) && (d2 == null)) {
-            return 0;
-        } else if (d1 == null) {
-            return 1;
-        } else if (d2 == null) {
-            return -1;
-        }
-        if (d1.before(d2)) {
-            return 1;
-        } else if (d1.after(d2)) {
-            return -1;
-        } else {
-            return 0;
-        }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Comparable#compareTo(java.lang.Object)
-     */
-    @Override
-    public int compareTo(SubscriptionManagerRowData o) {
-        String columnName = sortCallback.getSortColumnText();
-        SortDirection direction = sortCallback.getSortDirection();
-
-        if (columnName == null) {
-            return 1;
-        }
-
-        String sortValue = this.getSortValue(columnName);
-        if (sortValue == null) {
-            return 1;
-        }
-
-        int returnValue = 0;
-
-        if (columnName.equals("Subscription Start")) {
-            returnValue = checkDate(this.getSubscriptionStart(),
-                    o.getSubscriptionStart());
-        } else if (columnName.equals("Subscription Expiration")) {
-            returnValue = checkDate(this.getSubscriptionEnd(),
-                    o.getSubscriptionEnd());
-        } else if (columnName.equals("Active Period Start")) {
-            returnValue = checkDate(this.getActiveStart(), o.getActiveStart());
-        } else if (columnName.equals("Active Period End")) {
-            returnValue = checkDate(this.getActiveEnd(), o.getActiveEnd());
-        } else if (columnName.equals("Data Size")) {
-            returnValue = (int) (this.getDataSetSize() - o.getDataSetSize());
-        } else {
-            if (o.getSortValue(columnName) != null) {
-                returnValue = sortValue.toUpperCase().compareTo(
-                        o.getSortValue(columnName).toUpperCase());
-            }
-        }
-
-        if (direction == SortDirection.DESCENDING) {
-            returnValue *= -1;
-        }
-
-        return returnValue;
-    }
-
-    /**
      * Get office ids as comma separated list
      * 
      * @return String of office ids
@@ -602,4 +483,5 @@ public class SubscriptionManagerRowData implements
     public String getOfficeIdsDisplayList() {
         return StringUtil.getDisplayList(officeIds, " ", 3);
     }
+
 }

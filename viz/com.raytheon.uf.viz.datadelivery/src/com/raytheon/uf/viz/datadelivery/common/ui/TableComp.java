@@ -37,7 +37,6 @@ import org.eclipse.swt.widgets.TableColumn;
 
 import com.raytheon.uf.viz.core.notification.INotificationObserver;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
@@ -57,6 +56,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jan 07, 2013  1437      bgonzale     updateSortDirection method now returns direction.
  * Apr 10, 2013  1891      djohnson     Fix sorting.
  * Sep 16, 2013  2375      mpduff       Fix sorting.
+ * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
  * 
  * </pre>
  * 
@@ -80,7 +80,7 @@ public abstract class TableComp extends Composite implements
     protected TableColumn sortedColumn;
 
     /** Sort direction map. */
-    protected Map<String, SortDirection> sortDirectionMap = new HashMap<String, SortDirection>();
+    protected Map<String, SortDirection> sortDirectionMap = new HashMap<>();
 
     /** Table configuration. */
     private final TableCompConfig tableConfig;
@@ -182,6 +182,7 @@ public abstract class TableComp extends Composite implements
                 handleTableSelection(e);
             }
         });
+
     }
 
     /**
@@ -202,14 +203,10 @@ public abstract class TableComp extends Composite implements
             tc.setImage(null);
         }
 
-        SortDirection sortDir = getCurrentSortDirection();
-
-        if (sortDir == null) {
-            sortDir = SortDirection.ASCENDING;
-        }
+        SortDirection sortDirection = getCurrentSortDirection();
 
         if (table.getItemCount() > 0) {
-            sortedColumn.setImage(sortImages.getImage(sortDir));
+            sortedColumn.setImage(sortImages.getImage(sortDirection));
         }
 
         packColumns();
@@ -241,44 +238,54 @@ public abstract class TableComp extends Composite implements
      * 
      * @param tc
      *            Table column.
-     * @param tableData
-     *            Data that contains the sort data that will be changed.
      * @param clickSort
      *            Only change column sort direction on click
      * @return SortDirection returns the determined sort direction.
      */
-    public SortDirection updateSortDirection(TableColumn tc,
-            ISortTable tableData, boolean clickSort) {
-        SortDirection sortDirection = SortDirection.ASCENDING;
+    public SortDirection updateSortDirection(TableColumn tc, boolean clickSort) {
+        SortDirection sortDirection = null;
 
         if (sortedColumn != null && tc.getText().equals(sortedColumn.getText())) {
             if (sortDirectionMap.containsKey(sortedColumn.getText())) {
                 sortDirection = sortDirectionMap.get(sortedColumn.getText());
-
+                if (sortDirection == null) {
+                    sortDirection = SortDirection.ASCENDING;
+                }
                 if (clickSort) {
-                    sortDirection = sortDirection.reverse();
+                    sortDirection = sortDirection.reverse(); // reverse order
                 }
             }
-
-            sortDirectionMap.put(sortedColumn.getText(), sortDirection);
-            tableData.setSortDirection(sortDirection);
-            tableData.setSortColumn(sortedColumn.getText());
-        } else {
             sortDirectionMap.put(sortedColumn.getText(), sortDirection);
         }
 
         sortedColumn = tc;
-        tableData.setSortDirection(sortDirection);
-        tableData.setSortColumn(sortedColumn.getText());
         return sortDirection;
     }
 
     /**
-     * Get the current sort direction.
+     * Get the current sort order for the given column.
      * 
-     * @return The current sort direction.
+     * @param columnName
+     *            Name of sort column
+     * @return SortDirection Current SortDirection.ASCENDING or
+     *         SortDirection.DESCENDING sort direction
      */
-    protected abstract SortDirection getCurrentSortDirection();
+    protected SortDirection getCurrentSortDirection() {
+        SortDirection sortDirection = SortDirection.ASCENDING;
+
+        if (this.sortedColumn == null) {
+            this.sortedColumn = table.getColumn(0);
+        }
+        String sortedColumnText = sortedColumn.getText();
+
+        sortDirection = this.sortDirectionMap.get(sortedColumnText);
+        if (sortDirection == null) {
+            sortDirection = SortDirection.ASCENDING;
+            this.sortDirectionMap.put(sortedColumnText, sortDirection);
+        }
+
+        return (sortDirection);
+    }
 
     /**
      * Create the table columns.

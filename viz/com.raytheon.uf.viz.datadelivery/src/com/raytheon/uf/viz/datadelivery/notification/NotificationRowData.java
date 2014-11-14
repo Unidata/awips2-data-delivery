@@ -21,9 +21,7 @@ package com.raytheon.uf.viz.datadelivery.notification;
 
 import java.util.Date;
 
-import com.raytheon.uf.viz.datadelivery.common.ui.ISortTable;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableData;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 
@@ -41,6 +39,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Aug 30, 2013  2314     mpduff     Fix formatting.
  * Sep 16, 2013  2375     mpduff     Change date sort order.
  * Feb 07, 2014  2453     mpduff     Added toString()
+ * Dec 03, 2014  3840     ccody      Correct sorting "contract violation" issue
  * 
  * </pre>
  * 
@@ -48,7 +47,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * @version 1.0
  */
 
-public class NotificationRowData implements ITableData<NotificationRowData> {
+public class NotificationRowData implements ITableData {
 
     /** Column string array */
     private final String[] columns = DataDeliveryUtils
@@ -73,26 +72,10 @@ public class NotificationRowData implements ITableData<NotificationRowData> {
     private String message;
 
     /**
-     * Sort callback.
-     */
-    private ISortTable sortCallback = null;
-
-    /**
      * Constructor.
      * 
      */
     public NotificationRowData() {
-    }
-
-    /**
-     * Set the sort value call back.
-     * 
-     * @param sortCallback
-     *            The sort call back.
-     */
-    @Override
-    public void setSortCallback(ISortTable sortCallback) {
-        this.sortCallback = sortCallback;
     }
 
     /**
@@ -207,97 +190,6 @@ public class NotificationRowData implements ITableData<NotificationRowData> {
      */
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    /**
-     * Compare the row data.
-     * 
-     * @param o
-     *            the notification row data
-     * 
-     * @return int
-     */
-    @Override
-    public int compareTo(NotificationRowData o) {
-
-        String columnName = sortCallback.getSortColumnText();
-        SortDirection direction = sortCallback.getSortDirection();
-
-        int returnValue = 0;
-
-        String sortValue = this.getSortValue(columnName);
-
-        if (columnName.equals("Time")) {
-            returnValue = checkDate(this.getDate(), o.getDate());
-        } else if (columnName.equals("Priority")) {
-            returnValue = 0;
-            if (priority > o.getPriority()) {
-                returnValue = 1;
-            } else if (priority < o.getPriority()) {
-                returnValue = -1;
-            }
-        } else {
-            if (o.getSortValue(columnName) != null) {
-                returnValue = sortValue.toUpperCase().compareTo(
-                        o.getSortValue(columnName).toUpperCase());
-            }
-        }
-
-        if (direction == SortDirection.DESCENDING) {
-            returnValue *= -1;
-        }
-
-        return returnValue;
-
-    }
-
-    private int checkDate(Date d1, Date d2) {
-        // handle empty date cells
-        if ((d1 == null) && (d2 == null)) {
-            return 0;
-        } else if (d1 == null) {
-            return -1;
-        } else if (d2 == null) {
-            return 1;
-        }
-
-        if (d1.before(d2)) {
-            return -1;
-        } else if (d1.after(d2)) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-
-    /**
-     * Get the sort value.
-     * 
-     * @param columnName
-     *            The table column name.
-     * 
-     * @return the string value
-     */
-    public String getSortValue(String columnName) {
-        // TIME("Time"),
-        // PRIORITY("Priority"),
-        // CATEGORY("Category"),
-        // USER("User"),
-        // MESSAGE("Message")
-
-        if (columnName.equals(columns[0])) {
-            return String.valueOf(this.getDate());
-        } else if (columnName.equals(columns[1])) {
-            return String.valueOf(this.priority);
-        } else if (columnName.equals(columns[2])) {
-            return this.getCategory().toString();
-        } else if (columnName.equals(columns[3])) {
-            return this.getUser().toString();
-        } else if (columnName.equals(columns[4])) {
-            return this.getMessage().toString();
-        } else {
-            return null;
-        }
     }
 
     @Override

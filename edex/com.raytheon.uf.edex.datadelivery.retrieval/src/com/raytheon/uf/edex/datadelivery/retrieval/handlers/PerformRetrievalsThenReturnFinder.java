@@ -20,7 +20,10 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusDefinition;
@@ -60,7 +63,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jul 16, 2013 1655       mpduff       Send a system status event based on the response from the provider.
  * Jan 15, 2014 2678       bgonzale     Retrieve RetrievalRequestRecords from a Queue for processing.
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
- * Sep 17, 2014 2749       ccody        Renamed SystemStatusEvent to DataDeliverySystemStatusEvent 
+ * Sep 17, 2014 2749       ccody        Renamed SystemStatusEvent to DataDeliverySystemStatusEvent
+ * Nov 17, 2014 3840       ccody        Only publish System State Events when the state changes
  * 
  * </pre>
  * 
@@ -75,6 +79,9 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
 
     private final IRetrievalDao retrievalDao;
 
+    protected static Map<String, DataDeliverySystemStatusDefinition> systemNameToStateMap = Collections
+            .synchronizedMap(new HashMap<String, DataDeliverySystemStatusDefinition>());
+
     /**
      * Constructor.
      * 
@@ -88,15 +95,17 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
      * {@inheritDoc}
      */
     @Override
-    public RetrievalResponseXml processRequest(RetrievalRequestWrapper rrw) throws Exception {
-        
+    public RetrievalResponseXml processRequest(RetrievalRequestWrapper rrw)
+            throws Exception {
+
         RetrievalResponseXml retVal = null;
         ITimer timer = TimeUtil.getTimer();
         timer.start();
 
         try {
             // Process through the retrieval
-            RetrievalRequestRecordPK id = (RetrievalRequestRecordPK) rrw.getPayload();
+            RetrievalRequestRecordPK id = (RetrievalRequestRecordPK) rrw
+                    .getPayload();
 
             if (id == null) {
                 return null;
@@ -130,9 +139,8 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
             }
 
         } catch (Exception e) {
-            statusHandler
-                    .error("Unable to look up retrieval request at this time.",
-                            e);
+            statusHandler.error(
+                    "Unable to look up retrieval request at this time.", e);
         }
 
         return retVal;
@@ -197,27 +205,43 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
         } catch (Exception e) {
             statusHandler.handle(Priority.WARN, e.getLocalizedMessage(), e);
         }
-        
+
         RetrievalResponseXml retrievalPluginDataObject = new RetrievalResponseXml(
                 requestRecord.getId(), retrievalAttributePluginDataObjects);
         retrievalPluginDataObject
                 .setSuccess(requestRecord.getState() == State.COMPLETED);
 
         // Create system status event
-        DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();
-        event.setName(requestRecord.getProvider());
-        event.setSystemType("Provider");
-        if (requestRecord.getState() == State.COMPLETED
-                || requestRecord.getState() == State.PENDING
-                || requestRecord.getState() == State.RUNNING) {
-            event.setStatus(DataDeliverySystemStatusDefinition.UP);
-        } else if (requestRecord.getState() == State.FAILED) {
-            event.setStatus(DataDeliverySystemStatusDefinition.DOWN);
+        String providerName = requestRecord.getProvider();
+        State requestRecordState = requestRecord.getState();
+        DataDeliverySystemStatusDefinition newSystemStatusState;
+        if (requestRecordState != null) {
+            switch (requestRecordState) {
+            case COMPLETED:
+            case PENDING:
+            case RUNNING:
+                newSystemStatusState = DataDeliverySystemStatusDefinition.UP;
+                break;
+            case FAILED:
+            default:
+                newSystemStatusState = DataDeliverySystemStatusDefinition.UNKNOWN;
+                break;
+            }
         } else {
-            event.setStatus(DataDeliverySystemStatusDefinition.UNKNOWN);
+            newSystemStatusState = DataDeliverySystemStatusDefinition.UNKNOWN;
         }
 
-        EventBus.publish(event);
+        DataDeliverySystemStatusDefinition existingState = this.systemNameToStateMap
+                .get(providerName);
+        if ((existingState == null)
+                || (existingState.equals(newSystemStatusState) == false)) {
+            this.systemNameToStateMap.put(providerName, newSystemStatusState);
+            DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();
+            event.setName(providerName);
+            event.setSystemType("Provider");
+            event.setStatus(newSystemStatusState);
+            EventBus.publish(event);
+        }
 
         return retrievalPluginDataObject;
     }

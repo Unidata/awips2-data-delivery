@@ -24,10 +24,8 @@ import java.util.Set;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.util.StringUtil;
-import com.raytheon.uf.viz.datadelivery.common.ui.ISortTable;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableData;
 import com.raytheon.uf.viz.datadelivery.subscription.approve.SubApprovalTableComp.Action;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * Subscription Approval row data object
@@ -43,6 +41,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Nov 28, 2012   1286     djohnson    Hide details of checking whether a user is a row's subscription's owner.
  * Dec 20, 2012   1413     bgonzale    Implemented compareTo.
  * May 15, 2013   1040     mpduff      Change office id to a set.
+ * Dec 03, 2014   3840     ccody       Correct sorting "contract violation" issue
  * 
  * </pre>
  * 
@@ -50,8 +49,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * @version 1.0
  */
 
-public class SubscriptionApprovalRowData implements
-        ITableData<SubscriptionApprovalRowData> {
+public class SubscriptionApprovalRowData implements ITableData {
     /** The subscription object */
     private InitialPendingSubscription subscription;
 
@@ -75,11 +73,6 @@ public class SubscriptionApprovalRowData implements
 
     /** The action taking place */
     private String action;
-
-    /**
-     * Sort callback.
-     */
-    private ISortTable sortCallback = null;
 
     /**
      * @return the subscription
@@ -167,6 +160,17 @@ public class SubscriptionApprovalRowData implements
     }
 
     /**
+     * @return the officeIds as a Single String
+     */
+    public String getOfficeIdsAsString() {
+        String officeIdsAsString = "";
+        if (officeIds != null) {
+            officeIdsAsString = StringUtil.join(officeIds, ',');
+        }
+        return officeIdsAsString;
+    }
+
+    /**
      * @param officeIds
      *            the officeIds to set
      */
@@ -203,73 +207,6 @@ public class SubscriptionApprovalRowData implements
         } else {
             this.action = Action.EDIT.toString();
         }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Comparable#compareTo(java.lang.Object)
-     */
-    @Override
-    public int compareTo(SubscriptionApprovalRowData o) {
-        DataDeliveryUtils.PendingSubColumnNames column = DataDeliveryUtils.PendingSubColumnNames
-                .valueOfColumnName(sortCallback.getSortColumnText());
-        String otherValue = "";
-        String selfValue = "";
-
-        switch (column) {
-        case ACTION:
-            selfValue = getAction();
-            otherValue = o.getAction();
-            break;
-        case CHANGE_ID:
-            selfValue = getChangeOwner();
-            otherValue = o.getChangeOwner();
-            break;
-        case DESCRIPTION:
-            selfValue = getDescription();
-            otherValue = o.getDescription();
-            break;
-        case NAME:
-            selfValue = getSubName();
-            otherValue = o.getSubName();
-            break;
-        case OFFICE:
-            selfValue = StringUtil.join(getOfficeIds(), ',');
-            otherValue = StringUtil.join(o.getOfficeIds(), ',');
-            break;
-        case OWNER:
-            selfValue = getOwner();
-            otherValue = o.getOwner();
-            break;
-        default:
-            break;
-        }
-        int result = 0;
-        switch (sortCallback.getSortDirection()) {
-        case ASCENDING:
-            result = otherValue.compareTo(selfValue);
-            break;
-        case DESCENDING:
-            result = selfValue.compareTo(otherValue);
-            break;
-        default:
-            result = 0;
-            break;
-        }
-        return result;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.ITableData#setSortCallback
-     * (com.raytheon.uf.viz.datadelivery.common.ui.ISortTable)
-     */
-    @Override
-    public void setSortCallback(ISortTable sortCallback) {
-        this.sortCallback = sortCallback;
     }
 
     /**

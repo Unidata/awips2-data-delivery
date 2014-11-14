@@ -24,11 +24,13 @@ package com.raytheon.uf.viz.datadelivery.common.ui;
  * 
  * <pre>
  * 
- * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 6, 2012            lvenable     Initial creation
+ *  SOFTWARE HISTORY
+ *  
+ *  Date         Ticket#    Engineer    Description
+ *  ------------ ---------- ----------- --------------------------
+ *  Jun  6, 2012            lvenable     Initial creation
+ *  Dec 03, 2014 3840       ccody        Removed methods used in table callback based sorting for Comparator based table sorting.
+ *                                       This Interface gives a common parent for Objects that are used to contain Table Display Data.
  * 
  * </pre>
  * 
@@ -36,6 +38,5 @@ package com.raytheon.uf.viz.datadelivery.common.ui;
  * @version 1.0
  */
 
-public interface ITableData<T extends Object> extends Comparable<T> {
-    void setSortCallback(ISortTable sortCallback);
+public interface ITableData {
 }

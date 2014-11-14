@@ -41,7 +41,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.FileUtil;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.xml.ColumnXML;
 import com.raytheon.uf.viz.datadelivery.subscription.xml.SubscriptionManagerConfigXML;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
@@ -61,6 +60,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
  * Jan 03, 2013  1437      bgonzale   Put default configuration file code here.
  * Jun 21, 2013  2130      mpduff     Fix ordering of columns.
  * Nov 06, 2013  2358      mpduff     Remove default configuration code.
+ * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
  * </pre>
  * 
  * @author mpduff
@@ -400,8 +400,8 @@ public class SubscriptionConfigurationManager {
      * @param columnName
      * @param sortDirection
      */
-    public void setSortedColumn(String columnName, SortDirection sortDirection) {
-        xml.setSortColumn(columnName, sortDirection);
+    public void setSortedColumn(String columnName, boolean sortOrder) {
+        xml.setSortColumn(columnName, sortOrder);
     }
 
     /**

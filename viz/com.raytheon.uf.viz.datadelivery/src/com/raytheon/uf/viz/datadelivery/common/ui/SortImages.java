@@ -40,6 +40,7 @@ import org.eclipse.swt.widgets.Display;
  * ------------ ---------- ----------- --------------------------
  * Mar 14, 2012            lvenable     Initial creation
  * Apr 10, 2013   1891     djohnson     Add reverse().
+ * Dec 03, 2014   3840     ccody        Correct sorting "contract violation" issue
  * 
  * </pre>
  * 
@@ -63,31 +64,6 @@ public class SortImages {
      * Array of sort images.
      */
     private Image[] sortImageArray;
-
-    /**
-     * Sort direction enumeration that identifies which image to use.
-     */
-    public enum SortDirection {
-        ASCENDING {
-            @Override
-            public SortDirection reverse() {
-                return SortDirection.DESCENDING;
-            }
-        },
-        DESCENDING {
-            @Override
-            public SortDirection reverse() {
-                return SortDirection.ASCENDING;
-            }
-        };
-
-        /**
-         * Reverse the sorting direction.
-         * 
-         * @return the reverse direction
-         */
-        public abstract SortDirection reverse();
-    };
 
     /**
      * Constructor.
@@ -129,9 +105,9 @@ public class SortImages {
 
         GC gc;
 
-        sortImageArray = new Image[SortDirection.values().length];
+        sortImageArray = new Image[2];
 
-        for (int i = 0; i < SortDirection.values().length; i++) {
+        for (int i = 0; i < 2; i++) {
 
             sortImageArray[i] = new Image(parentDisplay, imgWidthSm, imgHeight);
         }
@@ -155,7 +131,7 @@ public class SortImages {
         drawAscendingImage(gc, imgWidthSm, imgHeight);
         gc.dispose();
 
-        sortImageArray[SortDirection.ASCENDING.ordinal()] = transparentIdeaImage;
+        sortImageArray[0] = transparentIdeaImage;
         tmpImg.dispose();
 
         /*
@@ -177,7 +153,7 @@ public class SortImages {
         drawDescendingImage(gc, imgWidthSm, imgHeight);
         gc.dispose();
 
-        sortImageArray[SortDirection.DESCENDING.ordinal()] = transparentIdeaImage;
+        sortImageArray[1] = transparentIdeaImage;
         tmpImg.dispose();
     }
 
@@ -222,11 +198,16 @@ public class SortImages {
     /**
      * Get the sort image
      * 
-     * @param sd
-     *            Sort direction.
+     * @param sortDirection
+     *            Sort direction SortDirection.ASCENDING or
+     *            SortDirection.DESCENDING.
      * @return The image associated with the specified sort direction.
      */
-    public Image getImage(SortDirection sd) {
-        return this.sortImageArray[sd.ordinal()];
+    public Image getImage(SortDirection sortDirection) {
+        if (sortDirection == null) {
+            sortDirection = SortDirection.ASCENDING;
+        }
+
+        return this.sortImageArray[sortDirection.ordinal()];
     }
 }

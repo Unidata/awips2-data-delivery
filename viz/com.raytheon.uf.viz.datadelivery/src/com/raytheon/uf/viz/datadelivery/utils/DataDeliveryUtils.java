@@ -95,6 +95,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 22, 2014 2992       dhladky      Unique list of all registries with data in this node.
  * May 22, 2014 2808       dhladky      Fixed static final problem with DD ID
  * Sept 04, 2014 2131      dhladky      Added PDa data type
+ * Dec 03, 2014 3840       ccody        Added BrowserColumnNames.valueOfColumnName(String).
  * </pre>
  * 
  * @author mpduff
@@ -117,7 +118,7 @@ public class DataDeliveryUtils {
      * Required default latency value for point data.
      */
     public static final int POINT_DATASET_DEFAULT_LATENCY_IN_MINUTES = 15;
-    
+
     /**
      * Required default latency value for PDA (Sat) data.
      */
@@ -417,6 +418,24 @@ public class DataDeliveryUtils {
         public String getToolTip() {
             return toolTip;
         }
+
+        /**
+         * Find the PendingSubColumnNames value representing the given
+         * columnName.
+         * 
+         * @param columnName
+         * @return the corresponding PendingSubColumnNames enum value.
+         */
+        public static BrowserColumnNames valueOfColumnName(String columnName) {
+            for (BrowserColumnNames val : BrowserColumnNames.values()) {
+                if (val.columnName.equals(columnName)) {
+                    return val;
+                }
+            }
+            // default to NAME.
+            return NAME;
+        }
+
     }
 
     /**
@@ -802,8 +821,9 @@ public class DataDeliveryUtils {
         } else if (subscription.getDataSetType() == DataType.GRID) {
             return getMaxLatency(((GriddedTime) subscription.getTime())
                     .getCycleTimes());
-        } if (subscription.getDataSetType() == DataType.PDA) {
-            //TODO: Figure a method for actually calculating this.
+        }
+        if (subscription.getDataSetType() == DataType.PDA) {
+            // TODO: Figure a method for actually calculating this.
             return 45;
         } else {
             throw new IllegalArgumentException("Invalid Data Type: "
@@ -873,14 +893,15 @@ public class DataDeliveryUtils {
                     "Unable to retrieve Data Delivery ID from EDEX.", e);
         }
     }
-    
+
     /**
      * Gets the DD id containing site List.
+     * 
      * @return
      */
     @SuppressWarnings("unchecked")
     public static List<String> getDataDeliverySiteList() {
-        
+
         BandwidthRequest request = new BandwidthRequest();
         List<String> siteList = null;
         request.setRequestType(RequestType.GET_DATADELIVERY_REGISTRIES);
@@ -890,7 +911,8 @@ public class DataDeliveryUtils {
             siteList = (List<String>) response.getResponse();
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Unable to retrieve Data Delivery Registry list from EDEX.", e);
+                    "Unable to retrieve Data Delivery Registry list from EDEX.",
+                    e);
         }
         // Should return itself, but just in case.
         String DDid = getDataDeliveryId();
@@ -900,7 +922,7 @@ public class DataDeliveryUtils {
         }
         // remove "NCF", CAVE users don't care about things owned by NCF
         siteList.remove(RegistryUtil.defaultUser);
-        
+
         return siteList;
     }
 }

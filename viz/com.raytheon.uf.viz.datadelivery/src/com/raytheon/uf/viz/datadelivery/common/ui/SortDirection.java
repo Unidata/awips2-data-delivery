@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.viz.datadelivery.common.ui;
 
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
 
 /**
  * Interface used when sorting a table.
@@ -30,30 +29,35 @@ import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 15, 2012            lvenable     Initial creation
+ * Dec 08, 2014  3840      ccody       Initial creation
  * 
  * </pre>
  * 
- * @author lvenable
+ * @author ccody
  * @version 1.0
  */
 
-public interface ISortTable {
+/**
+ * Sort direction enumeration that identifies which image to use.
+ */
+public enum SortDirection {
+    ASCENDING {
+        @Override
+        public SortDirection reverse() {
+            return SortDirection.DESCENDING;
+        }
+    },
+    DESCENDING {
+        @Override
+        public SortDirection reverse() {
+            return SortDirection.ASCENDING;
+        }
+    };
+
     /**
-     * Get the text of the column to be sorted.
+     * Reverse the sorting direction.
      * 
-     * @return The column index.
+     * @return the reverse direction
      */
-    public String getSortColumnText();
-
-    public void setSortColumn(String columnName);
-
-    /**
-     * Get the sort direction.
-     * 
-     * @return Sort direction (Ascending, Descending)
-     */
-    public SortDirection getSortDirection();
-
-    public void setSortDirection(SortDirection direction);
+    public abstract SortDirection reverse();
 }

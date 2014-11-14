@@ -21,6 +21,7 @@ package com.raytheon.uf.viz.datadelivery.browser;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.core.notification.NotificationMessage;
 import com.raytheon.uf.viz.datadelivery.common.ui.IDialogClosed;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
+import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.ui.SubscriptionViewer;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableCompConfig;
@@ -86,6 +87,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Apr 10, 2013   1891     djohnson     Declare variable as List.
  * Sep 11, 2013   2352     mpduff       Add siteId to getSubscribedToDataSetNames method.
  * Feb 11, 2014   2771     bgonzale     Use Data Delivery ID instead of Site.
+ * Dec 03, 2014   3840     ccody        Correct sorting "contract violation" issue
  * 
  * </pre>
  * 
@@ -503,7 +505,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
         TableColumn tc = (TableColumn) event.getSource();
 
-        updateSortDirection(tc, tableData, true);
+        updateSortDirection(tc, true);
 
         sortTable();
         updateColumnSortImage();
@@ -516,7 +518,11 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         table.clearAll();
         table.removeAll();
 
-        tableData.sortData();
+        String sortedColumnText = sortedColumn.getText();
+        SortDirection sortDirection = getCurrentSortDirection();
+        Comparator<BrowserTableRowData> sortComparator = BrowserTableRowDataComparators
+                .getComparator(sortedColumnText, sortDirection);
+        tableData.sortData(sortComparator);
 
         List<BrowserTableRowData> btrdArray = tableData.getDataArray();
 
@@ -557,18 +563,6 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         this.dataList = dataList;
 
         populateTable();
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#getCurrentSortDirection
-     * ()
-     */
-    @Override
-    protected SortDirection getCurrentSortDirection() {
-        return tableData.getSortDirection();
     }
 
     /*
@@ -655,9 +649,6 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
         if (this.sortedColumn == null) {
             sortedColumn = table.getColumn(BrowserColumnNames.NAME.ordinal());
-            tableData.setSortColumn(BrowserColumnNames.NAME.getColumnName());
-        } else {
-            tableData.setSortColumn(sortedColumn.getText());
         }
 
         // Sort & update the table

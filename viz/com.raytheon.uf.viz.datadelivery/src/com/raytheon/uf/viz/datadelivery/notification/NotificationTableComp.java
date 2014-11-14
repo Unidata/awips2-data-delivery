@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.datadelivery.notification;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +51,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.viz.core.notification.NotificationMessage;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableChange;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableFind;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
+import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableCompConfig;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableDataManager;
@@ -92,6 +93,8 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * Apr 18, 2014  3012      dhladky      Null check.
  * Aug 18, 2014  2746      ccody        Non-local Subscription changes not updating dialogs
  * Oct 29, 2014  2749      ccody        Unable to change the OPSNET Bandwidth value for Data Delivery
+ * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
+ * 
  * </pre>
  * 
  * @author lvenable
@@ -360,10 +363,13 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             return;
         }
 
-        boolean clickSort = true;
-        updateSortDirection(tc, filteredTableList, clickSort);
+        SortDirection sortDirection = updateSortDirection(tc, true);
 
-        filteredTableList.sortData();
+        String sortedColumnText = this.sortedColumn.getText();
+        Comparator<NotificationRowData> sortComparator = NotificationRowDataComparators
+                .getComparator(sortedColumnText, sortDirection);
+
+        filteredTableList.sortData(sortComparator);
 
         populateTable();
         updateColumnSortImage();
@@ -609,7 +615,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         }
 
         for (NotificationRecord record : notificationList) {
-            
+
             NotificationRowData rd = new NotificationRowData();
             Integer recordId = record.getId();
             Calendar recordCalendarDate = record.getDate();
@@ -690,9 +696,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             }
         }
 
-        // Now do the configured sort
-        updateSortDirection(this.sortedColumn, filteredTableList, false);
-        filteredTableList.sortData();
+        String sortedColumnText = this.sortedColumn.getText();
+        SortDirection sortDirection = getCurrentSortDirection();
+        Comparator<NotificationRowData> sortComparator = NotificationRowDataComparators
+                .getComparator(sortedColumnText, sortDirection);
+
+        filteredTableList.sortData(sortComparator);
 
         calculateNumberOfPages();
         pageCbo.setItems(pages.toArray(new String[0]));
@@ -704,9 +713,10 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     }
 
     private void sortByTime(TableDataManager<NotificationRowData> data) {
-        data.setSortDirection(SortDirection.DESCENDING);
-        data.setSortColumn("Time");
-        data.sortData();
+
+        Comparator<NotificationRowData> sortComparator = NotificationRowDataComparators
+                .getComparator("Time", SortDirection.DESCENDING);
+        data.sortData(sortComparator);
     }
 
     /**
@@ -863,14 +873,6 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     }
 
     /**
-     * Get the current sort direction.
-     */
-    @Override
-    protected SortDirection getCurrentSortDirection() {
-        return filteredTableList.getSortDirection();
-    }
-
-    /**
      * Create table columns.
      */
     @Override
@@ -904,8 +906,6 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         }
         pImage.setPriorityDisplay(pd);
 
-        SortDirection sortDir = SortDirection.DESCENDING;
-
         // Get the ones that are visible
         for (ColumnXML column : columnList) {
             if (column.isVisible()) {
@@ -934,16 +934,16 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
                 // Find which column is configured to be the sort column
                 if (column.isSortColumn()) {
-                    sortedColumn = tc;
+                    this.sortedColumn = tc;
                 }
 
+                SortDirection sortDirection = SortDirection.ASCENDING;
                 // Check if any columns set to descending
-                sortDir = SortDirection.DESCENDING;
-                if (column.isSortAsc()) {
-                    sortDir = SortDirection.ASCENDING;
+                if (column.isSortAsc() == false) {
+                    sortDirection = SortDirection.DESCENDING;
                 }
 
-                sortDirectionMap.put(colName, sortDir);
+                sortDirectionMap.put(colName, sortDirection);
             }
         }
     }
@@ -958,7 +958,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             return;
         }
 
-        filteredTableList.sortData();
+        String sortedColumnText = this.sortedColumn.getText();
+        SortDirection sortDirection = getCurrentSortDirection();
+        Comparator<NotificationRowData> sortComparator = NotificationRowDataComparators
+                .getComparator(sortedColumnText, sortDirection);
+
+        filteredTableList.sortData(sortComparator);
 
         TableColumn[] columns = table.getColumns();
 

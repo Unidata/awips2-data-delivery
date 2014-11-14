@@ -20,13 +20,11 @@
 package com.raytheon.uf.viz.datadelivery.browser;
 
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
-import com.raytheon.uf.viz.datadelivery.common.ui.ISortTable;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableData;
-import com.raytheon.uf.viz.datadelivery.common.ui.SortImages.SortDirection;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.BrowserColumnNames;
 
 /**
- * TODO Add Description
+ * Display Data container object for
+ * {@link com.raytheon.uf.common.datadelivery.registry.DataSet} object data.
  * 
  * <pre>
  * 
@@ -39,6 +37,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.BrowserColumnNam
  * Aug 06, 2012   955      djohnson     Use {@link DataSet}.
  * Aug 10, 2012   1022     djohnson     Use GriddedDataSet.
  * Aug 22, 2012   0743     djohnson     Convert back to DataSet.
+ * Dec 03, 2014   3840     ccody        Correct sorting "contract violation" issue
  * 
  * </pre>
  * 
@@ -46,7 +45,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.BrowserColumnNam
  * @version 1.0
  */
 
-public class BrowserTableRowData implements ITableData<BrowserTableRowData> {
+public class BrowserTableRowData implements ITableData {
 
     /**
      * Dataset name.
@@ -69,11 +68,6 @@ public class BrowserTableRowData implements ITableData<BrowserTableRowData> {
     private DataSet dataSet;
 
     /**
-     * Sort callback.
-     */
-    private ISortTable sortCallback;
-
-    /**
      * Constructor
      */
     public BrowserTableRowData() {
@@ -90,8 +84,8 @@ public class BrowserTableRowData implements ITableData<BrowserTableRowData> {
      * @param subscriptionName
      *            Subscription name.
      */
-    public BrowserTableRowData(String dataSetName, String providerName, String subscriptionName,
- DataSet dataSet) {
+    public BrowserTableRowData(String dataSetName, String providerName,
+            String subscriptionName, DataSet dataSet) {
         this.dataSetName = dataSetName;
         this.providerName = providerName;
         this.subscriptionName = subscriptionName;
@@ -168,56 +162,4 @@ public class BrowserTableRowData implements ITableData<BrowserTableRowData> {
         this.dataSet = datasetMetaData;
     }
 
-    @Override
-    public void setSortCallback(ISortTable sortCallback) {
-        this.sortCallback = sortCallback;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Comparable#compareTo(java.lang.Object)
-     */
-    @Override
-    public int compareTo(BrowserTableRowData otherObj) {
-        int returnValue = 0;
-
-        String selectedColumn = "";
-        SortDirection direction = SortDirection.ASCENDING;
-
-        if (sortCallback != null) {
-            selectedColumn = sortCallback.getSortColumnText();
-            direction = sortCallback.getSortDirection();
-        }
-
-        String sortValue = this.getSortValue(selectedColumn);
-
-        returnValue = sortValue.toUpperCase().compareTo(otherObj.getSortValue(selectedColumn).toUpperCase());
-
-        if (direction == SortDirection.DESCENDING) {
-            returnValue *= -1;
-        }
-
-        return returnValue;
-    }
-
-    /**
-     * Get the sort value.
-     * 
-     * @param columnName
-     *            Name of the column.
-     * @return The string to sort on.
-     */
-    private String getSortValue(String columnName) {
-        if (columnName.equals(BrowserColumnNames.NAME.getColumnName())) {
-            return this.dataSetName;
-        }
-        else if (columnName.equals(BrowserColumnNames.PROVIDER.getColumnName())) {
-            return this.providerName;
-        }
-        else if (columnName.equals(BrowserColumnNames.SUBSCRIPTION.getColumnName())) {
-            return this.subscriptionName;
-        }
-        return "";
-    }
 }

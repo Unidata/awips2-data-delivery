@@ -21,12 +21,10 @@ package com.raytheon.uf.viz.datadelivery.subscription;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +69,6 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.registry.handler.RegistryObjectHandlers;
-import com.raytheon.uf.common.site.SiteData;
-import com.raytheon.uf.common.site.SiteMap;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -156,10 +152,11 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Feb 04, 2014   2722     mpduff     Add auto-refresh task.
  * Feb 14, 2014   2806     mpduff     Disable activate/deactivate buttons when viewing other site's subscriptions
  * Feb 11, 2014   2771     bgonzale   Use Data Delivery ID instead of Site.
- * Mar 24, 2014  #2951     lvenable     Added dispose checks for SWT widgets.
- * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
- * Apr 2,  2014 2974       dhladky      DD ID added to list for dropdowns in DD.
+ * Mar 24, 2014  #2951     lvenable   Added dispose checks for SWT widgets.
+ * Mar 31, 2014 2889       dhladky    Added username for notification center tracking.
+ * Apr 2,  2014 2974       dhladky    DD ID added to list for dropdowns in DD.
  * Apr 18, 2014  3012      dhladky    Null check.
+ * Dec 03, 2014  3840      ccody      Correct sorting "contract violation" issue
  * 
  * </pre>
  * 
@@ -1204,7 +1201,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
                         try {
                             SubscriptionServiceResult response = subscriptionService
-                                    .update(username, sub, forceApplyPromptDisplayText);
+                                    .update(username, sub,
+                                            forceApplyPromptDisplayText);
                             if (response.hasMessageToDisplay()) {
                                 DataDeliveryUtils.showMessage(getShell(),
                                         SWT.OK, sub.getName() + " Activated",
@@ -1375,8 +1373,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         if (sortedTableColumn == null) {
             sortedTableColumn = tableComp.getTable().getColumn(0);
         }
-        tableComp.updateSortDirection(sortedTableColumn,
-                tableComp.getSubscriptionData(), false);
+        tableComp.updateSortDirection(sortedTableColumn, false);
         tableComp.populateTable();
     }
 
