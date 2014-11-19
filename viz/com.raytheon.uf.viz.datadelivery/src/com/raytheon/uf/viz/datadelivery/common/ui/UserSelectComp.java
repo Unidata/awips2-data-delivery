@@ -103,6 +103,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
  * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
  * Oct 28, 2014   2748     ccody        Remove Live update. Updates are event driven.
+ * Nov 19, 2014  3851      dhladky      Fixed userName subscription selection bounce back on change of user.
  * </pre>
  * 
  * @author jpiatt
@@ -144,6 +145,9 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
     private final Map<String, Map<String, Subscription>> userMap = new HashMap<String, Map<String, Subscription>>();
 
     private final Set<String> initiallySelectedSubscriptions = new HashSet<String>();
+    
+    /** Keeps track of UserName in selection combo **/
+    private String previousUserNameComboSelection = "";
 
     /**
      * Registry handler for subscriptions.
@@ -232,7 +236,10 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
      * Handle a different user selected from the combo box.
      */
     private void handleUserSelect() {
-        populateUserSubscriptions(userNameCombo.getText());
+        if (!userNameCombo.getText().equals(previousUserNameComboSelection)) {
+            populateUserSubscriptions(userNameCombo.getText());
+            previousUserNameComboSelection = userNameCombo.getText();
+        }
     }
 
     /**
