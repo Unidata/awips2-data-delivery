@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.datadelivery.common.ui;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +45,7 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
@@ -103,13 +105,14 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
  * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
  * Oct 28, 2014   2748     ccody        Remove Live update. Updates are event driven.
+ * Nov 19, 2014  3850      dhladky      Bad cast from Subscription to InitialPendingSubscription.
  * Nov 19, 2014  3851      dhladky      Fixed userName subscription selection bounce back on change of user.
  * </pre>
  * 
  * @author jpiatt
  * @version 1.0
  */
-public class UserSelectComp extends Composite implements IUpdate, IDisplay,
+public class UserSelectComp<T extends Time, C extends Coverage> extends Composite implements IUpdate, IDisplay,
         IForceApplyPromptDisplayText {
 
     /** Status Handler */
@@ -142,7 +145,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
     private DualListConfig dualConfig;
 
     /** map to hold user subscriptions */
-    private final Map<String, Map<String, Subscription>> userMap = new HashMap<String, Map<String, Subscription>>();
+    private final Map<String, Map<String, Subscription<T, C>>> userMap = new HashMap<String, Map<String, Subscription<T, C>>>();
 
     private final Set<String> initiallySelectedSubscriptions = new HashSet<String>();
     
@@ -249,6 +252,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
 
         final String ownerToUse = (owner == null) ? currentUser : owner;
 
+        @SuppressWarnings("rawtypes")
         List<Subscription> results = Collections.emptyList();
         try {
             results = subHandler.getByOwner(ownerToUse);
@@ -259,9 +263,9 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
         }
 
         ArrayList<String> fullList = new ArrayList<String>();
-        Map<String, Subscription> hMap = new HashMap<String, Subscription>();
+        Map<String, Subscription<T, C>> hMap = new HashMap<String, Subscription<T, C>>();
 
-        for (Subscription subscription : results) {
+        for (Subscription<T, C> subscription : results) {
 
             String subName = subscription.getName();
             String user = subscription.getOwner();
@@ -288,7 +292,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
     public void getSubscriptionNames(String groupName) {
 
         String owner = userNameCombo.getText();
-        Map<String, Subscription> ownerSubs = userMap.get(owner);
+        Map<String, Subscription<T, C>> ownerSubs = userMap.get(owner);
 
         Set<String> selectedSubscriptionNames = Sets.newHashSet(dualList
                 .getSelectedListItems());
@@ -296,11 +300,11 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
         Set<String> differences = Sets.symmetricDifference(
                 selectedSubscriptionNames, initiallySelectedSubscriptions);
 
-        Set<Subscription> addedToGroup = new HashSet<Subscription>();
-        Set<Subscription> removedFromGroup = new HashSet<Subscription>();
+        Set<Subscription<T, C>> addedToGroup = new HashSet<Subscription<T, C>>();
+        Set<Subscription<T, C>> removedFromGroup = new HashSet<Subscription<T, C>>();
 
         for (String subscriptionName : differences) {
-            final Subscription subscription = ownerSubs.get(subscriptionName);
+            final Subscription<T, C> subscription = ownerSubs.get(subscriptionName);
             if (selectedSubscriptionNames.contains(subscriptionName)) {
                 addedToGroup.add(subscription);
             } else {
@@ -320,25 +324,26 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
      * @param addedToGroup
      * @param removedFromGroup
      */
+    @SuppressWarnings("unchecked")
     private void updateGroupDefinition(String groupName,
-            Set<Subscription> addedToGroup, Set<Subscription> removedFromGroup) {
+            Set<Subscription<T, C>> addedToGroup, Set<Subscription<T, C>> removedFromGroup) {
 
         ITimer timer = TimeUtil.getPriorityEnabledTimer(statusHandler,
                 Priority.DEBUG);
         timer.start();
 
-        for (Subscription subscription : removedFromGroup) {
+        for (Subscription<T, C> subscription : removedFromGroup) {
             subscription.setGroupName(GroupDefinition.NO_GROUP);
         }
 
-        for (Subscription subscription : addedToGroup) {
+        for (Subscription<T, C> subscription : addedToGroup) {
             subscription.setGroupName(groupName);
         }
 
-        Set<Subscription> groupSubscriptionsForUpdate = Collections.emptySet();
+        Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections.emptySet();
         try {
-            groupSubscriptionsForUpdate = new HashSet<Subscription>(
-                    DataDeliveryHandlers.getSubscriptionHandler()
+            groupSubscriptionsForUpdate = new HashSet<Subscription<T, C>>(
+                    (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers.getSubscriptionHandler()
                             .getByGroupName(groupName));
 
             // Remove any that are set to be removed from the group
@@ -369,9 +374,10 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
      * @param groupName
      *            The name of the group
      */
+    @SuppressWarnings("unchecked")
     private void updateGroupDefinitionForSubscriptions(String groupName,
-            Set<Subscription> groupSubscriptions,
-            Set<Subscription> removeFromGroupSubscriptions) {
+            Set<Subscription<T, C>> groupSubscriptions,
+            Set<Subscription<T, C>> removeFromGroupSubscriptions) {
 
         // Get Group Definition
         GroupDefinition groupDefinition = GroupDefinitionManager
@@ -381,7 +387,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
             groupDefinition.setGroupName(groupName);
         }
 
-        for (Subscription subscription : groupSubscriptions) {
+        for (Subscription<T, C> subscription : groupSubscriptions) {
             DataSizeUtils<?> sizeUtils = null;
             // Apply group properties to subscription definition
             subscription.setGroupName(groupName);
@@ -411,6 +417,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
             if (subscription.getCoverage() != null
                     && groupDefinition.isArealDataSet()) {
 
+                @SuppressWarnings("rawtypes")
                 DataSet dataset = MetaDataManager.getInstance().getDataSet(
                         subscription.getDataSetName(),
                         subscription.getProvider());
@@ -420,7 +427,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
                 Coverage cov = new GriddedCoverage();
                 cov.setEnvelope(groupDefinition.getEnvelope());
 
-                subscription.setCoverage(cov);
+                subscription.setCoverage((C) cov);
             }
 
             subscription.addOfficeID(DataDeliveryUtils.getDataDeliveryId());
@@ -432,6 +439,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
 
         try {
 
+            @SuppressWarnings("rawtypes")
             List<Subscription> pendingSubscriptionList = new ArrayList<Subscription>(
                     Sets.union(groupSubscriptions, removeFromGroupSubscriptions));
             final SubscriptionServiceResult result = DataDeliveryServices
@@ -440,11 +448,10 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
 
             ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
                     .getSubscriptionNotificationService();
-            for (Subscription pendingSubscription : pendingSubscriptionList) {
+            for (Subscription<T, C> pendingSubscription : pendingSubscriptionList) {
+                InitialPendingSubscription<T,C> pendingSub = pendingSubscription.initialPending(currentUser);
                 subscriptionNotificationService
-                        .sendUpdatedPendingSubscriptionNotification(
-                                (InitialPendingSubscription) pendingSubscription,
-                                currentUser);
+                        .sendUpdatedPendingSubscriptionNotification(pendingSub, currentUser);
             }
 
             if (result.hasMessageToDisplay()) {
@@ -498,11 +505,11 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
         dualList.clearAvailableList(true);
 
         initiallySelectedSubscriptions.clear();
-        Map<String, Subscription> sMap = userMap.get(userNameCombo.getText());
+        Map<String, Subscription<T, C>> sMap = userMap.get(userNameCombo.getText());
 
         for (String subscriptionName : sMap.keySet()) {
 
-            Subscription sub = sMap.get(subscriptionName);
+            Subscription<T, C> sub = sMap.get(subscriptionName);
 
             if (groupName.equals(sub.getGroupName())) {
                 initiallySelectedSubscriptions.add(subscriptionName);
@@ -525,6 +532,7 @@ public class UserSelectComp extends Composite implements IUpdate, IDisplay,
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("rawtypes")
     @Override
     public String getOptionDisplayText(ForceApplyPromptResponse option,
             int requiredLatency, Subscription subscription,
