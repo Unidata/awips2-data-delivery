@@ -27,11 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TimerTask;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
@@ -121,6 +116,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Oct 03, 2014   2749     ccody       Unable to change the OPSNET Bandwidth value for Data Delivery
  *  Oct 28, 2014   2748     ccody       Changes for receiving Subscription Status changes
  *                                      Add configurable graph update latency
+ *  Nov 19, 2014   3852     dhladky     Fixed overload state with Notification Records.
  * </pre>
  * 
  * @author lvenable
@@ -207,11 +203,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** The subscription names */
     private Collection<String> subscriptionNames;
 
-    /** The update timer */
-    private ScheduledExecutorService timer;
-
     /** Graph Update Interval */
-    private long updateIntervalMils = 0;
+    private long updateIntervalMils = 0L;
 
     /** Last graph update time */
     private long lastUpdateTime = 0L;
@@ -361,9 +354,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 if (graphDataUtil != null) {
                     graphDataUtil.cancelThread();
                 }
-                if (timer != null) {
-                    timer.shutdown();
-                }
+
                 NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC,
                         bandwidthCanvasComp);
             }
@@ -383,10 +374,13 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             }
         });
 
-        /** Set Bandwidth Graph Update Latency **/
-        updateIntervalMils = retrieveBandwidthBucketSizeMils();
+        /**
+         * Set Bandwidth Graph Update Latency bandwidth bucket size is 3 mins.
+         * Divided by 4 so that the update frequency is something modest in
+         * between 1 min and 30 seconds.
+         **/
+        updateIntervalMils = retrieveBandwidthBucketSizeMils() / 4;
 
-        createTimer();
         /** Listen for NotificationMessage events */
         NotificationManagerJob.addObserver(NOTIFY_MESSAGE_TOPIC, this);
     }
@@ -490,18 +484,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
         boolean isUpdateNeeded = isUpdateableNotification(messages);
-        if (isUpdateNeeded == true) {
+        long timeDiff = TimeUtil.currentTimeMillis() - lastUpdateTime;
+        if (isUpdateNeeded == true && (timeDiff > updateIntervalMils)) {
             dataUpdated();
         }
-    }
-
-    /**
-     * Create the live update timer.
-     */
-    private void createTimer() {
-        timer = Executors.newSingleThreadScheduledExecutor();
-        timer.scheduleAtFixedRate(new UpdateTask(), this.updateIntervalMils,
-                this.updateIntervalMils, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -1611,23 +1597,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     }
 
     /**
-     * Live update inner class
-     */
-    private class UpdateTask extends TimerTask {
-        @Override
-        public void run() {
-            long currentDateTime = System.currentTimeMillis();
-            // Timer fires every 2 minutes.
-            // Allow for some "latency" (2 sec)
-            long modCurrentDateTime = currentDateTime - 2000;
-            if ((lastUpdateTime + updateIntervalMils) >= (modCurrentDateTime)) {
-                lastUpdateTime = currentDateTime;
-                dataUpdated();
-            }
-        }
-    }
-
-    /**
      * This will update the graph as the data has been updated.
      * 
      * This method runs asynchronously.
@@ -1647,7 +1616,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
                 try {
                     BandwidthGraphData tempData = graphDataUtil.getGraphData();
-
                     setGraphData(tempData);
                 } catch (Exception ex) {
                     statusHandler

@@ -116,6 +116,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Mar 24, 2014  #2951     lvenable     Added dispose checks for SWT widgets.
  * Apr 18, 2014  3012      dhladky      Null check.
  * Oct 28, 2014  2748      ccody       Changes for receiving Subscription Status changes
+ * Nov 19, 2014  3852      dhladky      Fixed message overload problem.
  * @version 1.0
  */
 
@@ -147,6 +148,9 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /** Filters out which subscriptions to show **/
     private ISubscriptionManagerFilter subscriptionFilter;
+    
+    /** Subscription Data Update Interval / Protection from server update overload */
+    private long updateIntervalMils = 30000l;
 
     /**
      * Enumeration to determine the type of subscription dialog this class is
@@ -776,8 +780,9 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
             VizApp.runAsync(new Runnable() {
                 @Override
                 public void run() {
-                    lastUpdateTime = TimeUtil.currentTimeMillis();
-                    if (!isDisposed()) {
+                    // Protection to keep server updates from swamping the dialog
+                    long TimeDiff = TimeUtil.currentTimeMillis() - getLastUpdateTime();
+                    if (!isDisposed() && (TimeDiff > updateIntervalMils)) {
                         handleRefresh();
                     }
                 }

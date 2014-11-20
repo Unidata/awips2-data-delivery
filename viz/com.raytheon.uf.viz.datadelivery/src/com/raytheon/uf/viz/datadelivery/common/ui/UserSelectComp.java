@@ -107,6 +107,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Oct 28, 2014   2748     ccody        Remove Live update. Updates are event driven.
  * Nov 19, 2014  3850      dhladky      Bad cast from Subscription to InitialPendingSubscription.
  * Nov 19, 2014  3851      dhladky      Fixed userName subscription selection bounce back on change of user.
+ * Nov 19, 2014  3852      dhladky      Resurrected the unscheduled state.
  * </pre>
  * 
  * @author jpiatt
@@ -542,7 +543,13 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
         switch (option) {
         case CANCEL:
             return "Do not update the group definition.";
-        case FORCE_APPLY:
+        case FORCE_APPLY_DEACTIVATED:
+            if (singleSubscription) {
+                return "Update the group definition and unschedule "
+                        + wouldBeUnscheduledSubscriptions.iterator().next();
+            }
+            return "Update the group definition and unschedule the subscriptions";
+        case FORCE_APPLY_UNSCHEDULED:
             if (singleSubscription) {
                 return "Update the group definition and unschedule "
                         + wouldBeUnscheduledSubscriptions.iterator().next();

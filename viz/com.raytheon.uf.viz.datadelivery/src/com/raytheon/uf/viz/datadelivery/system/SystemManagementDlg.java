@@ -66,6 +66,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Aug 08, 2013 2180       mpduff      Redesigned UI.
  * Oct 03, 2013 2386       mpduff      Implemented multiple data types for overlap rules
  * Nov 19, 2013 2387       skorolev    Add timer for status refresh.
+ * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
  * 
  * </pre>
  * 
@@ -462,7 +463,14 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         switch (option) {
         case CANCEL:
             return "Do not update the rules";
-        case FORCE_APPLY:
+        // In this case FORCE_APPLY_DEACTIVATED and FORCE_APPLY_UNSCHEDULED are equivalent
+        case FORCE_APPLY_DEACTIVATED:
+            if (singleSubscription) {
+                return "Update the rules and unschedule "
+                        + wouldBeUnscheduledSubscriptions.iterator().next();
+            }
+            return "Update the rules and unschedule the subscriptions";
+        case FORCE_APPLY_UNSCHEDULED:
             if (singleSubscription) {
                 return "Update the rules and unschedule "
                         + wouldBeUnscheduledSubscriptions.iterator().next();

@@ -1008,7 +1008,15 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         switch (option) {
         case CANCEL:
             return "Do not store the adhoc query";
-        case FORCE_APPLY:
+        case FORCE_APPLY_DEACTIVATED:
+            if (singleSubscription
+                    && wouldBeUnscheduledSubscriptions.contains(subscription
+                            .getName())) {
+                // Can't force apply a query that won't ever be processed
+                return null;
+            }
+            return "Store the adhoc query and unschedule the subscriptions";
+        case FORCE_APPLY_UNSCHEDULED:
             if (singleSubscription
                     && wouldBeUnscheduledSubscriptions.contains(subscription
                             .getName())) {

@@ -41,6 +41,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.IForceA
  * May 28, 2013 1650      djohnson     More information when failing to schedule subscriptions.
  * Jan 17, 2014 2459      mpduff       Change gui usage of unscheduled to deactivated.
  * Jan 26, 2014 2459      mpduff       Change unscheduled label to deactivated.
+ * Nov 19, 2014 3852      dhladky      Resurrected the Unscheduled state
  * 
  * </pre>
  * 
@@ -86,7 +87,7 @@ public class CancelForceApplyAndIncreaseLatencyDisplayText implements
         switch (option) {
         case CANCEL:
             return "Do not " + actionText + " " + name;
-        case FORCE_APPLY:
+        case FORCE_APPLY_DEACTIVATED:
             if (singleSubscription
                     && wouldBeUnscheduledSubscriptions.contains(name)) {
                 return titleCaseActionText + " " + name
@@ -94,6 +95,14 @@ public class CancelForceApplyAndIncreaseLatencyDisplayText implements
             }
             return titleCaseActionText + " " + name
                     + " and deactivate the others";
+        case FORCE_APPLY_UNSCHEDULED:
+            if (singleSubscription
+                    && wouldBeUnscheduledSubscriptions.contains(name)) {
+                return titleCaseActionText + " " + name
+                        + " and leave in an Unscheduled state";
+            }
+            return titleCaseActionText + " " + name
+                    + " and unschedule the others";
         case EDIT_SUBSCRIPTIONS:
             return "Edit the "
                     + ((singleSubscription) ? "subscription" : "subscriptions");

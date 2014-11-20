@@ -152,6 +152,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 12, 2014 3707       dhladky      Changed the way gridded subscriptions are triggerd for retrieval.
  * Oct 28, 2014 2748       ccody        Subscription outside of Active period should not throw an exception
  * Nov 03, 2014 2414       dhladky      Refactored bandwidth Manager, better documented methods, fixed race conditions.
+ * Nov 19, 2014 3852       dhladky      Fixed un-safe empty allocation state that broke Maintenance Task.
  * </pre>
  * 
  * @author dhladky
@@ -688,30 +689,34 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             List<BandwidthSubscription> currentBandwidthSubscriptions = bandwidthDao
                     .getBandwidthSubscription(subscription);
 
-            // Get the latest/max scheduled time
-            Calendar max = currentBandwidthSubscriptions.get(0)
-                    .getBaseReferenceTime();
-            for (BandwidthSubscription bs : currentBandwidthSubscriptions) {
-                if (bs.getBaseReferenceTime().after(max)) {
-                    max = bs.getBaseReferenceTime();
+            // Added safety checks 
+            if (!currentBandwidthSubscriptions.isEmpty() && !retrievalTimes.isEmpty()) {
+                // Get the latest/max scheduled time
+                Calendar max = currentBandwidthSubscriptions.get(0)
+                        .getBaseReferenceTime();
+                for (BandwidthSubscription bs : currentBandwidthSubscriptions) {
+                    if (bs.getBaseReferenceTime().after(max)) {
+                        max = bs.getBaseReferenceTime();
+                    }
                 }
-            }
-
-            /*
-             * Add 2 minutes to the max to cover averaged values that increased
-             * and remove any retrieval times before the last scheduled time
-             * (max)
-             */
-            max.add(Calendar.MINUTE, 2);
-            Iterator<Calendar> iter = retrievalTimes.iterator();
-            while (iter.hasNext()) {
-                Calendar c = iter.next();
-                if (c.before(max)) {
-                    iter.remove();
+            
+                /*
+                 * Add 2 minutes to the max to cover averaged values that
+                 * increased and remove any retrieval times before the last
+                 * scheduled time (max)
+                 */
+                max.add(Calendar.MINUTE, 2);
+                Iterator<Calendar> iter = retrievalTimes.iterator();
+                while (iter.hasNext()) {
+                    Calendar c = iter.next();
+                    if (c.before(max)) {
+                        iter.remove();
+                    }
                 }
-            }
 
-            scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
+                scheduleSubscriptionForRetrievalTimes(subscription,
+                        retrievalTimes);
+            }
         }
     }
 

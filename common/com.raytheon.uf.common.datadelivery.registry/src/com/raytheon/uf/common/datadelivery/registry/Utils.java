@@ -24,6 +24,7 @@ import com.vividsolutions.jts.geom.Polygon;
  * Nov 20, 2012   1286      djohnson    Add UNSCHEDULED.
  * Jan 14, 2014   2459      mpduff      Change Subscription status code.
  * Jan 17, 2014   2459      mpduff      Remove unscheduled status, not just deactivated.
+ * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
  * 
  * </pre>
  * 
@@ -89,6 +90,7 @@ public class Utils {
      * Active - Currently scheduled
      * Inactive - Not currently scheduled (outside of active period)
      * Invalid - Subscription does not match the available data set
+     * Unscheduled - Subscription is ON, but no room to schedule.
      * </pre>
      */
     public static enum SubscriptionStatus {
@@ -102,7 +104,9 @@ public class Utils {
         /** Deactivated Subscription Status */
         DEACTIVATED("Deactivated"),
         /** Invalid Subscription Status */
-        INVALID("Invalid");
+        INVALID("Invalid"),
+        /** UNscheduled status */
+        UNSCHEDULED("Unscheduled");
 
         private final String status;
 

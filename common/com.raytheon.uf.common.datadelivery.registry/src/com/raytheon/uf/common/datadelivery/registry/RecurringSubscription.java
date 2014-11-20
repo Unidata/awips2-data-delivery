@@ -82,6 +82,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
  * Sept 05, 2014 2131      dhladky      Added PDA data types
  * Sept 14, 2014 2131      dhladky      PDA updates
+ * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
  * 
  * </pre>
  * 
@@ -958,6 +959,8 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
             return SubscriptionStatus.EXPIRED;
         } else if (subscriptionState == SubscriptionState.OFF) {
             return SubscriptionStatus.DEACTIVATED;
+        } else if (isUnscheduled()) {
+            return SubscriptionStatus.UNSCHEDULED;
         }
 
         // At this point the subscription is in the ON state

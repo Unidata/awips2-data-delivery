@@ -102,6 +102,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Feb 04, 2014  2677      mpduff       Don't do overlap checks when deactivating subs.
  * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
  * Oct 15, 2014  3664      ccody        Added notification for scheduling status of subscriptions changes
+ * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
  * 
  * </pre>
  * 
@@ -209,7 +210,7 @@ public class SubscriptionService implements ISubscriptionService {
      * Enumeration of force apply responses.
      */
     public static enum ForceApplyPromptResponse {
-        CANCEL, INCREASE_LATENCY, EDIT_SUBSCRIPTIONS, FORCE_APPLY;
+        CANCEL, INCREASE_LATENCY, EDIT_SUBSCRIPTIONS, FORCE_APPLY_DEACTIVATED, FORCE_APPLY_UNSCHEDULED;
     }
 
     /**
@@ -627,47 +628,26 @@ public class SubscriptionService implements ISubscriptionService {
                             .sendSubscriptionUnscheduledNotification(
                                     subscription, notificationSB.toString(),
                                     username);
-
-                    // Intentional fall-through
-                case FORCE_APPLY:
-                    // Have to make sure we set them to not be unscheduled, let
+                
+                case FORCE_APPLY_DEACTIVATED:
+                    // Have to make sure we set them to NOT BE UNSCHEDULED, let
                     // the bandwidth manager decide they can't be scheduled
                     for (Subscription temp : subscriptions) {
                         temp.setUnscheduled(false);
                     }
-                    String successMessage = action.call();
+                    String successMessageDeactivate = action.call();
 
-                    final Set<String> unscheduled = bandwidthService
-                            .schedule(subscriptions);
-
-                    updateSubscriptionsByNameToUnscheduled(username,
-                            unscheduled);
-
-                    StringBuilder sb = new StringBuilder(successMessage);
-                    getUnscheduledSubscriptionsPortion(sb, unscheduled);
-
-                    if ((unscheduled != null)
-                            && (unscheduled.isEmpty() == false)) {
-
-                        Map<String, Subscription> allSubscriptionMap = new HashMap<String, Subscription>();
-                        String name = null;
-                        for (Subscription sub : subscriptions) {
-                            name = sub.getName();
-                            allSubscriptionMap.put(name, sub);
-                        }
-
-                        // Publish Notification events
-                        String msg = " is unscheduled.";
-                        for (String unSchedSubName : unscheduled) {
-                            Subscription unSchedSub = allSubscriptionMap
-                                    .get(unSchedSubName);
-                            notificationService
-                                    .sendSubscriptionUnscheduledNotification(
-                                            unSchedSub, msg, username);
-                        }
+                    return getForceApplyMessage(subscriptions, successMessageDeactivate, username);
+                case FORCE_APPLY_UNSCHEDULED:
+                    // Have to make sure we set them to BE UNSCHEDULED. We don't
+                    // want the bandwidth manager scheduling it.... YET.
+                    for (Subscription temp : subscriptions) {
+                        temp.setUnscheduled(true);
                     }
+                    String successMessageUnscheduled = action.call();
 
-                    return new SubscriptionServiceResult(sb.toString());
+                    return getForceApplyMessage(subscriptions,
+                            successMessageUnscheduled, username);
                 case CANCEL:
                     return new SubscriptionServiceResult(true);
                 case EDIT_SUBSCRIPTIONS:
@@ -859,15 +839,70 @@ public class SubscriptionService implements ISubscriptionService {
 
         Time subTime = subscription.getTime();
 
+        // gridded subs
         if (subTime instanceof GriddedTime) {
             return SystemRuleManager.getInstance().getLatency(subscription,
                     Sets.newTreeSet(((GriddedTime) subTime).getCycleTimes()));
+            // point subs
         } else if (subTime instanceof PointTime) {
             return ((PointTime) subTime).getInterval();
-        } else {
+            // PDA, general data type subscriptions
+        } else if (subTime instanceof Time) {
+            return subscription.getLatencyInMinutes();
+        } else
             throw new IllegalArgumentException(subTime.getClass()
                     + " Not yet implemented!");
+    }
+    
+    /**
+     * Handle the FORCE case for subscription proposal.
+     * We create the part of the Result message for the Proposal of the forcing.
+     * In particular the part describing whether everything can or can't be scheduled.
+     * This is handed back to the dialog and displayed to the user.
+     * 
+     * @param subscriptions
+     * @param successMessage
+     * @param username
+     * @return
+     */
+    private SubscriptionServiceResult getForceApplyMessage(List<Subscription> subscriptions, String successMessage, String username) {
+
+
+        final Set<String> unscheduled = bandwidthService
+                .schedule(subscriptions);
+
+        try {
+            updateSubscriptionsByNameToUnscheduled(username,
+                    unscheduled);
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.ERROR, "Can't update Subscription To set UNSCHEDULED! "+unscheduled, e);
         }
 
+        StringBuilder sb = new StringBuilder(successMessage);
+        getUnscheduledSubscriptionsPortion(sb, unscheduled);
+
+        if ((unscheduled != null)
+                && (unscheduled.isEmpty() == false)) {
+
+            Map<String, Subscription> allSubscriptionMap = new HashMap<String, Subscription>();
+            String name = null;
+            for (Subscription sub : subscriptions) {
+                name = sub.getName();
+                allSubscriptionMap.put(name, sub);
+            }
+
+            // Publish Notification events
+            String msg = " is unscheduled.";
+            for (String unSchedSubName : unscheduled) {
+                Subscription unSchedSub = allSubscriptionMap
+                        .get(unSchedSubName);
+                notificationService
+                        .sendSubscriptionUnscheduledNotification(
+                                unSchedSub, msg, username);
+            }
+        }
+
+        return new SubscriptionServiceResult(sb.toString());
     }
+
 }
