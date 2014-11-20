@@ -28,6 +28,7 @@ import oasis.names.tc.ebxml.regrep.xsd.rim.v4.VersionInfoType;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import com.raytheon.uf.common.registry.constants.RegistryObjectTypes;
 import com.raytheon.uf.common.registry.constants.StatusTypes;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -54,6 +55,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.EbxmlObjectUtil;
  * 12/2/2013    1829        bphillip    Uses correct getter for getting date time value
  * 2/19/2014    2769        bphillip    Refactored to no longer extend Runnable
  * 7/28/2014    2752        dhladky     Fixed bad default user setup.
+ * 11/19/2014   3586        dhladky     Added registry object type.  
  * </pre>
  * 
  * @author bphillip
@@ -116,6 +118,7 @@ public class FederatedRegistryMonitor {
                 regObj.setVersionInfo(new VersionInfoType());
                 regObj.setStatus(StatusTypes.APPROVED);
                 regObj.getSlot().add(slot);
+                regObj.setObjectType(RegistryObjectTypes.REGISTRY_OBJECT);
                 registryObjectDao.create(regObj);
             } else {
                 DateTimeValueType dateTime = (DateTimeValueType) regObj
