@@ -71,6 +71,7 @@
         <!-- sat plugins -->
         <include>satellite-common.xml</include>
         <include>satellite-dataplugin-common.xml</include>
+        <include>goessounding-common.xml</include>
         <!--  grid plugins -->
         <include>grid-common.xml</include>
         <include>grid-metadata.xml</include>

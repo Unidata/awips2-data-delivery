@@ -53,6 +53,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Jun 13, 2014 3120       dhladky     Initial creation
  * Sept 04, 2014 3121      dhladky     Sharpened the retrieval mechanism.
  * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
+ * Dec 03, 2014  3826      dhladky     PDA test readiness
  * 
  * </pre>
  * 
@@ -64,7 +65,7 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARetrievalAdapter.class);
     
-    private static final String fileExtension = ".nc";
+    private static final String fileExtension = ".camelLock";
     
     @Override
     public IRetrievalRequestBuilder<Time, Coverage> createRequestMessage(
@@ -95,8 +96,8 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                 directory = new File(localFilePath);
                 if (directory.isDirectory()) {
                     for (File file : directory.listFiles()) {
-                        if (file.getName().endsWith(fileExtension)) {
-                            // you will only ever find one file with .nc extension.
+                        if (!file.getName().endsWith(fileExtension)) {
+                            // you will only ever find one plus the file with the .camel extension
                             fileName = file.getAbsolutePath();
                             break;
                         }
