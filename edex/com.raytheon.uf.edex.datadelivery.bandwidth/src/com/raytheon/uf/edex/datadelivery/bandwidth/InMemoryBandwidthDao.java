@@ -69,13 +69,15 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Jul 18, 2013 1653       mpduff       Implemented method.
  * Oct 2,  2013 1797       dhladky      generics
  * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
+ * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandwidthDao<T,C> {
+class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
+        IBandwidthDao<T, C> {
 
     private static final AtomicLong idSequence = new AtomicLong(1);
 
@@ -114,6 +116,30 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandw
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if (current.getNetwork() == network) {
+                allocations.add(current.copy());
+            }
+        }
+
+        return allocations;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<BandwidthAllocation> getBandwidthAllocations(Network network,
+            List<Long> bandwidthBucketIdList) {
+        List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
+
+        if (bandwidthBucketIdList == null) {
+            return (allocations);
+        }
+
+        for (BandwidthAllocation current : bandwidthAllocations) {
+            long bandwidthBucketId = current.getBandwidthBucket();
+            Long bandwidthBucketIdLong = Long.valueOf(bandwidthBucketId);
+            if ((current.getNetwork() == network)
+                    && (bandwidthBucketIdList.contains(bandwidthBucketIdLong))) {
                 allocations.add(current.copy());
             }
         }
@@ -232,7 +258,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandw
      */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscription(
-            Subscription<T,C> subscription) {
+            Subscription<T, C> subscription) {
         return getBandwidthSubscriptionByRegistryId(subscription.getId());
     }
 
@@ -368,7 +394,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandw
      */
     @Override
     public BandwidthSubscription newBandwidthSubscription(
-            Subscription<T,C> subscription, Calendar baseReferenceTime) {
+            Subscription<T, C> subscription, Calendar baseReferenceTime) {
         BandwidthSubscription entity = BandwidthUtil
                 .getSubscriptionDaoForSubscription(subscription,
                         baseReferenceTime);
@@ -632,7 +658,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandw
      * {@inheritDoc}
      */
     @Override
-    public void store(SubscriptionRetrievalAttributes<T,C> attributes) {
+    public void store(SubscriptionRetrievalAttributes<T, C> attributes) {
         // Does nothing
     }
 
@@ -641,7 +667,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandw
      */
     @Override
     public void storeSubscriptionRetrievalAttributes(
-            List<SubscriptionRetrievalAttributes<T,C>> retrievalAttributes) {
+            List<SubscriptionRetrievalAttributes<T, C>> retrievalAttributes) {
         // Does nothing
     }
 
@@ -649,7 +675,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandw
      * {@inheritDoc}
      */
     @Override
-    public void update(SubscriptionRetrievalAttributes<T,C> attributes) {
+    public void update(SubscriptionRetrievalAttributes<T, C> attributes) {
         // Does nothing
     }
 
@@ -657,14 +683,14 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements IBandw
      * {@inheritDoc}
      */
     @Override
-    public SubscriptionRetrievalAttributes<T,C> getSubscriptionRetrievalAttributes(
+    public SubscriptionRetrievalAttributes<T, C> getSubscriptionRetrievalAttributes(
             SubscriptionRetrieval retrieval) {
         return null;
     }
 
     @Override
     public SubscriptionStatusSummary getSubscriptionStatusSummary(
-            Subscription<T,C> sub) {
+            Subscription<T, C> sub) {
         // Does nothing
         return null;
     }

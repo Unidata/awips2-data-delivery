@@ -58,6 +58,7 @@ import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.req.IPermissionsService;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionStatusSummary;
+import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyService;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
@@ -76,6 +77,7 @@ import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetQuery;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IPendingSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
@@ -151,6 +153,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
  * Sept 05, 2014  2131     dhladky     Added PDA data type subscriptions
  * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
+ * Dec 01, 2014   3550     ccody       Added extended Latency Processing
  * 
  * </pre>
  * 
@@ -1284,6 +1287,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                                     subscription,
                                     new CancelForceApplyAndIncreaseLatencyDisplayText(
                                             "update", getShell()));
+
+                    resetSubscriptionDataSetLatency(subscription);
                     if (response.hasMessageToDisplay()) {
                         displayPopup(UPDATED_TITLE, response.getMessage());
                     }
@@ -1758,6 +1763,19 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
     }
 
+    private void resetSubscriptionDataSetLatency(Subscription subscription) {
+
+        if (subscription != null) {
+            String dataSetName = subscription.getDataSetName();
+            String providerName = subscription.getProvider();
+            DataSetLatencyService dataSetLatencyService = new DataSetLatencyService(
+                    DataDeliveryConstants.DATA_DELIVERY_SERVER);
+
+            dataSetLatencyService.deleteByDataSetNameAndProvider(dataSetName,
+                    providerName);
+        }
+    }
+
     /**
      * Calculate the next occurrence of the month and day on the specified date
      * object.
@@ -1782,4 +1800,5 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
         return cal.getTime();
     }
+
 }

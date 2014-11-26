@@ -67,6 +67,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Aug 28, 2013 2290       mpduff       Check for no subscriptions.
  * Oct 2,  2013 1797       dhladky      Generics
  * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
+ * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
  * 
  * </pre>
  * 
@@ -75,7 +76,8 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  */
 @Transactional
 @Service
-public class HibernateBandwidthDao<T extends Time, C extends Coverage> implements IBandwidthDao<T, C> {
+public class HibernateBandwidthDao<T extends Time, C extends Coverage>
+        implements IBandwidthDao<T, C> {
 
     private IBandwidthAllocationDao bandwidthAllocationDao;
 
@@ -107,6 +109,16 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage> implement
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network) {
         return bandwidthAllocationDao.getByNetwork(network);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<BandwidthAllocation> getBandwidthAllocations(Network network,
+            List<Long> bandwidthBucketIdList) {
+        return bandwidthAllocationDao.getByNetworkAndBandwidthBucketIdList(
+                network, bandwidthBucketIdList);
     }
 
     /**

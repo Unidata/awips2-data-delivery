@@ -119,9 +119,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Oct 28, 2014  2748      ccody        Changes for receiving Subscription Status changes
  * Nov 19, 2014  3852      dhladky      Fixed message overload problem.
  * Dec 03, 2014  3840      ccody        Correct sorting "contract violation" issue
- * 
- * </pre>
- * 
+ * Dec 09, 2014  3550      ccody        Filter out Retrieval Notification Messages.
  * @version 1.0
  */
 
@@ -778,7 +776,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
 
-        if (notificationMessageChecker.matchesCondition(messages)) {
+        if ((notificationMessageChecker.matchesCondition(messages))
+                && (isRetrievalNotification(messages) == false)) {
             // Just refresh the whole table on a notification arriving
             VizApp.runAsync(new Runnable() {
                 @Override
@@ -927,4 +926,43 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     public long getLastUpdateTime() {
         return lastUpdateTime;
     }
+
+    /**
+     * Filter out "Retrieval" Notification Messages. Check to see if the
+     * NotificationMessage contains a NotificationRecord that belongs to the
+     * "Retrieval" Category. This dialog should ignore "Retrieval"
+     * notifications.
+     * 
+     * @param messages
+     *            Array of NotificationMessage objects containing
+     *            NotificationRecord objects
+     * @return TRUE if the Array ONLY contains Retrieval messages; FALSE
+     *         otherwise
+     */
+    protected boolean isRetrievalNotification(NotificationMessage[] messages) {
+        boolean isRetrieval = true;
+
+        for (NotificationMessage message : messages) {
+            try {
+                Object obj = message.getMessagePayload();
+                if (obj instanceof NotificationRecord) {
+                    NotificationRecord notificationRecord = (NotificationRecord) obj;
+                    String category = notificationRecord.getCategory();
+                    if ((category != null)
+                            && (category.compareToIgnoreCase("Retrieval") != 0)) {
+                        isRetrieval = false;
+                        break;
+                    }
+                }
+            } catch (com.raytheon.uf.viz.core.notification.NotificationException ne) {
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "Unable to retrieve Notification Record from Notification Message.",
+                                ne);
+            }
+
+        }
+        return (isRetrieval);
+    }
+
 }

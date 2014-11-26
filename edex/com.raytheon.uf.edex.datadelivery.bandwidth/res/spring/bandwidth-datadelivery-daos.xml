@@ -27,6 +27,12 @@
         <property name="sessionFactory" ref="metadataSessionFactory" />
     </bean>
 
+    <bean id="dataSetLatencyDao"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao"
+        depends-on="registryInit" >
+        <property name="sessionFactory" ref="metadataSessionFactory" />
+    </bean>
+
     <bean id="hibernateBandwidthDao"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.HibernateBandwidthDao">
         <property name="bandwidthAllocationDao" ref="bandwidthAllocationDao" />

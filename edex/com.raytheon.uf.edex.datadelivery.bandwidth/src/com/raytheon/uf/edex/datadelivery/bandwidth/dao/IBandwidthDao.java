@@ -84,6 +84,21 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
     List<BandwidthAllocation> getBandwidthAllocations(Network network);
 
     /**
+     * Get BandwidthAllocations by Network and Bandwidth Bucket Id.
+     * 
+     * @param network
+     *            Retrieve BandwidthAllocations with the specified network.
+     * @param bandwidthBucketIdList
+     *            Retrieve BandwidthAllocations with the specified set of
+     *            Bandwidth Bucket Id values.
+     * 
+     * @return A List of BandwidthAllocations that have the specified network
+     *         and Bandwidth Bucket Id values.
+     */
+    List<BandwidthAllocation> getBandwidthAllocations(Network network,
+            List<Long> bandwidthBucketIdList);
+
+    /**
      * Get DataSetMetaDataDaos.
      * 
      * @param providerName
@@ -326,8 +341,8 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      * 
      * @return A newly created and persisted BandwidthSubscription Object.
      */
-    BandwidthSubscription newBandwidthSubscription(Subscription<T, C> subscription,
-            Calendar baseReferenceTime);
+    BandwidthSubscription newBandwidthSubscription(
+            Subscription<T, C> subscription, Calendar baseReferenceTime);
 
     /**
      * Get a SubscriptionRetrievals.
@@ -467,7 +482,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
     /**
      * @param attributes
      */
-    void update(SubscriptionRetrievalAttributes<T,C> attributes);
+    void update(SubscriptionRetrievalAttributes<T, C> attributes);
 
     /**
      * Get the {@link SubscriptionRetrievalAttributes} for the
@@ -487,7 +502,8 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      * 
      * @return the SubscriptionStatusSummary
      */
-    SubscriptionStatusSummary getSubscriptionStatusSummary(Subscription<T, C> sub);
+    SubscriptionStatusSummary getSubscriptionStatusSummary(
+            Subscription<T, C> sub);
 
     /**
      * Get the BandwidthAllocation identified by the given id.

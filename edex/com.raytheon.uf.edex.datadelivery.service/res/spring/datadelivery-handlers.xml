@@ -56,7 +56,7 @@
         <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetHandler" />
         <constructor-arg ref="DataSetHandler" />
     </bean>
-    
+
     <bean id="registerAdhocSubscriptionHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
         <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler" />
         <constructor-arg ref="AdhocSubscriptionHandler" />

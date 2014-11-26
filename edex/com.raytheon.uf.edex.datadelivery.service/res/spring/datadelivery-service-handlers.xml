@@ -20,6 +20,17 @@
         class="com.raytheon.uf.edex.datadelivery.service.services.GroupDefinitionServiceHandler">
     </bean>
 
+    <bean id="dataSetLatencyServiceHandler"
+        class="com.raytheon.uf.edex.datadelivery.service.services.DataSetLatencyServiceHandler" >
+        <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
+    </bean>
+
+    <bean factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg
+            value="com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyRequest" />
+        <constructor-arg ref="dataSetLatencyServiceHandler" />
+    </bean>
+
     <bean factory-bean="handlerRegistry" factory-method="register">
         <constructor-arg
             value="com.raytheon.uf.common.datadelivery.registry.SubscriptionDeleteRequest" />
@@ -46,6 +57,5 @@
             value="com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapRequest" />
         <constructor-arg ref="overlapRequestServiceHandler" />
     </bean>
-
 
 </beans>

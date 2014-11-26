@@ -30,7 +30,6 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 
-
 /**
  * Class generates a profile of available bandwidth for edex to manage using
  * {@link BandwidthRoute} entries. Each BandwidthRoute describes the network
@@ -47,6 +46,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Oct 10, 2012 0726       djohnson    Overload the load method to support files.
  * Oct 23, 2012 1286       djohnson    Add ability to save changes to the map.
  * Nov 27, 2013 1736       dhladky     Moved to common plugin
+ * Dec 01, 2014 3550       ccody       Filter out Retrieval Notification Messages.
  * 
  * </pre>
  * 
@@ -57,11 +57,11 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 public class BandwidthMap {
 
     private static final Class<?>[] clazzess = new Class<?>[] {
-        BandwidthMap.class, BandwidthRoute.class, RelativeTime.class,
-        AvailableBandwidth.class };
+            BandwidthMap.class, BandwidthRoute.class, RelativeTime.class,
+            AvailableBandwidth.class };
 
     private static JAXBManager jaxb = null;
-        
+
     private static final int DEFAULT_BUCKET_SIZE = 3;
 
     private static final int DEFAULT_PLAN_DAYS = 2;
@@ -118,6 +118,9 @@ public class BandwidthMap {
 
     @XmlElement(name = "route")
     private List<BandwidthRoute> routes;
+
+    @XmlElement(name = "extendedLatencyFactor")
+    private BandwidthExtendedLatency extendedLatencyFactor;
 
     private File file;
 
@@ -258,6 +261,20 @@ public class BandwidthMap {
         }
         Collections.sort(series);
         return series;
+    }
+
+    /**
+     * The the Extended Latency Factor.
+     * 
+     * 
+     * @return The Extended Latency factor.
+     */
+    public int getExtendedLatencyFactor() {
+        if (this.extendedLatencyFactor != null) {
+            return (this.extendedLatencyFactor.getFactor());
+        } else {
+            return (0);
+        }
     }
 
     private void initialize() {
@@ -522,6 +539,18 @@ public class BandwidthMap {
                 }
             }
         }
+
+        if ((this.extendedLatencyFactor == null)
+                || (this.extendedLatencyFactor.getFactor() <= 0)) {
+            statusHandler
+                    .warn("BandwidthMap[extendedLatencyFactor] did not contain valid"
+                            + " Latency Extended factor specifications. This value will be ignored.");
+            if (this.extendedLatencyFactor == null) {
+                this.extendedLatencyFactor = new BandwidthExtendedLatency();
+            }
+            this.extendedLatencyFactor.setFactor(0);
+        }
+
     }
 
     /**
@@ -817,6 +846,17 @@ public class BandwidthMap {
     }
 
     /**
+     * Set the extendedLatencyFactor attribute.
+     * 
+     * @param extendedLatencyFactor
+     *            the extendedLatencyFactor to set
+     */
+    public void setExtendedLatencyFactor(
+            BandwidthExtendedLatency extendedLatencyFactor) {
+        this.extendedLatencyFactor = extendedLatencyFactor;
+    }
+
+    /**
      * Persists the changes to this instance to its configuration file.
      * 
      * @throws SerializationException
@@ -838,7 +878,10 @@ public class BandwidthMap {
         try {
             getJaxb().marshalToXmlFile(this, file.getAbsolutePath());
         } catch (JAXBException e) {
-            statusHandler.handle(Priority.PROBLEM, "Can not serialize Bandwidth Map to file", e);
+            statusHandler.handle(
+                    Priority.PROBLEM,
+                    "Can not serialize Bandwidth Map to file"
+                            + file.getAbsolutePath(), e);
         }
     }
 

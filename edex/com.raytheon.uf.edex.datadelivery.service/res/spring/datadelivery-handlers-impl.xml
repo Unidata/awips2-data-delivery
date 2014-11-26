@@ -82,7 +82,6 @@
         <property name="registryHandler" ref="registryHandler" />
     </bean>
 
-
     <bean name="DataSetHandler"
         class="com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler">
         <property name="registryHandler" ref="registryHandler" />

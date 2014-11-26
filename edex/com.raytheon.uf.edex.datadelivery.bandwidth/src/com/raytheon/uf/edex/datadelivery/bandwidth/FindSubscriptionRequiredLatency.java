@@ -23,6 +23,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
 /**
  * Find the subscription latency that would allow it to be fully scheduled.
@@ -49,7 +50,9 @@ public class FindSubscriptionRequiredLatency implements
      */
     @Override
     public Integer getInitialValue(Subscription subscription) {
-        int latency = subscription.getLatencyInMinutes();
+
+        int latency = BandwidthUtil.getInstance().getSubscriptionLatency(
+                subscription);
         if (latency < 1) {
             latency = 1;
         }

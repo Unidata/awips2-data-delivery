@@ -40,6 +40,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Feb 13, 2013 1543       djohnson    Initial creation
  * 4/9/2013     1802       bphillip    Changed to use new query method signatures in SessionManagedDao
  * Jun 24, 2013 2106       djohnson    Add ability to retrieve by network and start time.
+ * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
  * 
  * </pre>
  * 
@@ -63,6 +64,9 @@ abstract class BaseBandwidthAllocationDao<ENTITY extends BandwidthAllocation>
             + "alloc.status = :status and " + "alloc.network = :network and "
             + "alloc.endTime <= :endTime";
 
+    private static final String GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK_AND_BUCKET_ID_LIST = GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK
+            + " and res.bandwidthBucket in ( :bandwidthBucketIdListString )";
+
     /**
      * {@inheritDoc}
      */
@@ -80,6 +84,40 @@ abstract class BaseBandwidthAllocationDao<ENTITY extends BandwidthAllocation>
     public List<ENTITY> getByNetwork(Network network) {
         return query(String.format(GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK,
                 getEntityClass().getSimpleName()), "network", network);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<ENTITY> getByNetworkAndBandwidthBucketIdList(Network network,
+            List<Long> bandwidthBucketIdList) {
+        String bandwidthBucketIdListString = null;
+        StringBuilder sb = new StringBuilder();
+
+        int bandwidthBucketIdListSize = bandwidthBucketIdList.size();
+        for (int i = 0; i < bandwidthBucketIdListSize; i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            Long bandwidthBucketId = bandwidthBucketIdList.get(i);
+            sb.append(bandwidthBucketId);
+        }
+
+        bandwidthBucketIdListString = sb.toString();
+
+        // This manual substitution is necessary as the underlying software does
+        // not recognize
+        // the use of a String (for the res.bandwidthBucket in (...) clause) for
+        // a
+        // value defined
+        // elsewhere as a long.
+        String queryString = GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK_AND_BUCKET_ID_LIST;
+        queryString = queryString.replace(":bandwidthBucketIdListString",
+                bandwidthBucketIdListString);
+        return (query(
+                String.format(queryString, getEntityClass().getSimpleName()),
+                "network", network));
     }
 
     /**
