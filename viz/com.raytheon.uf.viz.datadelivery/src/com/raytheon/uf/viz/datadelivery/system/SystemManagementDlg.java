@@ -67,7 +67,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Oct 03, 2013 2386       mpduff      Implemented multiple data types for overlap rules
  * Nov 19, 2013 2387       skorolev    Add timer for status refresh.
  * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
- * 
+ * Nov 20, 2014 2749       ccody       Changed System Management to a non-modal dialog
  * </pre>
  * 
  * @author jpiatt
@@ -122,7 +122,7 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
     /** Latency rules composite */
     private SystemLatencyComposite systemLatencyComp;
 
-    /** Bandwith settings composite */
+    /** Bandwidth settings composite */
     private BandwidthComposite bandwidthComp;
 
     /** Composite map */
@@ -156,7 +156,8 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
      *            The parent shell
      */
     public SystemManagementDlg(Shell parent) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.NONE);
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE, CAVE.DO_NOT_BLOCK
+                | CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT);
         setText("Data Delivery System Management");
         SystemRuleManager.getInstance().registerAsListener(this);
     }
@@ -191,6 +192,7 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
      */
     @Override
     protected void initializeComponents(Shell shell) {
+
         GridLayout gl = new GridLayout(2, false);
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         Composite comp = new Composite(shell, SWT.NONE);
@@ -240,6 +242,11 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
                         systemStatusComp);
             }
         });
+    }
+
+    @Override
+    protected void opened() {
+        shell.setMinimumSize(shell.getSize());
     }
 
     /**
@@ -463,7 +470,8 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         switch (option) {
         case CANCEL:
             return "Do not update the rules";
-        // In this case FORCE_APPLY_DEACTIVATED and FORCE_APPLY_UNSCHEDULED are equivalent
+            // In this case FORCE_APPLY_DEACTIVATED and FORCE_APPLY_UNSCHEDULED
+            // are equivalent
         case FORCE_APPLY_DEACTIVATED:
             if (singleSubscription) {
                 return "Update the rules and unschedule "

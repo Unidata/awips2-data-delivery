@@ -153,6 +153,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 28, 2014 2748       ccody        Subscription outside of Active period should not throw an exception
  * Nov 03, 2014 2414       dhladky      Refactored bandwidth Manager, better documented methods, fixed race conditions.
  * Nov 19, 2014 3852       dhladky      Fixed un-safe empty allocation state that broke Maintenance Task.
+ * Nov 20, 2014 2749       ccody        Added "propose only" for Set Avail Bandwidth
  * </pre>
  * 
  * @author dhladky
@@ -424,6 +425,19 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 response = b.getDefaultBandwidth();
             } else {
                 response = null;
+            }
+            break;
+        case PROPOSE_ONLY_SET_BANDWIDTH:
+            Set<String> proposeOnlyUnscheduledSubscriptions = proposeSetBandwidth(
+                    requestNetwork, bandwidth);
+            response = proposeOnlyUnscheduledSubscriptions;
+            if (proposeOnlyUnscheduledSubscriptions.isEmpty()) {
+                statusHandler
+                        .info("No subscriptions will be unscheduled by changing the bandwidth for network ["
+                                + requestNetwork
+                                + "] to ["
+                                + bandwidth
+                                + "].  This is a Propose-Only call. NO CHANGES WILL BE APPLIED..");
             }
             break;
         case PROPOSE_SET_BANDWIDTH:

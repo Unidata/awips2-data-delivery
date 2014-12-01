@@ -81,6 +81,7 @@ import com.raytheon.uf.viz.datadelivery.utils.TypeOperationItems;
  * Oct 03, 2013   2386      mpduff     Add overlap rules.
  * Nov 19, 2013   2387      skorolev   Add system status refresh listeners.
  * Sept 04, 2014  2131      dhladky    PAD data type added.
+ * Nov 20, 2014   2749      ccody      Put Set Avail Bandwidth Save into async, non-UI thread
  * 
  * </pre>
  * 
@@ -175,7 +176,7 @@ public class SystemRuleManager {
                 SubscriptionOverlapConfig.class,
                 GridSubscriptionOverlapConfig.class,
                 PointSubscriptionOverlapConfig.class,
-                PDASubscriptionOverlapConfig.class};
+                PDASubscriptionOverlapConfig.class };
 
         try {
             jax = JAXBContext.newInstance(classes);
@@ -559,7 +560,7 @@ public class SystemRuleManager {
         // Set default if none found
         return DataDeliveryUtils.POINT_DATASET_DEFAULT_LATENCY_IN_MINUTES;
     }
-    
+
     /**
      * Get latency value for point data.
      * 
@@ -652,7 +653,7 @@ public class SystemRuleManager {
 
         return SubscriptionPriority.NORMAL;
     }
-    
+
     /**
      * Get the priority for the PDA data subscription.
      * 
@@ -682,7 +683,6 @@ public class SystemRuleManager {
 
         return SubscriptionPriority.NORMAL;
     }
-
 
     /**
      * Return the lowest priority value defined by the rules.
@@ -735,6 +735,25 @@ public class SystemRuleManager {
     public static int getAvailableBandwidth(Network network) {
         return getInstance().bandwidthService
                 .getBandwidthForNetworkInKilobytes(network);
+    }
+
+    /**
+     * Propose, BUT DO NOT MAKE CHANGES; setting the available bandwidth for a
+     * {@link Network}. If the bandwidth amount will not change the scheduled
+     * subscriptions it is immediately applied, otherwise the set of
+     * subscriptions that would be unscheduled is returned.
+     * 
+     * @param network
+     *            the network
+     * @param bandwidth
+     *            the available bandwidth
+     * @return empty list if it would not cause changes, otherwise the set of
+     *         subscription names that would be unscheduled
+     */
+    public static Set<String> proposeToSetAvailableBandwidth(Network network,
+            int bandwidth) {
+        return getInstance().bandwidthService
+                .proposeOnlyBandwidthForNetworkInKilobytes(network, bandwidth);
     }
 
     /**

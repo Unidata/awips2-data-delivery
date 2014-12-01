@@ -29,6 +29,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Oct 2   2013 1797       dhladky      generic attempt
  * Feb 11, 2014 2771       bgonzale     Added GET_DATADELIVERY_ID to RequestTypes.
  * Apr 22, 2014 2992       dhladky      This is not an interface, changed to be correct naming.
+ * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
+ * Nov 20, 2014 2749       ccody        Added "propose only" for  Set Avail Bandwidth
  * 
  * </pre>
  * 
@@ -36,7 +38,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * @version 1.0
  */
 @DynamicSerialize
-public class BandwidthRequest<T extends Time, C extends Coverage> extends AbstractPrivilegedRequest {
+public class BandwidthRequest<T extends Time, C extends Coverage> extends
+        AbstractPrivilegedRequest {
 
     public static enum RequestType {
         // Get the current retrieval plan for the
@@ -49,7 +52,7 @@ public class BandwidthRequest<T extends Time, C extends Coverage> extends Abstra
         /**
          * Request information.
          */
-        GET_ESTIMATED_COMPLETION, GET_BANDWIDTH_GRAPH_DATA, GET_SUBSCRIPTION_STATUS, GET_DATADELIVERY_ID, GET_DATADELIVERY_REGISTRIES
+        GET_ESTIMATED_COMPLETION, GET_BANDWIDTH_GRAPH_DATA, GET_SUBSCRIPTION_STATUS, GET_DATADELIVERY_ID, GET_DATADELIVERY_REGISTRIES, PROPOSE_ONLY_SET_BANDWIDTH
     }
 
     @DynamicSerializeElement

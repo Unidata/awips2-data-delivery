@@ -45,7 +45,8 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
  * Dec 06, 2012 1397       djohnson     Add ability to get bandwidth graph data.
  * Jul 11, 2013 2106       djohnson     Bandwidth service now returns names of subscriptions for proposing bandwidth availability.
  * Jul 18, 2013 1653       mpduff       Added getSubscriptionStatusSummary.
- * Oct 2, 2013 1797       dhladky      Generics
+ * Oct  2, 2013 1797       dhladky      Generics
+ * Nov 20, 2014 2749       ccody        Added "propose only" for  Set Avail Bandwidth
  * 
  * </pre>
  * 
@@ -89,6 +90,21 @@ public interface IBandwidthService<T extends Time, C extends Coverage> {
             int bandwidth);
 
     /**
+     * Propose ONLY making changes. Do NOT make any scheduling changes for the
+     * available bandwidth for a {@link Network}.
+     * 
+     * @param network
+     *            the network
+     * @param bandwidth
+     *            the bandwidth
+     * @return the set of current subscription names which would be unable to
+     *         fit into the retrieval plan with the new bandwidth amount
+     */
+
+    Set<String> proposeOnlyBandwidthForNetworkInKilobytes(Network network,
+            int bandwidth);
+
+    /**
      * Schedules a list of subscriptions for bandwidth management.
      * 
      * @param subscriptions
@@ -97,7 +113,7 @@ public interface IBandwidthService<T extends Time, C extends Coverage> {
      *         unscheduled
      */
     Set<String> schedule(List<Subscription<T, C>> subscriptions);
-    
+
     /**
      * Schedules a subscription for bandwidth management.
      * 
@@ -107,7 +123,7 @@ public interface IBandwidthService<T extends Time, C extends Coverage> {
      *         unscheduled
      */
     Set<String> schedule(Subscription<T, C> subscription);
-    
+
     /**
      * Proposes scheduling a subscription for bandwidth management
      * 
@@ -124,7 +140,8 @@ public interface IBandwidthService<T extends Time, C extends Coverage> {
      *            the subscriptions
      * @return the response object
      */
-    IProposeScheduleResponse proposeSchedule(List<Subscription<T, C>> subscriptions);
+    IProposeScheduleResponse proposeSchedule(
+            List<Subscription<T, C>> subscriptions);
 
     /**
      * Reinitializes the state of bandwidth management using the persistent

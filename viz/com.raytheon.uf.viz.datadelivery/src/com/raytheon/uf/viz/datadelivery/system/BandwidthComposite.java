@@ -22,11 +22,19 @@ package com.raytheon.uf.viz.datadelivery.system;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 
 import com.raytheon.uf.common.datadelivery.registry.Network;
@@ -34,6 +42,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.StringUtil;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.widgets.ApplyCancelComposite;
@@ -50,6 +59,7 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * ------------ ---------- ----------- --------------------------
  * Aug  6, 2013    2180     mpduff      Initial creation
  * Oct 17, 2013    2455     skorolev    Fixed a problem with Changes Applied window.
+ * Nov 19, 2014    2749     ccody       Put Set Avail Bandwidth Save into async, non-UI thread
  * 
  * </pre>
  * 
@@ -64,6 +74,12 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
 
     /** Available bandwidth spinner widget */
     private Spinner availBandwidthSpinner;
+
+    /**
+     * Save success boolean for org.eclipse.core.runtime.jobs.Job scheduled in:
+     * performAsyncAvailableBandwidthChanges method.
+     */
+    private boolean saveSuccessful = false;
 
     /** The listener that should be used to signify changes were made **/
     private final Runnable changesWereMade = new Runnable() {
@@ -158,16 +174,16 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
      * @return true if saved
      */
     private boolean saveConfiguration() {
-        boolean changesApplied = false;
+
+        boolean applyChanges = false;
+
         final int bandwidth = availBandwidthSpinner.getSelection();
 
         Set<String> unscheduledSubscriptions = SystemRuleManager
-                .setAvailableBandwidth(Network.OPSNET, bandwidth);
-        if (unscheduledSubscriptions == null) {
-            return changesApplied;
-        }
-        if (unscheduledSubscriptions.isEmpty()) {
-            changesApplied = true;
+                .proposeToSetAvailableBandwidth(Network.OPSNET, bandwidth);
+        if ((unscheduledSubscriptions == null)
+                || (unscheduledSubscriptions.isEmpty())) {
+            applyChanges = true;
         } else {
             Set<String> subscriptionNames = new TreeSet<String>(
                     unscheduledSubscriptions);
@@ -178,25 +194,125 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                     subscriptionNames));
             sb.append(StringUtil.NEWLINE).append(StringUtil.NEWLINE);
             sb.append("Would you like to change the bandwidth anyway?");
+
             int response = DataDeliveryUtils.showMessage(
                     getParent().getShell(), SWT.YES | SWT.NO,
                     "Bandwidth Amount", sb.toString());
             if (response == SWT.YES) {
-                changesApplied = SystemRuleManager.forceSetAvailableBandwidth(
-                        Network.OPSNET, bandwidth);
-                if (!changesApplied) {
-                    statusHandler
-                            .handle(Priority.ERROR,
-                                    "Bandwidth Change",
-                                    "Unable to change the bandwidth for network "
-                                            + Network.OPSNET
-                                            + ".  Please check the server for details.");
-
-                }
+                applyChanges = true;
             }
         }
 
-        return changesApplied;
+        if (applyChanges == true) {
+            performAsyncAvailableBandwidthChanges(bandwidth);
+        }
+
+        return applyChanges;
+    }
+
+    /**
+     * Asynchronous save action method.
+     * 
+     * This method creates an org.eclipse.core.runtime.jobs.Job to save
+     * Bandwidth value changes of the the configuration. The request-response
+     * loop for this call is synchronous and takes several seconds. The Job
+     * allows the processing and reporting to be performed asynchronously, in a
+     * separate thread. The JobChangeAdapter (fired from within the non-UI Job
+     * thread re-attaches" to the UI thread and displays the popup notification
+     * Dialogs.
+     * 
+     * The Bandwidth Composite save (Change OPSNET Bandwidth save) requires a
+     * complete refresh of the BandwidthManager. This operation takes time. This
+     * implementation allows the CAVE application to remain responsive during
+     * the BandwidthManager refresh and reshuffle, and allows the server
+     * response (success or failure) to be presented to the user.
+     * 
+     * @param bandwidth
+     *            New bandwidth availability parameter. Must be 'final'. Cannot
+     *            refer to a non-final variable bandwidth inside an inner class
+     *            defined in a different method.
+     */
+    protected void performAsyncAvailableBandwidthChanges(final int bandwidth) {
+
+        // Must be final. Cannot refer to
+        final Shell parentShell = this.getShell();
+
+        Job job = new Job("Updating Bandwidth for Network: " + Network.OPSNET
+                + "...") {
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
+                DataDeliveryGUIUtils.markBusyInUIThread(parentShell);
+
+                saveSuccessful = SystemRuleManager.forceSetAvailableBandwidth(
+                        Network.OPSNET, bandwidth);
+
+                return Status.OK_STATUS;
+            }
+        };
+        job.addJobChangeListener(new JobChangeAdapter() {
+            @Override
+            public void done(IJobChangeEvent event) {
+
+                if (event.getResult().isOK() == false) {
+                    saveSuccessful = false;
+                }
+
+                VizApp.runAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (saveSuccessful == true) {
+                                Shell currentShell = null;
+                                if ((parentShell != null)
+                                        && (parentShell.isDisposed() == false)) {
+
+                                    currentShell = parentShell;
+                                    currentShell.forceFocus();
+                                    currentShell.forceActive();
+                                    DataDeliveryUtils
+                                            .showChangesWereAppliedMessage(currentShell);
+                                } else {
+                                    statusHandler
+                                            .handle(Priority.INFO,
+                                                    "Bandwidth Change",
+                                                    "The changes were successfully applied.");
+                                }
+                            } else {
+                                statusHandler
+                                        .handle(Priority.ERROR,
+                                                "Bandwidth Change",
+                                                "Unable to change the bandwidth for network "
+                                                        + Network.OPSNET
+                                                        + ".  Please check the server for details.");
+                                Shell currentShell = null;
+                                if ((parentShell != null)
+                                        && (parentShell.isDisposed() == false)) {
+                                    currentShell = parentShell;
+                                    currentShell.forceFocus();
+                                    currentShell.forceActive();
+                                    MessageBox messageDialog = new MessageBox(
+                                            currentShell, SWT.ERROR);
+                                    messageDialog.setText("Apply Failed");
+                                    messageDialog
+                                            .setMessage("The apply action (Change Available OPSNET Bandwidth) failed.\nSee server logs for details.");
+                                    messageDialog.open();
+                                }
+                            }
+                        } finally {
+                            if ((parentShell != null)
+                                    && (parentShell.isDisposed() == false)) {
+                                DataDeliveryGUIUtils
+                                        .markNotBusyInUIThread(parentShell);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        job.schedule();
+
+        return;
     }
 
     /**
@@ -204,12 +320,7 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
      */
     @Override
     public boolean apply() {
-        if (saveConfiguration()) {
-            DataDeliveryUtils.showChangesWereAppliedMessage(getShell());
-            return true;
-        }
-
-        return false;
+        return (saveConfiguration());
     }
 
     /**

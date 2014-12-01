@@ -58,6 +58,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 01, 2013 2267       bgonzale     Log error response from proposed scheduling.
  * Dec 11, 2013 2625       mpduff       Fix error handling to not return null.
  * Apr 22, 2014 2992       dhladky      renamed BandwidthRequest
+ * Nov 20, 2014 2749       ccody        Added "propose only" for  Set Avail Bandwidth
  * 
  * </pre>
  * 
@@ -117,6 +118,28 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to set available bandwidth for network [" + network
                             + "]", e);
+            return null;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public Set<String> proposeOnlyBandwidthForNetworkInKilobytes(
+            Network network, int bandwidth) {
+        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        request.setRequestType(RequestType.PROPOSE_ONLY_SET_BANDWIDTH);
+        request.setNetwork(network);
+        request.setBandwidth(bandwidth);
+
+        try {
+            return sendRequest(request, Set.class);
+        } catch (Exception e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to Propose to set available bandwidth for network ["
+                            + network + "]", e);
             return null;
         }
     }
