@@ -240,6 +240,12 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
      * Handle a different user selected from the combo box.
      */
     private void handleUserSelect() {
+        
+        // Must handle "First Time" selected
+        if (previousUserNameComboSelection.equals("")) {
+            previousUserNameComboSelection = userNameCombo.getText();
+        }
+        
         if (!userNameCombo.getText().equals(previousUserNameComboSelection)) {
             populateUserSubscriptions(userNameCombo.getText());
             previousUserNameComboSelection = userNameCombo.getText();
