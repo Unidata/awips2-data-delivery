@@ -20,12 +20,17 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * further licensing information.
  **/
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Extract File Name based info for MetaData in PDA
@@ -57,8 +62,10 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
 
     public static final Pattern param2Seperator = Pattern.compile("-");
     
+    public static final Pattern extensionSeparator = Pattern.compile("\\.");
+    
     /**  remove extension  **/
-    public static final String extensionSeparator = ".";
+    public static final String timeReplace = "_dt";
           
     public PDAFileMetaDataExtractor() {
     
@@ -81,7 +88,8 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
     String startTime = 20132071413122 portion parsed out starting with lower case "s"
     String endTime = 20132071413122 portion parsed out starting with lower case "e"
     String dataTime = 20132071413122 portion parsed out starting with lower case "c"
-     */
+    
+    /** GOES R file parsing 
     public Map<String, String> extractMetaData(Object file) throws Exception {
                
         Map<String, String> paramMap = new HashMap<String, String>(7);
@@ -127,10 +135,100 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
         
         return paramMap;
     }
+    */
+    
+
+    /****** UPDATED 1 Dec 2014 ******** GOES sounding files being used now. ******
+            These are completely different than the GOES R files
+      0   1        2      3     4     5      6                  7
+    /mnt/NAS/virtualDirs/INV/GOES-14/SSD/20141216/KNES_si.SSD261000U_dt.065934  
+       0        1           2
+    KNES_si.SSD261000U_dt.065934  
+    
+    After the ‘INV’, it’s <spacecraft>/<product short name>/<arrival date>/<filename>
+    We will break it up like this....
+    
+    collectionName = GOES-14 (Spacecraft)
+    parameterName = SSD (Product Short Name)
+    date section 1 = 20141216 (2014 December 16th)
+    datasetName = SSD261000U
+    date section 2 = 065934 (06z 59min 34sec)
+        
+     */
+    public Map<String, String> extractMetaData(Object file) throws Exception {
+        
+        Map<String, String> paramMap = new HashMap<String, String>(7);
+        String fileName = (String)file;
+        statusHandler.info("Extracting MetaData from: "+fileName);
+        String[] separated = separator.split(fileName);
+
+        // parse out fields
+        if (separated != null) {
+            // don't care about 0-3
+            paramMap.put("satelliteName", separated[5]);
+            statusHandler.info("satelliteName: "+separated[5]);
+            // collection name and parameter name are the same here
+            paramMap.put("collectionName", separated[6]);
+            statusHandler.info("collectionName: "+separated[6]);
+            paramMap.put("paramName", separated[6]);
+            statusHandler.info("paramName: "+separated[6]);
+            String dateSection = separated[7];
+            statusHandler.info("dateSection: "+separated[7]);
+            String[] extensionSeparated = extensionSeparator.split(separated[8]);
+            String dataSetName = extensionSeparated[1].replace(timeReplace, "");
+            statusHandler.info("dataSetName: "+dataSetName);
+            paramMap.put("dataSetName", dataSetName);
+            
+            statusHandler.info("timeSection: "+extensionSeparated[2]);
+            String time = dateSection+extensionSeparated[2];
+            
+            // only one time available so it is set for all
+            paramMap.put("startTime", time);
+            statusHandler.info("startTime: "+time);
+            paramMap.put("endTime", time);
+            statusHandler.info("endTime: "+time);
+            paramMap.put("dataTime", time);
+            statusHandler.info("dataTime: "+time);
+           
+        } else {
+            statusHandler.error("Coudn't create parameter mappings from file!", fileName);
+        }
+        
+        return paramMap;
+    }
 
     @Override
     public void setDataDate() throws Exception {
         // No implementation in PDA file extractor
+    }
+    
+    /**
+     * Test Practice parsing
+     * @param args
+     */
+    public static void main(String [] args)
+    {
+        PDAFileMetaDataExtractor pfmde = new PDAFileMetaDataExtractor();
+        try {
+            Map<String, String> results = pfmde.extractMetaData(args[0]);
+            
+            for (Entry<String, String> entry: results.entrySet()) {
+                statusHandler.info("Param: "+entry.getKey()+ ": Value: "+entry.getValue());
+            }
+            
+            if (results.containsKey("startTime")) {
+                String time = results.get("startTime");
+                
+                SimpleDateFormat dateFormat = new SimpleDateFormat("YYYYMMddHHmmss");
+                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                
+                Date date = dateFormat.parse(time);
+                statusHandler.info("Date: "+date);
+            }
+            
+        } catch (Exception e) {
+            statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
+        }
     }
 
 }

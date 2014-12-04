@@ -4,7 +4,8 @@
 	<!-- Provider information -->
 	<provider serviceType="PDA" name="PDA">
 		<!-- Primary type for PDA is satellite, will be more -->
-		<providerType dataType="PDA" plugin="satellite" availabilityDelay="100" />
+		<!-- <providerType dataType="PDA" plugin="satellite" availabilityDelay="100" /> -->
+		<providerType dataType="PDA" plugin="goessounding" availabilityDelay="100" />
 		<projection type="LatLon">
 			<name>PDALatLon</name>
 			<description>Test LatLonGrid Coverage for PDA</description>
@@ -17,7 +18,8 @@
     <!-- default one week of DataSetMetaData retention -->
     <retention>7</retention>
 	<agent xsi:type="pdaAgent" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-		<dateFormat>YYYYDDDHHmmSSS</dateFormat>
+	    <!--        20141216065934 -->
+		<dateFormat>YYYYMMddHHmmss</dateFormat>
 		<!-- CSW (catalog service) return URL, Will be the external URL of the 
 			NCF central registry when running in production -->
 		<responseHandler>https://${harvester.external.address}:8082/PDAHarvesterResponseHandler</responseHandler>

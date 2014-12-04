@@ -20,16 +20,26 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.io.FileDeleteStrategy;
 
+import com.raytheon.edex.esb.Headers;
+import com.raytheon.edex.plugin.goessounding.GOESSndgSeparatorFactory;
+import com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder;
+import com.raytheon.edex.plugin.goessounding.GOESSoundingSeparator;
+import com.raytheon.edex.plugin.goessounding.GoesSoundingInput;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.dataplugin.goessounding.GOESSounding;
 import com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.wmo.WMOHeader;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMetadataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.IPDAMetaDataAdapter;
@@ -49,6 +59,8 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * ------------ ---------- ----------- --------------------------
  * Aug 28, 2014 #3121       dhladky     Initial javadoc
  * Oct 14, 2014  #3127      dhladky     Improved deletion of files
+ * Nov 20, 2014  #3127      dhladky     GOES Sounding processing.
+ * Dec 02, 2014  #3826      dhladky     PDA test code
  * 
  * </pre>
  * 
@@ -57,7 +69,7 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  */
 
 public class PDAMetaDataAdapter extends
-        AbstractMetadataAdapter<SatelliteRecord, Time, Coverage> implements IPDAMetaDataAdapter {
+        AbstractMetadataAdapter<GOESSounding, Time, Coverage> implements IPDAMetaDataAdapter {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDAMetaDataAdapter.class);
@@ -67,9 +79,14 @@ public class PDAMetaDataAdapter extends
 
     /** general satellite data **/
     public static final String satellite = "satellite";
+    
+    /** goes sounding data **/
+    public static final String goessounding = "goessounding";
 
     /** goesr decoder **/
     //private GOESRDecoder goesrDecoder = null;
+    
+    private GOESSoundingDecoder goessoundingDecoder = null;
 
     /** satellite decoder **/
     private GiniSatelliteDecoder satelliteDecoder = null;
@@ -86,11 +103,11 @@ public class PDAMetaDataAdapter extends
             throws InstantiationException {
 
         this.attXML = attXML;
-        // TODO The only data we have right now is GOESR
+        // TODO The only data we have right now is GOESSounding
         // Find a better way to tell the difference between them
-        if (attXML.getPlugin().equals("satellite")) {
-            type = "goesr";
-        }
+        //if (attXML.getPlugin().equals("satellite")) {
+            type = "goessounding";
+        //}
     }
 
     /**
@@ -103,10 +120,12 @@ public class PDAMetaDataAdapter extends
 
         try {
             if (type.equals(goesr)) {
-             //   pdos = getGoesrDecoder().decode(
-             //           ResponseProcessingUtilities.getBytes(fileName));
+            //   pdos = getGoesrDecoder().decode(
+            //         ResponseProcessingUtilities.getBytes(fileName));
             } else if (type.equals(satellite)) {
                 pdos = getSatDecoder().decode(new File(fileName));
+            } else if (type.equals(goessounding)) {
+                pdos = processGoesSounding(fileName);
             }
         } catch (Exception e) {
             statusHandler.error("Couldn't decode PDA data! " + fileName, e);
@@ -129,7 +148,7 @@ public class PDAMetaDataAdapter extends
     }
 
     @Override
-    public PluginDataObject getRecord(SatelliteRecord o) {
+    public PluginDataObject getRecord(GOESSounding o) {
         // unimplemented by PDA, returns what you give it in this case.
         return o;
     }
@@ -152,6 +171,17 @@ public class PDAMetaDataAdapter extends
      */
     
     /**
+     * Get the GOES sounding decoder from the ESB
+     * @return
+     */
+    private GOESSoundingDecoder getGoesSoundingDecoder() {
+        if (goessoundingDecoder == null) {
+            goessoundingDecoder = (GOESSoundingDecoder) EDEXUtil.getESBComponent("goessoundingDecoder");
+        }
+        return goessoundingDecoder;
+    }
+    
+    /**
      * get an ESB instance of the SAT decoder
      * @return
      */
@@ -160,6 +190,48 @@ public class PDAMetaDataAdapter extends
             satelliteDecoder = (GiniSatelliteDecoder) EDEXUtil.getESBComponent("giniDecoder");
         }
         return satelliteDecoder;
+    }
+    
+    /**
+     * Process the incoming GOES Sounding files
+     * @param fileName
+     * @return
+     */
+    private PluginDataObject[] processGoesSounding(String fileName) {
+        
+        Headers headers = null;
+        List<PluginDataObject> pdos = new ArrayList<PluginDataObject>(0);
+        
+        if (fileName != null) {
+            // Add the WMO headers necessary for ingest
+            headers = new Headers();
+            headers.put(WMOHeader.INGEST_FILE_NAME, fileName);
+        }
+        
+        if (headers != null) {
+            try {
+                // convert back to byte array to conform to expected interface
+                GOESSoundingSeparator separator = GOESSndgSeparatorFactory.getSeparator(ResponseProcessingUtilities.getBytes(fileName), headers);
+                // walk the iterator
+                while (separator.hasNext()) {
+                    GoesSoundingInput gsi = separator.next();
+                    // call the decoder
+                    PluginDataObject[] separatorPdos = getGoesSoundingDecoder().decode(gsi, headers);
+                    // add to main pdo array
+                    if (separatorPdos != null) {
+                        for (int i = 0; i < separatorPdos.length - 1; i++) {
+                            pdos.add(separatorPdos[i]);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                statusHandler.handle(Priority.ERROR, "Failed to process GOESSounding file! "+fileName, e);
+            }
+        } else {
+            throw new IllegalArgumentException("Filename doesn't create a good header, "+fileName);
+        }
+        
+        return pdos.toArray(new PluginDataObject[pdos.size()]);
     }
    
 }

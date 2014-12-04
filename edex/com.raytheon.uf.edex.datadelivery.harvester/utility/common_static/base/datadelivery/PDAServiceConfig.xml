@@ -2,7 +2,7 @@
 <serviceConfig name="PDA">
     <!--  Date format used by PDA provider -->
 	<dateConfig>
-		<format>yyyyDDDHHmmssSSS</format>
+		<format>YYYYMMddHHmmss</format>
 	</dateConfig>
 	
 	<constant name="MODE" value="file"/>
@@ -19,7 +19,7 @@
     <constant name="SEPARATOR" value="-"/>
     <constant name="BASE_TYPE" value="Float"/>
     <constant name="UNITS" value="NONE"/>
-    <constant name="DEFAULT_FORMAT" value="NETCDF"/>
+    <constant name="DEFAULT_FORMAT" value="BUFR"/>
     <constant name="DEFAULT_CRS" value="crs:84"/>
     <constant name="SIMULATE" value="true"/>
     <constant name="BINARY_TRANSFER" value="true"/>
