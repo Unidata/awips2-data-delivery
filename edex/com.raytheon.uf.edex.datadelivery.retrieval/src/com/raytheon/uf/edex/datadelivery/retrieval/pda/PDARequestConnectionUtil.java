@@ -21,18 +21,25 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  **/
 
 import java.net.URI;
+import java.security.KeyStore;
 
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 
 import com.raytheon.uf.common.comm.HttpClient;
-import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
-import com.raytheon.uf.common.comm.IHttpsCredentialsHandler;
 import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
+import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
+import com.raytheon.uf.common.comm.HttpsUtils;
+import com.raytheon.uf.common.comm.IHttpsHandler;
 import com.raytheon.uf.common.datadelivery.registry.Connection;
+import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 
 /**
  * 
@@ -47,6 +54,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * June 14, 2014 3120       dhladky     created.
  * Sept 27, 2014 3127       dhladky    updated deprecation methods.
  * Nov  10, 2014 3826       dhladky    Need HTTPS for connection to PDA, have to create dummy HTTPS handler for that.
+ * Nov  15, 2014 3757       dhladky    More General HTTPS configuration
  * </pre>
  * 
  * @author dhladky
@@ -62,6 +70,13 @@ public class PDARequestConnectionUtil {
     protected static final String charset = "ISO-8859-1";
     
     protected static final String contentType = "text/xml";
+    
+    /** trustore path set by Data Delivery in the serviceConfig XML */
+    protected static final String truststore = "TRUSTSTORE_FILE";
+    
+    protected static final String storeType = "pkcs12";
+    
+    protected static final String providerName = "PDA";
     
     private static volatile HttpClient httpClient;
     
@@ -104,19 +119,22 @@ public class PDARequestConnectionUtil {
             HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
             // accept gzipped data for PDA
             builder.setHandlingGzipResponses(true);
-            builder.setHttpsHandler(dummyCredentialsHandler);
+            builder.setHttpsHandler(httpsHandler);
             httpClient = new HttpClient(builder.build());
         }
 
         return httpClient;
     }
     
-    private static final IHttpsCredentialsHandler dummyCredentialsHandler = new IHttpsCredentialsHandler() {
+    private static final IHttpsHandler httpsHandler = new IHttpsHandler() {
 
+        final ServiceConfig sc = getServiceConfig();
+        final Connection conn = getLocalConnection();
+        
         @Override
         public String[] getCredentials(String host, int port, String authValue) {
 
-            // We don't check anything, we just need it to create an HTTPS connection.
+            // No Implementation Here
             String[] rval = null;
             return rval;
         }
@@ -124,9 +142,70 @@ public class PDARequestConnectionUtil {
         @Override
         public void credentialsFailed() {
             statusHandler
-                    .error("Dummy cedentials handler failed to authenticate!");
+                    .error("HttpsHandler handler failed to authenticate!");
+        }
+
+        @Override
+        public KeyStore getTruststore() {
+
+            KeyStore trustStore = null;
+            String filePath = sc.getConstantValue(truststore);
+            // Check to see if it's enabled
+            if (filePath != null && conn != null) {
+                try {
+                    trustStore = HttpsUtils.loadKeystore(filePath, storeType,
+                            conn.getUnencryptedPassword());
+                } catch (Exception e) {
+                    statusHandler.error("Couldn't load truststore!", e);
+                }
+            }
+
+            return trustStore;
+        }
+
+        @Override
+        public boolean isValidateCertificates() {
+            
+            String filePath = sc.getConstantValue(truststore);
+            
+            if (filePath != null) {
+                return true;
+            } else {
+                return false;
+            }
         }
 
     };
+    
+    /**
+     * Load the service configuration
+     * @return
+     */
+    private static ServiceConfig getServiceConfig() {
+        
+        return HarvesterServiceManager.getInstance().getServiceConfig(
+                ServiceType.PDA);
+    }
+    
+    /**
+     * Get the local encrypted connection object
+     * 
+     * @return
+     */
+    private static Connection getLocalConnection() {
+
+        Connection connection = null;
+
+        try {
+            ProviderCredentials creds = ProviderCredentialsUtil
+                    .retrieveCredentials(providerName);
+            connection = creds.getConnection();
+        } catch (Exception e) {
+            statusHandler.handle(Priority.ERROR,
+                    "No local Connection file available! " + providerName);
+        }
+        
+        return connection;
+    }
 
 }
