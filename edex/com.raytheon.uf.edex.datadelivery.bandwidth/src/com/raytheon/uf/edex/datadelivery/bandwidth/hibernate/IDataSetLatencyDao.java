@@ -21,9 +21,6 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
 import java.util.List;
 
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
 
@@ -51,15 +48,20 @@ public interface IDataSetLatencyDao {
      * 
      * @param dataSetLatency
      */
-    @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     void create(DataSetLatency dataSetLatency);
+
+    /**
+     * Create or Update the DataSetLatency object.
+     * 
+     * @param dataSetLatency
+     */
+    void createOrUpdate(DataSetLatency dataSetLatency);
 
     /**
      * Update the DataSetLatency object.
      * 
      * @param dataSetLatency
      */
-    @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     void update(DataSetLatency dataSetLatency);
 
     /**
@@ -67,7 +69,6 @@ public interface IDataSetLatencyDao {
      * 
      * @param dataSetLatency
      */
-    @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     void delete(DataSetLatency dataSetLatency);
 
     /**
@@ -76,7 +77,6 @@ public interface IDataSetLatencyDao {
      * @param timeToDeleteUpTo
      * @throws DataAccessLayerException
      */
-    @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     void deleteUpToBaseRefTime(long timeToDeleteUpTo)
             throws DataAccessLayerException;
 
@@ -89,7 +89,6 @@ public interface IDataSetLatencyDao {
      *            Data Set Provider Name column value
      * @throws DataAccessLayerException
      */
-    @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     public void deleteByDataSetNameAndProvider(String dataSetName,
             String providerName) throws DataAccessLayerException;
 

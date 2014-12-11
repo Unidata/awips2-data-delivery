@@ -750,7 +750,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
             if (subLatencyData.getSubAllocationStatus() == SubAllocationStatus.EXTENDED) {
                 dataSetLatency = getDataSetLatency(now, subLatencyData);
-                dataSetLatencyDao.update(dataSetLatency);
+                dataSetLatencyDao.createOrUpdate(dataSetLatency);
             } else {
                 // Delete the existing DataSetLatency record
                 dataSetLatencyDao.delete(dataSetLatency);
@@ -991,7 +991,6 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                             + (this.bandwidthBucketLength * 2) - now;
                 }
             }
-
             return (newSleepTime);
         }
 
