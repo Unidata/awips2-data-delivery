@@ -106,4 +106,16 @@
         <constructor-arg ref="DataSetHandler" />
         <constructor-arg ref="dataSetLatencyDao" />
     </bean>
+    
+    <bean id="dataSetLatencyServiceHandler"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.handler.DataSetLatencyServiceHandler" >
+        <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
+    </bean>
+
+    <bean factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg
+            value="com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyRequest" />
+        <constructor-arg ref="dataSetLatencyServiceHandler" />
+    </bean>
+    
 </beans>
