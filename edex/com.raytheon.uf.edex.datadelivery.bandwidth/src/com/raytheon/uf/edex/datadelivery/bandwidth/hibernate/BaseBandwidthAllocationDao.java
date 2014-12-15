@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 import java.util.Calendar;
 import java.util.List;
 
+import org.hibernate.Query;
+
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.edex.database.dao.SessionManagedDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
@@ -65,7 +67,7 @@ abstract class BaseBandwidthAllocationDao<ENTITY extends BandwidthAllocation>
             + "alloc.endTime <= :endTime";
 
     private static final String GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK_AND_BUCKET_ID_LIST = GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK
-            + " and res.bandwidthBucket in ( :bandwidthBucketIdListString )";
+            + " and res.bandwidthBucket in ( :bandwidthBucketIdList )";
 
     /**
      * {@inheritDoc}
@@ -90,34 +92,19 @@ abstract class BaseBandwidthAllocationDao<ENTITY extends BandwidthAllocation>
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("unchecked")
     public List<ENTITY> getByNetworkAndBandwidthBucketIdList(Network network,
             List<Long> bandwidthBucketIdList) {
-        String bandwidthBucketIdListString = null;
-        StringBuilder sb = new StringBuilder();
 
-        int bandwidthBucketIdListSize = bandwidthBucketIdList.size();
-        for (int i = 0; i < bandwidthBucketIdListSize; i++) {
-            if (i > 0) {
-                sb.append(",");
-            }
-            Long bandwidthBucketId = bandwidthBucketIdList.get(i);
-            sb.append(bandwidthBucketId);
-        }
+        String queryString = String.format(
+                GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK_AND_BUCKET_ID_LIST,
+                getEntityClass().getSimpleName());
+        Query query = getCurrentSession().createQuery(queryString);
+        query.setMaxResults(0);
+        query.setParameter("network", network);
+        query.setParameterList("bandwidthBucketIdList", bandwidthBucketIdList);
 
-        bandwidthBucketIdListString = sb.toString();
-
-        // This manual substitution is necessary as the underlying software does
-        // not recognize
-        // the use of a String (for the res.bandwidthBucket in (...) clause) for
-        // a
-        // value defined
-        // elsewhere as a long.
-        String queryString = GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK_AND_BUCKET_ID_LIST;
-        queryString = queryString.replace(":bandwidthBucketIdListString",
-                bandwidthBucketIdListString);
-        return (query(
-                String.format(queryString, getEntityClass().getSimpleName()),
-                "network", network));
+        return (query.list());
     }
 
     /**
