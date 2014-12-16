@@ -331,18 +331,35 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
         protected void initialize() {
             // Get Bandwidth Bucket Gap and Subscription Extension Factor
             // from config datadelivery/bandwidthmap.xml file
-            retrieveBandwidthMapData();
+            this.bandwidthBucketLength = retrieveBandwidthMapData();
 
             // Compute value from Registry (bandwidthbucket.bucketstarttime
             // database table)
             long now = TimeUtil.currentTimeMillis();
             BandwidthBucket currentBandwidthBucket = bucketsDao
                     .getBucketContainingTime(now, this.threadNetwork);
+            if (currentBandwidthBucket == null) {
+                statusHandler
+                        .info("Unable to retrieve BandwidthBucket for timestamp "
+                                + now
+                                + " and Network  "
+                                + this.threadNetwork
+                                + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
+                return;
+            }
             long currentBandwidthBucketTime = currentBandwidthBucket
                     .getBucketStartTime();
             long nextWindow = now + bandwidthBucketLength;
             BandwidthBucket nextBandwidthBucket = bucketsDao
                     .getBucketContainingTime(nextWindow, this.threadNetwork);
+            if (nextBandwidthBucket == null) {
+                statusHandler
+                        .info("Unable to retrieve BandwidthBucket for timestamp "
+                                + nextWindow
+                                + " (next Bucket) and Network "
+                                + this.threadNetwork
+                                + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
+            }
             long nextBandwidthBucketTime = nextBandwidthBucket
                     .getBucketStartTime();
 
@@ -356,6 +373,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                                 + registryBandwidthBucketLength
                                 + " mils). SubscriptionLatencyCheck is using ("
                                 + registryBandwidthBucketLength + " mils).");
+                bandwidthBucketLength = registryBandwidthBucketLength;
             }
         }
 
@@ -489,21 +507,30 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             long now = TimeUtil.currentTimeMillis();
             BandwidthBucket currentBandwidthBucket = bucketsDao
                     .getBucketContainingTime(now, threadNetwork);
-            long currentBandwidthBucketTime = currentBandwidthBucket
-                    .getBucketStartTime();
-
             long nextWindow = now + bandwidthBucketLength;
             BandwidthBucket nextBandwidthBucket = bucketsDao
                     .getBucketContainingTime(nextWindow, threadNetwork);
+            long oneMore = nextWindow + bandwidthBucketLength;
+            BandwidthBucket oneMoreBandwidthBucket = bucketsDao
+                    .getBucketContainingTime(oneMore, threadNetwork);
+            if ((currentBandwidthBucket == null)
+                    || (nextBandwidthBucket == null)
+                    || (oneMoreBandwidthBucket == null)) {
+                statusHandler
+                        .warn("Unable to retrieve necessary Bandwidth Bucket data for Network: "
+                                + this.threadNetwork
+                                + " Unable to perform Subscription Latency Check. Waiting for next Bandwidth Bucket time window");
+                return (scheduledNextBandwidthBucketTime);
+            }
+            long currentBandwidthBucketTime = currentBandwidthBucket
+                    .getBucketStartTime();
+
             long nextBandwidthBucketTime = nextBandwidthBucket
                     .getBucketStartTime();
 
             // Save Next Start Bandwidth Bucket Time to schedule next execution
             scheduledNextBandwidthBucketTime = nextBandwidthBucketTime;
 
-            long oneMore = nextWindow + bandwidthBucketLength;
-            BandwidthBucket oneMoreBandwidthBucket = bucketsDao
-                    .getBucketContainingTime(oneMore, threadNetwork);
             long oneMoreBandwidthBucketTime = oneMoreBandwidthBucket
                     .getBucketStartTime();
 
