@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
+import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
@@ -69,7 +70,8 @@ import com.raytheon.viz.ui.presenter.components.WidgetConf;
  * May 21, 2013  2020      mpduff      Rename UserSubscription to SiteSubscription.
  * Nov 08, 2013  2506      bgonzale    Removed send notification when a subscription is created.
  * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
- * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Mar 31, 2014  2889      dhladky     Added username for notification center tracking.
+ * Jan 05, 2015  3881      dhladky     Changed from store to update for existing(and new) subscriptions.
  * 
  * </pre>
  * 
@@ -260,21 +262,24 @@ public class GroupAddDlg extends CaveSWTDialog {
                 subscription.setActivePeriodEnd(null);
             }
         }
+        
         final String username = UserController.getUserObject().uniqueId()
                 .toString();
 
-        System.out.println("Fix Me:  Need to calculate data set size");
+        // Default dataset size, calculates on metadata update.
         subscription.setDataSetSize(999);
         subscription.addOfficeID(DataDeliveryUtils.getDataDeliveryId());
 
-        // TODO: How to do this better? Will shared subscriptions participate in
-        // groups?
+        // Handle subscription whether shared or site
         if (subscription instanceof SiteSubscription) {
-            ((SiteSubscription) subscription).setOwner(username);
+            subscription.setOwner(username);
+        } else if (subscription instanceof SharedSubscription) {
+            subscription.setOwner(SharedSubscription.SHARED_SUBSCRIPTION_OWNER);
         }
 
         try {
-            DataDeliveryHandlers.getSubscriptionHandler().store(username, subscription);
+            // create subscription if it doesn't exist, update if it does.
+            DataDeliveryHandlers.getSubscriptionHandler().update(username, subscription);
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error saving subscription data to the registry.", e);
