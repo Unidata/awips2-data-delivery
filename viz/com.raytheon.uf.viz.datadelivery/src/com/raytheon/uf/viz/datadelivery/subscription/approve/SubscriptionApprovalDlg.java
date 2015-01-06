@@ -34,14 +34,20 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 
+import com.google.common.collect.Sets;
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.req.IPermissionsService;
 import com.raytheon.uf.common.auth.req.IPermissionsService.IAuthorizedPermissionResponse;
 import com.raytheon.uf.common.auth.user.IUser;
+import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyService;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
+import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
+import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IPendingSubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -97,7 +103,8 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Oct 23, 2013 2292       mpduff      Move subscription overlap checks to edex.
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
  * Apr 18, 2014  3012      dhladky      Null check.
- * Aug 18, 2014 2746       ccody        Non-local Subscription changes not updating dialogs
+ * Aug 18, 2014 2746       ccody       Non-local Subscription changes not updating dialogs
+ * Jan 05, 2015 3898       ccody       Delete existing Site subscription if it is updated to a Shared Subscription
  * 
  * </pre>
  * 
@@ -535,16 +542,31 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
             IPendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
                     .get(IPendingSubscriptionHandler.class);
 
+            Subscription cachedSiteSubscription = null;
+            boolean isPromotedToShared = checkForSubscriptionPromotion(ps, s);
+            if (isPromotedToShared == true) {
+                cachedSiteSubscription = s;
+                Set officeIDs = s.getOfficeIDs();
+                SharedSubscription sharedSub = new SharedSubscription(s);
+                sharedSub.setRoute(Network.SBN);
+                Set<String> officeList = Sets.newHashSet(officeIDs);
+                sharedSub.setOfficeIDs(officeList);
+                s = sharedSub;
+            }
+
             String exceptionMessage = "Unable to update subscription.";
             try {
-                SubscriptionServiceResult result = subscriptionService
-                        .update(username, s,
-                                new ApproveSubscriptionForceApplyPromptDisplayText());
-                
+                SubscriptionServiceResult result = subscriptionService.update(
+                        username, s,
+                        new ApproveSubscriptionForceApplyPromptDisplayText());
+
+                if (cachedSiteSubscription != null) {
+                    deleteSubscription(username, cachedSiteSubscription);
+                }
                 subscriptionNotificationService
-                            .sendApprovedPendingSubscriptionNotification(ps,
-                                    username);
-                
+                        .sendApprovedPendingSubscriptionNotification(ps,
+                                username);
+
                 if (result.hasMessageToDisplay()) {
                     DataDeliveryUtils.showMessage(getShell(), SWT.OK,
                             "Subscription Approved.", result.getMessage());
@@ -605,4 +627,82 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
     public boolean displayYesNoPopup(String title, String message) {
         return DataDeliveryUtils.showYesNoMessage(getShell(), title, message) == SWT.YES;
     }
+
+    /**
+     * Check to see if the Pending subscription will promote the existing
+     * Subscription from a Site Subscription to a Shared Subscription.
+     * 
+     * @param ps
+     *            Pending Subscription
+     * @param s
+     *            Subscription
+     * @return
+     */
+    private boolean checkForSubscriptionPromotion(
+            InitialPendingSubscription ps, Subscription s) {
+
+        Set<String> pendingOfficeIDs = ps.getOfficeIDs();
+        Set<String> subOfficeIDs = s.getOfficeIDs();
+
+        int pendingOfficeIdCount = 0;
+        int subOfficeIdCount = 0;
+        if (pendingOfficeIDs != null) {
+            pendingOfficeIdCount = pendingOfficeIDs.size();
+        }
+        if (subOfficeIDs != null) {
+            subOfficeIdCount = subOfficeIDs.size();
+        }
+
+        if ((subOfficeIdCount == 1) && (pendingOfficeIdCount > 1)) {
+            return (true);
+        }
+        return (false);
+    }
+
+    /**
+     * Delete DataSetLatency entities for a subscription (if one exists).
+     * 
+     * DataSetLatency objects are not registry entities. Changes to a
+     * Subscription will not automatically trigger their deletion.
+     * 
+     * @param subscription
+     *            Subscription to delete any existing DataSetLatency entities
+     *            for
+     */
+    private void resetSubscriptionDataSetLatency(Subscription subscription) {
+
+        if (subscription != null) {
+            String dataSetName = subscription.getDataSetName();
+            String providerName = subscription.getProvider();
+            DataSetLatencyService dataSetLatencyService = new DataSetLatencyService(
+                    DataDeliveryConstants.DATA_DELIVERY_SERVER);
+
+            dataSetLatencyService.deleteByDataSetNameAndProvider(dataSetName,
+                    providerName);
+        }
+    }
+
+    /**
+     * Deletes a subscription and its associations.
+     * 
+     * @param username
+     * 
+     * @param subscription
+     */
+    private void deleteSubscription(String username, Subscription subscription) {
+
+        try {
+            resetSubscriptionDataSetLatency(subscription);
+            ISubscriptionHandler handler = RegistryObjectHandlers
+                    .get(ISubscriptionHandler.class);
+            handler.delete(username, subscription);
+        } catch (RegistryHandlerException e) {
+            statusHandler.error(
+                    "Unable to delete duplicate (Site) Subscription "
+                            + subscription.getName(), e);
+        }
+
+        return;
+    }
+
 }
