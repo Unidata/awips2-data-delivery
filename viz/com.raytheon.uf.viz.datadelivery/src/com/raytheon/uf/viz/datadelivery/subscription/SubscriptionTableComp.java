@@ -47,9 +47,11 @@ import org.eclipse.swt.widgets.TableItem;
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
@@ -119,8 +121,9 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Oct 28, 2014  2748      ccody        Changes for receiving Subscription Status changes
  * Nov 19, 2014  3852      dhladky      Fixed message overload problem.
  * Dec 03, 2014  3840      ccody        Correct sorting "contract violation" issue
- * 
- * </pre>
+ * Dec 09, 2014  3550      ccody        Filter out Retrieval Notification Messages.
+ * Jan 05, 2015  3950   ccody/dhladky   Change Subscription Manager table update logic for pertinent 
+ *                                      notification events (Create,Update,Delete,Activate,Deactivate,Expire)
  * 
  * @version 1.0
  */
@@ -153,12 +156,6 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /** Filters out which subscriptions to show **/
     private ISubscriptionManagerFilter subscriptionFilter;
-
-    /**
-     * Subscription Data Update Interval / Protection from server update
-     * overload
-     */
-    private long updateIntervalMils = 30000l;
 
     /**
      * Enumeration to determine the type of subscription dialog this class is
@@ -229,6 +226,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                 TABLE_TYPE.SUBSCRIPTION);
 
         createColumns();
+
     }
 
     /**
@@ -249,7 +247,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      * @param subscription
      *            the subscription
      */
-    public void editSubscription(Subscription subscription) {
+    public void editSubscription(Subscription<Time, Coverage> subscription) {
         final String permission = DataDeliveryPermission.SUBSCRIPTION_EDIT
                 .toString();
         IUser user = UserController.getUserObject();
@@ -329,6 +327,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     /**
      * Handle displaying the details information.
      */
+    @SuppressWarnings("unchecked")
     private void handleDetails() {
         StringBuilder printDetails = new StringBuilder();
         int[] selectionIndices = table.getSelectionIndices();
@@ -404,6 +403,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      * 
      * @param filter
      */
+    @SuppressWarnings("rawtypes")
     public void populateData() {
         subManagerData.clearAll();
 
@@ -455,6 +455,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      * @param subscription
      *            Subscription to add to the subscription list.
      */
+    @SuppressWarnings("rawtypes")
     private void addSubscription(Subscription subscription) {
         SubscriptionManagerRowData rd = new SubscriptionManagerRowData();
         rd.setSubscription(subscription);
@@ -501,6 +502,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      * @param updatedSubscriptions
      *            List of updated subscriptions.
      */
+    @SuppressWarnings("rawtypes")
     public synchronized void updateTable(List<Subscription> updatedSubscriptions) {
         for (Subscription s : updatedSubscriptions) {
             if (s.isDeleted() == true) {
@@ -726,7 +728,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
              * loaded then allow the user to add their site to the shared sub.
              */
             if (table.getSelectionCount() == 1) {
-                final Subscription sub = getSelectedSubscription();
+                final Subscription<Time, Coverage> sub = getSelectedSubscription();
                 if (sub instanceof SharedSubscription) {
                     MenuItem addToShared = new MenuItem(popupMenu, SWT.PUSH);
                     addToShared.setText("Add site to shared");// subscription");
@@ -778,21 +780,79 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
 
-        if (notificationMessageChecker.matchesCondition(messages)) {
-            // Just refresh the whole table on a notification arriving
+        if (isUpdateableNotification(messages) == true) {
+            // Just refresh the whole table on a pertinent notification arriving
             VizApp.runAsync(new Runnable() {
                 @Override
                 public void run() {
-                    // Protection to keep server updates from swamping the
-                    // dialog
-                    long TimeDiff = TimeUtil.currentTimeMillis()
-                            - getLastUpdateTime();
-                    if (!isDisposed() && (TimeDiff > updateIntervalMils)) {
-                        handleRefresh();
-                    }
+                    handleRefresh();
                 }
             });
         }
+    }
+
+    /**
+     * Check the content of the {@link NotificationRecord} to see if the
+     * Subscription Manager table needs to be updated.
+     * 
+     * Update Subscription Table on: Subscription: Create, Update, Delete,
+     * Activate, Deactivate, and Expire event messages.
+     * 
+     * @param messages
+     *            Event Notification Messages
+     * @return isPertinent True if Subscription data to update in response to a
+     *         notification message
+     */
+    protected boolean isUpdateableNotification(NotificationMessage[] messages) {
+        if ((isDisposed() == true) || (messages == null)
+                || (messages.length == 0)) {
+            return (false);
+        }
+
+        if (notificationMessageChecker.matchesCondition(messages) == false) {
+            return (false);
+        }
+
+        boolean isPertinent = false;
+        for (NotificationMessage message : messages) {
+            try {
+                Object obj = message.getMessagePayload();
+                if (obj instanceof NotificationRecord) {
+                    NotificationRecord notificationRecord = (NotificationRecord) obj;
+
+                    String category = notificationRecord.getCategory();
+                    if (category != null
+                            && category
+                                    .equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
+                        String messageText = notificationRecord.getMessage();
+                        if ((messageText != null)
+                                && (messageText.isEmpty() == false)) {
+                            messageText = messageText.toUpperCase();
+                            if (messageText.contains(DataDeliveryUtils.CREATED)
+                                    || messageText
+                                            .contains(DataDeliveryUtils.UPDATED)
+                                    || messageText
+                                            .contains(DataDeliveryUtils.DELETED)
+                                    || messageText
+                                            .contains(DataDeliveryUtils.ACTIVATED)
+                                    || messageText
+                                            .contains(DataDeliveryUtils.DEACTIVATED)
+                                    || messageText
+                                            .contains(DataDeliveryUtils.EXPIRE)) {
+                                isPertinent = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (com.raytheon.uf.viz.core.notification.NotificationException ne) {
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "Unable to retrieve Notification Record from Notification Message.",
+                                ne);
+            }
+        }
+        return (isPertinent);
     }
 
     @Override
@@ -831,7 +891,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      * 
      * @return the subscription
      */
-    public Subscription getSelectedSubscription() {
+    @SuppressWarnings("unchecked")
+    public Subscription<Time, Coverage> getSelectedSubscription() {
         int idx = this.getTable().getSelectionIndices()[0];
         SubscriptionManagerRowData row = this.getSubscriptionData().getDataRow(
                 idx);
@@ -862,7 +923,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      * @param sub
      *            The subscription to add the current site
      */
-    private void handleAddSiteToShared(final Subscription sub) {
+    private void handleAddSiteToShared(final Subscription<Time, Coverage> sub) {
         final Shell shell = table.getShell();
         Job job = new Job("Updating Subscription...") {
             @Override
@@ -927,4 +988,43 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     public long getLastUpdateTime() {
         return lastUpdateTime;
     }
+
+    /**
+     * Filter out "Retrieval" Notification Messages. Check to see if the
+     * NotificationMessage contains a NotificationRecord that belongs to the
+     * "Retrieval" Category. This dialog should ignore "Retrieval"
+     * notifications.
+     * 
+     * @param messages
+     *            Array of NotificationMessage objects containing
+     *            NotificationRecord objects
+     * @return TRUE if the Array ONLY contains Retrieval messages; FALSE
+     *         otherwise
+     */
+    protected boolean isRetrievalNotification(NotificationMessage[] messages) {
+        boolean isRetrieval = true;
+
+        for (NotificationMessage message : messages) {
+            try {
+                Object obj = message.getMessagePayload();
+                if (obj instanceof NotificationRecord) {
+                    NotificationRecord notificationRecord = (NotificationRecord) obj;
+                    String category = notificationRecord.getCategory();
+                    if (category != null
+                            && !category.equalsIgnoreCase(DataDeliveryUtils.RETRIEVAL)) {
+                        isRetrieval = false;
+                        break;
+                    }
+                }
+            } catch (com.raytheon.uf.viz.core.notification.NotificationException ne) {
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "Unable to retrieve Notification Record from Notification Message.",
+                                ne);
+            }
+
+        }
+        return (isRetrieval);
+    }
+
 }
