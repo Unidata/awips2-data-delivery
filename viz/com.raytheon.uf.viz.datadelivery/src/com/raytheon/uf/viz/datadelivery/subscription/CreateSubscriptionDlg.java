@@ -67,9 +67,9 @@ import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSet;
-import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
+import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -154,6 +154,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Sept 05, 2014  2131     dhladky     Added PDA data type subscriptions
  * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
  * Dec 01, 2014   3550     ccody       Added extended Latency Processing
+ * Jan 05, 2015   3898     ccody       Delete existing Site subscription if it is updated to a Shared Subscription
  * 
  * </pre>
  * 
@@ -1040,11 +1041,18 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             return false;
         }
 
+        Subscription cachedSiteSubscription = null;
         if (sharedSites != null && sharedSites.length > 1) {
             SharedSubscription sharedSub = new SharedSubscription(subscription);
             sharedSub.setRoute(Network.SBN);
             Set<String> officeList = Sets.newHashSet(sharedSites);
             sharedSub.setOfficeIDs(officeList);
+            // Cache Existing Site Subscription for deletion.
+            // This is only for updates from Site Subscription TO Shared
+            // Subscription
+            if (subscription instanceof SiteSubscription) {
+                cachedSiteSubscription = subscription;
+            }
             subscription = sharedSub;
         } else {
             Set<String> officeList = Sets.newHashSet();
@@ -1155,8 +1163,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                         e);
             }
         }
-
         if (this.create) {
+            cachedSiteSubscription = null;
+
             setSubscriptionId(subscription);
             if (autoApprove) {
                 final BlockingQueue<SubscriptionStatusSummary> exchanger = new ArrayBlockingQueue<SubscriptionStatusSummary>(
@@ -1237,9 +1246,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 job.schedule();
                 return false;
             } else {
+                // Create: Auto Approve == false
                 InitialPendingSubscription pendingSub = subscription
                         .initialPending(currentUser);
-
                 try {
                     handler.store(username, pendingSub);
 
@@ -1254,13 +1263,10 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 }
             }
         } else {
+            // Update Existing Subscription
             // Check for pending subscription, can only have one pending change
-            PendingSubscription pendingSub = subscription
-                    .pending(LocalizationManager.getInstance().getCurrentUser());
-            pendingSub.setChangeReason(this.changeReasonTxt.getText().trim());
 
             // Create the registry ids
-            setSubscriptionId(pendingSub);
             setSubscriptionId(subscription);
 
             IPendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
@@ -1288,6 +1294,15 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                                     new CancelForceApplyAndIncreaseLatencyDisplayText(
                                             "update", getShell()));
 
+                    // If this save promotes a Site to a Shared; then Delete
+                    // Existing SiteSubscription
+                    if (cachedSiteSubscription != null) {
+                        deleteSubscription(username, cachedSiteSubscription);
+                    }
+
+                    // Subscription Data Latency operates off of Provider and
+                    // Data Set Name; it is not directly tied to the
+                    // Subscription.
                     resetSubscriptionDataSetLatency(subscription);
                     if (response.hasMessageToDisplay()) {
                         displayPopup(UPDATED_TITLE, response.getMessage());
@@ -1300,11 +1315,26 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                         return false;
                     }
 
+                    if (cachedSiteSubscription != null) {
+                        String responseMessage = response.getMessage();
+                        if ((responseMessage != null)
+                                && (responseMessage
+                                        .indexOf(" has been updated") > 0)) {
+                        }
+                    }
                 } catch (RegistryHandlerException e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "Unable to update subscription.", e);
                 }
             } else {
+                // Update Pending Subscription
+                InitialPendingSubscription pendingSub = subscription
+                        .initialPending(currentUser);
+                pendingSub.setChangeReason(this.changeReasonTxt.getText()
+                        .trim());
+
+                // Create the registry ids
+                setSubscriptionId(pendingSub);
                 setSubscriptionId(subscription);
                 try {
                     pendingSubHandler.update(username, pendingSub);
@@ -1763,19 +1793,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
     }
 
-    private void resetSubscriptionDataSetLatency(Subscription subscription) {
-
-        if (subscription != null) {
-            String dataSetName = subscription.getDataSetName();
-            String providerName = subscription.getProvider();
-            DataSetLatencyService dataSetLatencyService = new DataSetLatencyService(
-                    DataDeliveryConstants.DATA_DELIVERY_SERVER);
-
-            dataSetLatencyService.deleteByDataSetNameAndProvider(dataSetName,
-                    providerName);
-        }
-    }
-
     /**
      * Calculate the next occurrence of the month and day on the specified date
      * object.
@@ -1799,6 +1816,52 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             cal.add(Calendar.YEAR, 1);
         }
         return cal.getTime();
+    }
+
+    /**
+     * Delete DataSetLatency entities for a subscription (if one exists).
+     * 
+     * DataSetLatency objects are not registry entities. Changes to a
+     * Subscription will not automatically trigger their deletion.
+     * 
+     * @param subscription
+     *            Subscription to delete any existing DataSetLatency entities
+     *            for
+     */
+    private void resetSubscriptionDataSetLatency(Subscription subscription) {
+
+        if (subscription != null) {
+            String dataSetName = subscription.getDataSetName();
+            String providerName = subscription.getProvider();
+            DataSetLatencyService dataSetLatencyService = new DataSetLatencyService(
+                    DataDeliveryConstants.DATA_DELIVERY_SERVER);
+
+            dataSetLatencyService.deleteByDataSetNameAndProvider(dataSetName,
+                    providerName);
+        }
+    }
+
+    /**
+     * Deletes a subscription and its associations.
+     * 
+     * @param username
+     * 
+     * @param subscription
+     */
+    private void deleteSubscription(String username, Subscription subscription) {
+
+        try {
+            resetSubscriptionDataSetLatency(subscription);
+            ISubscriptionHandler handler = RegistryObjectHandlers
+                    .get(ISubscriptionHandler.class);
+            handler.delete(username, subscription);
+        } catch (RegistryHandlerException e) {
+            statusHandler.error(
+                    "Unable to delete duplicate (Site) Subscription "
+                            + subscription.getName(), e);
+        }
+
+        return;
     }
 
 }
