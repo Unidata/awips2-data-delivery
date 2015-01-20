@@ -154,6 +154,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Nov 03, 2014 2414       dhladky      Refactored bandwidth Manager, better documented methods, fixed race conditions.
  * Nov 19, 2014 3852       dhladky      Fixed un-safe empty allocation state that broke Maintenance Task.
  * Nov 20, 2014 2749       ccody        Added "propose only" for Set Avail Bandwidth
+ * Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
  * </pre>
  * 
  * @author dhladky
@@ -303,12 +304,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 false, "EDEX");
 
         final boolean successfullyStarted = bandwidthManager != null;
-        if (successfullyStarted) {
-            this.shutdown();
-        } else {
-            statusHandler
-                    .error("The new BandwidthManager reference was null, please check the log for errors.");
-        }
+        
         return successfullyStarted;
     }
 
@@ -382,6 +378,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 .getSubscriptions();
         requestSubscriptions = BandwidthUtil.getMapFromRequestList(subscriptions);
         final RequestType requestType = request.getRequestType();
+        
         switch (requestType) {
         case GET_ESTIMATED_COMPLETION:
             Subscription<T, C> adhocAsSub = null;
@@ -906,8 +903,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
             unscheduled = proposedBwManager
                     .scheduleSubscriptions((List<Subscription<T, C>>) subscriptions);
-        } finally {
-            nullSafeShutdown(proposedBwManager);
+        } catch (Exception e) {
+           statusHandler.error("Error proposing scheduling! ", e);
         }
 
         final ProposeScheduleResponse proposeScheduleResponse = new ProposeScheduleResponse();
@@ -971,8 +968,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                         "The following subscriptions would not be scheduled with the proposed bandwidth:",
                         subscriptions);
             }
-        } finally {
-            nullSafeShutdown(proposedBwManager);
+        } catch (Exception e) {
+            statusHandler.error("Error proposing setting of Bandwidth! "+e);
         }
 
         return subscriptions;
@@ -1493,8 +1490,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         RetrievalPlan c = retrievalManager.getPlan(requestNetwork);
         if (c != null) {
             c.setDefaultBandwidth(bandwidth);
-
-            return startNewBandwidthManager();
+            return true;
+            //return startNewBandwidthManager();
         }
         return false;
     }
@@ -1525,9 +1522,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                             "Serialization error while determining required latency.  Returning true in order to be fault tolerant.",
                             e);
             return true;
-        } finally {
-            nullSafeShutdown(proposedBandwidthManager);
-        }
+        } 
     }
 
     /**
@@ -1687,6 +1682,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            the required value strategy
      * @return the required value
      */
+    @SuppressWarnings("unchecked")
     private <M extends Comparable<M>> M determineRequiredValue(
             final Subscription<T, C> subscription,
             final IFindSubscriptionRequiredValue<M> strategy) {
@@ -1729,7 +1725,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                             return (isSchedulableWithoutConflict(clone)) ? 1
                                     : 0;
                         } else {
-                            // Stuff would still be unscheduled
+                            // This would still be unscheduled
                             return -1;
                         }
                     }
@@ -1776,39 +1772,5 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     protected abstract void resetBandwidthManager(Network requestNetwork,
             String resetReasonMessage);
-
-    /**
-     * Provide implementation specific shutdown.
-     */
-    protected abstract void shutdownInternal();
     
-
-    /**
-     * Performs shutdown necessary for the {@link BandwidthManager} instance.
-     */
-    @VisibleForTesting
-    void shutdown() {
-        try {
-            retrievalManager.shutdown();
-        } catch (Exception e) {
-            statusHandler.handle(Priority.WARN,
-                    "Unable to shutdown the retrievalManager.", e);
-        } finally {
-            shutdownInternal();
-        }
-    }
-    
-
-    /**
-     * Shutdown if not null.
-     * 
-     * @param bandwidthManager
-     *            the bandwidth manager
-     */
-    private void nullSafeShutdown(BandwidthManager<T, C> bandwidthManager) {
-        if (bandwidthManager != null) {
-            bandwidthManager.shutdown();
-        }
-    }
-
 }

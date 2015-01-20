@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Network;
@@ -32,6 +33,7 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
@@ -64,6 +66,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
  * May 22, 2014 2808       dhladky      Scheduling unscheduled
  * Nov 03, 2014 2414       dhladky      refactoring some methods in BWM.
+ * Jan 15, 2014 3884       dhladky      Removed useless shutdown and shutdown internal methods.
  * 
  * </pre>
  * 
@@ -173,14 +176,6 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
      * {@inheritDoc}
      */
     @Override
-    protected void shutdownInternal() {
-        // Nothing to do for in-memory version
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     protected void unscheduleSubscriptionsForAllocations(
             List<BandwidthAllocation> unscheduled) {
         // Nothing to do for in-memory version
@@ -209,5 +204,4 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
             String resetReasonMessage) {
         // No in memory implementation.
     }
-
 }

@@ -43,6 +43,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
  * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
  * Apr 02, 2014  2810      dhladky      Priority sorting of allocations.
  * Sept 14, 2014 2131      dhladky      PDA additions
+ * Jan 15, 2014  3884      dhladky      Removed shutdown, replaced with restart(), shutdown undermined #2749 BWM ticket;
  * 
  * </pre>
  * 
@@ -64,8 +65,6 @@ public class RetrievalManager {
             .synchronizedSortedMap(new TreeMap<Network, RetrievalPlan>());
 
     private final Object notifier;
-
-    private volatile boolean shutdown;
 
     public RetrievalManager(IBandwidthDao bandwidthDao, Object notifier) {
         this.bandwidthDao = bandwidthDao;
@@ -135,6 +134,7 @@ public class RetrievalManager {
         return unscheduled;
     }
 
+    @SuppressWarnings("unchecked")
     @Subscribe
     public void retrievalCompleted(RetrievalManagerNotifyEvent event) {
 
@@ -188,9 +188,6 @@ public class RetrievalManager {
     }
 
     public BandwidthAllocation nextAllocation(Network network, String agentType) {
-        if (shutdown) {
-            return POISON_PILL;
-        }
 
         RetrievalPlan plan = getRetrievalPlans().get(network);
         if (plan != null) {
@@ -210,12 +207,6 @@ public class RetrievalManager {
     public List<BandwidthAllocation> getRecentAllocations(Network network, String agentType) {
         
         List<BandwidthAllocation> allocations = null;
-        
-        if (shutdown) {
-            allocations = new ArrayList<BandwidthAllocation>(1);
-            allocations.add(POISON_PILL);
-            return allocations;
-        }
 
         RetrievalPlan plan = getRetrievalPlans().get(network);
         if (plan != null) {
@@ -248,15 +239,12 @@ public class RetrievalManager {
             }
         }
     }
-
+    
     /**
-     * Shutdown the retrieval manager.
+     * Restart the Retrieval 
      */
-    public void shutdown() {
-        // From this point forward, only return a poison pill for this retrieval
-        // manager, which will cause threads attempting to receive bandwidth
-        // allocations to die
-        this.shutdown = true;
+    public void restart() {
+        initRetrievalPlans();
     }
 
     /**
@@ -318,7 +306,10 @@ public class RetrievalManager {
      */
     public void initRetrievalPlans() {
         for (RetrievalPlan retrievalPlan : this.getRetrievalPlans().values()) {
-            retrievalPlan.init();
+            synchronized (retrievalPlan) {
+                retrievalPlan.init();
+            }
         }
+        statusHandler.info("Initialized Retrieval Manager...");
     }
 }
