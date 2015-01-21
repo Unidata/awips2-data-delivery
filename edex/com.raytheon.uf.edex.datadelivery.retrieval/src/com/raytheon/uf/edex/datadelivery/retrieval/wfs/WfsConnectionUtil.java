@@ -63,6 +63,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Aub 20, 2014 3564       dhladky     Allow for un-authenicated HTTPS
  * Sep 03, 2014 3570       bclement    http client API changes
  * Nov 15, 2014 3757       dhladky     General HTTPS configuration
+ * Jan 21, 2014 3952       njensen     Updated call to setupCredentials()
  * 
  * </pre>
  * 
@@ -76,7 +77,7 @@ public class WfsConnectionUtil {
             .getHandler(WfsConnectionUtil.class);
 
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
-    
+
     /**
      * connections indexed by URI host:port keys
      */
@@ -118,16 +119,16 @@ public class WfsConnectionUtil {
         }
 
     };
-    
+
     private static volatile HttpClient httpClient;
-    
+
     /**
      * @return cached http client instance
      */
-    private static HttpClient getHttpClient(){
-        if (httpClient == null){
+    private static HttpClient getHttpClient() {
+        if (httpClient == null) {
             synchronized (credentialHandler) {
-                if (httpClient == null){
+                if (httpClient == null) {
                     HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
                     // accept gzipped data for WFS
                     builder.setHandlingGzipResponses(true);
@@ -174,9 +175,9 @@ public class WfsConnectionUtil {
                 // encryption method for password storage and decrypt.
                 String userName = localConnection.getUnencryptedUsername();
                 String password = localConnection.getUnencryptedPassword();
-                
-                http.setCredentials(uri.getHost(), uri.getPort(), providerName,
-                        userName, password);
+
+                http.setupCredentials(uri.getHost(), uri.getPort(), userName,
+                        password);
             }
 
             post.setEntity(new StringEntity(request, ContentType.TEXT_XML));
