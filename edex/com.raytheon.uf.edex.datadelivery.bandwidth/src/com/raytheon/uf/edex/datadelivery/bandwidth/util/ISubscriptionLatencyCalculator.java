@@ -20,6 +20,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
 
 /**
  * Calculate the latency that should be added to the retrievals for a
@@ -32,6 +33,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 05, 2012 0726       djohnson     Initial creation
+ * Dec 01, 2014 3550       ccody        Added extended Latency Processing
  * 
  * </pre>
  * 
@@ -40,6 +42,17 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
  */
 
 public interface ISubscriptionLatencyCalculator {
+
+    /**
+     * Set DataSetLatencyDao.
+     * 
+     * Set DataSetLatencyDao to calculate Subscriptions with extended Latency
+     * 
+     * @param dataSetLatencyDao
+     *            DataSetLatencyDao
+     */
+    public void setDataSetLatencyDao(IDataSetLatencyDao dataSetLatencyDao);
+
     /**
      * Calculate the latency.
      * 

@@ -33,4 +33,5 @@ Require-Bundle: com.raytheon.uf.common.auth;bundle-version="1.12.1174",
  com.raytheon.uf.common.dataplugin;bundle-version="1.12.1174",
  org.geotools;bundle-version="2.6.4",
  com.raytheon.uf.common.geospatial;bundle-version="1.12.1174",
- com.raytheon.edex.common;bundle-version="1.12.1174"
+ com.raytheon.edex.common;bundle-version="1.12.1174",
+ com.raytheon.uf.common.security;bundle-version="1.14.0"

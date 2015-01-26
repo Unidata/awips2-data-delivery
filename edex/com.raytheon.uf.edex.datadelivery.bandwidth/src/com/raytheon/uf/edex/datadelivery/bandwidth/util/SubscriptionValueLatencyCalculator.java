@@ -20,9 +20,12 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
 
 /**
- * Takes the latency from the subscription.
+ * Computes current latency for the subscription.
  * 
  * <pre>
  * 
@@ -30,7 +33,8 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 31, 2012 1286       djohnson     Initial creation
+ * Oct 31, 2012 1286       djohnson    Initial creation
+ * Dec 01, 2014 3550       ccody       Added extended Latency Processing
  * 
  * </pre>
  * 
@@ -41,11 +45,38 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
 public class SubscriptionValueLatencyCalculator implements
         ISubscriptionLatencyCalculator {
 
+    protected IDataSetLatencyDao dataSetLatencyDao = null;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setDataSetLatencyDao(IDataSetLatencyDao dataSetLatencyDao) {
+        this.dataSetLatencyDao = dataSetLatencyDao;
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public int getLatency(Subscription subscription) {
+
+        if (dataSetLatencyDao != null) {
+            String dataSetName = subscription.getDataSetName();
+            String providerName = subscription.getProvider();
+            DataSetLatency dataSetLatency = dataSetLatencyDao
+                    .getByDataSetNameAndProvider(dataSetName, providerName);
+            if (dataSetLatency != null) {
+                long now = TimeUtil.currentTimeMillis();
+                boolean isValid = dataSetLatency.isDataSetLatencyValid(now);
+                if (isValid == true) {
+                    return (dataSetLatency.getExtendedLatency());
+                } else {
+                    // The lingering (old) record must be deleted.
+                    dataSetLatencyDao.delete(dataSetLatency);
+                }
+            }
+        }
         return subscription.getLatencyInMinutes();
     }
 

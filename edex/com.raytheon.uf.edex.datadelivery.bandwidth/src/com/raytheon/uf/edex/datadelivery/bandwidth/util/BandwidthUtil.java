@@ -6,10 +6,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
 import java.util.regex.Pattern;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
@@ -19,17 +17,11 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.JarUtil;
-import com.raytheon.uf.common.util.algorithm.AlgorithmUtil;
-import com.raytheon.uf.common.util.algorithm.AlgorithmUtil.IBinarySearchResponse;
 import com.raytheon.uf.edex.core.modes.EDEXModesUtil;
-import com.raytheon.uf.edex.datadelivery.bandwidth.FindSubscriptionRequiredLatency;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
-import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 
 /**
  * Bandwidth Manager utility methods.
@@ -68,7 +60,7 @@ public class BandwidthUtil {
             Calendar.FEBRUARY, Calendar.MARCH, Calendar.APRIL, Calendar.MAY,
             Calendar.JUNE, Calendar.JULY, Calendar.AUGUST, Calendar.SEPTEMBER,
             Calendar.OCTOBER, Calendar.NOVEMBER, Calendar.DECEMBER };
-    
+
     /** BWM XML pattern **/
     private static final Pattern RES_PATTERN = Pattern.compile("^res");
 
@@ -79,7 +71,7 @@ public class BandwidthUtil {
     private ISubscriptionLatencyCalculator subscriptionLatencyCalculator;
 
     private ISubscriptionRescheduleStrategy subscriptionRescheduleStrategy;
-    
+
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BandwidthUtil.class);
 
@@ -256,7 +248,7 @@ public class BandwidthUtil {
 
         return cal;
     }
-    
+
     /**
      * Special handling for Gridded Times with cycles and time indicies
      * 
@@ -276,7 +268,7 @@ public class BandwidthUtil {
 
         return dataSetMetaDataTime;
     }
-    
+
     /**
      * Updates a {@link Subscription) to reflect important attributes of the
      * specified {@link DataSetMetaData}.
@@ -299,7 +291,7 @@ public class BandwidthUtil {
 
         return sub;
     }
-    
+
     /**
      * Get the list of mode configured spring file names for the named mode.
      * 
@@ -327,13 +319,13 @@ public class BandwidthUtil {
         }
         return result;
     }
-    
 
     /**
-     * Convert List of subscriptions to a Map.
-     * This is used in request handler portion of the BWM.
+     * Convert List of subscriptions to a Map. This is used in request handler
+     * portion of the BWM.
      * 
-     * @param List<Subscription> list
+     * @param List
+     *            <Subscription> list
      * @return Map<String, Subscription>
      */
 
@@ -341,7 +333,7 @@ public class BandwidthUtil {
             List<Subscription<T, C>> list) {
 
         Map<String, Subscription<T, C>> requestMap = null;
-        
+
         if (list != null) {
             requestMap = new HashMap<String, Subscription<T, C>>(list.size());
 

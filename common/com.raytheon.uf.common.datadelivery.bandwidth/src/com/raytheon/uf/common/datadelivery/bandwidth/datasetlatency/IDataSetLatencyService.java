@@ -17,13 +17,10 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.bandwidth.util;
-
-import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
+package com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency;
 
 /**
- * Returns a constant value for the subscription latency.
+ * Service interface for interacting with the bandwidth manager.
  * 
  * <pre>
  * 
@@ -31,36 +28,16 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 05, 2012 0726       djohnson     Initial creation
+ * Dec 01, 2014 3550       ccody       Initial creation
  * 
  * </pre>
  * 
- * @author djohnson
+ * @author ccody
  * @version 1.0
  */
 
-public class ConstantSubscriptionLatencyCalculator implements
-        ISubscriptionLatencyCalculator {
+public interface IDataSetLatencyService {
 
-    private final int latency;
-
-    public ConstantSubscriptionLatencyCalculator(final int constant) {
-        this.latency = constant;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setDataSetLatencyDao(IDataSetLatencyDao dataSetLatencyDao) {
-        // Do nothing.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getLatency(Subscription subscription) {
-        return latency;
-    }
+    public boolean deleteByDataSetNameAndProvider(String dataSetName,
+            String providerName);
 }

@@ -38,6 +38,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * ------------ ---------- ----------- --------------------------
  * Feb 13, 2013 1543       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Add ability to retrieve by network and start time.
+ * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
  * 
  * </pre>
  * 
@@ -64,6 +65,17 @@ interface IBaseBandwidthAllocationDao<ENTITY extends BandwidthAllocation>
      * @return
      */
     List<ENTITY> getByNetwork(Network network);
+
+    /**
+     * Get by the network and the bucket id list.
+     * 
+     * @param network
+     * @param bucketIdList
+     * 
+     * @return
+     */
+    List<ENTITY> getByNetworkAndBandwidthBucketIdList(Network network,
+            List<Long> bucketIdList);
 
     /**
      * Get by the network and the bucket start time.

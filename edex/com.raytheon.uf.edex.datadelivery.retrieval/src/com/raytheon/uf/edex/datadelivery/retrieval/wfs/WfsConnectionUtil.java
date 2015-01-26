@@ -21,6 +21,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs;
  **/
 
 import java.net.URI;
+import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -32,7 +33,7 @@ import org.apache.http.entity.StringEntity;
 import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
-import com.raytheon.uf.common.comm.IHttpsCredentialsHandler;
+import com.raytheon.uf.common.comm.IHttpsHandler;
 import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -61,6 +62,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Jan 13, 2014 2697       dhladky     Added util to strip unique Id field from URL.
  * Aub 20, 2014 3564       dhladky     Allow for un-authenicated HTTPS
  * Sep 03, 2014 3570       bclement    http client API changes
+ * Nov 15, 2014 3757       dhladky     General HTTPS configuration
+ * Jan 21, 2014 3952       njensen     Updated call to setupCredentials()
  * 
  * </pre>
  * 
@@ -74,13 +77,13 @@ public class WfsConnectionUtil {
             .getHandler(WfsConnectionUtil.class);
 
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
-    
+
     /**
      * connections indexed by URI host:port keys
      */
     private static final Map<String, Connection> uriConnections = new ConcurrentHashMap<String, Connection>();
 
-    private static final IHttpsCredentialsHandler credentialHandler = new IHttpsCredentialsHandler() {
+    private static final IHttpsHandler credentialHandler = new IHttpsHandler() {
 
         @Override
         public String[] getCredentials(String host, int port, String authValue) {
@@ -103,17 +106,29 @@ public class WfsConnectionUtil {
                     .error("Failed to authenticate with supplied username and password");
         }
 
+        @Override
+        public KeyStore getTruststore() {
+            // TODO may validate with truststore someday.
+            return null;
+        }
+
+        @Override
+        public boolean isValidateCertificates() {
+            // TODO may validate with cert someday.
+            return false;
+        }
+
     };
-    
+
     private static volatile HttpClient httpClient;
-    
+
     /**
      * @return cached http client instance
      */
-    private static HttpClient getHttpClient(){
-        if (httpClient == null){
+    private static HttpClient getHttpClient() {
+        if (httpClient == null) {
             synchronized (credentialHandler) {
-                if (httpClient == null){
+                if (httpClient == null) {
                     HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
                     // accept gzipped data for WFS
                     builder.setHandlingGzipResponses(true);
@@ -160,9 +175,9 @@ public class WfsConnectionUtil {
                 // encryption method for password storage and decrypt.
                 String userName = localConnection.getUnencryptedUsername();
                 String password = localConnection.getUnencryptedPassword();
-                
-                http.setCredentials(uri.getHost(), uri.getPort(), providerName,
-                        userName, password);
+
+                http.setupCredentials(uri.getHost(), uri.getPort(), userName,
+                        password);
             }
 
             post.setEntity(new StringEntity(request, ContentType.TEXT_XML));

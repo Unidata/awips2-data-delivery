@@ -44,13 +44,16 @@
         <property name="initializer" ref="bandwidthInitializer" />
     </bean>
     
+    <bean id="subscriptionLatencyCalculator"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.util.SubscriptionValueLatencyCalculator"
+        depends-on="dataSetLatencyDao">
+        <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
+    </bean>
+     
     <bean id="bandwidthUtil"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil"
         factory-method="getInstance" depends-on="registerDataDeliveryHandlers">
-        <property name="subscriptionLatencyCalculator">
-            <bean
-                class="com.raytheon.uf.edex.datadelivery.bandwidth.util.SubscriptionValueLatencyCalculator" />
-        </property>
+        <property name="subscriptionLatencyCalculator" ref="subscriptionLatencyCalculator" />
         <property name="subscriptionRescheduleStrategy">
             <bean
                 class="com.raytheon.uf.edex.datadelivery.bandwidth.util.AlwaysRescheduleSubscriptions" />
@@ -94,4 +97,25 @@
 		<constructor-arg ref="bandwidthBucketDao"/>
 	</bean>
 
+    <bean id="subscriptionLatencyCheck"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.SubscriptionLatencyCheck"
+        init-method="start">
+        <constructor-arg ref="bandwidthBucketDao" />
+        <constructor-arg ref="bandwidthDao" />
+        <constructor-arg ref="SubscriptionHandler" />
+        <constructor-arg ref="DataSetHandler" />
+        <constructor-arg ref="dataSetLatencyDao" />
+    </bean>
+    
+    <bean id="dataSetLatencyServiceHandler"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.handler.DataSetLatencyServiceHandler" >
+        <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
+    </bean>
+
+    <bean factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg
+            value="com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyRequest" />
+        <constructor-arg ref="dataSetLatencyServiceHandler" />
+    </bean>
+    
 </beans>

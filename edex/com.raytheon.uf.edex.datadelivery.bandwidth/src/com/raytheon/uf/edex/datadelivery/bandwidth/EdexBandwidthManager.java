@@ -145,7 +145,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Oct 12, 2014 3707       dhladky      Changed the way gridded subscriptions are triggerd for retrieval.
  *  Oct 28, 2014 2748       ccody        Add notification event for Subscription modifications.
  *                                       Add Thread.sleep to mitigate registry update race condition.
- *  Nov 03, 2014 2214       dhladky      Refactored and better documented, fixed event handling, fixed race conditions.
+ *  Jan 20, 2014 2414       dhladky      Refactored and better documented, fixed event handling, fixed race conditions.
  *  Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods.
  * </pre>
  * 
@@ -616,7 +616,22 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             
             // Checks to see if this registry node has any relevance to this updated subscription.
             // This way even updates to SHARED subs will be shown as updated.
-            boolean isLocalOrigination = subscription.getOriginatingSite().equals(RegistryIdUtil.getId());
+            boolean isLocalOrigination = false;
+            
+            if (subscription instanceof SharedSubscription) {
+                /**
+                 * This means an update has occurred on a SHARED sub.
+                 * We however do not want it scheduled locally.
+                 * This check will catch it when the update occurs
+                 * on the Central Registry and update it accordingly.
+                 */
+ 
+                 isLocalOrigination = RegistryIdUtil.getId().equals(RegistryUtil.defaultUser);
+
+            } else {
+                // local site update to a local subscription
+                isLocalOrigination = subscription.getOriginatingSite().equals(RegistryIdUtil.getId());
+            }
 
             // Only subscriptions local to this BWM get processed for scheduling updates.
             if (isLocalOrigination) {
