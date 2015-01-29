@@ -155,6 +155,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Nov 19, 2014 3852       dhladky      Fixed un-safe empty allocation state that broke Maintenance Task.
  * Nov 20, 2014 2749       ccody        Added "propose only" for Set Avail Bandwidth
  * Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
+ * Jan 27, 2014 4041       dhladky      adhoc BaseRefTime for gridded subs is now set with start time from the DSMD object.
  * </pre>
  * 
  * @author dhladky
@@ -1278,7 +1279,16 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                             .after(subscriptionValidStart))
                             && now.before(subscriptionValidEnd)
                             && subscription.inActivePeriodWindow(nowCalendar)) {
-                        unscheduled = scheduleAdhoc(adhoc);
+                        // Set baseRefTime as the start time of the adhoc sub
+                        // set by the datasetmetadata
+                        if (useMostRecentDataSetUpdate) {
+                            Calendar baseRefTime = TimeUtil.newCalendar(adhoc.getTime().getStart());
+                            unscheduled = scheduleAdhoc(adhoc, baseRefTime);
+                        } else {
+                            // use current "now" time.
+                            unscheduled = scheduleAdhoc(adhoc);
+                        }
+                        
                     } else {
                         statusHandler.info(String.format(
                                 "Time frame outside of subscription active time frame [%s].  "
