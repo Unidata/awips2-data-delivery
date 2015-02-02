@@ -157,6 +157,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Apr 2,  2014 2974       dhladky    DD ID added to list for dropdowns in DD.
  * Apr 18, 2014  3012      dhladky    Null check.
  * Dec 03, 2014  3840      ccody      Correct sorting "contract violation" issue
+ * Jan 30, 2015  2746      dhladky    Special shared sub delete handling.
  * 
  * </pre>
  * 
@@ -1003,7 +1004,10 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         if (sub instanceof SharedSubscription) {
                             sub.getOfficeIDs().remove(CURRENT_SITE);
                             if (sub.getOfficeIDs().size() > 0) {
+                                // Set site originating change on change
+                                sub.setOriginatingSite(CURRENT_SITE);
                                 subsToUpdate.add(sub);
+                                
                             } else {
                                 subsToDelete.add(sub);
                             }

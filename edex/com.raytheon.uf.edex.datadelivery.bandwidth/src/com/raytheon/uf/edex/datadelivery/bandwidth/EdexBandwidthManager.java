@@ -79,6 +79,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.IPerformanceTimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.ClusterIdUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.IFileModifiedWatcher;
@@ -146,6 +147,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Oct 28, 2014 2748       ccody        Add notification event for Subscription modifications.
  *                                       Add Thread.sleep to mitigate registry update race condition.
  *  Jan 20, 2014 2414       dhladky      Refactored and better documented, fixed event handling, fixed race conditions.
+ *  Jan 30, 2015 2746       dhladky      Handling special cases in notification message routing.
  * </pre>
  * 
  * @author djohnson
@@ -552,7 +554,15 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                             .ofType(JAXB)
                             .decodeObject(event.getRemovedObject());
                     statusHandler.info("Subscription removed: "+event.getId());
-                    sendSubscriptionNotificationEvent(event, sub);
+                    // We only care about subs that our Site ID is contained within
+                    boolean isLocalOrigination = false;
+                    
+                    if (sub.getOfficeIDs().contains(RegistryIdUtil.getId())) {
+                        isLocalOrigination = true;
+                    }
+                    
+                    sendSubscriptionNotificationEvent(event, sub, isLocalOrigination);
+                    
                 } catch (SerializationException e) {
                     statusHandler
                             .handle(Priority.PROBLEM,
@@ -573,28 +583,37 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @SuppressWarnings("unchecked")
     @Subscribe
     @AllowConcurrentEvents
-    public void registryEventListener(InsertRegistryEvent re) {
-        final String objectType = re.getObjectType();
+    public void registryEventListener(InsertRegistryEvent event) {
+        final String objectType = event.getObjectType();
 
         // All DSMD updates go to BUS and circuit back to BWM
         if (DataDeliveryRegistryObjectTypes.DATASETMETADATA.equals(objectType)) {
-            publishDataSetMetaDataEvent(re);
+            publishDataSetMetaDataEvent(event);
         }
-         // Want ALL subs here, regardless of origination.
-        if (DataDeliveryRegistryObjectTypes.isRecurringSubscription(re
+        
+        // Want ALL subs here, regardless of origination or management.
+        if (DataDeliveryRegistryObjectTypes.isRecurringSubscription(event
                 .getObjectType())) {
             
-            // A subscription found in the request cache means that the update was made "locally".
-            Subscription<T, C> subscription = getRequestSubscription(re.getId());
-            
-            // Non-locally effected subscriptions are queried directly from the registry.
+            /**
+             * A subscription found in the request cache means that the update
+             * was made "locally". In a local CAVE GUI.
+             */
+            Subscription<T, C> subscription = getRequestSubscription(event
+                    .getId());
+            boolean isLocalOrigination = false;
+
+            // Non-locally effected subscriptions are queried directly from the
+            // registry.
             if (subscription == null) {
-                subscription = getRegistryObjectById(
-                        getSubscriptionHandler(), re.getId());
+                subscription = getRegistryObjectById(getSubscriptionHandler(),
+                        event.getId());
+            } else {
+                isLocalOrigination = true;
             }
 
             statusHandler.info("Subscription Inserted: "+subscription.getName());
-            sendSubscriptionNotificationEvent(re, subscription);
+            sendSubscriptionNotificationEvent(event, subscription, isLocalOrigination);
         }
     }
 
@@ -604,6 +623,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * 
      * @param event
      */
+    @SuppressWarnings("unchecked")
     @Subscribe
     @AllowConcurrentEvents
     public void registryEventListener(UpdateRegistryEvent event) {
@@ -617,49 +637,52 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 .equals(objectType))
                 || (DataDeliveryRegistryObjectTypes.SITE_SUBSCRIPTION
                         .equals(objectType))) {
-            
-            // A subscription found in the request cache means that the update was made "locally".
-            Subscription<T, C> subscription = getRequestSubscription(event.getId());
-            
-            // Non-locally effected subscriptions are queried directly from the registry.
-            if (subscription == null) {
-                subscription = getRegistryObjectById(
-                        getSubscriptionHandler(), event.getId());
-            }
-            
-            // Checks to see if this registry node has any relevance to this updated subscription.
-            // This way even updates to SHARED subs will be shown as updated.
+
+            /**
+             * A subscription found in the request cache means that the update
+             * was made "locally". In a local CAVE GUI.
+             */
+            Subscription<T, C> subscription = getRequestSubscription(event
+                    .getId());
             boolean isLocalOrigination = false;
-            
-            if (subscription instanceof SharedSubscription) {
-                /**
-                 * This means an update has occurred on a SHARED sub.
-                 * We however do not want it scheduled locally.
-                 * This check will catch it when the update occurs
-                 * on the Central Registry and update it accordingly.
-                 */
- 
-                 isLocalOrigination = RegistryIdUtil.getId().equals(RegistryUtil.defaultUser);
 
+            // Non-locally effected subscriptions are queried directly from the
+            // registry.
+            if (subscription == null) {
+                subscription = getRegistryObjectById(getSubscriptionHandler(),
+                        event.getId());
             } else {
-                // local site update to a local subscription
-                isLocalOrigination = subscription.getOriginatingSite().equals(RegistryIdUtil.getId());
+                isLocalOrigination = true;
             }
 
-            // Only subscriptions local to this BWM get processed for scheduling updates.
-            if (isLocalOrigination) {
+            // This is to catch outside changes that affect subscriptions you which
+            // are subscribed and the special case where you remove yourself from a shared sub.
+            if (!isLocalOrigination) {
+                if (subscription.getOfficeIDs()
+                        .contains(RegistryIdUtil.getId())
+                        || subscription.getOriginatingSite().equals(
+                                RegistryIdUtil.getId())) {
+                    isLocalOrigination = true;
+                }
+            }
+
+            // Only subscriptions local to this BWM get processed for scheduling
+            // updates.
+            if (isSubscriptionManagedLocally(subscription)) {
                 subscriptionUpdated(subscription);
-            } 
-            
-            statusHandler.info("Subscription Updated: "+subscription.getName());
-            sendSubscriptionNotificationEvent(event, subscription);
+            }
+
+            statusHandler.info("Subscription Updated: "
+                    + subscription.getName());
+            sendSubscriptionNotificationEvent(event, subscription, isLocalOrigination);
         }
     }
 
     /***
-     * Filter for DataSetMetaData Objects received from registry.
-     * Publish to BandwidthEventBus for further downstream processing
-     * by specific type of DataSetMetaData object.
+     * Filter for DataSetMetaData Objects received from registry. Publish to
+     * BandwidthEventBus for further downstream processing by specific type of
+     * DataSetMetaData object.
+     * 
      * @param re
      */
     private void publishDataSetMetaDataEvent(RegistryEvent re) {
@@ -915,6 +938,38 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      */
 
     /**
+     * Determine if the subscription belongs to the local BWM.
+     * @param sub
+     * @return
+     */
+    @SuppressWarnings("rawtypes")
+    private boolean isSubscriptionManagedLocally(Subscription sub) {
+        
+        boolean isLocallyManaged = false;
+        
+        if (sub instanceof SharedSubscription) {
+            /**
+             * This means an update has occurred on a SHARED sub. We however
+             * do not want it scheduled locally. This check will catch it
+             * when the update occurs on the Central Registry and update it
+             * accordingly.
+             */
+            isLocallyManaged = RegistryIdUtil.getId().equals(
+                    RegistryUtil.defaultUser);
+
+        } else {
+            /**
+             * Local site update to a local subscription This catches
+             * non-GUI related updates from other modules of DD.
+             */
+            isLocallyManaged = sub.getOriginatingSite().equals(
+                    RegistryIdUtil.getId());
+        }
+
+        return isLocallyManaged;
+    }
+
+    /**
      * Send out subscription notifications to listening CAVE clients and EDEX
      * components.
      * 
@@ -922,15 +977,13 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @param sub
      */
     protected void sendSubscriptionNotificationEvent(RegistryEvent event,
-            Subscription<T, C> sub) {
+            Subscription<T, C> sub, boolean isApplicableForTheLocalSite) {
         final String objectType = event.getObjectType();
 
         if (DataDeliveryRegistryObjectTypes.isRecurringSubscription(objectType)) {
             if (sub != null) {
                 // Send out a subscription update notification for CAVE clients.
                 // We want only shared subs that are locally relevant and local subs.
-                boolean isApplicableForTheLocalSite = sub.getOfficeIDs()
-                        .contains(RegistryIdUtil.getId());
                 if (isApplicableForTheLocalSite) {
                     switch (event.getAction()) {
                     case UPDATE:
@@ -1201,7 +1254,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             }
         }
     }
-
+   
     /**
      * Private inner work thread used to keep the RetrievalPlans up to date.
      * This fired off in a crontab every 30 minutes.  
