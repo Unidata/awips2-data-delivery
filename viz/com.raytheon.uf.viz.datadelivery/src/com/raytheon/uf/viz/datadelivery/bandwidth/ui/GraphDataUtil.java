@@ -19,8 +19,10 @@
  **/
 package com.raytheon.uf.viz.datadelivery.bandwidth.ui;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.bandwidth.request.GraphDataRequest;
@@ -48,18 +50,23 @@ import com.raytheon.uf.viz.core.exception.VizCommunicationException;
  * Feb 14, 2013 1596       djohnson     Remove sysouts, correct statusHandler class, handle null response.
  * Mar 26, 2013 1827       djohnson     Graph data should be requested from data delivery.
  * Jan 29, 2014 2722       mpduff       Callback is now passed in.
- * Oct 03, 2014 2749       ccody        Add clearGraphData method
+ * Oct 03, 2014 2749       ccody        Add clearGraphData method.
+ * Feb 03, 2015 4041       dhladky      Restructured to run off UI thread.
  * 
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
-public class GraphDataUtil implements Runnable {
+public class GraphDataUtil extends Job {
+
     /** UFStatus handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(GraphDataUtil.class);
-
+    
+    /** Callback called when the data has been updated */
+    private final IDataUpdated dataUpdatedCB;
+    
     /** Graph data request object */
     private final GraphDataRequest request = new GraphDataRequest();
 
@@ -68,13 +75,7 @@ public class GraphDataUtil implements Runnable {
 
     /** Bandwidth graph data */
     private BandwidthGraphData graphData;
-
-    /** Callback called when the data has been updated */
-    private final IDataUpdated dataUpdatedCB;
-
-    /** Executor service used for the threaded data retrieval */
-    private final ExecutorService service = Executors.newSingleThreadExecutor();
-
+    
     /**
      * Constructor.
      * 
@@ -83,65 +84,35 @@ public class GraphDataUtil implements Runnable {
      *            thread.
      */
     public GraphDataUtil(IDataUpdated dataUpdatedCB) {
+        super("Bandwidth Utilization Graph Update");
         this.dataUpdatedCB = dataUpdatedCB;
     }
+ 
+    /**
+     * schedule a retrieval 
+     */
+    public void scheduleRetrieval() {
 
+        if (this.getState() == Job.RUNNING
+                || this.getState() == Job.SLEEPING
+                || this.getState() == Job.WAITING) {
+            return;
+        }
+        this.schedule();
+    }
+    
     /**
      * Perform a data retrieval on the UI thread.
      */
     private void retrieveData() {
+
         response = sendRequest(request);
 
         if (response != null) {
             graphData = response.getGraphData();
         }
     }
-
-    /**
-     * Get the graph data. If the new data flag is set to true then it will do a
-     * new retrieval and return the new data otherwise it will return the
-     * existing data.
-     * 
-     * @param newData
-     *            Flag indicating if retrieving new data should occur before
-     *            returning the data.
-     * @return Bandwidth graph data.
-     */
-    public BandwidthGraphData getGraphData() {
-        if (graphData == null) {
-            retrieveData();
-        }
-
-        return graphData;
-    }
-
-    /**
-     * Clear the graph data.
-     * 
-     * Method to clear all Graph data for force a requery when getGraphData is called.
-     * 
-     */
-    public void clearGraphDataData() {
-        this.graphData = null;
-    }
-
     
-    /**
-     * Request retrieving graph data using a thread. When the thread is complete
-     * a data updated callback is called notifying the data retrieval has
-     * completed.
-     */
-    public void requestGraphDataUsingThread() {
-        service.submit(this);
-    }
-
-    /**
-     * Cancel the data retrieval thread.
-     */
-    public void cancelThread() {
-        service.shutdownNow();
-    }
-
     /**
      * Send a request for the bandwidth graph data.
      * 
@@ -163,17 +134,35 @@ public class GraphDataUtil implements Runnable {
 
         return null;
     }
-
+    
     /**
-     * Thread run method to retrieve the graph data.
+     * Callback will call this to retrieve current GraphData
+     * @return
      */
+    public BandwidthGraphData getGraphData() {
+        return graphData;
+    }
+    
+    /**
+     * Initial call waits for first GraphData request to finish entirely.
+     * @return
+     */
+    public BandwidthGraphData getGraphDataSynchronously() {
+        
+        retrieveData();
+        return graphData;
+    }
+
     @Override
-    public void run() {
+    protected IStatus run(IProgressMonitor monitor) {
+        
         retrieveData();
 
         if (dataUpdatedCB != null) {
             dataUpdatedCB.dataUpdated();
         }
 
+        return Status.OK_STATUS;
     }
 }
+

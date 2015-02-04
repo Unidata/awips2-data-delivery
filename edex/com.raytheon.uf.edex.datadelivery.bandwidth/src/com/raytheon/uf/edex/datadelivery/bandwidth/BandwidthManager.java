@@ -155,7 +155,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Nov 19, 2014 3852       dhladky      Fixed un-safe empty allocation state that broke Maintenance Task.
  * Nov 20, 2014 2749       ccody        Added "propose only" for Set Avail Bandwidth
  * Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
- * Jan 27, 2014 4041       dhladky      adhoc BaseRefTime for gridded subs is now set with start time from the DSMD object.
+ * Jan 27, 2014 4041       dhladky      Consolidated time checks for Adhoc creations.
  * </pre>
  * 
  * @author dhladky
@@ -1157,6 +1157,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     @Override
     public List<BandwidthAllocation> scheduleAdhoc(
             AdhocSubscription<T, C> subscription) {
+        // Adhocs always schedule for immediately regardles of type
         return scheduleAdhoc(subscription, BandwidthUtil.now());
     }
 
@@ -1167,12 +1168,12 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     @Override
     public List<BandwidthAllocation> scheduleAdhoc(
-            AdhocSubscription<T, C> subscription, Calendar baseReferenceTime) {
+            AdhocSubscription<T, C> subscription, Calendar now) {
 
         List<BandwidthSubscription> subscriptions = new ArrayList<BandwidthSubscription>();
         // Store the AdhocSubscription with a base time of now..
         subscriptions.add(bandwidthDao.newBandwidthSubscription(subscription,
-                baseReferenceTime));
+                now));
 
         /**
          * This check allows for retrieval of data older than current for grid.
@@ -1195,8 +1196,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                         subscriptions));
 
         for (SubscriptionRetrieval retrieval : retrievals) {
-            retrieval.setStartTime(baseReferenceTime);
-            Calendar endTime = TimeUtil.newCalendar(baseReferenceTime);
+            retrieval.setStartTime(now);
+            Calendar endTime = TimeUtil.newCalendar(now);
             endTime.add(Calendar.MINUTE, retrieval.getSubscriptionLatency());
             retrieval.setEndTime(endTime);
             // Store the SubscriptionRetrieval - retrievalManager expects
@@ -1268,30 +1269,19 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 RetrievalPlan plan = retrievalManager.getPlan(subscription
                         .getRoute());
                 if (plan != null) {
-                    Date subscriptionValidStart = subscription.calculateStart(
-                            plan.getPlanStart()).getTime();
-                    Date subscriptionValidEnd = subscription.calculateEnd(
-                            plan.getPlanEnd()).getTime();
+                    
                     Calendar nowCalendar = TimeUtil.newCalendar();
-                    Date now = nowCalendar.getTime();
+                    // check for time >= subscription start time 
+                    // check for subscription in active period window
+                    // check for whether subscription is expired
+                    // check if subscription is active
+                    if (subscription.shouldScheduleForTime(nowCalendar)
+                            && subscription.isActive()) {
+                        unscheduled = scheduleAdhoc(adhoc);
 
-                    if ((now.equals(subscriptionValidStart) || now
-                            .after(subscriptionValidStart))
-                            && now.before(subscriptionValidEnd)
-                            && subscription.inActivePeriodWindow(nowCalendar)) {
-                        // Set baseRefTime as the start time of the adhoc sub
-                        // set by the datasetmetadata
-                        if (useMostRecentDataSetUpdate) {
-                            Calendar baseRefTime = TimeUtil.newCalendar(adhoc.getTime().getStart());
-                            unscheduled = scheduleAdhoc(adhoc, baseRefTime);
-                        } else {
-                            // use current "now" time.
-                            unscheduled = scheduleAdhoc(adhoc);
-                        }
-                        
                     } else {
                         statusHandler.info(String.format(
-                                "Time frame outside of subscription active time frame [%s].  "
+                                "Subscription outside active time frame or INACTIVE [%s].  "
                                         + "No adhoc requested.",
                                 subscription.getName()));
                     }

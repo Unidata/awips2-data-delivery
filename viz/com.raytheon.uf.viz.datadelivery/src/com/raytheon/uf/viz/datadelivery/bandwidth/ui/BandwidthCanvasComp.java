@@ -124,6 +124,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Nov 19, 2014   3852     dhladky     Fixed overload state with Notification Records.
  *  Jan 05, 2015   3950  ccody/dhladky  Change update logic to update 4 times per bandwidth bucket
  *                                      and pertinent notification events (Create,Update,Delete,Activate,Deactivate)
+ *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.                                   
  * </pre>
  * 
  * @author lvenable
@@ -221,9 +222,9 @@ public class BandwidthCanvasComp extends Composite
 
     /** Last graph update time */
     Timer activeUpdateTimer = null;
-
-    /** Graph data utility */
-    private final GraphDataUtil graphDataUtil;
+    
+    /** the query job **/
+    private GraphDataUtil graphDataUtil;
 
     /** Vertical line marking the mouse pointer's location */
     private int mouseMarker;
@@ -292,7 +293,7 @@ public class BandwidthCanvasComp extends Composite
         this.display = this.parentComp.getDisplay();
         this.graphDataUtil = new GraphDataUtil(this);
         if (this.graphDataUtil != null) {
-            this.bgd = this.graphDataUtil.getGraphData();
+            this.bgd = this.graphDataUtil.getGraphDataSynchronously();
         }
 
         init();
@@ -365,7 +366,7 @@ public class BandwidthCanvasComp extends Composite
             @Override
             public void widgetDisposed(DisposeEvent e) {
                 if (graphDataUtil != null) {
-                    graphDataUtil.cancelThread();
+                    graphDataUtil.cancel();
                 }
 
                 NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC,
@@ -546,7 +547,7 @@ public class BandwidthCanvasComp extends Composite
 
         boolean isUpdateNeeded = isUpdateableNotification(messages);
         if (isUpdateNeeded == true) {
-            dataUpdated();
+            graphDataUtil.scheduleRetrieval();
         }
     }
 
@@ -555,7 +556,7 @@ public class BandwidthCanvasComp extends Composite
             ActionListener taskPerformer = new ActionListener() {
                 public void actionPerformed(ActionEvent evt) {
                     if (isDisposed() == false) {
-                        dataUpdated();
+                        graphDataUtil.scheduleRetrieval();
                     } else {
                         activeUpdateTimer.stop();
                         activeUpdateTimer = null;
@@ -1692,7 +1693,6 @@ public class BandwidthCanvasComp extends Composite
 
                 lastUpdateTime = System.currentTimeMillis();
                 imageMgr.setCurrentTimeMillis(lastUpdateTime);
-                graphDataUtil.clearGraphDataData();
 
                 try {
                     BandwidthGraphData tempData = graphDataUtil.getGraphData();
