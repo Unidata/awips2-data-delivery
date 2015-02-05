@@ -40,6 +40,7 @@
         <constructor-arg>
             <bean
                 class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.DeserializeRetrievedDataFromIngest">
+                <constructor-arg ref="SubscriptionHandler" />
             </bean>
         </constructor-arg>
         <constructor-arg>
