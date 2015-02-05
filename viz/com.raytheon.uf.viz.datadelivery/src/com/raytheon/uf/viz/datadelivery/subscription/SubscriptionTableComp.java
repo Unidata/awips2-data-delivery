@@ -124,6 +124,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Dec 09, 2014  3550      ccody        Filter out Retrieval Notification Messages.
  * Jan 05, 2015  3950   ccody/dhladky   Change Subscription Manager table update logic for pertinent 
  *                                      notification events (Create,Update,Delete,Activate,Deactivate,Expire)
+ * Feb 04, 2015  4047      dhladky      Fixed deleting tableData before job has retrieved replacement.                                    
  * @version 1.0
  */
 
@@ -404,7 +405,6 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      */
     @SuppressWarnings("rawtypes")
     public void populateData() {
-        subManagerData.clearAll();
 
         final ISubscriptionHandler handler = RegistryObjectHandlers
                 .get(ISubscriptionHandler.class);
@@ -435,7 +435,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                             if (isDisposed()) {
                                 return;
                             }
-
+                            // don't clear until you notify
+                            subManagerData.clearAll();
                             updateTable(subList);
                             subActionCallback.updateControls();
                         }
