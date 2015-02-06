@@ -83,6 +83,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Sept 05, 2014 2131      dhladky      Added PDA data types
  * Sept 14, 2014 2131      dhladky      PDA updates
  * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
+ * Feb 02, 2015  4014      dhladky      More consolidated subscription time checks.
  * 
  * </pre>
  * 
@@ -947,6 +948,21 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     }
 
     /**
+     * Check for before start date
+     * 
+     * @param date
+     * @return
+     */
+    private boolean isBeforeStart(Date date) {
+        boolean before = false;
+        if (subscriptionStart != null
+                && date.before(subscriptionStart)) {
+            before = true;
+        }
+        return before;
+    }
+
+    /**
      * Get the current subscription status.
      * 
      * @return SUBSCRIPTION_STATUS
@@ -993,7 +1009,9 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      */
     @Override
     public boolean shouldScheduleForTime(Calendar checkCal) {
-        if (!isExpired(checkCal.getTime()) && inActivePeriodWindow(checkCal)) {
+        if (!isExpired(checkCal.getTime())
+                && !isBeforeStart(checkCal.getTime())
+                && inActivePeriodWindow(checkCal)) {
             return true;
         }
 
