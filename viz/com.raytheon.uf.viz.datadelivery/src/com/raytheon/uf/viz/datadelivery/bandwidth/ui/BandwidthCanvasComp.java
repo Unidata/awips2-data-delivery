@@ -62,6 +62,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Slider;
+import org.eclipse.swt.widgets.ToolTip;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
@@ -124,7 +125,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Nov 19, 2014   3852     dhladky     Fixed overload state with Notification Records.
  *  Jan 05, 2015   3950  ccody/dhladky  Change update logic to update 4 times per bandwidth bucket
  *                                      and pertinent notification events (Create,Update,Delete,Activate,Deactivate)
- *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.                                   
+ *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.  
+ *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse                                  
  * </pre>
  * 
  * @author lvenable
@@ -276,6 +278,9 @@ public class BandwidthCanvasComp extends Composite
   
     /** The current instance (Used to remove this as an event listener) */
     BandwidthCanvasComp bandwidthCanvasComp = null;
+    
+    /** Universal toolTip for canvas images **/
+    private ToolTip toolTip = null;
 
     /**
      * Constructor.
@@ -371,6 +376,7 @@ public class BandwidthCanvasComp extends Composite
 
                 NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC,
                         bandwidthCanvasComp);
+                toolTip.dispose();
             }
         });
 
@@ -760,6 +766,7 @@ public class BandwidthCanvasComp extends Composite
                 mouseMarker = MISSING;
                 canvasMap.get(CanvasImages.GRAPH).redraw();
                 canvasMap.get(CanvasImages.UTILIZATION_GRAPH).redraw();
+                toolTip.dispose();
             }
         });
 
@@ -783,6 +790,7 @@ public class BandwidthCanvasComp extends Composite
                 }
 
                 mouseMarker = MISSING;
+                toolTip.dispose();
             }
         });
 
@@ -907,6 +915,10 @@ public class BandwidthCanvasComp extends Composite
                 mouseMarker = MISSING;
                 canvasMap.get(CanvasImages.GRAPH).redraw();
                 canvasMap.get(CanvasImages.UTILIZATION_GRAPH).redraw();
+                canvasMap.get(CanvasImages.GRAPH).setToolTipText(null);
+                if (toolTip != null) {
+                    toolTip.dispose();
+                }
             }
 
             @Override
@@ -935,6 +947,7 @@ public class BandwidthCanvasComp extends Composite
                 }
 
                 mouseMarker = MISSING;
+                toolTip.dispose();
 
                 cornerPointOffset.x -= previousMousePoint.x - e.x;
                 cornerPointOffset.y -= previousMousePoint.y - e.y;
@@ -1291,11 +1304,24 @@ public class BandwidthCanvasComp extends Composite
      *            The canvas image.
      */
     private void displayToolTipText(MouseEvent me, CanvasImages ci) {
+        
         Point mouseCoord = new Point(0, 0);
         mouseCoord.x = Math.abs(cornerPointOffset.x) + me.x;
         mouseCoord.y = Math.abs(cornerPointOffset.y) + me.y;
-        canvasMap.get(ci).setToolTipText(
-                imageMgr.getToolTipText(mouseCoord, ci));
+
+        if (toolTip != null && !toolTip.isDisposed()) {
+            toolTip.dispose();
+        }
+
+        if (mouseCoord != null) {
+            String text = imageMgr.getToolTipText(mouseCoord, ci);
+            toolTip = new ToolTip(this.getShell(), SWT.FILL);
+            toolTip.setLocation(mouseCoord);
+            if (text != null) {
+                toolTip.setMessage(text.trim());
+            }
+            toolTip.setVisible(true);
+        }
     }
 
     /**
