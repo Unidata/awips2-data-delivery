@@ -22,11 +22,18 @@ package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.serialization.JAXBManager;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.wmo.WMOMessage;
 import com.raytheon.uf.common.wmo.XmlWMOMessage;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapRetrievalResponse;
+import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WfsRetrievalResponse;
+import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
  * Deserializes the retrieved data in a retrievalQueue.
@@ -46,6 +53,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WfsRetrievalResponse;
  *                                      unmarshalling from xml.
  * Jan 30, 2014 2686       dhladky      refactor of retrieval.
  * May 14, 2014 2536       bclement     moved WMO Header to common
+ * Feb 02, 2014 4064       dhladky      Filter SBN deliveries for Subscriptions local registry is subscribed too.
  * 
  * </pre>
  * 
@@ -55,17 +63,27 @@ import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WfsRetrievalResponse;
 public class DeserializeRetrievedDataFromIngest implements IRetrievalsFinder {
 
     private final JAXBManager jaxbManager;
+    
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(DeserializeRetrievedDataFromIngest.class);
 
+    private final ISubscriptionHandler subscriptionHandler;
+    
+    public static final String UNKNOWN_SUBSCRIPTION = "UNKNOWN SUBSCRIPTION";
+        
     /**
-     * @param retrievalQueue
+     * @param subscriptionHandler
      */
-    public DeserializeRetrievedDataFromIngest() {
+    public DeserializeRetrievedDataFromIngest(
+            SubscriptionHandler subscriptionHandler) {
+
+        this.subscriptionHandler = subscriptionHandler;
 
         try {
             this.jaxbManager = new JAXBManager(RetrievalResponseXml.class,
                     SbnRetrievalResponseXml.class,
                     OpenDapRetrievalResponse.class, WfsRetrievalResponse.class,
-                    Coverage.class);
+                    Coverage.class, PDARetrievalResponse.class);
         } catch (JAXBException e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -75,19 +93,47 @@ public class DeserializeRetrievedDataFromIngest implements IRetrievalsFinder {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("rawtypes")
     @Override
-    public RetrievalResponseXml processRequest(RetrievalRequestWrapper rrw) throws Exception {
-       
+    public RetrievalResponseXml processRequest(RetrievalRequestWrapper rrw)
+            throws Exception {
+
         String xml = (String) rrw.getPayload();
 
         if (xml == null) {
             return null;
         } else {
-            WMOMessage message = new XmlWMOMessage(xml.getBytes());
-            return (RetrievalResponseXml) jaxbManager.unmarshalFromXml(message
-                    .getBodyText());
-        }
+         
+            String subName = UNKNOWN_SUBSCRIPTION;
+            
+            try {
 
+                WMOMessage message = new XmlWMOMessage(xml.getBytes());
+                RetrievalResponseXml retrievalResponse = (RetrievalResponseXml) jaxbManager
+                        .unmarshalFromXml(message.getBodyText());
+                subName = retrievalResponse.getRequestRecord()
+                        .getSubscriptionName();
+                Subscription sub = subscriptionHandler.getByName(subName);
+
+                // Do we want this data?
+                if (sub != null
+                        && sub.getOfficeIDs().contains(RegistryIdUtil.getId())) {
+                    
+                    statusHandler.info("Delivering Subscription:  " + subName
+                            + " WMO Header: "
+                            + message.getWmoHeader().getWmoHeader());
+
+                    return retrievalResponse;
+                }
+
+            } catch (Exception e) {
+                statusHandler.error(
+                        "Unable to deliver subscription data! "
+                                + subName, e);
+            }
+
+            return null;
+        }
     }
 
 }

@@ -26,6 +26,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
@@ -70,6 +72,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  *                                      element keys are null.
  * Oct 09, 2013 2267       bgonzale     Fix Wmo header cr and lf formatting.
  * Jul 21, 2014 2914       garmendariz  Remove references to PropertiesException
+ * Feb 02, 2015 4064       dhladky      Added logging of header.
  * 
  * </pre>
  * 
@@ -78,6 +81,9 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  */
 public class DataDeliveryRetrievalWmoHeaderApplier implements IWmoHeaderApplier {
 
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(DataDeliveryRetrievalWmoHeaderApplier.class);
+    
     private final MessageFormat wmoHeaderMessage;
     
     private final Map<String, String> dataProviderMap;
@@ -133,6 +139,8 @@ public class DataDeliveryRetrievalWmoHeaderApplier implements IWmoHeaderApplier 
         final Object formatArgs = createMessageFormatArgs(dataProvider,
                 dataFormat, sourceType, date);
         final String formattedWmoHeader = wmoHeaderMessage.format(formatArgs);
+        statusHandler.info("SBN header: "+formattedWmoHeader);
+        
         return formattedWmoHeader + data;
     }
 
@@ -141,6 +149,7 @@ public class DataDeliveryRetrievalWmoHeaderApplier implements IWmoHeaderApplier 
         final String provider = getElement(dataProvider, this.dataProviderMap);
         final String format = getElement(dataFormat, this.dataFormatMap);
         final String source = getElement(sourceType, this.dataSourceMap);
+        
         return new Object[] { provider, format, source, date };
     }
 

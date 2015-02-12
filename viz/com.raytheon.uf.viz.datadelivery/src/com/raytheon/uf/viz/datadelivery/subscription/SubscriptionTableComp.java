@@ -124,6 +124,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Dec 09, 2014  3550      ccody        Filter out Retrieval Notification Messages.
  * Jan 05, 2015  3950   ccody/dhladky   Change Subscription Manager table update logic for pertinent 
  *                                      notification events (Create,Update,Delete,Activate,Deactivate,Expire)
+ * Jan 30, 2015  2746      dhladky      Special handling for shared sub updates/deletes
  * Feb 04, 2015  4047      dhladky      Fixed deleting tableData before job has retrieved replacement.                                    
  * @version 1.0
  */
@@ -731,11 +732,13 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                 final Subscription<Time, Coverage> sub = getSelectedSubscription();
                 if (sub instanceof SharedSubscription) {
                     MenuItem addToShared = new MenuItem(popupMenu, SWT.PUSH);
-                    addToShared.setText("Add site to shared");// subscription");
+                    addToShared.setText("Add site to shared");
                     addToShared.setEnabled(true);
                     addToShared.addSelectionListener(new SelectionAdapter() {
                         @Override
                         public void widgetSelected(SelectionEvent e) {
+                            // flag site making the change
+                            sub.setOriginatingSite(CURRENT_SITE);
                             handleAddSiteToShared(sub);
                         }
                     });
