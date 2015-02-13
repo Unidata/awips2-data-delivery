@@ -155,6 +155,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
  * Dec 01, 2014   3550     ccody       Added extended Latency Processing
  * Jan 05, 2015   3898     ccody       Delete existing Site subscription if it is updated to a Shared Subscription
+ * Feb 13, 2015   3852     dhladky     All messaging is done from the BWM and Registry regarding subscriptions.
  * 
  * </pre>
  * 
@@ -1615,28 +1616,12 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             result = subscriptionService.store(username, subscription,
                     new CancelForceApplyAndIncreaseLatencyDisplayText("create",
                             getShell()));
-            subscriptionNotificationService
-                    .sendCreatedSubscriptionNotification(subscription, username);
-
+    
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to create subscription.", e);
         }
         return result;
-    }
-
-    /**
-     * Send a notification that a subscription has been created.
-     * 
-     * @param subscription
-     *            the subscription
-     * @param username
-     *            the username
-     */
-    private void sendSubscriptionNotification(Subscription subscription,
-            String username) {
-        subscriptionNotificationService.sendCreatedSubscriptionNotification(
-                subscription, username);
     }
 
     /**

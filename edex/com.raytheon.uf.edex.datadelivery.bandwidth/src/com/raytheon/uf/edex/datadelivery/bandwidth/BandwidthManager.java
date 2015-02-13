@@ -152,7 +152,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 12, 2014 3707       dhladky      Changed the way gridded subscriptions are triggerd for retrieval.
  * Oct 28, 2014 2748       ccody        Subscription outside of Active period should not throw an exception
  * Nov 03, 2014 2414       dhladky      Refactored bandwidth Manager, better documented methods, fixed race conditions.
- * Nov 19, 2014 3852       dhladky      Fixed un-safe empty allocation state that broke Maintenance Task.
+ * Nov 19, 2014 3852       dhladky      Fixed un-safe empty allocation state that broke Maintenance Task. More logging.
  * Nov 20, 2014 2749       ccody        Added "propose only" for Set Avail Bandwidth
  * </pre>
  * 
@@ -1363,12 +1363,14 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             // First see if BandwidthManager has seen the subscription before.
             List<BandwidthSubscription> bandwidthSubscriptions = bandwidthDao
                     .getBandwidthSubscription(subscription);
-
+            statusHandler.info("Subscription: "+subscription.getName()+" status: "+subscription.getStatus().name());
+            
             // If BandwidthManager does not know about the subscription, and
             // it's active, attempt to add it..
             if (bandwidthSubscriptions.isEmpty()
                     && ((RecurringSubscription<?, ?>) subscription)
-                            .shouldSchedule() && !subscription.isUnscheduled()) {
+                            .shouldSchedule()
+                    && !subscription.isUnscheduled()) {
                 return schedule(subscription);
             } else if (subscription.getStatus() == SubscriptionStatus.DEACTIVATED
                     || subscription.isUnscheduled()) {
