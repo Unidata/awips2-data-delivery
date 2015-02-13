@@ -63,7 +63,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Aub 20, 2014 3564       dhladky     Allow for un-authenicated HTTPS
  * Sep 03, 2014 3570       bclement    http client API changes
  * Nov 15, 2014 3757       dhladky     General HTTPS configuration
- * Jan 21, 2014 3952       njensen     Updated call to setupCredentials()
+ * Jan 21, 2015 3952       njensen     Updated call to setupCredentials()
+ * Jan 26, 2015 3952       njensen     gzip handled by default
  * 
  * </pre>
  * 
@@ -130,8 +131,6 @@ public class WfsConnectionUtil {
             synchronized (credentialHandler) {
                 if (httpClient == null) {
                     HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
-                    // accept gzipped data for WFS
-                    builder.setHandlingGzipResponses(true);
                     builder.setHttpsHandler(credentialHandler);
                     httpClient = new HttpClient(builder.build());
                 }

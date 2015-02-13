@@ -120,6 +120,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Nov 19, 2014  3852      dhladky      Fixed message overload problem.
  * Dec 03, 2014  3840      ccody        Correct sorting "contract violation" issue
  * Dec 09, 2014  3550      ccody        Filter out Retrieval Notification Messages.
+ * Jan 30, 2015  2746      dhladky      Special handling for shared sub updates/deletes
  * @version 1.0
  */
 
@@ -727,11 +728,13 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                 final Subscription sub = getSelectedSubscription();
                 if (sub instanceof SharedSubscription) {
                     MenuItem addToShared = new MenuItem(popupMenu, SWT.PUSH);
-                    addToShared.setText("Add site to shared");// subscription");
+                    addToShared.setText("Add site to shared");
                     addToShared.setEnabled(true);
                     addToShared.addSelectionListener(new SelectionAdapter() {
                         @Override
                         public void widgetSelected(SelectionEvent e) {
+                            // flag site making the change
+                            sub.setOriginatingSite(CURRENT_SITE);
                             handleAddSiteToShared(sub);
                         }
                     });

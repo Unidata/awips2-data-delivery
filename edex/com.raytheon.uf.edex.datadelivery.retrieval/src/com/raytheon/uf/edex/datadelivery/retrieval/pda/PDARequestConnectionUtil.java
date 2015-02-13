@@ -54,39 +54,42 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Sept 27, 2014 3127       dhladky    updated deprecation methods.
  * Nov  10, 2014 3826       dhladky    Need HTTPS for connection to PDA, have to create dummy HTTPS handler for that.
  * Nov  15, 2014 3757       dhladky    More General HTTPS configuration
+ * Jan  26, 2015 3952       njensen    gzip handled by default
+ * 
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
  */
 
-
 public class PDARequestConnectionUtil {
-    
+
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARequestConnectionUtil.class);
-    
+
     protected static final String charset = "ISO-8859-1";
-    
+
     protected static final String contentType = "text/xml";
-    
+
     /** truststore path set by Data Delivery in the serviceConfig XML */
     protected static final String truststore = "TRUSTSTORE_FILE";
-    
+
     /** truststore type **/
     protected static final String storeType = "pkcs12";
-    
+
     protected static final String providerName = "PDA";
-    
+
     /** HTTP connection client **/
     private static volatile HttpClient httpClient;
-    
+
     /** truststore password AES encrypted in security properties file **/
     private static final String TRUSTSTORE_PASS = "edex.security.truststore.password";
-    
+
     /**
      * Connect to the PDA service
-     * @param request (XML)
+     * 
+     * @param request
+     *            (XML)
      * @param serviceURL
      * @return
      */
@@ -96,7 +99,7 @@ public class PDARequestConnectionUtil {
 
         try {
 
-            statusHandler.info("Connecting to: "+serviceURL);
+            statusHandler.info("Connecting to: " + serviceURL);
             httpClient = getHttpClient();
             URI uri = new URI(serviceURL);
             HttpPost post = new HttpPost(uri);
@@ -121,23 +124,22 @@ public class PDARequestConnectionUtil {
 
         if (httpClient == null) {
             HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
-            // accept gzipped data for PDA
-            builder.setHandlingGzipResponses(true);
             builder.setHttpsHandler(httpsHandler);
             httpClient = new HttpClient(builder.build());
         }
 
         return httpClient;
     }
-    
+
     /**
      * HTTPS handler for PDA
      */
     private static final IHttpsHandler httpsHandler = new IHttpsHandler() {
 
         final ServiceConfig serviceConfig = getServiceConfig();
+
         final SecurityConfiguration sc = getSecurityConfiguration();
-        
+
         @Override
         public String[] getCredentials(String host, int port, String authValue) {
 
@@ -148,8 +150,7 @@ public class PDARequestConnectionUtil {
 
         @Override
         public void credentialsFailed() {
-            statusHandler
-                    .error("HttpsHandler handler failed to authenticate!");
+            statusHandler.error("HttpsHandler handler failed to authenticate!");
         }
 
         @Override
@@ -172,9 +173,9 @@ public class PDARequestConnectionUtil {
 
         @Override
         public boolean isValidateCertificates() {
-            
+
             String filePath = serviceConfig.getConstantValue(truststore);
-            
+
             if (filePath != null) {
                 return true;
             } else {
@@ -183,13 +184,14 @@ public class PDARequestConnectionUtil {
         }
 
     };
-    
+
     /**
      * Load the service configuration
+     * 
      * @return
      */
     private static ServiceConfig getServiceConfig() {
-        
+
         return HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.PDA);
     }
@@ -200,9 +202,9 @@ public class PDARequestConnectionUtil {
      * @return
      */
     private static SecurityConfiguration getSecurityConfiguration() {
-        
+
         SecurityConfiguration sc = null;
-        
+
         try {
             sc = new SecurityConfiguration();
         } catch (IOException ioe) {
