@@ -982,7 +982,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      */
     public boolean shouldSchedule() {
         return subscriptionState == SubscriptionState.ON
-                && !checkAndSetExpiration();
+                && !checkAndSetExpiration() && isActive();
     }
 
     /**

@@ -633,7 +633,8 @@ public class SubscriptionService implements ISubscriptionService {
                     // Have to make sure we set them to NOT BE UNSCHEDULED, let
                     // the bandwidth manager decide they can't be scheduled
                     for (Subscription temp : subscriptions) {
-                        temp.setUnscheduled(false);
+                        temp.setUnscheduled(true);
+                        temp.deactivate();
                     }
                     String successMessageDeactivate = action.call();
 
