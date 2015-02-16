@@ -25,6 +25,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,6 +56,7 @@ import com.raytheon.uf.common.security.encryption.AESEncryptor;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 18, 2014 3839       ccody       Initial creation
+ * Feb 13, 2015 3839       dhladky     Original impl didn't write providerkey to DB.
  * </pre>
  * 
  * @author ccody
@@ -59,7 +64,7 @@ import com.raytheon.uf.common.security.encryption.AESEncryptor;
  */
 
 public class SetDataProviderDataCLI {
-
+    
     public static final String INVALID_DIR = "<INVALID_DIR>";
 
     /** Default Encryption Algorithm */
@@ -67,6 +72,9 @@ public class SetDataProviderDataCLI {
 
     /** Default Encryption Algorithm Padding */
     private static final String DefaultEncryptionPadding = "AES/CFB8/NoPadding";
+    
+    /** Default DB URL **/
+    private static final String DefaultDbURL = "127.0.0.1";
 
     /** Internal Tag Marker Start */
     private static final String TAG_START = "[[[";
@@ -116,6 +124,10 @@ public class SetDataProviderDataCLI {
 
     protected class DataProviderData {
         protected String connectionDir = null;
+        
+        protected String dburl = null;
+        
+        protected String dbpass = null;
 
         protected String providerName = null;
 
@@ -137,6 +149,22 @@ public class SetDataProviderDataCLI {
 
         public void setConnectionDir(String newConnectionDir) {
             this.connectionDir = newConnectionDir;
+        }
+        
+        public void setDburl(String dburl) {
+            this.dburl = dburl;
+        }
+        
+        public String getDburl() {
+            return dburl;
+        }
+        
+        public void setDbpass(String dbpass) {
+            this.dbpass = dbpass;
+        }
+        
+        public String getDbpass() {
+            return dbpass;
         }
 
         public String getProviderName() {
@@ -198,6 +226,8 @@ public class SetDataProviderDataCLI {
         public void print() {
             System.out.println("Provider Data:");
             System.out.println("Connection Directory: " + this.connectionDir);
+            System.out.println("DB URL:          " + this.dburl);
+            System.out.println("DB Password:     " + this.dbpass);
             System.out.println("Provider Name:   " + this.providerName);
             System.out.println("Provider Key:    " + this.providerKey);
             System.out.println("User Name        " + this.userName);
@@ -320,6 +350,7 @@ public class SetDataProviderDataCLI {
                         // DO NOTHING
                     }
 
+                    @SuppressWarnings("unused")
                     public void writeTo(OutputStream out) throws IOException {
                         // DO NOTHING
                     }
@@ -408,6 +439,20 @@ public class SetDataProviderDataCLI {
                     dataProviderData.setConnectionDir(INVALID_DIR);
                 }
             }
+            
+            // DB URL
+            tempString = argumentMap.get("dburl");
+            if ((tempString != null) && (tempString.isEmpty() == false)) {
+                dataProviderData.setDburl(tempString);
+            } else {
+                dataProviderData.setDburl(DefaultDbURL);
+            }
+            
+            // DB Password
+            tempString = argumentMap.get("dbpass");
+            if ((tempString != null) && (tempString.isEmpty() == false)) {
+                dataProviderData.setProviderName(tempString);
+            }
 
             // Data Provider Name
             tempString = argumentMap.get("provider");
@@ -469,6 +514,8 @@ public class SetDataProviderDataCLI {
      */
     private void getUserInput() {
         String curConnectionDir = dataProviderData.getConnectionDir();
+        String curDburl = dataProviderData.getDburl();
+        String curDbpass = dataProviderData.getDbpass();
         String curProviderName = dataProviderData.getProviderName();
         String curProviderKey = dataProviderData.getProviderKey();
         String curEncryption = dataProviderData.getEncryption();
@@ -495,6 +542,13 @@ public class SetDataProviderDataCLI {
                 }
             }
         }
+        
+        curDburl = getInput("Registry DB URL", curDburl, false);
+        dataProviderData.setDburl(curDburl);
+        
+        curDbpass = getInput("Registry DB Password", curDbpass, false);
+        dataProviderData.setDbpass(curDbpass);
+                
         curProviderName = getInput("Provider Name", curProviderName, false);
         dataProviderData.setProviderName(curProviderName);
 
@@ -579,6 +633,18 @@ public class SetDataProviderDataCLI {
             okContinue = false;
         }
 
+        curCheckString = dataProviderData.getDburl();
+        if ((curCheckString == null) || (curCheckString.isEmpty() == true)) {
+            System.out.println("DB URL [" + curCheckString
+                    + "]  is empty or invalid.");
+            okContinue = false;
+        }
+        curCheckString = dataProviderData.getDbpass();
+        if ((curCheckString == null) || (curCheckString.isEmpty() == true)) {
+            System.out.println("DB Password [" + curCheckString
+                    + "]  is empty or invalid.");
+            okContinue = false;
+        }
         curCheckString = dataProviderData.getProviderName();
         if ((curCheckString == null) || (curCheckString.isEmpty() == true)) {
             System.out.println("Provider Name [" + curCheckString
@@ -604,13 +670,13 @@ public class SetDataProviderDataCLI {
         }
         curCheckString = dataProviderData.getEncryption();
         if ((curCheckString == null) || (curCheckString.isEmpty() == true)) {
-            System.out.println("Enxryption Algorithm [" + curCheckString
+            System.out.println("Encryption Algorithm [" + curCheckString
                     + "]  is empty or invalid.");
             okContinue = false;
         }
         curCheckString = dataProviderData.getPadding();
         if ((curCheckString == null) || (curCheckString.isEmpty() == true)) {
-            System.out.println("Enxryption Algorithm Padding ["
+            System.out.println("Encryption Algorithm Padding ["
                     + curCheckString + "]  is empty or invalid.");
             okContinue = false;
         }
@@ -673,11 +739,55 @@ public class SetDataProviderDataCLI {
      */
     private boolean writeDataToFile() {
 
-        // Integrate data into XML Template String
+        // Integrate data into XML Template String and save provider/providerkey to DB
         String outputString = mergeDataIntoXml();
 
         if (isVerbose == true) {
             System.out.println("Connection File Data:\n" + outputString);
+        }
+        
+        try {
+            
+            Connection connection = null;
+
+            try {
+
+                connection = DriverManager.getConnection(
+                        "jdbc:postgresql://"+dataProviderData.getDburl()+":5432/metadata", "awips",
+                        dataProviderData.getDbpass());
+
+                PreparedStatement ps = connection
+                        .prepareStatement("INSERT INTO awips.datadeliveryproviderkey VALUES (?, ?)");
+                ps.setString(1, dataProviderData.getProviderName());
+                ps.setString(2, dataProviderData.getProviderKey());
+                ps.executeUpdate();
+
+            } catch (SQLException e) {
+                // entry already exists for this provider, update
+                if (e.getMessage()
+                        .contains(
+                                "ERROR: duplicate key value violates unique constraint")) {
+                    PreparedStatement ps2 = connection
+                            .prepareStatement("UPDATE awips.datadeliveryproviderkey set providerkey = ? where providername = ?");
+                    ps2.setString(1, dataProviderData.getProviderKey());
+                    ps2.setString(2, dataProviderData.getProviderName());
+                    ps2.executeUpdate();
+
+                } else {
+
+                    System.out
+                            .println("Connection Failed! Check output console");
+                    e.printStackTrace();
+                }
+            }
+
+            if (isVerbose == true) {
+                System.out.println("Saved provider/providerKey to DB:\n" + dataProviderData.getProviderName());
+            }
+            
+        } catch (Exception e) {
+            System.out.println("Failed! Couldn't store provider/providerKey record!");
+            e.printStackTrace();
         }
 
         return (writeDataFile(outputString));
@@ -812,11 +922,15 @@ public class SetDataProviderDataCLI {
      */
     private static void printHelp() {
         System.out
-                .println("SetDataProviderDataCLI [-quiet -provider <Provider Name> -key <Provider Key> -encrypt <Encryption Algorithm> -padding <Encryption Padding> -user <User Name> -password <Password>");
+                .println("SetDataProviderDataCLI [-quiet -dburl <DB URL> -dbpass <Db Password> -provider <Provider Name> -key <Provider Key> -encrypt <Encryption Algorithm> -padding <Encryption Padding> -user <User Name> -password <Password>");
         System.out.println("\t-help prints out this help message");
         System.out.println("\tAll args are optional:");
         System.out
                 .println("\t-quiet  Used when all parameters are specified. No prompts and only error messages are displayed.");
+        System.out
+                .println("\t-dburl <Db URL> specifies the URL of the Central Registry database");
+        System.out
+                .println("\t-dbpass <Db Password> specifies the password of the Central Registry database");
         System.out
                 .println("\t-provider <Provider Name> specifies the name of the Data Provider");
         System.out
@@ -859,6 +973,7 @@ public class SetDataProviderDataCLI {
         }
 
         SetDataProviderDataCLI setDataProviderData = new SetDataProviderDataCLI();
+        
         try {
             setDataProviderData.process(argumentMap);
         } catch (Exception ex) {
@@ -868,8 +983,9 @@ public class SetDataProviderDataCLI {
                 System.out
                         .println("Exception failure. Run with -verbose for stack trace");
             }
-        }
-
+        } 
     }
+    
+    
 
 }
