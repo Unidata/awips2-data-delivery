@@ -15,6 +15,6 @@
 	
 	<bean id="satelliteDecoder" class="com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder" />
 	
-	<bean id="goessoundingDecoder" class="com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder" />
-	  
+	<bean id="goessoundingDecoder" depends-on="goessoundingRegistered"
+			class="com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder" />	  
 </beans>
