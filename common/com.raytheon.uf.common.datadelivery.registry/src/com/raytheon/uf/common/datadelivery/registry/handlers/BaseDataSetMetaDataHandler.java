@@ -48,6 +48,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * Oct 17, 2012 0726       djohnson    Move in {@link #getByDataSet}.
  * Jun 24, 2013 2106       djohnson    Now composes a registryHandler.
  * Jul 28, 2014 2752       dhladky     Added new method functions for more efficient querying.
+ * Feb 19, 2015 3998       dhladky     Streamlined adhoc sub processing.
  * 
  * </pre>
  * 
@@ -148,6 +149,38 @@ public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?>, Q
         checkResponse(response, "getDataSetMetaToDate");
 
         return (List<T>) response.getResults();
+    }
+    
+ 
+    /**
+     * {@inheritDoc}
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
+    public T getMostRecentDataSetMetaData(
+            String dataSetName, String providerName)
+            throws RegistryHandlerException {
+        
+        // First, get date list for this dataSet.
+        Set<ImmutableDate> dates = getDatesForDataSet(dataSetName, providerName);
+        // Then get the most recent one.
+        ImmutableDate mostRecent = null;
+        for (ImmutableDate id: dates) {
+            if (mostRecent == null || id.after(mostRecent)) {
+                mostRecent = id;
+            }
+        }
+        // Now return a single DSMD object which is the most recent.
+        DataSetMetaDataQuery query = new DataSetMetaDataQuery();
+        query.setDataSetName(dataSetName);
+        query.setProviderName(providerName);
+        query.setDate(mostRecent);
+
+        RegistryQueryResponse<DataSetMetaData> response = registryHandler.getObjects(query);
+
+        checkResponse(response, "getMostRecentDataSetMetaData");
+
+        return (T) response.getSingleResult();
     }
     
 }

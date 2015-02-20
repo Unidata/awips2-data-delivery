@@ -156,6 +156,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Nov 20, 2014 2749       ccody        Added "propose only" for Set Avail Bandwidth
  * Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
  * Jan 27, 2014 4041       dhladky      Consolidated time checks for Adhoc creations.
+ * Feb 19, 2015 3998       dhladky      Streamlined adhoc subscription processing.
  * </pre>
  * 
  * @author dhladky
@@ -1181,7 +1182,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
          * and time.
          */
         AdhocSubscription<T, C> subscriptionUpdated = bandwidthDaoUtil
-                .setAdhocMostRecentUrlAndTime(subscription, true);
+                .setAdhocMostRecentUrlAndTime(subscription);
         if (subscriptionUpdated != null) {
             subscription = subscriptionUpdated;
         }
@@ -1256,8 +1257,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
             AdhocSubscription<T, C> adhoc = new AdhocSubscription<T, C>(
                     (RecurringSubscription<T, C>) subscription);
-            adhoc = bandwidthDaoUtil.setAdhocMostRecentUrlAndTime(adhoc,
-                    useMostRecentDataSetUpdate);
+            adhoc = bandwidthDaoUtil.setAdhocMostRecentUrlAndTime(adhoc);
 
             if (adhoc == null) {
                 statusHandler
