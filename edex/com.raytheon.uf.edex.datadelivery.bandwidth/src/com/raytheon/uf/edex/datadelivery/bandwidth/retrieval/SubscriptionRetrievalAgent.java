@@ -238,11 +238,24 @@ public class SubscriptionRetrievalAgent extends
         Long requestRetrievalTimeLong = Long.valueOf( System.currentTimeMillis() ); //Default to "now"
         Subscription<?, ?> bundleSub = bundle.getSubscription();
         com.raytheon.uf.common.datadelivery.registry.Time requestRetrievalTimeT =  bundleSub.getTime();
+        Date requestRetrievalDate = null;
+        
         if (requestRetrievalTimeT != null) {
-            Date requestRetrievalDate = requestRetrievalTimeT.getRequestStart();
-            if (requestRetrievalDate == null) {
-                requestRetrievalDate = requestRetrievalTimeT.getRequestEnd(); //Failover 
+            // cases of starting date set
+            if (requestRetrievalTimeT.getRequestStart() != null) {
+                requestRetrievalDate = requestRetrievalTimeT.getRequestStart();
+            } else {
+                requestRetrievalDate = requestRetrievalTimeT.getStart();
             }
+            // cases of ending date set
+            if (requestRetrievalDate == null) {
+                if (requestRetrievalTimeT.getRequestEnd() != null) {
+                    requestRetrievalDate = requestRetrievalTimeT.getRequestEnd();
+                } else {
+                    requestRetrievalDate = requestRetrievalTimeT.getEnd();
+                }
+            }
+            // set the date of retrieved data
             if (requestRetrievalDate != null) {
                 requestRetrievalTimeLong = Long.valueOf( requestRetrievalDate.getTime() );
             } 
