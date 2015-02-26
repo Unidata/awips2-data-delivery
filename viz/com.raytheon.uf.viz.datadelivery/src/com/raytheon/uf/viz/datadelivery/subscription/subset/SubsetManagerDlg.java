@@ -59,7 +59,6 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionTyp
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -152,6 +151,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Apr 10, 2014   2864     mpduff       Changed how saved subset files are stored.
  * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
  * Sept 04, 2014  3121     dhladky      Setup for PDA data type
+ * Feb 13, 2015   3852     dhladky      All messaging is handled by the BWM and registry.
  * 
  * </pre>
  * 
@@ -171,10 +171,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     private final ISubscriptionService subscriptionService = DataDeliveryServices
             .getSubscriptionService();
-
-    /** Subscription notification service */
-    private final ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
-            .getSubscriptionNotificationService();
 
     /** Subset Name text box */
     private Text nameText;
@@ -568,8 +564,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 String currentUser = LocalizationManager.getInstance().getCurrentUser();
                 as.setSubscriptionType(SubscriptionType.QUERY);
                 SubscriptionServiceResult result = subscriptionService.store(currentUser, as, this);
-
-                subscriptionNotificationService.sendCreatedSubscriptionNotification(as, currentUser);
 
                 if (result.hasMessageToDisplay()) {
                     DataDeliveryUtils.showMessage(getShell(), SWT.OK,

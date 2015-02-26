@@ -79,7 +79,6 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.IPerformanceTimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.uf.common.util.ClusterIdUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.IFileModifiedWatcher;
@@ -610,6 +609,20 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         event.getId());
             } else {
                 isLocalOrigination = true;
+            }
+
+            /**
+             * This is to catch outside changes that affect subscriptions you
+             * are subscribed too.  The special case is where someone added
+             * your site to a shared sub at another registry node.
+             */
+            if (!isLocalOrigination) {
+                if (subscription.getOfficeIDs()
+                        .contains(RegistryIdUtil.getId())
+                        || subscription.getOriginatingSite().equals(
+                                RegistryIdUtil.getId())) {
+                    isLocalOrigination = true;
+                }
             }
 
             statusHandler.info("Subscription Inserted: "+subscription.getName());
