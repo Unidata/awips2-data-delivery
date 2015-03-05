@@ -32,7 +32,7 @@ import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.referencing.operation.TransformException;
 
-import com.raytheon.uf.common.geospatial.MapUtil;
+import com.raytheon.uf.common.geospatial.util.SubGridGeometryCalculator;
 import com.raytheon.uf.common.gridcoverage.GridCoverage;
 import com.raytheon.uf.common.gridcoverage.exception.GridCoverageException;
 import com.raytheon.uf.common.gridcoverage.subgrid.SubGrid;
@@ -41,7 +41,6 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Coverage for Grid XML
@@ -51,11 +50,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 31, 2011    191      dhladky     Initial creation
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Dec 10, 2012   1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
- * Feb 15, 2013 1543       djohnson     Remove constructor accepting a Coverage.
- * 
+ * Jan 31, 2011 191        dhladky     Initial creation
+ * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
+ * Dec 10, 2012 1259       bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * Feb 15, 2013 1543       djohnson    Remove constructor accepting a Coverage.
+ * Mar 04, 2015 3959       rjpeter     Update for grid based subgridding.
  * </pre>
  * 
  * @author dhladky
@@ -137,6 +136,7 @@ public class GriddedCoverage extends Coverage implements Serializable {
             requestGridCoverage = getRequestGridCoverage(getRequestEnvelope(),
                     true);
             if (requestGridCoverage == null) {
+                // entire grid
                 requestGridCoverage = gridCoverage;
                 requestGridCoverage.setName(gridName);
                 requestSubGrid = new SubGrid();
@@ -144,13 +144,6 @@ public class GriddedCoverage extends Coverage implements Serializable {
                 requestSubGrid.setUpperLeftY(0);
                 requestSubGrid.setNX(gridCoverage.getNx());
                 requestSubGrid.setNY(gridCoverage.getNy());
-                Coordinate ll = EnvelopeUtils.getLowerLeftLatLon(getEnvelope());
-                requestSubGrid.setLowerLeftLat(ll.y);
-                requestSubGrid.setLowerLeftLon(ll.x);
-                Coordinate ur = EnvelopeUtils
-                        .getUpperRightLatLon(getEnvelope());
-                requestSubGrid.setUpperRightLat(ur.y);
-                requestSubGrid.setUpperRightLon(ur.x);
             }
         }
         return requestGridCoverage;
@@ -177,35 +170,18 @@ public class GriddedCoverage extends Coverage implements Serializable {
                     || requestEnvelope.equals(getEnvelope())) {
                 return null;
             }
-            ReferencedEnvelope subGridEnvelope = MapUtil.reprojectAndIntersect(
-                    requestEnvelope, getEnvelope());
 
-            Coordinate upperRight = EnvelopeUtils
-                    .getUpperRightLatLon(subGridEnvelope);
-            Coordinate lowerLeft = EnvelopeUtils
-                    .getLowerLeftLatLon(subGridEnvelope);
+            SubGridGeometryCalculator subGridCalc = new SubGridGeometryCalculator(
+                    requestEnvelope, getGridCoverage().getGridGeometry());
+            int[] ul = subGridCalc.getGridRangeLow(false);
+            int[] lr = subGridCalc.getGridRangeHigh(false);
 
-            // geotools math transforms are not perfectly accurate. This
-            // can become a problem with points near the edges, causing
-            // them to appear outside the valid range of the grid. This
-            // will normalize the numbers to 9 decimal places in LatLon
-            // space which is an accuracy within a mm.
-            double roundingFactor = 1000000000.0;
-            upperRight.x = ((long) (upperRight.x * roundingFactor))
-                    / roundingFactor;
-            upperRight.y = ((long) (upperRight.y * roundingFactor))
-                    / roundingFactor;
-            lowerLeft.x = ((long) (lowerLeft.x * roundingFactor))
-                    / roundingFactor;
-            lowerLeft.y = ((long) (lowerLeft.y * roundingFactor))
-                    / roundingFactor;
-
-            // Now we have the right corners in the right space.
             SubGrid subGrid = new SubGrid();
-            subGrid.setLowerLeftLat(lowerLeft.y);
-            subGrid.setLowerLeftLon(lowerLeft.x);
-            subGrid.setUpperRightLat(upperRight.y);
-            subGrid.setUpperRightLon(upperRight.x);
+            subGrid.setUpperLeftX(ul[0]);
+            subGrid.setUpperLeftY(ul[1]);
+            /* no +1 since range requested was not inclusive */
+            subGrid.setNX(lr[0] - ul[0]);
+            subGrid.setNY(lr[1] - ul[1]);
 
             // Perform the subgrid
             GridCoverage subGC = gridCoverage.trim(subGrid);
@@ -214,6 +190,7 @@ public class GriddedCoverage extends Coverage implements Serializable {
             if (setSubGrid) {
                 requestSubGrid = subGrid;
             }
+
             return subGC;
         } catch (TransformException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
