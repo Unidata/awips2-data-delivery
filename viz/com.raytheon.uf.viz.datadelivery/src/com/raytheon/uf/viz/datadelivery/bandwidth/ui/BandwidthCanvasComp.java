@@ -126,7 +126,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Jan 05, 2015   3950  ccody/dhladky  Change update logic to update 4 times per bandwidth bucket
  *                                      and pertinent notification events (Create,Update,Delete,Activate,Deactivate)
  *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.  
- *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse                                  
+ *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
+ *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check                                
  * </pre>
  * 
  * @author lvenable
@@ -766,7 +767,10 @@ public class BandwidthCanvasComp extends Composite
                 mouseMarker = MISSING;
                 canvasMap.get(CanvasImages.GRAPH).redraw();
                 canvasMap.get(CanvasImages.UTILIZATION_GRAPH).redraw();
-                toolTip.dispose();
+                
+                if (toolTip != null) {
+                    toolTip.dispose();
+                }
             }
         });
 
