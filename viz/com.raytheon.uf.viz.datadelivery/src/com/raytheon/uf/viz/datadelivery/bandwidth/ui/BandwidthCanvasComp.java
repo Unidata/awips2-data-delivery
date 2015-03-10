@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.datadelivery.bandwidth.ui;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +29,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.swing.Timer;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
@@ -57,6 +62,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Slider;
+import org.eclipse.swt.widgets.ToolTip;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
@@ -117,13 +123,21 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Oct 28, 2014   2748     ccody       Changes for receiving Subscription Status changes
  *                                      Add configurable graph update latency
  *  Nov 19, 2014   3852     dhladky     Fixed overload state with Notification Records.
+ *  Jan 05, 2015   3950  ccody/dhladky  Change update logic to update 4 times per bandwidth bucket
+ *                                      and pertinent notification events (Create,Update,Delete,Activate,Deactivate)
+ *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.  
+ *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
+ *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check                                
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
-public class BandwidthCanvasComp extends Composite implements IDialogClosed,
-        INotificationObserver, IDataUpdated {
+public class BandwidthCanvasComp extends Composite
+        implements
+            IDialogClosed,
+            INotificationObserver,
+            IDataUpdated {
 
     /** UFStatus handler. */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -209,8 +223,11 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** Last graph update time */
     private long lastUpdateTime = 0L;
 
-    /** Graph data utility */
-    private final GraphDataUtil graphDataUtil;
+    /** Last graph update time */
+    Timer activeUpdateTimer = null;
+    
+    /** the query job **/
+    private GraphDataUtil graphDataUtil;
 
     /** Vertical line marking the mouse pointer's location */
     private int mouseMarker;
@@ -259,9 +276,12 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /** Last NotificationRecord Message */
     private NotificationRecord lastNotificationRecord = null;
-
+  
     /** The current instance (Used to remove this as an event listener) */
     BandwidthCanvasComp bandwidthCanvasComp = null;
+    
+    /** Universal toolTip for canvas images **/
+    private ToolTip toolTip = null;
 
     /**
      * Constructor.
@@ -279,7 +299,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         this.display = this.parentComp.getDisplay();
         this.graphDataUtil = new GraphDataUtil(this);
         if (this.graphDataUtil != null) {
-            this.bgd = this.graphDataUtil.getGraphData();
+            this.bgd = this.graphDataUtil.getGraphDataSynchronously();
         }
 
         init();
@@ -352,11 +372,12 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             @Override
             public void widgetDisposed(DisposeEvent e) {
                 if (graphDataUtil != null) {
-                    graphDataUtil.cancelThread();
+                    graphDataUtil.cancel();
                 }
 
                 NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC,
                         bandwidthCanvasComp);
+                toolTip.dispose();
             }
         });
 
@@ -383,6 +404,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
         /** Listen for NotificationMessage events */
         NotificationManagerJob.addObserver(NOTIFY_MESSAGE_TOPIC, this);
+
+        createUpdateTimer();
     }
 
     /**
@@ -417,7 +440,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     protected boolean isUpdateableNotification(
             NotificationMessage[] notificationMessages) {
-        boolean isUpdateNeeded = false;
         if ((isDisposed() == true) || (notificationMessages == null)
                 || (notificationMessages.length == 0)) {
             return (false);
@@ -428,6 +450,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             return (false);
         }
 
+        boolean isUpdateable = false;
         // Remove possible duplicate Notification Messages
         Object obj = null;
         Object payloadObj = null;
@@ -435,7 +458,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         NotificationMessage notificationMessage = null;
         NotificationRecord notificationRecord = null;
         int notificationRecordListSize = notificationMessages.length;
-        for (int i = 0; ((isUpdateNeeded == false) && (i < notificationRecordListSize)); i++) {
+        for (int i = 0; ((isUpdateable == false) && (i < notificationRecordListSize)); i++) {
             obj = notificationMessages[i];
             if (obj instanceof NotificationMessage) {
                 notificationMessage = (NotificationMessage) obj;
@@ -456,24 +479,69 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                             if (areEquivalent == true) {
                                 // This is a repeated NotificationRecord. Do not
                                 // update.
-                                isUpdateNeeded = false;
+                                isUpdateable = false;
                             } else {
-                                isUpdateNeeded = true;
+                                isUpdateable = checkNotificationRecord(notificationRecord);
                             }
                         } else {
-                            isUpdateNeeded = true;
+                            isUpdateable = checkNotificationRecord(notificationRecord);
                         }
                         lastNotificationRecord = notificationRecord;
                     } else if (payloadObj instanceof SubscriptionNotificationResponse) {
-                        isUpdateNeeded = true;
+                        isUpdateable = checkNotificationRecord(notificationRecord);
                     }
                 }
             }
         }
 
-        return (isUpdateNeeded);
+        return (isUpdateable);
     }
 
+    /**
+     * Check the content of the {@link NotificationRecord} to see if BUG needs
+     * to be updated.
+     * 
+     * Update BUG on: Subscription: Create (Subscriptions are created in an
+     * Active state), Delete, Activate, and Deactivate. Also update on Priority
+     * 1 NotificationRecord events.
+     * 
+     * @param notificationRecord
+     *            Event Notification Record
+     * @return isUpdateable True if BUG needs to update in response to this
+     *         notification
+     */
+    private boolean checkNotificationRecord(
+            NotificationRecord notificationRecord) {
+        boolean isUpdateable = false;
+
+        if (notificationRecord != null) {
+            Integer priority = notificationRecord.getPriority();
+            String category = notificationRecord.getCategory();
+            if ((priority != null) && (priority < 2)) {
+                isUpdateable = true;
+            } else if (category != null
+                    && category
+                            .equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
+                String notificationMessage = notificationRecord.getMessage();
+                if ((notificationMessage != null)
+                        && (notificationMessage.isEmpty() == false)) {
+                    notificationMessage = notificationMessage.toUpperCase();
+                    if (notificationMessage
+                            .contains(DataDeliveryUtils.ACTIVATED)
+                            || notificationMessage
+                                    .contains(DataDeliveryUtils.DEACTIVATED)
+                            || notificationMessage
+                                    .contains(DataDeliveryUtils.CREATED)
+                            || notificationMessage
+                                    .contains(DataDeliveryUtils.DELETED)) {
+                        isUpdateable = true;
+                    }
+                }
+            }
+        }
+
+        return (isUpdateable);
+    }
     /*
      * (non-Javadoc)
      * 
@@ -483,10 +551,29 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      */
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
+
         boolean isUpdateNeeded = isUpdateableNotification(messages);
-        long timeDiff = TimeUtil.currentTimeMillis() - lastUpdateTime;
-        if (isUpdateNeeded == true && (timeDiff > updateIntervalMils)) {
-            dataUpdated();
+        if (isUpdateNeeded == true) {
+            graphDataUtil.scheduleRetrieval();
+        }
+    }
+
+    private void createUpdateTimer() {
+        if (this.activeUpdateTimer == null) {
+            ActionListener taskPerformer = new ActionListener() {
+                public void actionPerformed(ActionEvent evt) {
+                    if (isDisposed() == false) {
+                        graphDataUtil.scheduleRetrieval();
+                    } else {
+                        activeUpdateTimer.stop();
+                        activeUpdateTimer = null;
+                    }
+                }
+            };
+
+            activeUpdateTimer = new Timer((int) this.updateIntervalMils,
+                    taskPerformer);
+            activeUpdateTimer.start();
         }
     }
 
@@ -680,6 +767,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 mouseMarker = MISSING;
                 canvasMap.get(CanvasImages.GRAPH).redraw();
                 canvasMap.get(CanvasImages.UTILIZATION_GRAPH).redraw();
+                
+                if (toolTip != null) {
+                    toolTip.dispose();
+                }
             }
         });
 
@@ -703,6 +794,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 }
 
                 mouseMarker = MISSING;
+                toolTip.dispose();
             }
         });
 
@@ -827,6 +919,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 mouseMarker = MISSING;
                 canvasMap.get(CanvasImages.GRAPH).redraw();
                 canvasMap.get(CanvasImages.UTILIZATION_GRAPH).redraw();
+                canvasMap.get(CanvasImages.GRAPH).setToolTipText(null);
+                if (toolTip != null) {
+                    toolTip.dispose();
+                }
             }
 
             @Override
@@ -855,6 +951,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 }
 
                 mouseMarker = MISSING;
+                toolTip.dispose();
 
                 cornerPointOffset.x -= previousMousePoint.x - e.x;
                 cornerPointOffset.y -= previousMousePoint.y - e.y;
@@ -1211,11 +1308,24 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      *            The canvas image.
      */
     private void displayToolTipText(MouseEvent me, CanvasImages ci) {
+        
         Point mouseCoord = new Point(0, 0);
         mouseCoord.x = Math.abs(cornerPointOffset.x) + me.x;
         mouseCoord.y = Math.abs(cornerPointOffset.y) + me.y;
-        canvasMap.get(ci).setToolTipText(
-                imageMgr.getToolTipText(mouseCoord, ci));
+
+        if (toolTip != null && !toolTip.isDisposed()) {
+            toolTip.dispose();
+        }
+
+        if (mouseCoord != null) {
+            String text = imageMgr.getToolTipText(mouseCoord, ci);
+            toolTip = new ToolTip(this.getShell(), SWT.FILL);
+            toolTip.setLocation(mouseCoord);
+            if (text != null) {
+                toolTip.setMessage(text.trim());
+            }
+            toolTip.setVisible(true);
+        }
     }
 
     /**
@@ -1554,6 +1664,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     @Override
     public void dialogClosed(String id) {
         // Do Nothing
+        this.activeUpdateTimer.stop();
     }
 
     /**
@@ -1612,7 +1723,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
                 lastUpdateTime = System.currentTimeMillis();
                 imageMgr.setCurrentTimeMillis(lastUpdateTime);
-                graphDataUtil.clearGraphDataData();
 
                 try {
                     BandwidthGraphData tempData = graphDataUtil.getGraphData();
@@ -1820,5 +1930,9 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      */
     private CanvasSettings getCanvasSettings(CanvasImages image) {
         return canvasSettingsMap.get(image);
+    }
+
+    protected enum NotificationDisposition {
+        UNIMPORTANT, UPDATE_AS_PENDING, UPDATE_AS_INTERRUPT;
     }
 }

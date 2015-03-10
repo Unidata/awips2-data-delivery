@@ -19,15 +19,12 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
-import java.util.Date;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
-import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Network;
-import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -81,6 +78,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Jun 09, 2014 3113       mpduff       Moved getRetrievalTimes to Subscription.
  * Jul 28, 2014 2752       dhladky      Greatly streamlined scheduling.
  * Sept 14, 2014 2131      dhladky      PDA additions
+ * Feb 19, 2015 3998       dhladky      Simplified the adhoc subscription process.
  * </pre>
  * 
  * @author djohnson
@@ -156,120 +154,43 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
      */
     @SuppressWarnings("rawtypes")
     public AdhocSubscription<T, C> setAdhocMostRecentUrlAndTime(
-            AdhocSubscription<T, C> adhoc, boolean mostRecent) {
-        
+            AdhocSubscription<T, C> adhoc) {
+
         AdhocSubscription<T, C> retVal = null;
-        
-        if (adhoc.getDataSetType() == DataType.POINT) {
+        DataSetMetaData dataSetMetaData = null;
 
-            List<DataSetMetaData> dataSetMetaDatas = null;
-            try {
-                dataSetMetaDatas = DataDeliveryHandlers
-                        .getDataSetMetaDataHandler().getByDataSet(
-                                adhoc.getDataSetName(), adhoc.getProvider());
-            } catch (RegistryHandlerException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "No DataSetMetaData matching query! DataSetName: "
-                                + adhoc.getDataSetName() + " Provider: "
-                                + adhoc.getProvider(), e);
+        try {
+            dataSetMetaData = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                    .getMostRecentDataSetMetaData(adhoc.getDataSetName(),
+                            adhoc.getProvider());
+
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(
+                    Priority.PROBLEM,
+                    "No DataSetMetaData matching query! DataSetName: "
+                            + adhoc.getDataSetName() + " Provider: "
+                            + adhoc.getProvider(), e);
+        }
+
+        if (dataSetMetaData == null) {
+            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                statusHandler
+                        .debug(String
+                                .format("There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
+                                        adhoc.getName()));
             }
-
-            if (dataSetMetaDatas != null && !dataSetMetaDatas.isEmpty()) {
-                // No guarantee on ordering, have to find most recent time
-                @SuppressWarnings("unchecked")
-                DataSetMetaData<PointTime> selectedDataSet = dataSetMetaDatas
-                        .get(0);
-                Date checkDate = selectedDataSet.getDate();
-
-                for (DataSetMetaData<PointTime> dsmd : dataSetMetaDatas) {
-                    if (dsmd.getDate().after(checkDate)) {
-                        checkDate = dsmd.getDate();
-                        selectedDataSet = dsmd;
-                    }
-                }
-
-                adhoc.setUrl(selectedDataSet.getUrl());
-                retVal = adhoc;
-            }
-
-        } else if (adhoc.getDataSetType() == DataType.GRID) {
-
-            DataSetMetaData dataSetMetaData = null;
-
-            try {
-                dataSetMetaData = DataDeliveryHandlers
-                        .getDataSetMetaDataHandler().getByDataSetDate(
-                                adhoc.getDataSetName(), adhoc.getProvider(),
-                                adhoc.getTime().getStart());
-            } catch (RegistryHandlerException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "No DataSetMetaData matching query! DataSetName: "
-                                + adhoc.getDataSetName() + " Provider: "
-                                + adhoc.getProvider() + " Time: "
-                                + adhoc.getTime().getStart(), e);
-            }
-
-            if (dataSetMetaData == null) {
-                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    statusHandler
-                            .debug(String
-                                    .format("There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
-                                            adhoc.getName()));
-                }
-            } else {
-                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    statusHandler
-                            .debug(String
-                                    .format("Found most recent metadata for adhoc subscription [%s], using url [%s]",
-                                            adhoc.getName(),
-                                            dataSetMetaData.getUrl()));
-                }
-
-                adhoc.setUrl(dataSetMetaData.getUrl());
-                retVal = adhoc;
-            }
-
-        } else if (adhoc.getDataSetType() == DataType.PDA) {
-
-            DataSetMetaData dataSetMetaData = null;
-
-            try {
-                dataSetMetaData = DataDeliveryHandlers
-                        .getDataSetMetaDataHandler().getByDataSetDate(
-                                adhoc.getDataSetName(), adhoc.getProvider(),
-                                adhoc.getTime().getStart());
-            } catch (RegistryHandlerException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "No DataSetMetaData matching query! DataSetName: "
-                                + adhoc.getDataSetName() + " Provider: "
-                                + adhoc.getProvider() + " Time: "
-                                + adhoc.getTime().getStart(), e);
-            }
-
-            if (dataSetMetaData == null) {
-                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    statusHandler
-                            .debug(String
-                                    .format("There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
-                                            adhoc.getName()));
-                }
-            } else {
-                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    statusHandler
-                            .debug(String
-                                    .format("Found most recent metadata for adhoc subscription [%s], using url [%s]",
-                                            adhoc.getName(),
-                                            dataSetMetaData.getUrl()));
-                }
-
-                adhoc.setUrl(dataSetMetaData.getUrl());
-                retVal = adhoc;
-            }
-
         } else {
-            throw new IllegalArgumentException("DataType: "
-                    + adhoc.getDataSetType()
-                    + " Not yet implemented for adhoc subscriptions");
+            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                statusHandler
+                        .debug(String
+                                .format("Found most recent metadata for adhoc subscription [%s], using url [%s]",
+                                        adhoc.getName(),
+                                        dataSetMetaData.getUrl()));
+            }
+
+            adhoc.setUrl(dataSetMetaData.getUrl());
+            adhoc.getTime().setStart(dataSetMetaData.getDate());
+            retVal = adhoc;
         }
 
         return retVal;

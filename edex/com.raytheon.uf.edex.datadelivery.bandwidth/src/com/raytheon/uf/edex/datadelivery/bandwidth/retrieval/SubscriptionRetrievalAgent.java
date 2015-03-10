@@ -60,6 +60,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Jan 30, 2014 2686       dhladky      refactor of retrieval.
  * Feb 10, 2014 2678       dhladky      Prevent duplicate allocations.
  * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
+ * Feb 19, 2015 3998       dhladky      Fixed wrong date on notification center retrieval message.
  * 
  * </pre>
  * 
@@ -237,11 +238,24 @@ public class SubscriptionRetrievalAgent extends
         Long requestRetrievalTimeLong = Long.valueOf( System.currentTimeMillis() ); //Default to "now"
         Subscription<?, ?> bundleSub = bundle.getSubscription();
         com.raytheon.uf.common.datadelivery.registry.Time requestRetrievalTimeT =  bundleSub.getTime();
+        Date requestRetrievalDate = null;
+        
         if (requestRetrievalTimeT != null) {
-            Date requestRetrievalDate = requestRetrievalTimeT.getStart();
-            if (requestRetrievalDate == null) {
-                requestRetrievalDate = requestRetrievalTimeT.getEnd(); //Failover 
+            // cases of starting date set
+            if (requestRetrievalTimeT.getRequestStart() != null) {
+                requestRetrievalDate = requestRetrievalTimeT.getRequestStart();
+            } else {
+                requestRetrievalDate = requestRetrievalTimeT.getStart();
             }
+            // cases of ending date set
+            if (requestRetrievalDate == null) {
+                if (requestRetrievalTimeT.getRequestEnd() != null) {
+                    requestRetrievalDate = requestRetrievalTimeT.getRequestEnd();
+                } else {
+                    requestRetrievalDate = requestRetrievalTimeT.getEnd();
+                }
+            }
+            // set the date of retrieved data
             if (requestRetrievalDate != null) {
                 requestRetrievalTimeLong = Long.valueOf( requestRetrievalDate.getTime() );
             } 

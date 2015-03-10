@@ -34,6 +34,7 @@ import com.raytheon.uf.common.time.domain.api.IDuration;
  * jun 11, 2013 2101       dhladky     Updated for username/password DPA exchanges
  * Dec 08, 2013 2584       dhladky     Version update
  * Aug 14, 2013 2131       dhladky     PDA updates
+ * Feb 19, 2015 3998       dhladky     Sharpened point subscription size estimates.
  * 
  * </pre>
  * 
@@ -71,7 +72,7 @@ public class Provider {
     public enum ServiceType {
 
         // TODO: Only OPENDAP, WFS, and the PDA types have the correct amounts
-        OPENDAP(5000, BYTES_IN_FLOAT), WCS(5000, BYTES_IN_FLOAT), WFS(355862,
+        OPENDAP(5000, BYTES_IN_FLOAT), WCS(5000, BYTES_IN_FLOAT), WFS(55862,
                 OneByOneBox), WMS(5000, BYTES_IN_FLOAT), WXXM(5000,
                 BYTES_IN_FLOAT), PDA(5000, BYTES_IN_FLOAT);
 

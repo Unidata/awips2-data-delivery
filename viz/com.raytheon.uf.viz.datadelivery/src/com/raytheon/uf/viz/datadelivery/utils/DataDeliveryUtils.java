@@ -96,6 +96,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 22, 2014 2808       dhladky      Fixed static final problem with DD ID
  * Sept 04, 2014 2131      dhladky      Added PDa data type
  * Dec 03, 2014 3840       ccody        Added BrowserColumnNames.valueOfColumnName(String).
+ * Jan 05, 2015 3950       dhladky      Added string constants for filtering notification records.
  * </pre>
  * 
  * @author mpduff
@@ -124,7 +125,32 @@ public class DataDeliveryUtils {
      */
     public static final int PDA_DATASET_DEFAULT_LATENCY_IN_MINUTES = 15;
 
+    /** latency unset value default */
     private static final int UNSET = -1;
+    
+    /** ACTIVATED subscriptions check string */
+    public static final String ACTIVATED = "ACTIVATED";
+    
+    /** DE-ACTIVATED subscriptions check string */
+    public static final String DEACTIVATED = "DEACTIVATED";
+    
+    /** CREATED subscriptions check string */
+    public static final String CREATED = "CREATED";
+    
+    /** UPDATED subscriptions check string */
+    public static final String UPDATED = "UPDATED";
+    
+    /** DELETED subscriptions check string */
+    public static final String DELETED = "DELETED";
+    
+    /** EXPIRE subscriptions check string */
+    public static final String EXPIRE = "EXPIRE";
+    
+    /** Used for specific category check in notifications */
+    public static final String SUBSCRIPTION = "Subscription";
+    
+    /** Used for specific category check in notifications */
+    public static final String RETRIEVAL = "Retrieval";
 
     /** Decimal format */
     private final static ThreadLocal<DecimalFormat> format = new ThreadLocal<DecimalFormat>() {
@@ -881,6 +907,7 @@ public class DataDeliveryUtils {
         return dataDeliveryId;
     }
 
+    @SuppressWarnings("rawtypes")
     private static String retrieveDataDeliveryId() {
         BandwidthRequest request = new BandwidthRequest();
         request.setRequestType(RequestType.GET_DATADELIVERY_ID);
@@ -899,7 +926,7 @@ public class DataDeliveryUtils {
      * 
      * @return
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static List<String> getDataDeliverySiteList() {
 
         BandwidthRequest request = new BandwidthRequest();

@@ -56,6 +56,7 @@ import org.eclipse.swt.widgets.TableColumn;
 
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.user.IUser;
+import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
@@ -156,7 +157,8 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 31, 2014 2889       dhladky    Added username for notification center tracking.
  * Apr 2,  2014 2974       dhladky    DD ID added to list for dropdowns in DD.
  * Apr 18, 2014  3012      dhladky    Null check.
- * Dec 03, 2014  3840      ccody      Correct sorting "contract violation" issue
+ * Dec 03, 2014  3840      ccody      Correct sorting "contract violation" issue.
+ * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency.
  * Jan 30, 2015  2746      dhladky    Special shared sub delete handling.
  * 
  * </pre>
@@ -287,8 +289,13 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /** New menu */
     private MenuItem newMI;
-
+    
+    /** scheduled executor */
     private final ScheduledExecutorService scheduler;
+    
+    /** instance of configuration manager */
+    private SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
+            .getInstance();
 
     /**
      * Constructor
@@ -307,7 +314,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(new RefreshTask(), 15, 15,
                 TimeUnit.MINUTES);
-
         setText("Data Delivery Subscription Manager");
     }
 
@@ -349,18 +355,15 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     @Override
     protected void initializeComponents(Shell shell) {
+        
+        configMan.loadDefaultFile();
         shell.setMinimumSize(750, 320);
-
         createMenus();
-
         createTopLayout();
         createTableControl();
-
         loadGroupNames();
         loadOfficeNames();
-
         createBottomButtons();
-
         enableControls(true);
     }
 
@@ -685,7 +688,16 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     @Override
     public void handleRefresh() {
-        tableComp.handleRefresh();
+        
+        VizApp.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                if (isDisposed()) {
+                    return;
+                }
+                tableComp.handleRefresh();
+            }
+        });
     }
 
     private void createBottomButtons() {
@@ -819,9 +831,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * Set the default configuration file.
      */
     private void handleSetDefault() {
-        SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
-                .getInstance();
-
+        
         String fileName = configMan.getDefaultXMLConfig();
 
         IPathManager pm = PathManagerFactory.getPathManager();
@@ -845,8 +855,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     private void handleLoadConfig() throws JAXBException {
         if (loadDlg == null || loadDlg.isDisposed()) {
-            final SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
-                    .getInstance();
             loadDlg = new LoadSaveConfigDlg(shell, DialogType.OPEN,
                     configMan.getLocalizationPath(),
                     configMan.getDefaultXMLConfigFileName(), true);
@@ -886,8 +894,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * Save configuration action.
      */
     private void handleSaveConfig() {
-        final SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
-                .getInstance();
         if (configMan.getCurrentConfigFile() == null) {
             handleSaveAsConfig();
         } else {
@@ -900,8 +906,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * Save as configuration action.
      */
     private void handleSaveAsConfig() {
-        final SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
-                .getInstance();
         if (saveAsDlg == null || saveAsDlg.isDisposed()) {
             saveAsDlg = new LoadSaveConfigDlg(shell, DialogType.SAVE_AS,
                     configMan.getLocalizationPath(),
@@ -926,8 +930,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * Delete configuration action.
      */
     private void handleDeleteConfig() {
-        final SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
-                .getInstance();
         if (deleteDlg == null || deleteDlg.isDisposed()) {
             deleteDlg = new LoadSaveConfigDlg(shell, DialogType.DELETE,
                     configMan.getLocalizationPath(), true);
@@ -1569,4 +1571,5 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             }
         }
     }
+
 }

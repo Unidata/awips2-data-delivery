@@ -40,6 +40,7 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * Oct 04, 2012 1241       djohnson     Initial creation
  * Oct 17, 2012 0726       djohnson     Move in {@link #getByDataSet}.
  * Jul 28, 2014 2752       dhladky      Added new methods.
+ * Feb 19, 2015 3998       dhladky      Improved performance of recent metadata lookup.
  * 
  * </pre>
  * 
@@ -106,5 +107,18 @@ public interface IBaseDataSetMetaDataHandler<T extends DataSetMetaData> extends
      */
     List<T> getDataSetMetaDataToDate(String dataSetName, String providerName,
             Date planEnd) throws RegistryHandlerException;
+    
+    /**
+     * Retrieve the DataSetMetaData up to the Retrieval Plan end.
+     * 
+     * @param dataSetName
+     *            the name of the dataset
+     * @param providerName
+     *            the provider name
+     * @return a DataSetMetaData (Most Recent available)
+     * @throws RegistryHandlerException
+     *             on error
+     */
+    T getMostRecentDataSetMetaData(String dataSetName, String providerName) throws RegistryHandlerException;
     
 }

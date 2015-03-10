@@ -146,6 +146,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Oct 28, 2014 2748       ccody        Add notification event for Subscription modifications.
  *                                       Add Thread.sleep to mitigate registry update race condition.
  *  Jan 20, 2014 2414       dhladky      Refactored and better documented, fixed event handling, fixed race conditions.
+ *  Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods.
  *  Jan 30, 2015 2746       dhladky      Handling special cases in notification message routing.
  * </pre>
  * 
@@ -166,6 +167,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     private final ISubscriptionHandler subscriptionHandler;
 
     /** handler for ADHOC subscription objects from the registry **/
+    @SuppressWarnings("unused")
     private final IAdhocSubscriptionHandler adhocSubscriptionHandler;
 
     /** The scheduler for retrievals **/
@@ -207,6 +209,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @param bandwidthDaoUtil
      * @param subscriptionNotificationService
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public EdexBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao<T, C> bandwidthDao,
             RetrievalManager retrievalManager,
@@ -227,39 +230,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         // schedule maintenance tasks
         scheduler = Executors.newSingleThreadScheduledExecutor();
     }
-
-    /**
-     * Shutdown the BWM
-     */
-    @Override
-    protected void shutdownInternal() {
-        unregisterFromEventBus();
-        unregisterFromBandwidthEventBus();
-
-        try {
-            scheduler.shutdownNow();
-        } catch (Exception e) {
-            statusHandler.handle(Priority.WARN,
-                    "Unable to shutdown the scheduler.", e);
-        }
-        EventBus.unregister(retrievalManager);
-    }
-
-    /**
-     * Unregister from the {@link EventBus}.
-     */
-    private void unregisterFromEventBus() {
-        EventBus.unregister(this);
-    }
-
-    /**
-     * Unregister from the {@link BandwidthEventBus}.
-     */
-    private void unregisterFromBandwidthEventBus() {
-        BandwidthEventBus.unregister(this);
-    }
-    
-    
+           
     /**
      * Signals the bandwidth map localization file is updated, perform a
      * reinitialize operation.
@@ -297,8 +268,10 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
         statusHandler
                 .info("EdexBandwidthManager: Restoring Subscriptions for Bandwidth Manager Reset. START");
+                
         Map<Network, List<Subscription<T, C>>> networkToSubscriptionSetMap = null;
         List<Subscription<T, C>> subscriptionList = null;
+        /** Essentially dump all subscriptions and re-schedule them. */
 
         if (findSubscriptionsStrategy != null) {
             try {
@@ -353,8 +326,21 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         }
 
         statusHandler
-                .info("END EdexBandwidthManager: Restoring Subscriptions for Bandwidth Manager Reset.");
-
+                .info("END EdexBandwidthManager: Restored Subscriptions for Bandwidth Manager Reset.");
+                
+        // Deal with retrieval restart
+        try {
+            /**
+             * restart RetrievalManager.
+             */
+            retrievalManager.restart();
+            
+        } catch (Exception e) {
+            statusHandler
+                    .error("Can't restart Retreival Manager! "
+                            + e);
+        }
+        
         // Create system status event
         Calendar now = TimeUtil.newGmtCalendar();
         DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();
@@ -1051,7 +1037,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * 
      * @param Map<Network, List<Subscription>> subMap
      */
-     public List<String> initializeScheduling(
+     @SuppressWarnings("rawtypes")
+    public List<String> initializeScheduling(
              Map<Network, List<Subscription>> subMap)
              throws SerializationException {
          List<String> unscheduledNames = new ArrayList<String>(0);
@@ -1191,7 +1178,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * 
      * @param deactivatedSubName
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes", "unused" })
     @Override
     public void scheduleUnscheduledSubscriptions(String deactivatedSubName) {
 

@@ -60,7 +60,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
  * Jan 03, 2013  1437      bgonzale   Put default configuration file code here.
  * Jun 21, 2013  2130      mpduff     Fix ordering of columns.
  * Nov 06, 2013  2358      mpduff     Remove default configuration code.
- * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
+ * Dec 03, 2014  3840      ccody      Implement Comparator based sorting.
+ * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency.
  * </pre>
  * 
  * @author mpduff
@@ -196,16 +197,22 @@ public class SubscriptionConfigurationManager {
      * Set the default configuration.
      */
     public void setDefaultConfiguration() {
+        
+        loadDefaultFile();
+        saveXml();
+    }
+    
+    /**
+     * Load the default localization File
+     */
+    public void loadDefaultFile() {
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationContext context = pm.getContext(
                 LocalizationType.CAVE_STATIC, LocalizationLevel.USER);
 
         LocalizationFile locFile = pm.getLocalizationFile(context,
                 DEFAULT_CONFIG_XML);
-
         setConfigFile(locFile);
-        saveXml();
-
     }
 
     /**
@@ -277,6 +284,7 @@ public class SubscriptionConfigurationManager {
      * @param configFile
      */
     public void setConfigFile(LocalizationFile configFile) {
+        
         File file = configFile.getFile();
         fileName = configFile.getName();
         this.currentConfigFile = configFile;

@@ -33,10 +33,20 @@ import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthBucketDescrip
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionWindowData;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.TimeWindowData;
+import com.raytheon.uf.common.datadelivery.registry.DataSet;
+import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
+import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
+import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
@@ -67,6 +77,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Jan 23, 2014 2636       mpduff       Changed download window generation.
  * Feb 03, 2014 2745       mpduff       Don't display fulfilled or cancelled allocations.
  * Nov 03, 2014 2414       dhladky      Better error handling.
+ * Feb 02, 2015 4041       dhladky      Changed to set adhoc subs actual baseRefTime
  * 
  * </pre>
  * 
@@ -74,20 +85,32 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * @version 1.0
  */
 
-class BandwidthGraphDataAdapter {
+public class BandwidthGraphDataAdapter {
+    
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BandwidthGraphDataAdapter.class);
 
     private final RetrievalManager retrievalManager;
+    
+    /** handler for DataSetMetaData objects from the registry **/
+    private final IDataSetMetaDataHandler dataSetMetaDataHandler;
+
+    /** handler for Subscription objects from the registry **/
+    private final ISubscriptionHandler subscriptionHandler;
+    
+    /** handler for DataSet objects from the registry **/
+    private final IDataSetHandler dataSetHandler;
 
     /**
-     * Constructor.
-     * 
+     * Get graph Data
      * @param retrievalManager
-     *            the bucket time in minutes
      */
     public BandwidthGraphDataAdapter(RetrievalManager retrievalManager) {
         this.retrievalManager = retrievalManager;
+        this.dataSetMetaDataHandler = DataDeliveryHandlers
+                .getDataSetMetaDataHandler();
+        this.subscriptionHandler = DataDeliveryHandlers.getSubscriptionHandler();
+        this.dataSetHandler = DataDeliveryHandlers.getDataSetHandler();
     }
 
     /**
@@ -95,6 +118,7 @@ class BandwidthGraphDataAdapter {
      * 
      * @return the data
      */
+    @SuppressWarnings("rawtypes")
     public BandwidthGraphData get() {
         final BandwidthGraphData bandwidthGraphData = new BandwidthGraphData();
 
@@ -151,7 +175,27 @@ class BandwidthGraphDataAdapter {
                 .getSubAllocationMap();
         for (Map.Entry<String, List<BandwidthAllocation>> entry : subAllocationMap
                 .entrySet()) {
-            String sub = entry.getKey();
+            String subName = entry.getKey();
+            // get the subscription and dataset for each
+            Subscription sub = null;
+            DataSet dataSet = null;
+            boolean adhocCheck = false;
+
+            try {
+                sub = subscriptionHandler.getByName(subName);
+                dataSet = dataSetHandler.getByNameAndProvider(
+                        sub.getDataSetName(), sub.getProvider());
+
+                if (!dataSet.getDataSetType().equals(DataType.POINT)) {
+                    adhocCheck = true;
+                }
+            } catch (Exception e) {
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "Could not lookup Subscription/DataSet to find baseRefTime!",
+                                e);
+            }
+
             for (BandwidthAllocation ba : entry.getValue()) {
                 if (ba instanceof SubscriptionRetrieval) {
                     ((SubscriptionRetrieval) ba).getBandwidthSubscription()
@@ -182,8 +226,35 @@ class BandwidthGraphDataAdapter {
                         windowData.setNetwork(network);
                         windowData.setPriority(priority);
                         windowData.setRegistryId(registryId);
-                        windowData.setSubscriptionName(sub);
+                        windowData.setSubscriptionName(subName);
                         networkMap.get(network).add(windowData);
+                    }
+
+                    // adhoc sub, calculate true base reftime
+                    if (adhocCheck && sr.getStartTime().equals(baseRefTime)) {
+
+                        DataSetMetaData dataSetMetaData = null;
+
+                        try {
+                            dataSetMetaData = dataSetMetaDataHandler
+                                    .getByDataSetDate(sub.getDataSetName(), sub
+                                            .getProvider(), sub.getTime()
+                                            .getStart());
+                        } catch (RegistryHandlerException e) {
+                            statusHandler.handle(Priority.PROBLEM,
+                                    "No DataSetMetaData matching query! DataSetName: "
+                                            + sub.getDataSetName()
+                                            + " Provider: " + sub.getProvider()
+                                            + " Time: "
+                                            + sub.getTime().getStart(), e);
+                        }
+
+                        if (dataSetMetaData != null) {
+                            // set the actual baseRefTime
+                            baseRefTime = TimeUtil
+                                    .newGmtCalendar(dataSetMetaData.getDate());
+                        }
+
                     }
 
                     final long startMillis = sr.getStartTime()
@@ -191,6 +262,7 @@ class BandwidthGraphDataAdapter {
                     final long endMillis = sr.getEndTime().getTimeInMillis();
                     TimeWindowData window = new TimeWindowData(startMillis,
                             endMillis);
+                   
                     window.setBaseTime(baseRefTime.getTimeInMillis());
                     window.setOffset(offset);
                     windowData.addTimeWindow(window);
