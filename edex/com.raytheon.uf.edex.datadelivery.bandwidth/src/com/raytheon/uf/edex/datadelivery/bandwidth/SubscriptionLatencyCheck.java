@@ -71,6 +71,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial creation
+ * Mar 09, 2015 4242       dhladky     Data integrity exception caused by dupe key ~ caused gaps in scheduling
  * 
  * </pre>
  * 
@@ -777,7 +778,18 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
             if (subLatencyData.getSubAllocationStatus() == SubAllocationStatus.EXTENDED) {
                 dataSetLatency = getDataSetLatency(now, subLatencyData);
-                dataSetLatencyDao.createOrUpdate(dataSetLatency);
+                // need transaction safety here
+                if (dataSetLatency != null) {
+                    DataSetLatency dataSetLatencyOld = dataSetLatencyDao
+                            .getByDataSetNameAndProvider(
+                                    dataSetLatency.getDataSetName(),
+                                    dataSetLatency.getProviderName());
+                    if (dataSetLatencyOld != null) {
+                        dataSetLatencyDao.delete(dataSetLatencyOld);
+                    }
+
+                    dataSetLatencyDao.create(dataSetLatency);
+                }
             } else {
                 // Delete the existing DataSetLatency record
                 dataSetLatencyDao.delete(dataSetLatency);
