@@ -148,6 +148,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Jan 20, 2014 2414       dhladky      Refactored and better documented, fixed event handling, fixed race conditions.
  *  Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods.
  *  Jan 30, 2015 2746       dhladky      Handling special cases in notification message routing.
+ *  Mar 08, 2015 3950       dhladky      Bandwidth change better handled.
  * </pre>
  * 
  * @author djohnson
@@ -265,13 +266,10 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @Override
     protected void resetBandwidthManager(Network requestNetwork,
             String resetReasonMessage) {
-
-        statusHandler
-                .info("EdexBandwidthManager: Restoring Subscriptions for Bandwidth Manager Reset. START");
                 
         Map<Network, List<Subscription<T, C>>> networkToSubscriptionSetMap = null;
         List<Subscription<T, C>> subscriptionList = null;
-        /** Essentially dump all subscriptions and re-schedule them. */
+        /** Essentially re-schedule everything and restart retrieval manager. */
 
         if (findSubscriptionsStrategy != null) {
             try {
@@ -288,33 +286,49 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         if ((networkToSubscriptionSetMap != null)
                 && (networkToSubscriptionSetMap.isEmpty() == false)) {
 
-            // Remove ALL BANDWIDTH Subscriptions
-            List<BandwidthSubscription> removeBandwidthSubscriptionList = this.bandwidthDao
-                    .getBandwidthSubscriptions();
-            if (removeBandwidthSubscriptionList.isEmpty() == false) {
-                remove(removeBandwidthSubscriptionList);
+            // Deal with retrieval restart first
+            try {
+                /**
+                 * restart RetrievalManager.
+                 */
+                retrievalManager.restart();
+
+            } catch (Exception e) {
+                statusHandler
+                        .error("Can't restart Retreival Manager! "
+                                + e);
             }
 
-            // Restore ALL Subscriptions
+            statusHandler
+                    .info("EdexBandwidthManager: Rescheduling Subscriptions for Bandwidth Manager reset. START");
+
+            // Reactivate Subscriptions
             String networkName;
+            
             for (Network network : networkToSubscriptionSetMap.keySet()) {
+                
                 networkName = network.name();
                 subscriptionList = networkToSubscriptionSetMap.get(network);
+                
                 if (subscriptionList != null) {
                     for (Subscription<T, C> subscription : subscriptionList) {
-
-                        restoreSubscription(subscription);
-                        try {
-                            statusHandler.info("\tScheduling: "
-                                    + subscription.getName());
-                            List<BandwidthAllocation> unscheduledList = schedule(subscription);
-                            logSubscriptionListUnscheduled(networkName,
-                                    unscheduledList);
-                        } catch (Exception ex) {
-                            statusHandler.error(
-                                    "Error occurred restarting EdexBandwidthManager for Network: "
-                                            + network + " Subscription: "
-                                            + subscription.getName(), ex);
+                        if (isSubscriptionManagedLocally(subscription)
+                                && subscription.isActive()) {
+                            try {
+                                statusHandler
+                                        .info("\tRe-scheduling subscription: "
+                                                + subscription.getName());
+                                // subscriptionUpdated() both removes the old allocations and re-schedules.
+                                // It's the most efficient option for resetting BWM
+                                List<BandwidthAllocation> unscheduledList = subscriptionUpdated(subscription);
+                                logSubscriptionListUnscheduled(networkName,
+                                        unscheduledList);
+                            } catch (Exception ex) {
+                                statusHandler.error(
+                                        "Error occurred restarting EdexBandwidthManager for Network: "
+                                                + network + " Subscription: "
+                                                + subscription.getName(), ex);
+                            }
                         }
                     }
                 }
@@ -327,20 +341,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
         statusHandler
                 .info("END EdexBandwidthManager: Restored Subscriptions for Bandwidth Manager Reset.");
-                
-        // Deal with retrieval restart
-        try {
-            /**
-             * restart RetrievalManager.
-             */
-            retrievalManager.restart();
-            
-        } catch (Exception e) {
-            statusHandler
-                    .error("Can't restart Retreival Manager! "
-                            + e);
-        }
-        
+
         // Create system status event
         Calendar now = TimeUtil.newGmtCalendar();
         DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();

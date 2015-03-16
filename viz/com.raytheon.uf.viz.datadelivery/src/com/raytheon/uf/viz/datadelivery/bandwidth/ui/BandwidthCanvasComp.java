@@ -127,7 +127,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *                                      and pertinent notification events (Create,Update,Delete,Activate,Deactivate)
  *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.  
  *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
- *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check                                
+ *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check   
+ *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM.                             
  * </pre>
  * 
  * @author lvenable
@@ -534,7 +535,14 @@ public class BandwidthCanvasComp extends Composite
                                     .contains(DataDeliveryUtils.CREATED)
                             || notificationMessage
                                     .contains(DataDeliveryUtils.DELETED)) {
+                            
                         isUpdateable = true;
+                    } else if (notificationMessage
+                            .contains(DataDeliveryUtils.UPDATED)) {
+                        // special case of updated, prevent from spamming the BWM
+                        if ((System.currentTimeMillis() - lastUpdateTime) > updateIntervalMils) {
+                            isUpdateable = true;
+                        }
                     }
                 }
             }
@@ -1721,9 +1729,10 @@ public class BandwidthCanvasComp extends Composite
                     return;
                 }
 
+                statusHandler.info("Time elapsed from last BUG update: "+(System.currentTimeMillis()-lastUpdateTime)+" ms");
                 lastUpdateTime = System.currentTimeMillis();
                 imageMgr.setCurrentTimeMillis(lastUpdateTime);
-
+  
                 try {
                     BandwidthGraphData tempData = graphDataUtil.getGraphData();
                     setGraphData(tempData);

@@ -44,6 +44,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
  * Apr 02, 2014  2810      dhladky      Priority sorting of allocations.
  * Sept 14, 2014 2131      dhladky      PDA additions
  * Jan 15, 2014  3884      dhladky      Removed shutdown, replaced with restart(), shutdown undermined #2749 BWM ticket;
+ * Mar 08, 2015 3950       dhladky      Better logging of foreign retrieval ID's.
  * 
  * </pre>
  * 
@@ -150,7 +151,7 @@ public class RetrievalManager {
                 .getSubscriptionRetrieval(eventId);
 
         if (subscriptionRetrieval == null) {
-            statusHandler.warn("Unable to find SubscriptionRetrieval by id ["
+            statusHandler.warn("Foreign(Shared) SubscriptionRetrieval id ["
                     + eventId + "]");
             return;
         }

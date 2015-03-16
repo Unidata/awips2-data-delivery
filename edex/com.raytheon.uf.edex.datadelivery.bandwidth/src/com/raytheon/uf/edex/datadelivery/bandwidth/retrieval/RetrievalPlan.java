@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  *                                      Added debug logging.
  * Jan 08, 2014 2615       bgonzale     Log registry bandwidth calculation errors.
  * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
+ * Mar 10, 2015  3950      dhladky      Log bandwidth value in init.
  * 
  * </pre>
  * 
@@ -166,6 +167,8 @@ public class RetrievalPlan {
                 bucket.setBucketSize(bucket.getBucketSize()
                         - (registryBytesPerSecond * TimeUtil.SECONDS_PER_MINUTE * bucketMinutes));
             }
+            
+            statusHandler.info("Retrieval Plan: available bandwidth: "+getDefaultBandwidth());
 
         } else {
             // Can't proceed, throw an Exception
