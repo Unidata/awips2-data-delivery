@@ -40,7 +40,6 @@ import com.raytheon.uf.common.localization.exception.LocalizationOpFailedExcepti
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.datadelivery.common.xml.ColumnXML;
 import com.raytheon.uf.viz.datadelivery.subscription.xml.SubscriptionManagerConfigXML;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
@@ -61,7 +60,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
  * Jun 21, 2013  2130      mpduff     Fix ordering of columns.
  * Nov 06, 2013  2358      mpduff     Remove default configuration code.
  * Dec 03, 2014  3840      ccody      Implement Comparator based sorting.
- * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency.
+ * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency. Bad path config.
+ * 
  * </pre>
  * 
  * @author mpduff
@@ -78,15 +78,15 @@ public class SubscriptionConfigurationManager {
     private static SubscriptionConfigurationManager instance = null;
 
     /** Path for Subscription Configuration files */
-    private final String CONFIG_PATH = FileUtil.join("dataDelivery",
-            "subscriptionManagerConfig");
+    private final String CONFIG_PATH = "dataDelivery" + IPathManager.SEPARATOR
+            + "subscriptionManagerConfig";
 
     /** Default Subscription Configuration xml file */
     private final String DEFAULT_CONFIG_XML_FILE = "DefaultSubscriptionConfig.xml";
 
     /** Default Subscription Configuration xml */
-    private final String DEFAULT_CONFIG_XML = FileUtil.join(CONFIG_PATH,
-            DEFAULT_CONFIG_XML_FILE);
+    private final String DEFAULT_CONFIG_XML = "CONFIG_PATH"
+            + IPathManager.SEPARATOR + "DEFAULT_CONFIG_XML_FILE";
 
     /** Map holding column text alignment */
     private final HashMap<String, Integer> alignmentMap = new HashMap<String, Integer>();
