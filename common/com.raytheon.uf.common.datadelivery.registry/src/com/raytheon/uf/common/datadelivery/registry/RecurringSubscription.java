@@ -84,7 +84,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Sept 14, 2014 2131      dhladky      PDA updates
  * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
  * Feb 02, 2015  4014      dhladky      More consolidated subscription time checks.
- * Mar 12, 2015  4242      dhladky      Removed isBeforeStart() check, caused scheduling gaps on initial creation.
+ * Mar 23, 2015  3950      dhladky      Reworked the isbeforeStart() to not have gaps and take into account latency and cycle offsets
  * 
  * </pre>
  * 
@@ -949,6 +949,42 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     }
 
     /**
+     * Check for before start date
+     * 
+     * @param date
+     * @return
+     */
+    private boolean isBeforeStart(Date date) {
+        boolean before = false;
+        long interval = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
+        
+        switch(dataSetType) {
+
+        // special case of grids
+        case GRID:
+            // get the step time in milliseconds.
+            long stepTime = ((GriddedTime) getTime()).findForecastStepUnit() * TimeUtil.MILLIS_PER_SECOND;
+            long gridStartTime = getSubscriptionStart().getTime();
+            
+            if ((gridStartTime - stepTime - interval) > date.getTime()) {
+                before = true;
+            }
+            break;
+            
+        default:
+             // start time - interval
+            long startTime = getSubscriptionStart().getTime();
+            
+            if ((startTime - interval) > date.getTime()) {
+                before = true;
+            }
+            break;
+        }
+     
+        return before;
+    }
+
+    /**
      * Get the current subscription status.
      * 
      * @return SUBSCRIPTION_STATUS
@@ -995,7 +1031,9 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      */
     @Override
     public boolean shouldScheduleForTime(Calendar checkCal) {
-        if (!isExpired(checkCal.getTime()) && inActivePeriodWindow(checkCal)) {
+        if (!isExpired(checkCal.getTime())
+                && !isBeforeStart(checkCal.getTime())
+                && inActivePeriodWindow(checkCal)) {
             return true;
         }
 
