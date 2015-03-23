@@ -128,7 +128,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.  
  *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
  *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check   
- *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM.                             
+ *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null                           
  * </pre>
  * 
  * @author lvenable
@@ -959,7 +959,10 @@ public class BandwidthCanvasComp extends Composite
                 }
 
                 mouseMarker = MISSING;
-                toolTip.dispose();
+
+                if (toolTip != null && !toolTip.isDisposed()) {
+                    toolTip.dispose();
+                }
 
                 cornerPointOffset.x -= previousMousePoint.x - e.x;
                 cornerPointOffset.y -= previousMousePoint.y - e.y;
