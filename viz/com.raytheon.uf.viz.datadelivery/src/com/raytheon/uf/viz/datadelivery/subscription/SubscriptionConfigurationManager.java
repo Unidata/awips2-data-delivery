@@ -197,15 +197,19 @@ public class SubscriptionConfigurationManager {
      * Set the default configuration.
      */
     public void setDefaultConfiguration() {
-        
-        loadDefaultFile();
+        // setting new default, don't reload original
+        loadDefaultFile(false);
         saveXml();
     }
     
     /**
      * Load the default localization File
      */
-    public void loadDefaultFile() {
+    public void loadDefaultFile(boolean forceReload) {
+        // force a reload
+        if (forceReload) {
+            xml = null;
+        }
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationContext context = pm.getContext(
                 LocalizationType.CAVE_STATIC, LocalizationLevel.USER);
