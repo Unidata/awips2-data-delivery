@@ -956,29 +956,30 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      */
     private boolean isBeforeStart(Date date) {
         boolean before = false;
-        long interval = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
+        long latency = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
+        long startTime = getSubscriptionStart().getTime();
+        long offset = 0l;
         
         switch(dataSetType) {
 
         // special case of grids
         case GRID:
             // get the step time in milliseconds.
-            long stepTime = ((GriddedTime) getTime()).findForecastStepUnit() * TimeUtil.MILLIS_PER_SECOND;
-            long gridStartTime = getSubscriptionStart().getTime();
+            offset = ((GriddedTime) getTime()).findForecastStepUnit() * TimeUtil.MILLIS_PER_SECOND;
+            break;
             
-            if ((gridStartTime - stepTime - interval) > date.getTime()) {
-                before = true;
-            }
+        case POINT:
+            // point uses an interval (in Minutes)
+            offset = ((PointTime) getTime()).getInterval() * TimeUtil.MILLIS_PER_MINUTE;
             break;
             
         default:
-             // start time - interval
-            long startTime = getSubscriptionStart().getTime();
-            
-            if ((startTime - interval) > date.getTime()) {
-                before = true;
-            }
-            break;
+             // no offset value set
+             break;
+        }
+        
+        if ((startTime - offset - latency) > date.getTime()) {
+            before = true;
         }
      
         return before;

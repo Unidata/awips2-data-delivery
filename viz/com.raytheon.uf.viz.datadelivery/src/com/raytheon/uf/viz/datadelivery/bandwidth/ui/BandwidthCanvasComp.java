@@ -378,7 +378,9 @@ public class BandwidthCanvasComp extends Composite
 
                 NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC,
                         bandwidthCanvasComp);
-                toolTip.dispose();
+                if (toolTip != null && !toolTip.isDisposed()) {
+                    toolTip.dispose();
+                }
             }
         });
 
