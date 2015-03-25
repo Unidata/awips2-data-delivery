@@ -19,8 +19,13 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.IBandwidthService;
 import com.raytheon.uf.common.datadelivery.bandwidth.IProposeScheduleResponse;
@@ -33,6 +38,9 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHan
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthContextFactory.IEdexBandwidthManagerCreator;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
@@ -69,6 +77,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
  * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
+ * Mar 25, 2015 4329       dhladky      Threaded the graph data requests.
  * 
  * </pre>
  * 
@@ -78,6 +87,23 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
         implements IEdexBandwidthManagerCreator {
 
+    protected static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(WfoBandwidthManagerCreator.class);
+    
+    /** Processes map <registryName, GraphData> **/
+    private static ConcurrentHashMap<String, BandwidthGraphData> graphDataMap = null;
+    
+    /** Processes list <registryName> **/
+    private static List<String> processList = null;
+    
+    /** NCF **/
+    protected static final String NCF = "NCF";
+    
+    /** LOCAL registry **/
+    protected static final String LOCAL_REGISTRY = "LOCAL_REGISTRY";
+        
+    /** The threaded requester for graph data **/
+    protected static ExecutorService graphDataExecutor;
     /**
      * WFO {@link BandwidthManager} implementation.
      */
@@ -85,10 +111,11 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
             extends EdexBandwidthManager<T, C> {
 
         private static final String MODE_NAME = "registry";
-
+        
         private static final String[] WFO_BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
 
-        // TODO: Change to be DIed in Spring
+        // TODO: Change to be tied in Spring
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         private final IBandwidthService<T, C> ncfBandwidthService = new NcfBandwidthService();
 
         /**
@@ -120,6 +147,8 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
                     dataSetMetaDataHandler, subscriptionHandler,
                     adhocSubscriptionHandler, subscriptionNotificationService,
                     findSubscriptionsStrategy);
+            
+            graphDataExecutor = Executors.newFixedThreadPool(2);
         }
         @Override
         protected String[] getSpringFilesForNewInstance() {
@@ -161,18 +190,73 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
          */
         @Override
         protected BandwidthGraphData getBandwidthGraphData() {
-            BandwidthGraphData data = super.getBandwidthGraphData();
-            BandwidthGraphData data2 = ncfBandwidthService
-                    .getBandwidthGraphData();
-            if (data2 != null) {
-                data.merge(data2);
+            return requestGraphData();
+        }
+        
+        /**
+         * Requests the local registry's bandwidth graph data.
+         * @return
+         */
+        protected BandwidthGraphData getLocalBandwidthGraphData() {
+            return super.getBandwidthGraphData();
+        }
+
+        /**
+         * Thread out the requests for graph data
+         * 
+         * @return
+         */
+        protected BandwidthGraphData requestGraphData() {
+
+            graphDataMap = new ConcurrentHashMap<String, BandwidthGraphData>(2, 1.0f);
+            processList = new ArrayList<String>(2);
+
+            // Add the registries needed
+            processList.add(LOCAL_REGISTRY);
+            processList.add(NCF);
+
+            // start threads
+            for (String registry : processList) {
+                graphDataExecutor.execute(new GraphDataRequestor(registry, this));
             }
+
+            // count down latch
+            while (processList.size() > 0) {
+                // wait for all threads to finish before returning
+                try {
+                    Thread.sleep(50);
+                    if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                        statusHandler.handle(Priority.DEBUG,
+                                "Checking status ..." + processList.size());
+                        for (String registry : processList) {
+                            statusHandler.handle(Priority.DEBUG,
+                                    "Still processing ..." + registry);
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    statusHandler.handle(Priority.ERROR,
+                            "Process thread had been interupted!", e);
+                }
+            }
+
+            BandwidthGraphData data = null;
+
+            for (Entry<String, BandwidthGraphData> entry : graphDataMap
+                    .entrySet()) {
+                if (data == null) {
+                    data = entry.getValue();
+                } else if (data != null) {
+                    data.merge(entry.getValue());
+                }
+            }
+            
+            graphDataMap = null;
+            processList = null;
 
             return data;
         }
-
     }
-
+    
     /**
      * {@inheritDoc}
      */
@@ -190,5 +274,60 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
                 retrievalManager, bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
                 subscriptionHandler, adhocSubscriptionHandler,
                 subscriptionNotificationService, findSubscriptionsStrategy);
+    }
+    
+
+    /**
+     * Class to thread the retrieval of GraphData
+     * 
+     * @author dhladky
+     * 
+     */
+    static class GraphDataRequestor implements Runnable {
+
+        private String registryName;
+
+        @SuppressWarnings("rawtypes")
+        private WfoBandwidthManager wfoBandwidthManager;
+
+        @Override
+        public void run() {
+            try {
+                process();
+            } catch (Exception e) {
+                statusHandler.error("Unable to request graph data from this registry! "+registryName, e);
+            } finally {
+                processList.remove(registryName);
+            }
+        }
+
+        public GraphDataRequestor(String registryName) {
+            this.registryName = registryName;
+        }
+
+        @SuppressWarnings("rawtypes")
+        public GraphDataRequestor(String registryName,
+                WfoBandwidthManager wfoBandwidthManager) {
+            this.registryName = registryName;
+            this.wfoBandwidthManager = wfoBandwidthManager;
+        }
+
+        /**
+         * Request to the correct registry
+         */
+        public void process() throws Exception {
+
+            BandwidthGraphData data = null;
+            /* WFO's hits two servers currently, itself and NCF */
+            if (registryName.equals(WfoBandwidthManagerCreator.LOCAL_REGISTRY)) {
+                data = wfoBandwidthManager.getLocalBandwidthGraphData();
+            } else if (registryName.equals(WfoBandwidthManagerCreator.NCF)) {
+                data = wfoBandwidthManager.ncfBandwidthService
+                        .getBandwidthGraphData();
+            }
+
+            // add data
+            graphDataMap.put(registryName, data);
+        }
     }
 }
