@@ -160,6 +160,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Dec 03, 2014  3840      ccody      Correct sorting "contract violation" issue.
  * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency.
  * Jan 30, 2015  2746      dhladky    Special shared sub delete handling.
+ * Mar 20, 2015  2894      dhladky    Revisisted consistency in appliying default config.
  * 
  * </pre>
  * 
@@ -289,10 +290,10 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /** New menu */
     private MenuItem newMI;
-    
+
     /** scheduled executor */
     private final ScheduledExecutorService scheduler;
-    
+
     /** instance of configuration manager */
     private SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
             .getInstance();
@@ -355,8 +356,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     @Override
     protected void initializeComponents(Shell shell) {
-        
-        configMan.loadDefaultFile();
+
+        // reset and load default
+        configMan.loadDefaultFile(true);
         shell.setMinimumSize(750, 320);
         createMenus();
         createTopLayout();
@@ -688,7 +690,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     @Override
     public void handleRefresh() {
-        
+
         VizApp.runAsync(new Runnable() {
             @Override
             public void run() {
@@ -831,7 +833,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * Set the default configuration file.
      */
     private void handleSetDefault() {
-        
+
         String fileName = configMan.getDefaultXMLConfig();
 
         IPathManager pm = PathManagerFactory.getPathManager();
@@ -1009,7 +1011,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                                 // Set site originating change on change
                                 sub.setOriginatingSite(CURRENT_SITE);
                                 subsToUpdate.add(sub);
-                                
+
                             } else {
                                 subsToDelete.add(sub);
                             }

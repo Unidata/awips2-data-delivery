@@ -84,6 +84,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Sept 14, 2014 2131      dhladky      PDA updates
  * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
  * Feb 02, 2015  4014      dhladky      More consolidated subscription time checks.
+ * Mar 23, 2015  3950      dhladky      Reworked the isbeforeStart() to not have gaps and take into account latency and cycle offsets
  * 
  * </pre>
  * 
@@ -955,10 +956,32 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      */
     private boolean isBeforeStart(Date date) {
         boolean before = false;
-        if (subscriptionStart != null
-                && date.before(subscriptionStart)) {
+        long latency = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
+        long startTime = getSubscriptionStart().getTime();
+        long offset = 0l;
+        
+        switch(dataSetType) {
+
+        // special case of grids
+        case GRID:
+            // get the step time in milliseconds.
+            offset = ((GriddedTime) getTime()).findForecastStepUnit() * TimeUtil.MILLIS_PER_SECOND;
+            break;
+            
+        case POINT:
+            // point uses an interval (in Minutes)
+            offset = ((PointTime) getTime()).getInterval() * TimeUtil.MILLIS_PER_MINUTE;
+            break;
+            
+        default:
+             // no offset value set
+             break;
+        }
+        
+        if ((startTime - offset - latency) > date.getTime()) {
             before = true;
         }
+     
         return before;
     }
 

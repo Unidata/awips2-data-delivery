@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<SubscriptionManagerColumns>
+    <column name="Name" visible="true" sortColumn="true" sortAsc="true"/>
+    <column name="Owner" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Status" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Priority" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Description" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Subscription Start" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Subscription Expiration" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Active Period Start" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Active Period End" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Office ID" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Full Dataset" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Data Size" visible="true" sortColumn="false" sortAsc="true"/>
+    <column name="Group Name" visible="true" sortColumn="false" sortAsc="true"/>
+</SubscriptionManagerColumns>

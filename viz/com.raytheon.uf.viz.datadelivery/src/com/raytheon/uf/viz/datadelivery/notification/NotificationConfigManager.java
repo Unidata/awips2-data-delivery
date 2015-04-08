@@ -54,6 +54,7 @@ import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationFilterXML;
  * Oct 22, 2012   1284     mpduff     Code Cleanup.
  * Apr 25, 2013   1820     mpduff     Add deleteXml method.
  * Aug 30, 2013   2314     mpduff     Removed initial XML read, added null check.
+ * Mar 17, 2015   2894     dhladky    Consistent loading of configuration.
  * </pre>
  * 
  * @author mpduff
@@ -71,15 +72,18 @@ public class NotificationConfigManager {
 
     /** Configuration XML File */
     private final String CONFIG_XML_FILE = "notificationManagerConfig"
-            + File.separator + "NotificationConfig.xml";
+            + IPathManager.SEPARATOR + "NotificationConfig.xml";
 
     /** Configuration XML File */
     private final String FILTER_XML_FILE = "notificationManagerConfig"
-            + File.separator + "NotificationFilter.xml";
+            + IPathManager.SEPARATOR + "NotificationFilter.xml";
 
     /** Configuration XML File */
     private final String DEFAULT_CONFIG_XML_FILE = "notificationManagerConfig"
-            + File.separator + "DefaultNotificationConfig.xml";
+            + IPathManager.SEPARATOR + "DefaultNotificationConfig.xml";
+    
+    /** Path for Notification Configuration files */
+    private final String CONFIG_PREFIX = "dataDelivery";
 
     /** Configuration file */
     private NotificationConfigXML configXml = null;
@@ -133,7 +137,7 @@ public class NotificationConfigManager {
 
     private void readXML() {
         try {
-            String fileName = "dataDelivery" + File.separator
+            String fileName = CONFIG_PREFIX + IPathManager.SEPARATOR
                     + DEFAULT_CONFIG_XML_FILE;
             IPathManager pm = PathManagerFactory.getPathManager();
             LocalizationContext context = pm.getContext(
@@ -141,7 +145,7 @@ public class NotificationConfigManager {
             LocalizationFile configLocFile = pm.getLocalizationFile(context,
                     fileName);
 
-            String filterFileName = "dataDelivery" + File.separator
+            String filterFileName = CONFIG_PREFIX + IPathManager.SEPARATOR
                     + FILTER_XML_FILE;
             LocalizationFile filterLocFile = pm.getLocalizationFile(context,
                     filterFileName);
@@ -188,7 +192,7 @@ public class NotificationConfigManager {
      */
     public void saveXml() {
         if (currentConfigFile == null) {
-            fileName = "dataDelivery" + File.separator + CONFIG_XML_FILE;
+            fileName = CONFIG_PREFIX + IPathManager.SEPARATOR + CONFIG_XML_FILE;
         } else {
             fileName = currentConfigFile.getName();
         }
@@ -200,7 +204,7 @@ public class NotificationConfigManager {
         LocalizationFile configLocFile = pm.getLocalizationFile(context,
                 fileName);
 
-        fileName = "dataDelivery" + File.separator + FILTER_XML_FILE;
+        fileName = CONFIG_PREFIX + IPathManager.SEPARATOR + FILTER_XML_FILE;
         LocalizationFile filterLocFile = pm.getLocalizationFile(context,
                 fileName);
 
