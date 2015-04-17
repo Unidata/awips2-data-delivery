@@ -2,6 +2,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.interfaces;
 
 import java.util.List;
 
+import opendap.dap.NoSuchAttributeException;
+
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
@@ -19,6 +21,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
  * Feb 20, 2011    218      dhladky     Initial creation
  * Sept 30, 2013   1797     dhladky     Generics
  * July 08, 2014   3120     dhladky     Accomodate PDA
+ * Apr  14, 2015   4400     dhladky     Updated to DAP2 protocol.
  * 
  * </pre>
  * 
@@ -74,9 +77,10 @@ public interface IParseMetaData<O extends Object> {
      * @param collection
      * @param dataDateFormat
      * @return
+     * @throws NoSuchAttributeException 
      */
     List<DataSetMetaData<?>> parseMetaData(Provider provider, O object,
-            Collection collection, String dataDateFormat);
+            Collection collection, String dataDateFormat) throws NoSuchAttributeException;
     
     /**
      * OGC interface for metadata parsing

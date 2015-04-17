@@ -10,6 +10,12 @@ import java.util.Map;
 
 import javax.persistence.Transient;
 
+import opendap.dap.DAP2Exception;
+import opendap.dap.DAS;
+import opendap.dap.DASException;
+import opendap.dap.DConnect;
+import opendap.dap.parser.ParseException;
+
 import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
@@ -17,13 +23,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.ConnectionUtil;
-
-import dods.dap.DAS;
-import dods.dap.DASException;
-import dods.dap.DConnect;
-import dods.dap.DODSException;
-import dods.dap.parser.ParseException;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.OpenDAPConnectionUtil;
 
 /**
  * Extract OpenDAP MetaData over the web.
@@ -42,6 +42,7 @@ import dods.dap.parser.ParseException;
  * Aug 06, 2012   1022      djohnson    Cache a retrieved DAS instance.
  * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
  * Jul 08, 2014  3120      dhladky      Fix generics
+ * Apr 12, 2015   4400     dhladky      Switched over to DAP2 protocol.
  * 
  * </pre>
  * 
@@ -51,6 +52,8 @@ import dods.dap.parser.ParseException;
 
 class OpenDAPMetaDataExtractor extends MetaDataExtractor<String, DAS> {
 
+    boolean isDods = DodsUtils.isOlderXDODSVersion();
+    
     private String url;
     
     /**
@@ -141,17 +144,16 @@ class OpenDAPMetaDataExtractor extends MetaDataExtractor<String, DAS> {
      */
     private DConnect getConnection(String curl) {
         try {
-            DConnect conn = ConnectionUtil.getDConnect(curl);
-            return conn;
+            return OpenDAPConnectionUtil.getDConnectDAP2(curl);
         } catch (FileNotFoundException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
+            statusHandler.handle(Priority.PROBLEM, "Error getting connection object for OpenDAP.", e);
         }
 
         return null;
     }
 
     private DAS getDASData() throws MalformedURLException, DASException,
-            IOException, ParseException, DODSException {
+            IOException, ParseException, DAP2Exception {
         if (das == null) {
             DConnect conn = getConnection(rootUrl);
             das = conn.getDAS();

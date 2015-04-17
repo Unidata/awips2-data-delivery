@@ -31,8 +31,6 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 
-import dods.dap.DataDDS;
-
 /**
  * {@link RetrievalResponse} for OpenDAP.
  * 
@@ -44,6 +42,7 @@ import dods.dap.DataDDS;
  * ------------ ---------- ----------- --------------------------
  * Feb 12, 2013 1543       djohnson     Initial creation
  * Feb 15, 2013 1543       djohnson     Only allow DataDDS payloads.
+ * Apr 14, 2015 4400       dhladky      Updated to DAP2 protocol made backward compatible.
  * 
  * </pre>
  * 
@@ -57,7 +56,7 @@ public class OpenDapRetrievalResponse extends RetrievalResponse<GriddedTime, Gri
 
     @XmlElement
     @XmlJavaTypeAdapter(value = OpenDapRetrievalResponseSerializer.class)
-    private DataDDS payload;
+    private Object payload;
 
     /**
      * Constructor.
@@ -80,19 +79,25 @@ public class OpenDapRetrievalResponse extends RetrievalResponse<GriddedTime, Gri
      */
     @Override
     public void setPayLoad(Object payload) {
-        if (payload != null && (!(payload instanceof DataDDS))) {
-            throw new IllegalArgumentException(
-                    "Payload must be a DataDDS instance, not "
-                            + payload.getClass().getName());
+        
+        if (payload != null) {
+            if (payload instanceof opendap.dap.DataDDS) {
+                this.payload = opendap.dap.DataDDS.class.cast(payload);
+            } else if (payload instanceof dods.dap.DataDDS) {
+                this.payload = dods.dap.DataDDS.class.cast(payload);
+            } else {
+                throw new IllegalArgumentException(
+                        "Payload must be a DataDDS instance, not "
+                                + payload.getClass().getName());
+            }
         }
-        this.payload = DataDDS.class.cast(payload);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public DataDDS getPayLoad() {
+    public Object getPayLoad() {
         return payload;
     }
 }

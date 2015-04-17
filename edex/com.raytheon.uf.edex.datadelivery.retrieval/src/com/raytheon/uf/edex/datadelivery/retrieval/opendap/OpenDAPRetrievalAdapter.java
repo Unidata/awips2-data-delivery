@@ -38,10 +38,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestB
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.OpenDAPTranslator;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.ConnectionUtil;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.OpenDAPConnectionUtil;
 
-import dods.dap.DConnect;
-import dods.dap.DataDDS;
+
 
 /**
  * OpenDAP Provider Retrieval Adapter
@@ -56,7 +55,8 @@ import dods.dap.DataDDS;
  * Jul 25, 2012 955        djohnson    Make package-private.
  * Feb 05, 2013 1580       mpduff      EventBus refactor.
  * Feb 12, 2013 1543       djohnson    The payload can just be an arbitrary object, implementations can define an array if required.
- * Spet 19, 2013 2388      dhladky     Logging for failed requests.
+ * Sept 19, 2013 2388      dhladky     Logging for failed requests.
+ * Apr 12, 2015 4400       dhladky     Upgraded to DAP2 and preserved backward compatibility.
  * 
  * </pre>
  * 
@@ -68,6 +68,9 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPRetrievalAdapter.class);
+    
+    /** convert if older XDODS version **/
+    boolean isDods = DodsUtils.isOlderXDODSVersion();
 
     @Override
     public OpenDAPRequestBuilder createRequestMessage(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
@@ -82,13 +85,22 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
     public RetrievalResponse<GriddedTime, GriddedCoverage> performRequest(
             IRetrievalRequestBuilder<GriddedTime, GriddedCoverage> request) {
 
-        DataDDS data = null;
+        Object data = null;
 
         try {
-            DConnect connect = ConnectionUtil.getDConnect(request.getRequest());
-            data = connect.getData(null);
+            if (isDods) {
+                dods.dap.DConnect connect = OpenDAPConnectionUtil
+                        .getDConnectDODS(request.getRequest());
+                data = connect.getData(null);
+            } else {
+                opendap.dap.DConnect connect = OpenDAPConnectionUtil
+                        .getDConnectDAP2(request.getRequest());
+                data = connect.getData(null);
+            }
         } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR, "Request: "+request.getRequest()+" could not be fullfilled!", e.getMessage());
+            statusHandler.handle(Priority.ERROR,
+                    "Request: " + request.getRequest()
+                            + " could not be fullfilled!", e.getMessage());
             EventBus.publish(new RetrievalEvent(e.getMessage()));
         }
 
@@ -112,9 +124,18 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
                     "Unable to instantiate a required class!", e);
         }
 
-        final DataDDS payload;
+        Object payload = null;
         try {
-            payload = DataDDS.class.cast(response.getPayLoad());
+            if (response.getPayLoad() != null) {
+                
+                payload = response.getPayLoad();
+                
+                if (payload instanceof dods.dap.DataDDS) {
+                    payload = dods.dap.DataDDS.class.cast(response.getPayLoad());
+                } else if (payload instanceof opendap.dap.DataDDS) {
+                    payload = opendap.dap.DataDDS.class.cast(response.getPayLoad());
+                }
+            }
         } catch (ClassCastException e) {
             throw new TranslationException(e);
         }

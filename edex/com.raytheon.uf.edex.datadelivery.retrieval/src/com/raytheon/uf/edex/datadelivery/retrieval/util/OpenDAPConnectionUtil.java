@@ -23,8 +23,6 @@ import java.io.FileNotFoundException;
 
 import com.raytheon.uf.common.comm.ProxyConfiguration;
 
-import dods.dap.DConnect;
-
 /**
  * Utilities for datadelivery connections.
  * 
@@ -40,15 +38,37 @@ import dods.dap.DConnect;
  * Aug 30, 2013  2314      mpduff       Added null checks.
  * Nov 12, 2013  *         dhladky      Fixed copy paste error
  * 6/18/2014    1712        bphillip    Updated Proxy configuration
+ * Apr 14, 2015 4400       dhladky      Upgraded to DAP2 with backward compatibility.
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
 
-public class ConnectionUtil {
+public class OpenDAPConnectionUtil {
 
-    static ConnectionUtil instance = new ConnectionUtil();
+    static OpenDAPConnectionUtil instance = new OpenDAPConnectionUtil();
+        
+    /**
+     * Retrieve a DConnect instance.
+     * 
+     * @param urlString
+     * @return DConnect instance
+     * @throws FileNotFoundException
+     *             rethrown from DConnect
+     */
+    public static dods.dap.DConnect getDConnectDODS(String urlString)
+            throws FileNotFoundException {
+
+        // older xdods-serialized version
+        if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
+            return new dods.dap.DConnect(urlString,
+                    ProxyConfiguration.getHttpProxyHost(),
+                    ProxyConfiguration.getHttpProxyPortString());
+        } else {
+            return new dods.dap.DConnect(urlString);
+        }
+    }
 
     /**
      * Retrieve a DConnect instance.
@@ -58,20 +78,22 @@ public class ConnectionUtil {
      * @throws FileNotFoundException
      *             rethrown from DConnect
      */
-    public static DConnect getDConnect(String urlString)
+    public static opendap.dap.DConnect getDConnectDAP2(String urlString)
             throws FileNotFoundException {
+
+        // new DAP2-serialized version
         if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
-            return new DConnect(urlString,
+            return new opendap.dap.DConnect(urlString,
                     ProxyConfiguration.getHttpProxyHost(),
                     ProxyConfiguration.getHttpProxyPortString());
         } else {
-            return new DConnect(urlString);
+            return new opendap.dap.DConnect(urlString);
         }
     }
 
     /**
      * Package level constructor so test can call.
      */
-    ConnectionUtil() {
+    OpenDAPConnectionUtil() {
     }
 }

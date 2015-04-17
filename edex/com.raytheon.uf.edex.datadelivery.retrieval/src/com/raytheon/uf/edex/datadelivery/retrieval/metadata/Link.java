@@ -35,7 +35,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
-import dods.dap.DAS;
+import opendap.dap.DAS;
 
 /**
  * Link object
@@ -49,6 +49,7 @@ import dods.dap.DAS;
  * Jul 24, 2012    955      djohnson    Use Map instead of HashMap.
  * Sep 10, 2012 1154        djohnson    Add JAXB annotations.
  * Jul 08, 2014   3120      dhladky     More generic
+ * Apr 12, 2015  4400       dhladky     Upgraded to DAP2
  * 
  * </pre>
  * 

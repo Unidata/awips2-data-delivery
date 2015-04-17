@@ -8,7 +8,6 @@ Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: RAYTHEON
 Require-Bundle: org.apache.http;bundle-version="4.1.2",
  edu.uci.ics.crawler4j;bundle-version="1.0.0",
- net.dods;bundle-version="1.0.0",
  com.raytheon.uf.common.datadelivery.registry;bundle-version="1.0.0",
  com.raytheon.uf.common.status;bundle-version="1.12.1174",
  com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
@@ -36,7 +35,8 @@ Require-Bundle: org.apache.http;bundle-version="4.1.2",
  org.quartz;bundle-version="1.8.6",
  net.opengis;bundle-version="1.0.2",
  com.raytheon.uf.edex.ogc.common;bundle-version="1.0.0",
- org.apache.commons.io;bundle-version="2.4.0"
+ org.apache.commons.io;bundle-version="2.4.0",
+ net.dods;bundle-version="1.1.7"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.edex.datadelivery.harvester.crawler,

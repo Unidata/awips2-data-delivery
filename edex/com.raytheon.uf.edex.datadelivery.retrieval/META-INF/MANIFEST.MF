@@ -5,7 +5,6 @@ Bundle-SymbolicName: com.raytheon.uf.edex.datadelivery.retrieval
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
 Require-Bundle: com.raytheon.uf.common.status;bundle-version="1.12.1174",
- net.dods;bundle-version="1.0.0",
  com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.0.0",
  org.geotools;bundle-version="2.6.4",
  org.springframework;bundle-version="2.5.6",
@@ -38,7 +37,8 @@ Require-Bundle: com.raytheon.uf.common.status;bundle-version="1.12.1174",
  com.raytheon.uf.edex.esb.camel;bundle-version="1.14.0",
  org.apache.commons.io;bundle-version="2.4.0",
  org.apache.commons.codec;bundle-version="1.4.0",
- com.raytheon.uf.edex.security;bundle-version="1.14.0"
+ com.raytheon.uf.edex.security;bundle-version="1.14.0",
+ net.dods;bundle-version="1.1.7"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval;

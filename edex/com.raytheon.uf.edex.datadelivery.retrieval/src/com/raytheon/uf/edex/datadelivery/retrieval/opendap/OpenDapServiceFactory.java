@@ -21,18 +21,15 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 import java.util.Date;
 
-import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import opendap.dap.DAS;
+
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
-import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
-import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
-
-import dods.dap.DAS;
 
 /**
  * Implementation of {@link IServiceFactory} that handles OpenDAP. This should
@@ -47,6 +44,7 @@ import dods.dap.DAS;
  * Jul 24, 2012 955        djohnson     Initial creation
  * Feb 07, 2013 1543       djohnson     Allow sub-classes.
  * May 31, 2013 2038       djohnson     Add setProvider.
+ * Apr 14, 2015 4400       dhladky      Upgraded to DAP2 protocol
  * 
  * </pre>
  * 

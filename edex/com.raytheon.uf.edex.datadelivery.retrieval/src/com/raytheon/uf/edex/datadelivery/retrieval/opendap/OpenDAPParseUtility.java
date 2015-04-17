@@ -21,13 +21,14 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.ConnectionUtil;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.OpenDAPConnectionUtil;
 
-import dods.dap.AttributeTable;
-import dods.dap.DArray;
-import dods.dap.DConnect;
-import dods.dap.DataDDS;
-import dods.dap.PrimitiveVector;
+import opendap.dap.AttributeTable;
+import opendap.dap.DArray;
+import opendap.dap.DConnect;
+import opendap.dap.DataDDS;
+import opendap.dap.NoSuchAttributeException;
+import opendap.dap.PrimitiveVector;
 
 /**
  * Constants for working with OpenDAP. This class should remain package-private,
@@ -258,8 +259,9 @@ public final class OpenDAPParseUtility {
      * 
      * @param table
      * @return
+     * @throws NoSuchAttributeException 
      */
-    public Ensemble parseEnsemble(AttributeTable table) {
+    public Ensemble parseEnsemble(AttributeTable table) throws NoSuchAttributeException {
 
         Ensemble ens = new Ensemble();
 
@@ -369,7 +371,7 @@ public final class OpenDAPParseUtility {
         List<Double> levels = null;
 
         try {
-            DConnect connect = ConnectionUtil.getDConnect(url + "?" + lev);
+            DConnect connect = OpenDAPConnectionUtil.getDConnectDAP2(url + "?" + lev);
             DataDDS data = connect.getData(null);
             DArray array = (DArray) data.getVariable(lev);
             PrimitiveVector pm = array.getPrimitiveVector();

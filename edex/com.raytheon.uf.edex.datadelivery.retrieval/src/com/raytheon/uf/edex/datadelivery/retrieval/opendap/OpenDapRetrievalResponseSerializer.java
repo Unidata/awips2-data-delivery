@@ -29,8 +29,6 @@ import com.raytheon.uf.common.serialization.ISerializationContext;
 import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
 import com.raytheon.uf.common.serialization.SerializationException;
 
-import dods.dap.DataDDS;
-
 /**
  * Dynamic serializer for OpenDAP retrieval responses.
  * 
@@ -42,6 +40,7 @@ import dods.dap.DataDDS;
  * ------------ ---------- ----------- --------------------------
  * Feb 12, 2013 1543       djohnson     Initial creation
  * Feb 15, 2013 1543       djohnson     Also can be used as JAXB adapter for DataDDS.
+ * Apr 15, 2015 4400       dhladky      Updated for DAP2 protocol and backward compatibility.
  * 
  * </pre>
  * 
@@ -49,7 +48,7 @@ import dods.dap.DataDDS;
  * @version 1.0
  */
 public class OpenDapRetrievalResponseSerializer extends
-        XmlAdapter<byte[], DataDDS> implements
+        XmlAdapter<byte[], Object> implements
         ISerializationTypeAdapter<OpenDapRetrievalResponse> {
 
     /**
@@ -87,7 +86,7 @@ public class OpenDapRetrievalResponseSerializer extends
      * {@inheritDoc}
      */
     @Override
-    public DataDDS unmarshal(byte[] v)
+    public Object unmarshal(byte[] v)
             throws Exception {
         return DodsUtils.restoreDataDdsFromByteArray(v);
     }
@@ -96,7 +95,7 @@ public class OpenDapRetrievalResponseSerializer extends
      * {@inheritDoc}
      */
     @Override
-    public byte[] marshal(DataDDS v)
+    public byte[] marshal(Object v)
             throws Exception {
         return DodsUtils.convertDataDdsToByteArray(v);
     }

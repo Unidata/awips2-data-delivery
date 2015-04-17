@@ -39,7 +39,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 
-import dods.dap.DAS;
+import opendap.dap.DAS;
 
 /**
  * Harvest MetaData
@@ -62,6 +62,7 @@ import dods.dap.DAS;
  * Oct 28, 2013 2361       dhladky     Fixed up JAXBManager.
  * Mar 31, 2014 2889       dhladky     Added username for notification center tracking.
  * Jul 08, 2014 3120       dhladky     More generics
+ * Apr 12, 2015 4400       dhladky     Upgrade to DAP2 for harvesting.
  * 
  * </pre>
  * 

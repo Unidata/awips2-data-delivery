@@ -65,8 +65,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDAPMetaDataExtractor.DAP_TYPE;
 import com.vividsolutions.jts.geom.Coordinate;
 
-import dods.dap.AttributeTable;
-import dods.dap.DAS;
+import opendap.dap.AttributeTable;
+import opendap.dap.DAS;
+import opendap.dap.NoSuchAttributeException;
 
 /**
  * Parse OpenDAP MetaData. This class should remain package-private, all access
@@ -98,6 +99,7 @@ import dods.dap.DAS;
  * Jan 14, 2014            dhladky      Data set info used for availability delay calculations.
  * Jun 09, 2014  3113      mpduff       Save the ArrivalTime.
  * Jul 08, 2014  3120      dhladky      Generics, interface realignment
+ * Apr 12, 2015  4400      dhladky      Switched over to DAP2 protocol.
  * 
  * </pre>
  * 
@@ -193,10 +195,11 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
      * @param collection
      * @param dataDateFormat
      * @return
+     * @throws NoSuchAttributeException 
      */
     private Map<String, Parameter> getParameters(DAS das,
             GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd, Link link,
-            Collection collection, String dataDateFormat) {
+            Collection collection, String dataDateFormat) throws NoSuchAttributeException {
 
         final String collectionName = dataSet.getCollectionName();
         final String url = gdsmd.getUrl();
@@ -267,7 +270,11 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 gdsmd.setTime(time);
 
             } catch (Exception le) {
-                logParsingException(timecon, "Time", collectionName, url);
+                try {
+                    logParsingException(timecon, "Time", collectionName, url);
+                } catch (Exception e) {
+                    statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
+                }
             }
         }
         // process latitude
@@ -645,7 +652,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
     @Override
     public List<DataSetMetaData<?>> parseMetaData(Provider provider,
-            LinkStore store, Collection collection, String dataDateFormat) {
+            LinkStore store, Collection collection, String dataDateFormat) throws NoSuchAttributeException {
 
         final Map<OpenDapGriddedDataSet, List<DataSetMetaData<?>>> metaDatas = new HashMap<OpenDapGriddedDataSet, List<DataSetMetaData<?>>>();
 

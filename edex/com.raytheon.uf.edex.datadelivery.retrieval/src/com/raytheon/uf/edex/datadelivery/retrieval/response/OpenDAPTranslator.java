@@ -35,13 +35,6 @@ import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.GridMetadataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 
-import dods.dap.BaseType;
-import dods.dap.DArray;
-import dods.dap.DArrayDimension;
-import dods.dap.DGrid;
-import dods.dap.DataDDS;
-import dods.dap.PrimitiveVector;
-
 /**
  * OPenDAP specific translation tools
  * 
@@ -53,6 +46,7 @@ import dods.dap.PrimitiveVector;
  * Jan 18, 2011            dhladky     Initial creation
  * Feb 07, 2013 1543       djohnson    Allow package-level construction with explicit PDO class name.
  * Sept 25, 2013 1797      dhladky     Separate time from gridded time
+ * Apr 12, 2015  4400      dhladky     Upgrade to DAP2 protocol with backward compatibility.
  * 
  * </pre>
  * 
@@ -64,6 +58,9 @@ public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedC
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPTranslator.class);
+    
+    /** Assume current version **/
+    boolean isDods = false;
 
     public OpenDAPTranslator(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML)
             throws InstantiationException {
@@ -75,21 +72,31 @@ public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedC
         super(attXML, className);
     }
 
-    public PluginDataObject[] asPluginDataObjects(DataDDS dds) {
+    public PluginDataObject[] asPluginDataObjects(Object dds) {
+        
+        if (dds instanceof dods.dap.DataDDS) {
+            isDods = true;
+        } else {
+            isDods = false;
+        }
+        
         PluginDataObject[] pdos = null;
 
-        for (Enumeration<?> variables = dds.getVariables(); variables
+        for (Enumeration<?> variables = getDDSVariables(dds); variables
                 .hasMoreElements();) {
 
-            BaseType bt = (BaseType) variables.nextElement();
-            Class<?> dclass = bt.getClass();
+            Object baseType = variables.nextElement();
+            Class<?> dclass = getClass(baseType);
 
             try {
-
-                if (dclass == DGrid.class) {
-                    pdos = translateGrid((DGrid) bt);
-                } else if (dclass == DArray.class) {
-                    pdos = translateArray((DArray) bt);
+                if (dclass == dods.dap.DGrid.class) {
+                    pdos = translateGrid(baseType);
+                } else if (dclass == dods.dap.DArray.class) {
+                    pdos = translateArray(baseType);
+                } else if (dclass == opendap.dap.DGrid.class) {
+                    pdos = translateGrid(baseType);
+                } else if (dclass == opendap.dap.DArray.class) {
+                    pdos = translateArray(baseType);
                 }
 
             } catch (Exception e) {
@@ -100,16 +107,22 @@ public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedC
         return pdos;
     }
 
-    private PluginDataObject[] translateGrid(DGrid dgrid) throws Exception {
+    /**
+     * Translates the Grid to something AWIPS will recognize
+     * @param dgrid
+     * @return
+     * @throws Exception
+     */
+    private PluginDataObject[] translateGrid(Object dgrid) throws Exception {
         try {
             PluginDataObject[] record = null;
-
-            Enumeration<?> e = dgrid.getVariables();
+            Enumeration<?> e = getGridVariables(dgrid);
+            
             // for (Enumeration e = dgrid.getVariables();
             // e.hasMoreElements();) {
             // testing out only one variable at this time
             if (e.hasMoreElements()) {
-                record = translateArray((DArray) e.nextElement());
+                record = translateArray(e.nextElement());
             }
 
             return record;
@@ -118,7 +131,13 @@ public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedC
         }
     }
 
-    private PluginDataObject[] translateArray(DArray darray) throws Exception {
+    /**
+     * Translates the DARRAY object to something AWIPS will recognize.
+     * @param darray
+     * @return
+     * @throws Exception
+     */
+    private PluginDataObject[] translateArray(Object darray) throws Exception {
 
         int nx = 0;
         int ny = 0;
@@ -129,13 +148,25 @@ public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedC
         int numLevels = getSubsetNumLevels();
         ArrayList<DataTime> times = getTimes();
 
-        for (Enumeration<?> e = darray.getDimensions(); e.hasMoreElements();) {
-            DArrayDimension d = (DArrayDimension) e.nextElement();
+        if (isDods) {
+            for (Enumeration<?> e = ((dods.dap.DArray)darray).getDimensions(); e.hasMoreElements();) {
+                dods.dap.DArrayDimension d = (dods.dap.DArrayDimension) e.nextElement();
 
-            if (d.getName().equals("lat")) {
-                dny = d.getSize();
-            } else if (d.getName().equals("lon")) {
-                dnx = d.getSize();
+                if (d.getName().equals("lat")) {
+                    dny = d.getSize();
+                } else if (d.getName().equals("lon")) {
+                    dnx = d.getSize();
+                }
+            }
+        } else {
+            for (Enumeration<?> e = ((opendap.dap.DArray)darray).getDimensions(); e.hasMoreElements();) {
+                opendap.dap.DArrayDimension d = (opendap.dap.DArrayDimension) e.nextElement();
+
+                if (d.getName().equals("lat")) {
+                    dny = d.getSize();
+                } else if (d.getName().equals("lon")) {
+                    dnx = d.getSize();
+                }
             }
         }
 
@@ -154,9 +185,7 @@ public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedC
         }
 
         int gridSize = nx * ny;
-
-        PrimitiveVector pm = darray.getPrimitiveVector();
-        float[] values = (float[]) pm.getInternalStorage();
+        float[] values = getValues(darray);
 
         List<String> ensembles = null;
         if (attXML.getEnsemble() != null && attXML.getEnsemble().hasSelection()) {
@@ -226,6 +255,61 @@ public class OpenDAPTranslator extends RetrievalTranslator<GriddedTime, GriddedC
 
         return ResponseProcessingUtilities.getOpenDAPGridDataTimes(attXML
                 .getTime());
+    }
+    
+    /**
+     * Gets the class from the BaseType
+     * @param b
+     * @return
+     */
+    private Class<?> getClass(Object baseType) {
+        if (isDods) {
+            return ((dods.dap.BaseType)baseType).getClass();
+        } else {
+            return ((opendap.dap.BaseType)baseType).getClass();
+        }
+    }
+    
+    /**
+     * Gets the variable enumeration from the DDS object
+     * @param dds
+     * @return
+     */
+    private Enumeration<?> getDDSVariables(Object dds) {
+        if (isDods) {
+            return ((dods.dap.DataDDS)dds).getVariables();
+        } else {
+            return ((opendap.dap.DataDDS)dds).getVariables();
+        }
+    }
+    
+    /**
+     * Gets the variable enumeration from the DGrid object
+     * @param dds
+     * @return
+     */
+    private Enumeration<?> getGridVariables(Object dgrid) {
+        if (isDods) {
+            return ((dods.dap.DGrid)dgrid).getVariables();
+        } else {
+            return ((opendap.dap.DGrid)dgrid).getVariables();
+        }
+    }
+    
+    /**
+     * Gets the array of values from the DARRAY object
+     * @param dds
+     * @return
+     */
+    private float[] getValues(Object darray) {
+        if (isDods) {
+            dods.dap.PrimitiveVector pm = ((dods.dap.DArray)darray).getPrimitiveVector();
+            return (float[]) pm.getInternalStorage();
+        } else {
+            opendap.dap.PrimitiveVector pm = ((opendap.dap.DArray)darray).getPrimitiveVector();
+            return (float[]) pm.getInternalStorage();
+        }
+
     }
 
 }
