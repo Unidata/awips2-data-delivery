@@ -23,6 +23,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 import java.io.IOException;
 import java.net.URI;
 import java.security.KeyStore;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -32,12 +34,15 @@ import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.HttpsUtils;
 import com.raytheon.uf.common.comm.IHttpsHandler;
+import com.raytheon.uf.common.datadelivery.registry.Connection;
+import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 import com.raytheon.uf.edex.security.SecurityConfiguration;
 
 /**
@@ -55,6 +60,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Nov  10, 2014 3826       dhladky    Need HTTPS for connection to PDA, have to create dummy HTTPS handler for that.
  * Nov  15, 2014 3757       dhladky    More General HTTPS configuration
  * Jan  26, 2015 3952       njensen    gzip handled by default
+ * May  08. 2015 4435       dhladky    Fixed type on truststore, JKS, added Keystore 
  * 
  * </pre>
  * 
@@ -73,17 +79,29 @@ public class PDARequestConnectionUtil {
 
     /** truststore path set by Data Delivery in the serviceConfig XML */
     protected static final String truststore = "TRUSTSTORE_FILE";
+    
+    /** keystore path set by Data Delivery in the serviceConfig XML */
+    protected static final String keystore = "KEYSTORE_FILE";
 
-    /** truststore type **/
-    protected static final String storeType = "pkcs12";
+    /** truststore type, AWIPS2 uses JKS by default **/
+    protected static final String storeType = "JKS";
 
     protected static final String providerName = "PDA";
 
     /** HTTP connection client **/
     private static volatile HttpClient httpClient;
+    
+    /**
+     * connections indexed by URI host:port keys
+     */
+    private static final Map<String, Connection> uriConnections = new ConcurrentHashMap<String, Connection>();
 
     /** truststore password AES encrypted in security properties file **/
     private static final String TRUSTSTORE_PASS = "edex.security.truststore.password";
+    
+    /** keystore password AES encrypted in security properties file **/
+    private static final String KEYSTORE_PASS = "edex.security.keystore.password";
+    
 
     /**
      * Connect to the PDA service
@@ -102,6 +120,22 @@ public class PDARequestConnectionUtil {
             statusHandler.info("Connecting to: " + serviceURL);
             httpClient = getHttpClient();
             URI uri = new URI(serviceURL);
+            // check for the need to do a username password auth check
+            Connection localConnection = getLocalConnection(uri, providerName);
+            
+            if (localConnection != null
+                    && localConnection.getProviderKey() != null) {
+                statusHandler.handle(Priority.INFO,
+                        "Attempting credentialed request: " + providerName);
+                // Local Connection object contains the username, password and
+                // encryption method for password storage and decrypt.
+                String userName = localConnection.getUnencryptedUsername();
+                String password = localConnection.getUnencryptedPassword();
+
+                httpClient.setupCredentials(uri.getHost(), uri.getPort(), userName,
+                        password);
+            }
+            
             HttpPost post = new HttpPost(uri);
             StringEntity entity = new StringEntity(request, charset);
             entity.setContentType(contentType);
@@ -142,9 +176,18 @@ public class PDARequestConnectionUtil {
 
         @Override
         public String[] getCredentials(String host, int port, String authValue) {
-
-            // No Implementation Here
+            
+            String key = createConnectionKey(host, port);
+            Connection connection = uriConnections.get(key);
             String[] rval = null;
+            if (connection != null) {
+                rval = new String[2];
+                rval[0] = connection.getUnencryptedUsername();
+                rval[1] = connection.getUnencryptedPassword();
+            } else {
+                statusHandler.warn("Missing credentials for service at " + key);
+            }
+            
             return rval;
         }
 
@@ -163,12 +206,31 @@ public class PDARequestConnectionUtil {
                 try {
                     trustStore = HttpsUtils.loadKeystore(filePath, storeType,
                             sc.getProperty(TRUSTSTORE_PASS));
+                    statusHandler.info("Loaded the truststore! "+filePath);    
                 } catch (Exception e) {
-                    statusHandler.error("Couldn't load truststore!", e);
+                    statusHandler.error("Couldn't load truststore! "+filePath, e);
                 }
             }
 
             return trustStore;
+        }
+        
+        @Override
+        public KeyStore getKeystore() {
+            KeyStore keyStore = null;
+            String filePath = serviceConfig.getConstantValue(keystore);
+            // Check to see if it's enabled
+            if (filePath != null && sc != null) {
+                try {
+                    keyStore = HttpsUtils.loadKeystore(filePath, storeType,
+                            sc.getProperty(KEYSTORE_PASS));
+                    statusHandler.info("Loaded the keystore! "+filePath);    
+                } catch (Exception e) {
+                    statusHandler.error("Couldn't load keystore! "+filePath, e);
+                }
+            }
+
+            return keyStore;
         }
 
         @Override
@@ -181,6 +243,11 @@ public class PDARequestConnectionUtil {
             } else {
                 return false;
             }
+        }
+
+        @Override
+        public char[] getKeystorePassword() {
+            return sc.getProperty(KEYSTORE_PASS).toCharArray();
         }
 
     };
@@ -213,6 +280,37 @@ public class PDARequestConnectionUtil {
         }
 
         return sc;
+    }
+    
+    /**
+     * @param uri
+     * @param providerName
+     * @return cached local connection for provider
+     * @throws Exception
+     */
+    private static Connection getLocalConnection(URI uri, String providerName)
+            throws Exception {
+        String key = createConnectionKey(uri.getHost(), uri.getPort());
+        Connection rval = uriConnections.get(key);
+        if (rval == null) {
+            ProviderCredentials creds = ProviderCredentialsUtil
+                    .retrieveCredentials(providerName);
+            rval = creds.getConnection();
+
+            if (rval != null) {
+                uriConnections.put(key, rval);
+            }
+        }
+        return rval;
+    }
+    
+    /**
+     * @param host
+     * @param port
+     * @return key to {@link #uriConnections} map
+     */
+    private static String createConnectionKey(String host, int port) {
+        return host + ":" + port;
     }
 
 }

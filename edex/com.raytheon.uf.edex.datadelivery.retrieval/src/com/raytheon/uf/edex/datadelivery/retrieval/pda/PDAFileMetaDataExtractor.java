@@ -44,6 +44,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * July 08, 2014 3120        dhladky     Initial creation
  * Sept 04, 2014 3121        dhladky     Some rework on the parsing.
  * Nov 10, 2014  3826        dhladky     Added more logging, improved versatility of parser.
+ * Apr 27, 2015  4435        dhladky     PDA added more formats of messages.
  * 
  * </pre>
  * 
@@ -65,7 +66,7 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
     public static final Pattern extensionSeparator = Pattern.compile("\\.");
     
     /**  remove extension  **/
-    public static final String timeReplace = "_dt";
+    public static final String timeReplace = "DT_";
           
     public PDAFileMetaDataExtractor() {
     
@@ -157,6 +158,8 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
      */
     public Map<String, String> extractMetaData(Object file) throws Exception {
         
+        // starting point for the parsing
+        int parseInterator = 5;
         Map<String, String> paramMap = new HashMap<String, String>(7);
         String fileName = (String)file;
         statusHandler.info("Extracting MetaData from: "+fileName);
@@ -164,32 +167,37 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
 
         // parse out fields
         if (separated != null) {
+            // extra file separator, back off one increment for parsing
+            if (separated[0].equals("")) {
+                parseInterator = parseInterator - 1;
+            }
             // don't care about 0-3
-            paramMap.put("satelliteName", separated[5]);
-            statusHandler.info("satelliteName: "+separated[5]);
+            paramMap.put("satelliteName", separated[parseInterator]);
+            statusHandler.info("satelliteName: "+separated[parseInterator]);
             // collection name and parameter name are the same here
-            paramMap.put("collectionName", separated[6]);
-            statusHandler.info("collectionName: "+separated[6]);
-            paramMap.put("paramName", separated[6]);
-            statusHandler.info("paramName: "+separated[6]);
-            String dateSection = separated[7];
-            statusHandler.info("dateSection: "+separated[7]);
-            String[] extensionSeparated = extensionSeparator.split(separated[8]);
-            String dataSetName = extensionSeparated[1].replace(timeReplace, "");
+            paramMap.put("collectionName", separated[parseInterator+1]);
+            statusHandler.info("collectionName: "+separated[parseInterator+1]);
+            paramMap.put("paramName", separated[parseInterator+2]);
+            statusHandler.info("paramName: "+separated[parseInterator+2]);
+            // this part is unused
+            String macroDateSection = separated[parseInterator+3];
+            statusHandler.info("macroDateSection: "+separated[parseInterator+3]);
+            String[] extensionSeparated = extensionSeparator.split(separated[parseInterator+4]);
+            String[] dataSetTimeSeparated = paramSeperator.split(extensionSeparated[0]);
+            String dataSetName = dataSetTimeSeparated[1];
             statusHandler.info("dataSetName: "+dataSetName);
             paramMap.put("dataSetName", dataSetName);
-            
-            statusHandler.info("timeSection: "+extensionSeparated[2]);
-            String time = dateSection+extensionSeparated[2];
-            
-            // only one time available so it is set for all
-            paramMap.put("startTime", time);
-            statusHandler.info("startTime: "+time);
-            paramMap.put("endTime", time);
-            statusHandler.info("endTime: "+time);
-            paramMap.put("dataTime", time);
-            statusHandler.info("dataTime: "+time);
-           
+            // parse the times out           
+            String startTime = dataSetTimeSeparated[3].substring(1, dataSetTimeSeparated[3].length());
+            statusHandler.info("start timeSection: "+startTime);
+            paramMap.put("startTime", startTime);
+            String endTime = dataSetTimeSeparated[4].substring(1, dataSetTimeSeparated[4].length());
+            statusHandler.info("end timeSection: "+endTime);
+            paramMap.put("endTime", endTime);
+            String dataTime = dataSetTimeSeparated[5].substring(1, dataSetTimeSeparated[5].length());
+            statusHandler.info("data timeSection: "+dataTime);
+            paramMap.put("dataTime", dataTime);
+             
         } else {
             statusHandler.error("Coudn't create parameter mappings from file!", fileName);
         }
