@@ -94,6 +94,36 @@
             <lastDate>20121108</lastDate>
             <dateFormat>yyyyMMdd</dateFormat>
         </collection>
+        <collection projection="LatLon" dataType="GRID" ignore="false" name="gfs_0p25">
+            <parameterLookup>gfsParameterLookup</parameterLookup>
+            <levelLookup>gfsLevelLookup</levelLookup>
+            <seedUrl>gfs_0p25</seedUrl>
+            <urlKey>gfs</urlKey>
+            <periodicity>day</periodicity>
+            <firstDate>20120923</firstDate>
+            <lastDate>20121108</lastDate>
+            <dateFormat>yyyyMMdd</dateFormat>
+        </collection>
+        <collection projection="LatLon" dataType="GRID" ignore="false" name="gfs_0p50">
+            <parameterLookup>gfsParameterLookup</parameterLookup>
+            <levelLookup>gfsLevelLookup</levelLookup>
+            <seedUrl>gfs_0p50</seedUrl>
+            <urlKey>gfs</urlKey>
+            <periodicity>day</periodicity>
+            <firstDate>20120923</firstDate>
+            <lastDate>20121108</lastDate>
+            <dateFormat>yyyyMMdd</dateFormat>
+        </collection>
+        <collection projection="LatLon" dataType="GRID" ignore="false" name="gfs_1p00">
+            <parameterLookup>gfsParameterLookup</parameterLookup>
+            <levelLookup>gfsLevelLookup</levelLookup>
+            <seedUrl>gfs_1p00</seedUrl>
+            <urlKey>gfs</urlKey>
+            <periodicity>day</periodicity>
+            <firstDate>20120923</firstDate>
+            <lastDate>20121108</lastDate>
+            <dateFormat>yyyyMMdd</dateFormat>
+        </collection>
         <collection projection="LatLon" dataType="GRID" ignore="false" name="wave_wna">
             <parameterLookup>wave_wnaParameterLookup</parameterLookup>
             <seedUrl>wave/wna</seedUrl>
@@ -418,6 +448,16 @@
             <levelLookup>gens_ndgdLevelLookup</levelLookup>
             <seedUrl>gens_ndgd</seedUrl>
             <urlKey>gens</urlKey>
+            <periodicity>day</periodicity>
+            <firstDate>20121016</firstDate>
+            <lastDate>20121108</lastDate>
+            <dateFormat>yyyyMMdd</dateFormat>
+        </collection>
+        <collection projection="LatLon" dataType="GRID" ignore="false" name="hrrr">
+            <parameterLookup>hrrrParameterLookup</parameterLookup>
+            <levelLookup>hrrrLevelLookup</levelLookup>
+            <seedUrl>hrrr</seedUrl>
+            <urlKey>hrrr</urlKey>
             <periodicity>day</periodicity>
             <firstDate>20121016</firstDate>
             <lastDate>20121108</lastDate>
