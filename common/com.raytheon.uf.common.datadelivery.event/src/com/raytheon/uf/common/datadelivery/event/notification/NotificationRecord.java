@@ -33,6 +33,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 3/18/2012    1802       bphillip    Modified to implement IPersistableDataObject
  * Aug 18, 2014 2746       ccody       Non-local Subscription changes not updating dialogs
  * 10/28/2014   3454       bphillip    Added sequence for id generation
+ * May 06, 2015 4381       dhladky     Added more space to message column.
  * 
  * </pre>
  * 
@@ -73,7 +74,7 @@ public class NotificationRecord implements ISerializableObject,
     @DynamicSerializeElement
     private String username;
 
-    @Column
+    @Column(length=1024)
     @XmlAttribute
     @DynamicSerializeElement
     private String message;
