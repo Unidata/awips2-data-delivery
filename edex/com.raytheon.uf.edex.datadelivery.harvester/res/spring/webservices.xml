@@ -29,12 +29,16 @@
 	
     <!-- PDA SOAP CSW Response Service definition -->
 	<jaxws:server id="PDAHarvesterResponseService" address="/PDAHarvesterResponseHandler">
-		<jaxws:inInterceptors>
-			<ref bean="webServiceInInterceptor" />
-		</jaxws:inInterceptors>
 		<jaxws:serviceBean>
 			<ref bean="PDACatalogServiceResponseHandler" />
 		</jaxws:serviceBean>
+		<jaxws:inInterceptors>
+			<ref bean="authenticationInterceptor" />
+			<ref bean="xacmlInterceptor" />
+		</jaxws:inInterceptors>
+		<jaxws:outInterceptors>
+			<ref bean="securityOutInterceptor" />
+		</jaxws:outInterceptors>
 	</jaxws:server>
 
 </beans>	

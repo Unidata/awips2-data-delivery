@@ -6,35 +6,10 @@
         <constructor-arg value="http://${datadelivery.host}:${ebxml.thrift.service.port}/services" />
     </bean>
     
-    <bean id="requestRegistryRouter" class="com.raytheon.uf.edex.requestsrv.router.RemoteServerRequestRouter">
-        <constructor-arg value="http://${ebxml.registry.host}:${ebxml.thrift.service.port}/services" />
-    </bean>
-    
     <!-- Registers the IRequestRouter handler for data delivery -->
     <bean id="registerRequestDataDeliveryRouter" factory-bean="requestRouterRegistry" factory-method="register">
         <constructor-arg ref="dataDeliveryServerKey" />
         <constructor-arg ref="requestDataDeliveryRouter" />
-    </bean>
-    
-    <bean id="registerRequestRegistryRouter" factory-bean="requestRouterRegistry" factory-method="register">
-        <constructor-arg ref="ebxmlRegistryServiceKey" />
-        <constructor-arg ref="requestRegistryRouter" />
-    </bean>
-    
-    <!-- Registry service location registration -->
-    <bean factory-bean="serverLocationRegistry" factory-method="register">
-        <constructor-arg ref="ebxmlRegistryServiceKey" />
-        <constructor-arg value="http://${ebxml.registry.host}:${ebxml.thrift.service.port}/services" />
-    </bean>
-
-    <bean factory-bean="serverLocationRegistry" factory-method="register">
-        <constructor-arg ref="ebxmlLcmServiceKey" />
-        <constructor-arg value="http://${ebxml.registry.host}:${ebxml.thrift.service.port}/lifecycleManager?WSDL" />
-    </bean>
-
-    <bean factory-bean="serverLocationRegistry" factory-method="register">
-        <constructor-arg ref="ebxmlQueryServiceKey" />
-        <constructor-arg value="http://${ebxml.registry.host}:${ebxml.thrift.service.port}/queryManager?WSDL" />
     </bean>
 
     <!-- Data Delivery server location registration -->

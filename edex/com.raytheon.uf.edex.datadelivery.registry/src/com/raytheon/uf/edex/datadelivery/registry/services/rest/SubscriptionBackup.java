@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.registry.web;
+package com.raytheon.uf.edex.datadelivery.registry.services.rest;
 
 import java.io.File;
 import java.util.List;
@@ -37,7 +37,6 @@ import oasis.names.tc.ebxml.regrep.xsd.lcm.v4.RemoveObjectsRequest;
 import oasis.names.tc.ebxml.regrep.xsd.lcm.v4.SubmitObjectsRequest;
 import oasis.names.tc.ebxml.regrep.xsd.rim.v4.ObjectRefListType;
 import oasis.names.tc.ebxml.regrep.xsd.rim.v4.ObjectRefType;
-import oasis.names.tc.ebxml.regrep.xsd.rim.v4.ParameterType;
 import oasis.names.tc.ebxml.regrep.xsd.rim.v4.RegistryObjectListType;
 import oasis.names.tc.ebxml.regrep.xsd.rim.v4.RegistryObjectType;
 import oasis.names.tc.ebxml.regrep.xsd.rim.v4.SubscriptionType;
@@ -48,52 +47,36 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.raytheon.uf.common.datadelivery.registry.web.IRegistryDataAccessService;
+import com.raytheon.uf.common.datadelivery.registry.services.rest.ISubscriptionBackup;
 import com.raytheon.uf.common.registry.RegistryException;
-import com.raytheon.uf.common.registry.constants.CanonicalQueryTypes;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
-import com.raytheon.uf.common.registry.services.rest.response.RestCollectionResponse;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.CollectionUtil;
-import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
-import com.raytheon.uf.edex.registry.ebxml.dao.QueryDefinitionDao;
 import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
-import com.raytheon.uf.edex.registry.ebxml.services.query.RegistryQueryUtil;
 
 /**
- * 
- * Implementation of the registry data access service interface
- * 
  * <pre>
+ * 
+ * Registry service for subscription backup/restore operations
  * 
  * SOFTWARE HISTORY
  * 
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
- * 7/29/2013    2191        bphillip    Initial implementation
- * 9/20/2013    2385        bphillip    Added subscription backup functions
- * 10/2/2013    2385        bphillip    Fixed subscription backup queries
- * 10/8/2013    1682        bphillip    Added query queries
- * 11/7/2013    1678        bphillip    Added getCustomQueries method
- * Mar 31, 2014 2889        dhladky     Added username for notification center tracking.
- * Apr 12,2014  3012       dhladky     Purge never worked, fixed to make work.
+ * 5/11/2015    4448        bphillip    Initial Creation
  * </pre>
  * 
  * @author bphillip
  * @version 1
- */
+ **/
+@Path("/")
 @Transactional
-@Path(IRegistryDataAccessService.DATA_ACCESS_PATH_PREFIX)
-public class RegistryDataAccessService implements IRegistryDataAccessService {
-
-    /** The logger */
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(RegistryDataAccessService.class);
-
+public class SubscriptionBackup implements ISubscriptionBackup {
+    
     private static final File SUBSCRIPTION_BACKUP_DIR = new File(
             System.getProperty("edex.home")
                     + "/data/registrySubscriptionBackup");
@@ -107,77 +90,17 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
             + "where obj.objectType like '%SiteSubscription' "
             + "OR obj.objectType like '%SharedSubscription' order by obj.id asc";
 
+    /** The logger */
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(SubscriptionBackup.class);
+
     private static final JAXBManager subscriptionJaxbManager = initJaxbManager();
-
-    /** Data access object for registry objects */
-    private RegistryObjectDao registryObjectDao;
-
-    /** Data access object for query definitions */
-    private QueryDefinitionDao queryDefinitionDao;
-
+    
     /** Lifecyclemanager */
     private LifecycleManager lcm;
-
-    public RegistryDataAccessService() {
-
-    }
-
-    /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .getRegistryObjectIdsOfType(String)
-     */
-    @Override
-    @GET
-    @Path("getRegistryObjectIds/{objectType}")
-    public RestCollectionResponse<String> getRegistryObjectIdsOfType(
-            @PathParam("objectType") String objectType) {
-        statusHandler.info("Getting registry object ids of type [" + objectType
-                + "]...");
-        RestCollectionResponse<String> response = new RestCollectionResponse<String>();
-        response.setPayload(registryObjectDao
-                .getRegistryObjectIdsOfType(objectType));
-        return response;
-    }
-
-    @Override
-    @GET
-    @Path("getQueries")
-    public String getValidQueries() {
-        statusHandler.debug("Getting valid queries...");
-        List<String> ids = queryDefinitionDao.getQueryIds();
-        StringBuilder builder = new StringBuilder();
-        for (String id : ids) {
-            builder.append(id).append(StringUtil.NEWLINE);
-        }
-        return builder.toString();
-    }
-
-    @Override
-    @GET
-    @Path("getCustomQueries")
-    public String getCustomQueries() {
-        List<String> ids = queryDefinitionDao.getQueryIds();
-        ids.removeAll(CanonicalQueryTypes.CANONICAL_QUERY_TYPES);
-        return RegistryQueryUtil.formatArrayString(ids.toArray());
-    }
-
-    @Override
-    @GET
-    @Path("getParametersForQuery/{queryId}")
-    public String getParametersForQuery(@PathParam("queryId") String queryId) {
-        statusHandler.debug("Getting query parameters for query: " + queryId
-                + "...");
-        List<ParameterType> parameters = queryDefinitionDao
-                .getParametersForQuery(queryId);
-        StringBuilder retVal = new StringBuilder();
-        for (ParameterType param : parameters) {
-            retVal.append(param.getParameterName()).append(StringUtil.NEWLINE);
-            retVal.append(param.getDataType()).append(StringUtil.NEWLINE);
-            retVal.append(param.getDefaultValue()).append(StringUtil.NEWLINE);
-        }
-        return retVal.toString();
-    }
+    
+    /** Data access object for registry objects */
+    private RegistryObjectDao registryObjectDao;
 
     /**
      * @see 
@@ -187,7 +110,8 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
     @Override
     @GET
     @Path("removeSubscriptionsFor/{siteId}")
-    public void removeSubscriptionsForSite(@PathParam("siteId") String siteId) {
+    public void removeSubscriptionsForSite(@PathParam("siteId")
+    String siteId) {
         statusHandler.info("Removing subscriptions for: " + siteId);
         List<SubscriptionType> subscriptions = registryObjectDao
                 .executeHQLQuery(
@@ -264,8 +188,8 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
     @Override
     @GET
     @Path("backupSubscription/{subscriptionName}")
-    public String backupSubscription(
-            @PathParam("subscriptionName") String subscriptionName) {
+    public String backupSubscription(@PathParam("subscriptionName")
+    String subscriptionName) {
         StringBuilder response = new StringBuilder();
         List<RegistryObjectType> result = registryObjectDao.executeHQLQuery(
                 GET_SINGLE_SUBSCRIPTIONS_QUERY, "id", subscriptionName);
@@ -330,8 +254,8 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
     @Override
     @GET
     @Path("restoreSubscription/{subscriptionName}")
-    public String restoreSubscription(
-            @PathParam("subscriptionName") String subscriptionName) {
+    public String restoreSubscription(@PathParam("subscriptionName")
+    String subscriptionName) {
         StringBuilder response = new StringBuilder();
         File subscriptionFile = new File(SUBSCRIPTION_BACKUP_DIR
                 + File.separator + subscriptionName);
@@ -345,7 +269,8 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
                 Object subObj = subscriptionJaxbManager
                         .unmarshalFromXml(subscriptionXML);
                 lcm.submitObjects(submitRequest);
-                EDEXUtil.getMessageProducer().sendSync("scheduleSubscription",subObj);
+                EDEXUtil.getMessageProducer().sendSync("scheduleSubscription",
+                        subObj);
                 subscriptionFile.delete();
                 response.append(
                         "Subscription successfully restored from file [")
@@ -433,9 +358,9 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
     }
 
     /**
-     * Initializes the JAXBManager for datadelivery classes.
+     * Initializes the JAXBManager for registry classes.
      * 
-     * @return JAXBManager for datadelivery classes
+     * @return JAXBManager for registry classes
      */
     private static JAXBManager initJaxbManager() {
         ConfigurationBuilder cb = new ConfigurationBuilder();
@@ -454,15 +379,20 @@ public class RegistryDataAccessService implements IRegistryDataAccessService {
         }
     }
 
-    public void setRegistryObjectDao(RegistryObjectDao registryObjectDao) {
-        this.registryObjectDao = registryObjectDao;
-    }
-
+    /**
+     * @param lcm the lcm to set
+     */
     public void setLcm(LifecycleManager lcm) {
         this.lcm = lcm;
     }
 
-    public void setQueryDefinitionDao(QueryDefinitionDao queryDefinitionDao) {
-        this.queryDefinitionDao = queryDefinitionDao;
+    /**
+     * @param registryObjectDao the registryObjectDao to set
+     */
+    public void setRegistryObjectDao(RegistryObjectDao registryObjectDao) {
+        this.registryObjectDao = registryObjectDao;
     }
+    
+    
+
 }

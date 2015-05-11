@@ -30,6 +30,6 @@ Require-Bundle: com.raytheon.uf.common.registry.schemas.ebxml;bundle-version="1.
 Export-Package: com.raytheon.uf.common.datadelivery.registry,
  com.raytheon.uf.common.datadelivery.registry.ebxml,
  com.raytheon.uf.common.datadelivery.registry.handlers,
- com.raytheon.uf.common.datadelivery.registry.web
+ com.raytheon.uf.common.datadelivery.registry.services.rest
 
 
