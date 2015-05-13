@@ -33,7 +33,7 @@ import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapRetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WfsRetrievalResponse;
+import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
 
 /**
  * Serializes the retrieved data to a directory.
@@ -78,7 +78,7 @@ public class SerializeRetrievedDataToDirectory implements
         try {
             this.jaxbManager = new JAXBManager(RetrievalResponseXml.class,
                     SbnRetrievalResponseXml.class,
-                    OpenDapRetrievalResponse.class, WfsRetrievalResponse.class,
+                    OpenDapRetrievalResponse.class, WFSRetrievalResponse.class,
                     Coverage.class);
         } catch (JAXBException e) {
             throw new ExceptionInInitializerError(e);

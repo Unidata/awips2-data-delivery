@@ -21,7 +21,6 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.OpenDAPConnectionUtil;
 
 import opendap.dap.AttributeTable;
 import opendap.dap.DArray;
@@ -67,7 +66,7 @@ public final class OpenDAPParseUtility {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPParseUtility.class);
-    
+
     /*
      * Service configuration for OPENDAP
      */
@@ -78,16 +77,17 @@ public final class OpenDAPParseUtility {
         serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.OPENDAP);
     }
-    
+
     /**
      * call this to get your instance
+     * 
      * @return
      */
     public static OpenDAPParseUtility getInstance() {
-    	if (instance == null) {
-    		instance = new OpenDAPParseUtility();
-    	}
-    	return instance;
+        if (instance == null) {
+            instance = new OpenDAPParseUtility();
+        }
+        return instance;
     }
 
     /**
@@ -188,8 +188,8 @@ public final class OpenDAPParseUtility {
 
                 if (dsn != null) {
 
-                    Constant constant = serviceConfig
-                            .getNamingSchema(dsn.getExpression());
+                    Constant constant = serviceConfig.getNamingSchema(dsn
+                            .getExpression());
 
                     if (constant != null) {
                         if (dsn.getExpression()
@@ -226,14 +226,12 @@ public final class OpenDAPParseUtility {
 
     public Pattern getTimeStepPattern() {
 
-        String timeStep = serviceConfig
-                .getConstantValue("TIME_STEP_PATTERN");
+        String timeStep = serviceConfig.getConstantValue("TIME_STEP_PATTERN");
         return Pattern.compile(timeStep);
     }
 
     public Pattern getUnitPattern() {
-        String unitPattern = serviceConfig
-                .getConstantValue("UNIT_PATTERN");
+        String unitPattern = serviceConfig.getConstantValue("UNIT_PATTERN");
         return Pattern.compile(unitPattern);
     }
 
@@ -259,22 +257,26 @@ public final class OpenDAPParseUtility {
      * 
      * @param table
      * @return
-     * @throws NoSuchAttributeException 
+     * @throws NoSuchAttributeException
      */
-    public Ensemble parseEnsemble(AttributeTable table) throws NoSuchAttributeException {
+    public Ensemble parseEnsemble(AttributeTable table)
+            throws NoSuchAttributeException {
 
         Ensemble ens = new Ensemble();
 
         // Ensemble members used to be listed under the attribute "grads_name".
-        // Somewhere along the way, GRADS/NOMADS stopped doing that to identify it's ensembles.
+        // Somewhere along the way, GRADS/NOMADS stopped doing that to identify
+        // it's ensembles.
         // Both methods are listed, the original and the new as a fall back.
-        
+
         if (table.getAttribute(serviceConfig.getConstantValue("NAME")) != null) {
-            String name = trim(table.getAttribute(serviceConfig.getConstantValue("NAME")).getValueAt(0));
+            String name = trim(table.getAttribute(
+                    serviceConfig.getConstantValue("NAME")).getValueAt(0));
             String[] members = COMMA_PATTERN.split(name);
             ens.setMembers(Arrays.asList(members));
         } else if (table.getAttribute(serviceConfig.getConstantValue("SIZE")) != null) {
-            int size = Integer.parseInt(trim(table.getAttribute(serviceConfig.getConstantValue("SIZE")).getValueAt(0)));
+            int size = Integer.parseInt(trim(table.getAttribute(
+                    serviceConfig.getConstantValue("SIZE")).getValueAt(0)));
             List<String> members = new ArrayList<String>(size);
             if (size > 0) {
                 for (Integer i = 0; i < size; i++) {
@@ -284,7 +286,7 @@ public final class OpenDAPParseUtility {
             }
             // empty default ensemble if no size exists
         }
-        
+
         return ens;
 
     }
@@ -319,31 +321,31 @@ public final class OpenDAPParseUtility {
      * @return
      */
     public String parseUnits(String description) {
-    	
+
         String runit = serviceConfig.getConstantValue("UNKNOWN");
         UnitLookup ul = LookupManager.getInstance().getUnits();
 
-		if (ul != null) {
-			// some require no parsing
-			UnitConfig uc = ul.getUnitByProviderName(description);
+        if (ul != null) {
+            // some require no parsing
+            UnitConfig uc = ul.getUnitByProviderName(description);
 
-			if (uc != null) {
-				// adjusts to correct units
-				runit = uc.getName();
-			} else {
+            if (uc != null) {
+                // adjusts to correct units
+                runit = uc.getName();
+            } else {
 
-				Matcher m = getUnitPattern().matcher(description);
+                Matcher m = getUnitPattern().matcher(description);
 
-				if (m.find()) {
-					runit = m.group(2);
-					uc = ul.getUnitByProviderName(runit);
-					if (uc != null) {
-						// adjusts to correct units
-						runit = uc.getName();
-					}
-				}
-			}
-		}
+                if (m.find()) {
+                    runit = m.group(2);
+                    uc = ul.getUnitByProviderName(runit);
+                    if (uc != null) {
+                        // adjusts to correct units
+                        runit = uc.getName();
+                    }
+                }
+            }
+        }
 
         return runit;
     }
@@ -359,9 +361,10 @@ public final class OpenDAPParseUtility {
         return QUOTES_PATTERN.matcher(val).replaceAll(
                 serviceConfig.getConstantValue("BLANK"));
     }
-    
+
     /**
      * Parse out the levels from the dods
+     * 
      * @param url
      * @param lev
      * @return
@@ -371,7 +374,8 @@ public final class OpenDAPParseUtility {
         List<Double> levels = null;
 
         try {
-            DConnect connect = OpenDAPConnectionUtil.getDConnectDAP2(url + "?" + lev);
+            DConnect connect = OpenDAPConnectionUtil.getDConnectDAP2(url + "?"
+                    + lev);
             DataDDS data = connect.getData(null);
             DArray array = (DArray) data.getVariable(lev);
             PrimitiveVector pm = array.getPrimitiveVector();
@@ -382,10 +386,10 @@ public final class OpenDAPParseUtility {
             }
 
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM, "Error downloading/parsing levels: "
-                    + url, e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error downloading/parsing levels: " + url, e);
         }
-        
+
         return levels;
 
     }

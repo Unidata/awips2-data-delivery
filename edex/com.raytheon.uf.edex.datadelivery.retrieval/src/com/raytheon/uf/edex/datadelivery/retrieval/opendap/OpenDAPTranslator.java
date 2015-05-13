@@ -1,4 +1,4 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.response;
+package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 /**
  * This software was developed and / or modified by Raytheon Company,
@@ -33,6 +33,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.GridMetadataAdapter;
+import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 
 /**

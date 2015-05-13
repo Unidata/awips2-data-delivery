@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.retrieval.util;
+package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 import java.io.FileNotFoundException;
 

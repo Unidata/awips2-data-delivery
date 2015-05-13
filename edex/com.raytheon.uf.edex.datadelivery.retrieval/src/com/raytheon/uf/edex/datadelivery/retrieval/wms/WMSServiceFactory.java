@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.retrieval.wxxm;
+package com.raytheon.uf.edex.datadelivery.retrieval.wms;
 
 import java.util.Date;
 
@@ -30,7 +30,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
- * {@link IServiceFactory} implementation for WXXM.
+ * {@link IServiceFactory} implementation for WMS.
  * 
  * <pre>
  * 
@@ -47,7 +47,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @version 1.0
  */
 
-public class WxxmServiceFactory<O extends Object, D extends Object>
+public class WMSServiceFactory<O extends Object, D extends Object>
         implements IServiceFactory<O, D, Time, Coverage> {
 
     /*
@@ -58,7 +58,8 @@ public class WxxmServiceFactory<O extends Object, D extends Object>
      */
     @Override
     public IExtractMetaData<O, D> getExtractor() {
-        throw new UnsupportedOperationException("Not implemented");
+        // TODO Auto-generated method stub
+        return null;
     }
 
     /*
@@ -70,15 +71,19 @@ public class WxxmServiceFactory<O extends Object, D extends Object>
      */
     @Override
     public IParseMetaData<O> getParser(Date lastUpdate) {
-        throw new UnsupportedOperationException("Not implemented");
+        // TODO Auto-generated method stub
+        return null;
     }
 
-    /**
-     * {@inheritDoc}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#
+     * getRetrievalGenerator()
      */
     @Override
     public RetrievalGenerator<Time, Coverage> getRetrievalGenerator() {
-        return new WXXMRetrievalGenerator<Time, Coverage>();
+        return new WMSRetrievalGenerator<Time, Coverage>();
     }
 
     /**

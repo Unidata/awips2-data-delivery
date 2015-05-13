@@ -32,7 +32,7 @@ import com.raytheon.uf.common.wmo.WMOMessage;
 import com.raytheon.uf.common.wmo.XmlWMOMessage;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WfsRetrievalResponse;
+import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
@@ -82,7 +82,7 @@ public class DeserializeRetrievedDataFromIngest implements IRetrievalsFinder {
         try {
             this.jaxbManager = new JAXBManager(RetrievalResponseXml.class,
                     SbnRetrievalResponseXml.class,
-                    OpenDapRetrievalResponse.class, WfsRetrievalResponse.class,
+                    OpenDapRetrievalResponse.class, WFSRetrievalResponse.class,
                     Coverage.class, PDARetrievalResponse.class);
         } catch (JAXBException e) {
             throw new ExceptionInInitializerError(e);

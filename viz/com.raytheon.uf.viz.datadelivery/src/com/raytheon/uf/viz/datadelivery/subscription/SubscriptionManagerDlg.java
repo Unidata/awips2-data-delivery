@@ -357,7 +357,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     @Override
     protected void initializeComponents(Shell shell) {
 
-        // reset and load default
         configMan.loadDefaultFile(true);
         shell.setMinimumSize(750, 320);
         createMenus();

@@ -17,11 +17,13 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.retrieval.wms;
+package com.raytheon.uf.edex.datadelivery.retrieval.wcs;
 
 import java.util.Date;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
@@ -30,7 +32,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
- * {@link IServiceFactory} implementation for WMS.
+ * {@link IServiceFactory} implementation for WCS.
  * 
  * <pre>
  * 
@@ -46,9 +48,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-
-public class WmsServiceFactory<O extends Object, D extends Object>
-        implements IServiceFactory<O, D, Time, Coverage> {
+public class WCSServiceFactory<O extends Object, D extends Object>
+        implements IServiceFactory<O, D, GriddedTime, GriddedCoverage> {
 
     /*
      * (non-Javadoc)
@@ -58,8 +59,7 @@ public class WmsServiceFactory<O extends Object, D extends Object>
      */
     @Override
     public IExtractMetaData<O, D> getExtractor() {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /*
@@ -71,8 +71,7 @@ public class WmsServiceFactory<O extends Object, D extends Object>
      */
     @Override
     public IParseMetaData<O> getParser(Date lastUpdate) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /*
@@ -82,8 +81,9 @@ public class WmsServiceFactory<O extends Object, D extends Object>
      * getRetrievalGenerator()
      */
     @Override
-    public RetrievalGenerator<Time, Coverage> getRetrievalGenerator() {
-        return new WmsRetrievalGenerator<Time, Coverage>();
+    public RetrievalGenerator<GriddedTime, GriddedCoverage> getRetrievalGenerator() {
+        return new WCSRetrievalGenerator();
+
     }
 
     /**
@@ -98,4 +98,5 @@ public class WmsServiceFactory<O extends Object, D extends Object>
     public Provider getProvider() {
         return null;
     }
+
 }

@@ -61,7 +61,6 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
  * Nov 06, 2013  2358      mpduff     Remove default configuration code.
  * Dec 03, 2014  3840      ccody      Implement Comparator based sorting.
  * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency. Bad path config.
- * 
  * </pre>
  * 
  * @author mpduff
@@ -199,17 +198,20 @@ public class SubscriptionConfigurationManager {
     public void setDefaultConfiguration() {
         // setting new default, don't reload original
         loadDefaultFile(false);
+
         saveXml();
     }
     
     /**
      * Load the default localization File
      */
+
     public void loadDefaultFile(boolean forceReload) {
         // force a reload
         if (forceReload) {
             xml = null;
         }
+
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationContext context = pm.getContext(
                 LocalizationType.CAVE_STATIC, LocalizationLevel.USER);

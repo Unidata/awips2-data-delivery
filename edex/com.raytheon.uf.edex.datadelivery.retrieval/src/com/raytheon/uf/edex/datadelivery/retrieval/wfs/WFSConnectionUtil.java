@@ -72,10 +72,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * @version 1.0
  */
 
-public class WfsConnectionUtil {
+public class WFSConnectionUtil {
 
     private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(WfsConnectionUtil.class);
+            .getHandler(WFSConnectionUtil.class);
 
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 

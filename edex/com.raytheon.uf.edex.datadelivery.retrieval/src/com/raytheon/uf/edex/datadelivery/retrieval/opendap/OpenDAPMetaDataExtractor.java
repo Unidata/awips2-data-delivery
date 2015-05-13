@@ -23,7 +23,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.OpenDAPConnectionUtil;
 
 /**
  * Extract OpenDAP MetaData over the web.

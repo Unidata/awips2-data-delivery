@@ -29,9 +29,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * @author djohnson
  * @version 1.0
  */
-class WmsRetrievalGenerator<T extends Time, C extends Coverage> extends RetrievalGenerator<T, C> {
+class WMSRetrievalGenerator<T extends Time, C extends Coverage> extends RetrievalGenerator<T, C> {
 
-    WmsRetrievalGenerator() {
+    WMSRetrievalGenerator() {
         super(ServiceType.WMS);
     }
 

@@ -125,10 +125,12 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Nov 19, 2014   3852     dhladky     Fixed overload state with Notification Records.
  *  Jan 05, 2015   3950  ccody/dhladky  Change update logic to update 4 times per bandwidth bucket
  *                                      and pertinent notification events (Create,Update,Delete,Activate,Deactivate)
- *  Feb 03, 2015   4041     dhladky     GraphData requests where on the UI thread, moved to Job.  
+ *  Feb 03, 2015   4041     dhladky     GraphData requests were on the UI thread, moved to Job.  
  *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
  *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check   
  *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null                           
+ *
+ *                                     
  * </pre>
  * 
  * @author lvenable
@@ -1737,7 +1739,7 @@ public class BandwidthCanvasComp extends Composite
                 statusHandler.info("Time elapsed from last BUG update: "+(System.currentTimeMillis()-lastUpdateTime)+" ms");
                 lastUpdateTime = System.currentTimeMillis();
                 imageMgr.setCurrentTimeMillis(lastUpdateTime);
-  
+
                 try {
                     BandwidthGraphData tempData = graphDataUtil.getGraphData();
                     setGraphData(tempData);

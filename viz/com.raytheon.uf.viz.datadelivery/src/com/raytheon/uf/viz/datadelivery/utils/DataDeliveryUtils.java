@@ -55,6 +55,7 @@ import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionManagerRowData;
 import com.raytheon.uf.viz.datadelivery.subscription.approve.SubscriptionApprovalRowData;
+import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
@@ -97,6 +98,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Sept 04, 2014 2131      dhladky      Added PDa data type
  * Dec 03, 2014 3840       ccody        Added BrowserColumnNames.valueOfColumnName(String).
  * Jan 05, 2015 3950       dhladky      Added string constants for filtering notification records.
+ * Apr 30, 2015 4047       dhladky      Use non-blocking dialogs.
  * </pre>
  * 
  * @author mpduff
@@ -647,10 +649,10 @@ public class DataDeliveryUtils {
      */
     public static int showMessage(Shell shell, int style, String messageTitle,
             String messageText) {
-        MessageBox messageDialog = new MessageBox(shell, style);
-        messageDialog.setText(messageTitle);
-        messageDialog.setMessage(messageText);
-        return messageDialog.open();
+        
+        SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle, messageText, style);
+        messageDialog.open();
+        return 1;
     }
 
     /**

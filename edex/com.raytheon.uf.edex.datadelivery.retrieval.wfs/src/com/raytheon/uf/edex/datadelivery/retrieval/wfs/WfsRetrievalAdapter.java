@@ -121,13 +121,13 @@ public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
             Connection conn = this.getProviderRetrievalXMl().getConnection();
             // This is used as the "Realm" in HTTPS connections
             String providerName = request.getAttribute().getProvider();
-            xmlMessage = WfsConnectionUtil.wfsConnect(request.getRequest(), conn, providerName);
+            xmlMessage = WFSConnectionUtil.wfsConnect(request.getRequest(), conn, providerName);
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
             EventBus.publish(new RetrievalEvent(e.getMessage()));
         }
 
-        RetrievalResponse<PointTime, Coverage> pr = new WfsRetrievalResponse(request.getAttribute());
+        RetrievalResponse<PointTime, Coverage> pr = new WFSRetrievalResponse(request.getAttribute());
         pr.setPayLoad(xmlMessage);
 
         return pr;

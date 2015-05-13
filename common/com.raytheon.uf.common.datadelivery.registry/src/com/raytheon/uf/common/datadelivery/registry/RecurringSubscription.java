@@ -956,6 +956,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      */
     private boolean isBeforeStart(Date date) {
         boolean before = false;
+
         long latency = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
         long startTime = getSubscriptionStart().getTime();
         long offset = 0l;

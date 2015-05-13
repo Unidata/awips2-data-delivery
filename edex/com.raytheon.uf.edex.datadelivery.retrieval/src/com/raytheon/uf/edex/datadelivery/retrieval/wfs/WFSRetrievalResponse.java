@@ -34,7 +34,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 @DynamicSerialize
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
-public class WfsRetrievalResponse extends RetrievalResponse<PointTime, Coverage> {
+public class WFSRetrievalResponse extends RetrievalResponse<PointTime, Coverage> {
 
     @XmlElement
     private String payload;
@@ -42,7 +42,7 @@ public class WfsRetrievalResponse extends RetrievalResponse<PointTime, Coverage>
     /**
      * Default constructor.
      */
-    public WfsRetrievalResponse() {
+    public WFSRetrievalResponse() {
     }
     
     /**
@@ -50,7 +50,7 @@ public class WfsRetrievalResponse extends RetrievalResponse<PointTime, Coverage>
      * 
      * @param attribute
      */
-    public WfsRetrievalResponse(RetrievalAttribute<PointTime, Coverage> attribute) {
+    public WFSRetrievalResponse(RetrievalAttribute<PointTime, Coverage> attribute) {
     }
 
     @Override

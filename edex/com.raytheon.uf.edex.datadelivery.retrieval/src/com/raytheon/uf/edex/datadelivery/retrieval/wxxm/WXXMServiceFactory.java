@@ -17,13 +17,11 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.retrieval.wcs;
+package com.raytheon.uf.edex.datadelivery.retrieval.wxxm;
 
 import java.util.Date;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
-import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
@@ -32,7 +30,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
- * {@link IServiceFactory} implementation for WCS.
+ * {@link IServiceFactory} implementation for WXXM.
  * 
  * <pre>
  * 
@@ -48,8 +46,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @author djohnson
  * @version 1.0
  */
-public class WcsServiceFactory<O extends Object, D extends Object>
-        implements IServiceFactory<O, D, GriddedTime, GriddedCoverage> {
+
+public class WXXMServiceFactory<O extends Object, D extends Object>
+        implements IServiceFactory<O, D, Time, Coverage> {
 
     /*
      * (non-Javadoc)
@@ -74,16 +73,12 @@ public class WcsServiceFactory<O extends Object, D extends Object>
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#
-     * getRetrievalGenerator()
+    /**
+     * {@inheritDoc}
      */
     @Override
-    public RetrievalGenerator<GriddedTime, GriddedCoverage> getRetrievalGenerator() {
-        return new WCSRetrievalGenerator();
-
+    public RetrievalGenerator<Time, Coverage> getRetrievalGenerator() {
+        return new WXXMRetrievalGenerator<Time, Coverage>();
     }
 
     /**
@@ -98,5 +93,4 @@ public class WcsServiceFactory<O extends Object, D extends Object>
     public Provider getProvider() {
         return null;
     }
-
 }
