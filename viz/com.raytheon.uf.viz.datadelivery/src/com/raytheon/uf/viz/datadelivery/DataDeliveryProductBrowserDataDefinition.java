@@ -43,6 +43,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.BinOffset;
+import com.raytheon.uf.viz.core.grid.rsc.GridLoadProperties;
 import com.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
 import com.raytheon.uf.viz.core.rsc.ResourceType;
@@ -51,7 +52,6 @@ import com.raytheon.uf.viz.productbrowser.AbstractRequestableProductBrowserDataD
 import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
 import com.raytheon.viz.grid.GridProductBrowserDataFormatter;
 import com.raytheon.viz.grid.inv.GridInventory;
-import com.raytheon.viz.grid.rsc.GridLoadProperties;
 import com.raytheon.viz.grid.rsc.GridResourceData;
 import com.raytheon.viz.pointdata.PlotModels;
 import com.raytheon.viz.pointdata.rsc.PlotResourceData;

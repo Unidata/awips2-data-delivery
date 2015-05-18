@@ -36,7 +36,8 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.viz.pointdata;bundle-version="1.12.1174",
  com.raytheon.viz.alerts;bundle-version="1.12.1174",
  com.raytheon.viz.grid;bundle-version="1.12.1174",
- com.raytheon.uf.common.security;bundle-version="1.14.0"
+ com.raytheon.uf.common.security;bundle-version="1.14.0",
+ com.raytheon.uf.viz.core.grid;bundle-version="1.15.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.datadelivery;uses:="org.eclipse.ui.plugin,org.osgi.framework",
