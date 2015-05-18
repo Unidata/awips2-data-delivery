@@ -83,7 +83,6 @@ import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.IFileModifiedWatcher;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
@@ -149,6 +148,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods.
  *  Jan 30, 2015 2746       dhladky      Handling special cases in notification message routing.
  *  Mar 08, 2015 3950       dhladky      Bandwidth change better handled.
+ *  May 10, 2015 4493       dhladky      Deleted un-needed methods/vars
  * </pre>
  * 
  * @author djohnson
@@ -179,9 +179,6 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /** Interface for finding subscriptions **/
     private final ISubscriptionFinder<Subscription<T, C>> findSubscriptionsStrategy;
-
-    /** unknown string **/
-    private static final String UNKNOWN = "UNKNOWN";
 
     /**
      * Update the BWM if any of it's config files change 
@@ -357,32 +354,6 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      ************************ Subscription Related Methods **************************************
      */
 
-    /**
-     * Restores a subscription from the Web interface GUI, placing it in an active state in applicable.
-     * @param subscription
-     */
-    private void restoreSubscription(Subscription<T, C> subscription) {
-
-        String subscriptionName = UNKNOWN;
-        String networkName = UNKNOWN;
-        try {
-            subscriptionName = subscription.getName();
-            Network subscriptionNetwork = subscription.getRoute();
-            if (subscriptionNetwork != null) {
-                networkName = subscriptionNetwork.name();
-            }
-            List<BandwidthAllocation> unscheduledList = null;
-            statusHandler.info("\tScheduling: " + subscriptionName);
-            unscheduledList = schedule(subscription);
-            logSubscriptionListUnscheduled(networkName, unscheduledList);
-        } catch (Exception ex) {
-            statusHandler.error(
-                    "Error occurred restarting EdexBandwidthManager for Network: "
-                            + networkName + " Subscription: "
-                            + subscriptionName, ex);
-        }
-    }
-           
     /**
      * Give a listing of the unscheduled subscriptions.
      * @param subscriptionNetwork
