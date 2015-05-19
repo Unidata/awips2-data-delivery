@@ -56,7 +56,6 @@ import org.eclipse.swt.widgets.TableColumn;
 
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.user.IUser;
-import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
@@ -161,6 +160,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency.
  * Jan 30, 2015  2746      dhladky    Special shared sub delete handling.
  * Mar 20, 2015  2894      dhladky    Revisisted consistency in appliying default config.
+ * May 17, 2015  4047      dhladky    verified non-blocking.
  * 
  * </pre>
  * 
@@ -309,7 +309,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             ISubscriptionManagerFilter filter) {
         super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE,
                 CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT
-                        | CAVE.DO_NOT_BLOCK);
+                       | CAVE.DO_NOT_BLOCK);
 
         this.filter = filter;
         scheduler = Executors.newScheduledThreadPool(1);
@@ -959,18 +959,33 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         }
 
         // Get the subscription data
-        Subscription sub = tableComp.getSelectedSubscription();
+        final Subscription sub = tableComp.getSelectedSubscription();
+       
+        ICloseCallback callback = new ICloseCallback() {
 
-        FileNameDlg fnd = new FileNameDlg(getShell(), sub.getName());
-        String newName = (String) fnd.open();
+            @Override
+            public void dialogClosed(Object returnValue) {
+                if (returnValue != null) {
 
-        if (newName != null && newName.length() > 0
-                && !newName.equals(sub.getName())) {
-            Subscription newSub = sub.copy(newName);
+                    final String newName = (String) returnValue;
 
-            // Object is copied, now bring up the edit screen with the copy
-            tableComp.editSubscription(newSub);
-        }
+                    if (newName != null && newName.length() > 0
+                            && !newName.equals(sub.getName())) {
+                        Subscription newSub = sub.copy(newName);
+
+                        // Object is copied, now bring up the edit screen with
+                        // the copy
+                        tableComp.editSubscription(newSub);
+                    }
+                }
+            }
+        };
+        
+        FileNameDlg fnd = new FileNameDlg(getShell(),
+                sub.getName());
+        fnd.setCloseCallback(callback);
+
+        fnd.open();
     }
 
     /**
@@ -1021,61 +1036,74 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         deleteList.add(removedItem);
                     }
                 }
-
+                
+                final ArrayList<SubscriptionManagerRowData> deleted = deleteList;
                 String message = getMessage(subsToDelete, subsToUpdate);
-                int choice = DataDeliveryUtils.showMessage(shell, SWT.YES
-                        | SWT.NO, "Delete Confirmation", message);
-                if (choice == SWT.YES) {
-                    // remove the rows from the table
-                    tableComp.getSubscriptionData().removeAll(deleteList);
+                                                
+                ICloseCallback callback = new ICloseCallback() {
 
-                    final String username = LocalizationManager.getInstance()
-                            .getCurrentUser();
+                    @Override
+                    public void dialogClosed(Object returnValue) {
+                        if (returnValue != null) {
 
-                    Job job = new Job("Deleting Subscriptions...") {
-                        @Override
-                        protected IStatus run(IProgressMonitor monitor) {
-                            DataDeliveryGUIUtils.markBusyInUIThread(shell);
-                            List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>(
-                                    0);
-                            if (!subsToDelete.isEmpty()) {
-                                exceptions = deleteSubscriptions(username,
-                                        subsToDelete);
-                            }
-                            if (!subsToUpdate.isEmpty()) {
-                                exceptions.addAll(updateSubscriptions(username,
-                                        subsToUpdate));
-                            }
-                            for (RegistryHandlerException t : exceptions) {
-                                statusHandler.handle(Priority.ERROR,
-                                        "Failed to delete some subscriptions: "
-                                                + t.getLocalizedMessage(), t);
-                            }
+                            int choice = (int) returnValue;
+                            
+                            if (choice == SWT.YES) {
+                                // remove the rows from the table
+                                tableComp.getSubscriptionData().removeAll(deleted);
 
-                            return Status.OK_STATUS;
-                        }
-                    };
-                    job.addJobChangeListener(new JobChangeAdapter() {
-                        @Override
-                        public void done(IJobChangeEvent event) {
-                            VizApp.runAsync(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (isDisposed()) {
-                                        return;
+                                final String username = LocalizationManager.getInstance()
+                                        .getCurrentUser();
+
+                                Job job = new Job("Deleting Subscriptions...") {
+                                    @Override
+                                    protected IStatus run(IProgressMonitor monitor) {
+                                        DataDeliveryGUIUtils.markBusyInUIThread(shell);
+                                        List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>(
+                                                0);
+                                        if (!subsToDelete.isEmpty()) {
+                                            exceptions = deleteSubscriptions(username,
+                                                    subsToDelete);
+                                        }
+                                        if (!subsToUpdate.isEmpty()) {
+                                            exceptions.addAll(updateSubscriptions(username,
+                                                    subsToUpdate));
+                                        }
+                                        for (RegistryHandlerException t : exceptions) {
+                                            statusHandler.handle(Priority.ERROR,
+                                                    "Failed to delete some subscriptions: "
+                                                            + t.getLocalizedMessage(), t);
+                                        }
+
+                                        return Status.OK_STATUS;
                                     }
-                                    handleRefresh();
-                                }
-                            });
+                                };
+                                job.addJobChangeListener(new JobChangeAdapter() {
+                                    @Override
+                                    public void done(IJobChangeEvent event) {
+                                        VizApp.runAsync(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (isDisposed()) {
+                                                    return;
+                                                }
+                                                handleRefresh();
+                                            }
+                                        });
 
-                            DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
+                                        DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
+                                    }
+                                });
+                                job.schedule();
+                            } else {
+                                // Refresh the table to reset any objects edited
+                                handleRefresh();
+                            }
                         }
-                    });
-                    job.schedule();
-                } else {
-                    // Refresh the table to reset any objects edited
-                    handleRefresh();
-                }
+                    }
+                };
+                
+                DataDeliveryUtils.showCallbackMessageBox(shell, SWT.YES | SWT.NO, "Delete Confirmation", message, callback);
             }
         } catch (AuthException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);

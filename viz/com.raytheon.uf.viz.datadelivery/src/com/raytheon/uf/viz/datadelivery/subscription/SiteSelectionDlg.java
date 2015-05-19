@@ -19,11 +19,8 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -35,9 +32,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
-import com.raytheon.uf.common.site.SiteData;
-import com.raytheon.uf.common.site.SiteData.SiteDataType;
-import com.raytheon.uf.common.site.SiteMap;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.widgets.DualListComposite;
@@ -54,7 +48,8 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * ------------ ---------- ----------- --------------------------
  * Apr 29, 2013   1040     mpduff      Initial creation
  * Feb 11, 2014   2771     bgonzale    Show all SiteDataTypes in site list.
- * Apr 2,  2014 2974       dhladky      DD ID added to list for dropdowns in DD.
+ * Apr 2,  2014   2974     dhladky      DD ID added to list for dropdowns in DD.
+ * May 17, 2015    4047    dhladky      verified non-blocking.
  * 
  * </pre>
  * 

@@ -72,6 +72,7 @@ import com.raytheon.viz.ui.presenter.components.WidgetConf;
  * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
  * Mar 31, 2014  2889      dhladky     Added username for notification center tracking.
  * Jan 05, 2015  3881      dhladky     Changed from store to update for existing(and new) subscriptions.
+ * May 17, 2015  4047      dhladky     verified non-blocking.
  * 
  * </pre>
  * 
@@ -111,7 +112,7 @@ public class GroupAddDlg extends CaveSWTDialog {
      */
     public GroupAddDlg(Shell parent, Subscription subscription,
             IGroupAction callback) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL);
+        super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText("Add To Group");
         this.subscription = subscription;
         this.callback = callback;

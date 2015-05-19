@@ -156,6 +156,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Dec 01, 2014   3550     ccody       Added extended Latency Processing
  * Jan 05, 2015   3898     ccody       Delete existing Site subscription if it is updated to a Shared Subscription
  * Feb 13, 2015   3852     dhladky     All messaging is done from the BWM and Registry regarding subscriptions.
+ * May 17, 2015  4047      dhladky     verified non-blocking.
  * 
  * </pre>
  * 
@@ -266,7 +267,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     public CreateSubscriptionDlg(Shell parent, boolean create, DataSet dataSet,
             IGuiThreadTaskExecutor guiThreadTaskExecutor) {
         super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL
-                | CAVE.PERSPECTIVE_INDEPENDENT);
+                | CAVE.PERSPECTIVE_INDEPENDENT | CAVE.DO_NOT_BLOCK);
         this.create = create;
         this.dataSet = dataSet;
         this.guiThreadTaskExecutor = guiThreadTaskExecutor;

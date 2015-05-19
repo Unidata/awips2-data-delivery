@@ -80,6 +80,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                     display of already selected area on the map.
  * Dec 07, 2012 1278       bgonzale    added setter for spatialUtils.
  * Dec 10, 2012 1259       bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
+ * May 17, 2015 4047       dhladky    verified non-blocking.
  * 
  * </pre>
  * 
@@ -137,7 +138,7 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
      */
     public SpatialSubsetMapDlg(Shell shell, ISubset callback,
             ReferencedEnvelope fullEnvelope, ReferencedEnvelope subEnvelope) {
-        super(shell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL);
+        super(shell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         paneManager = new PaneManager();
         loopProperties = new LoopProperties();
         this.callback = callback;

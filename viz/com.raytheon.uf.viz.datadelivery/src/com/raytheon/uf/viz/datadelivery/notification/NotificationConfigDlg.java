@@ -66,6 +66,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Oct 22, 2012  1284     mpduff     Code Cleanup.
  * Aug 30, 2013  2314     mpduff     Fixed sorting ambiguity.
  * Sep 16, 2013  2375     mpduff     Add apply button.
+ * May 17, 2015  4047     dhladky    verified non-blocking.
  * 
  * </pre>
  * 
@@ -136,7 +137,7 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
      * @param callback
      */
     public NotificationConfigDlg(Shell parentShell, ITableChange callback) {
-        super(parentShell, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL);
+        super(parentShell, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText("Notification Configuration");
         this.callback = callback;
     }
