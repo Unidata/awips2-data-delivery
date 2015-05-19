@@ -21,8 +21,6 @@ package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
 import static com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.getMaxLatency;
 
-import java.util.Set;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -34,7 +32,6 @@ import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
-import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
@@ -53,6 +50,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 12, 2014  3121      dhladky      Initial creation.
+ * May 17, 2015  4047      dhladky      verified non-blocking.
  * 
  * </pre>
  * 
@@ -100,7 +98,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
      */
     public PDATimingSelectionDlg(Shell parentShell, PDADataSet dataset,
             Subscription subscription, java.util.List<String> dateList) {
-        super(parentShell);
+        super(parentShell, CAVE.DO_NOT_BLOCK);
         setText("Select Date");
         this.subscription = subscription;
         this.dataset = dataset;

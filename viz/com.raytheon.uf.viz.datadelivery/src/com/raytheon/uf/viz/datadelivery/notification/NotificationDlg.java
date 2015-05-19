@@ -108,7 +108,8 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Sep 25, 2013  2410      mpduff     Check type of localization file.
  * Feb 07, 2013  2453      mpduff     Support find dialog refactor..
  * Mar 18, 2014  2433      mpduff     Implement view by priority check box menus.
- * Aug 18, 2014   2746     ccody      Non-local Subscription changes not updating dialogs
+ * Aug 18, 2014  2746      ccody      Non-local Subscription changes not updating dialogs
+ * May 17, 2015  4047      dhladky    verified non-blocking.
  * 
  * </pre>
  * 
@@ -214,7 +215,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      */
     public NotificationDlg(Shell parent) {
         super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE,
-                CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT);
+                CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT | CAVE.DO_NOT_BLOCK);
         setText(TITLE_TEXT);
         NotificationHandler.addListener(this);
         handler = new NotificationHandler();

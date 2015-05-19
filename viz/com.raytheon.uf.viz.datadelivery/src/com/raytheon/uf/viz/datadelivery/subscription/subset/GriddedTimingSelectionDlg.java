@@ -59,6 +59,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Feb 26, 2013  1592      djohnson    When the shell is closed, don't submit the query.
  * Jun 04, 2013   223      mpduff      PriorityComp constructor changed.
  * Oct 11, 2013  2386      mpduff      Refactor DD Front end.
+ * May 17, 2015  4047      dhladky     verified non-blocking.
  * 
  * </pre>
  * 
@@ -109,7 +110,7 @@ public class GriddedTimingSelectionDlg extends CaveSWTDialog {
      */
     public GriddedTimingSelectionDlg(Shell parentShell, GriddedDataSet dataset,
             Subscription subscription, java.util.List<String> dateList) {
-        super(parentShell);
+        super(parentShell, CAVE.DO_NOT_BLOCK);
         setText("Select Date/Cycle");
         this.cycleTimes = dataset.getCycles();
         this.subscription = subscription;

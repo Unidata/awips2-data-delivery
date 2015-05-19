@@ -152,6 +152,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
  * Sept 04, 2014  3121     dhladky      Setup for PDA data type
  * Feb 13, 2015   3852     dhladky      All messaging is handled by the BWM and registry.
+ * May 17, 2015   4047     dhladky      verified non-blocking.
  * 
  * </pre>
  * 
@@ -232,7 +233,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      */
     public SubsetManagerDlg(Shell shell, boolean loadDataSet, DataSet dataSet) {
         super(shell, SWT.RESIZE | SWT.DIALOG_TRIM | SWT.MIN,
-                CAVE.INDEPENDENT_SHELL);
+                CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         this.loadDataSet = loadDataSet;
         this.dataSet = dataSet;
     }
@@ -501,7 +502,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         DataDeliveryGUIUtils.markBusyInUIThread(shell);
         try {
             if (handleOK(sub)) {
-                close();
+                // Prevent editing while creating subscriptions
+                // When create dialog submits, thew shell will close this dialog.
+                this.hide();
             }
         } finally {
             DataDeliveryGUIUtils.markNotBusyInUIThread(shell);

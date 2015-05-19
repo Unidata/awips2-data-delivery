@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.auth.resp.SuccessfulExecution;
@@ -55,6 +54,7 @@ import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionManagerRowData;
 import com.raytheon.uf.viz.datadelivery.subscription.approve.SubscriptionApprovalRowData;
+import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -99,6 +99,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Dec 03, 2014 3840       ccody        Added BrowserColumnNames.valueOfColumnName(String).
  * Jan 05, 2015 3950       dhladky      Added string constants for filtering notification records.
  * Apr 30, 2015 4047       dhladky      Use non-blocking dialogs.
+ * May 17, 2015 4047       dhladky      Improved use of non-blocking dialogs.
  * </pre>
  * 
  * @author mpduff
@@ -635,7 +636,7 @@ public class DataDeliveryUtils {
     }
 
     /**
-     * Show a MessageBox.
+     * Show a MessageBox non-blocking.
      * 
      * @param shell
      *            The parent shell
@@ -645,7 +646,7 @@ public class DataDeliveryUtils {
      *            The message box title
      * @param messageText
      *            The message box message
-     * @return The selected return value
+     * @return a default return value
      */
     public static int showMessage(Shell shell, int style, String messageTitle,
             String messageText) {
@@ -653,6 +654,26 @@ public class DataDeliveryUtils {
         SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle, messageText, style);
         messageDialog.open();
         return 1;
+    }
+    
+    /**
+     * Show a non-blocking returnable Message Box.
+     * 
+     * @param shell
+     *            The parent shell
+     * @param style
+     *            The message box style bits
+     * @param messageTitle
+     *            The message box title
+     * @param messageText
+     *            The message box message
+     * @param callback
+     */
+    public static void showCallbackMessageBox(Shell shell, int style, String messageTitle,
+            String messageText, ICloseCallback callback) {
+        SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle, messageText, style);
+        messageDialog.setCloseCallback(callback);
+        messageDialog.open();
     }
 
     /**
