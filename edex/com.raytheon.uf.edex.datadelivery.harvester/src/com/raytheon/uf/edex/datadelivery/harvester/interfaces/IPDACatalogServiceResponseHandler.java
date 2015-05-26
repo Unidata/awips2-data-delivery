@@ -27,6 +27,7 @@ import javax.jws.soap.SOAPBinding;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
 import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
+import net.opengis.cat.csw.v_2_0_2.TransactionType;
 
 import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 
@@ -39,6 +40,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 16, 2014 3120       dhladky     Initial creation
+ * Apr 21, 2015            dhladky     Updated for PDA transaction processing
  * 
  * </pre>
  * 
@@ -56,11 +58,21 @@ public interface IPDACatalogServiceResponseHandler {
      * @param handleGetRecordsResponse
      * @return returns
      *         void
-     * @throws Exception
+     * @throws ServiceExceptionReport
      */
     @WebMethod
     public void handleGetRecordsResponse(
             @WebParam(name = "GetRecordsResponse", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body") GetRecordsResponseType response)
+                    throws ServiceExceptionReport;
+
+    /**
+     * 
+     * @param transaction
+     * @throws ServiceExceptionReport 
+     */
+    @WebMethod
+    public void handleTransaction(
+            @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body") TransactionType transactions)
                     throws ServiceExceptionReport;
 
     
