@@ -20,23 +20,43 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * further licensing information.
  **/
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 import javax.jws.soap.SOAPBinding;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
 import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
+import net.opengis.cat.csw.v_2_0_2.InsertType;
 import net.opengis.cat.csw.v_2_0_2.SearchResultsType;
+import net.opengis.cat.csw.v_2_0_2.TransactionType;
+import net.opengis.cat.csw.v_2_0_2.dc.elements.ObjectFactory;
+import net.opengis.cat.csw.v_2_0_2.dc.elements.SimpleLiteral;
+import net.opengis.ows.v_1_0_0.BoundingBoxType;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
 import com.raytheon.uf.common.datadelivery.harvester.PDACatalogServiceResponseWrapper;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.harvester.interfaces.IPDACatalogServiceResponseHandler;
+import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 
 /**
@@ -49,6 +69,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * ------------ ---------- ----------- --------------------------
  * Jun 16, 2014 3120       dhladky     Initial creation
  * Nov 10, 2014 3826       dhladky     Added more logging.
+ * Apr 21, 2015 4435       dhladky     Connecting to PDA transactions
  * 
  * </pre>
  * 
@@ -64,11 +85,66 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDACatalogServiceResponseHandler.class);
 
-    private String destinationUri = null;
+    /** catalog destination queue **/
+    private String fileDestinationUri = null;
+    
+    /** transaction destination queue **/
+    private String transactionUri = null;
+    
+    /** JAXB Manager **/
+    private OgcJaxbManager jaxbManager = null;
+    
+    /** CSW/OWS/GML class factory **/
+    private static final Class<?>[] classes = new Class<?>[] {
+            net.opengis.cat.csw.v_2_0_2.ObjectFactory.class,
+            net.opengis.gml.v_3_1_1.ObjectFactory.class,
+            net.opengis.filter.v_1_1_0.ObjectFactory.class,
+            net.opengis.ows.v_1_0_0.ObjectFactory.class};
+    
+    /** space split pattern **/
+    private static final String SPACE = " ";
+    
+    /** DEFAULT_CRS, unspecified by provider **/
+    private static final String DEFAULT_CRS = "DEFAULT_CRS ";
+    
+    /** internal use service config for PDA service **/
+    private static ServiceConfig serviceConfig = null;
+    
+    /** Simple Literal OWS factory **/
+    private static ObjectFactory literalFactory = null;
+    
+    /** Version 1.0.0 Bounding Box factory  **/
+    private static net.opengis.ows.v_1_0_0.ObjectFactory boundingBoxFactory = null;
+    
+    private static net.opengis.cat.csw.v_2_0_2.ObjectFactory briefRecordFactory = null;
+    
+    /** Variables for BriefRecordType parse **/
+    private static final String ID = "identifier";
+    
+    private static final String TYPE = "type";
+    
+    private static final String TITLE = "title";
+        
+    private static final String BOUNDING_BOX = "BoundingBox";
+    
+    private static final String LOWER_CORNER = "LowerCorner";
+    
+    private static final String UPPER_CORNER = "UpperCorner";
+    
+    /** load PDA service config and factories**/
+    static {
+        serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
+                ServiceType.PDA);
+        
+        literalFactory = new net.opengis.cat.csw.v_2_0_2.dc.elements.ObjectFactory();
+        boundingBoxFactory = new net.opengis.ows.v_1_0_0.ObjectFactory();
+        briefRecordFactory = new net.opengis.cat.csw.v_2_0_2.ObjectFactory();
+    }
     
     /** Spring constructor **/
-    public PDACatalogServiceResponseHandler(String destinationUri) {
-        this.destinationUri = destinationUri;
+    public PDACatalogServiceResponseHandler(String fileDestinationUri, String transactionUri) {
+        this.fileDestinationUri = fileDestinationUri;
+        this.transactionUri = transactionUri;
     }
     
     @Override
@@ -100,6 +176,47 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
                                     e);
                 }
             }
+        } 
+    }
+    
+    @Override
+    @WebMethod
+    public void handleTransaction(
+            @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
+            TransactionType transactions) throws ServiceExceptionReport {
+
+        List<Object> records = transactions.getInsertOrUpdateOrDelete();
+
+        if (records != null) {
+
+            List<JAXBElement<BriefRecordType>> briefRecords = new ArrayList<JAXBElement<BriefRecordType>>(
+                    0);
+
+            for (Object o : records) {
+                // We only care about insert messages, we delete
+                // metadata through our own methods.
+                try {
+                    JAXBElement<BriefRecordType> brt = parseBriefRecord(o);
+                    briefRecords.add(brt);
+                } catch (Exception e) {
+                    statusHandler.error(
+                            "Errror parsing Transaction message from PDA.", e);
+                }
+            }
+
+            statusHandler.handle(Priority.INFO,
+                    "Sending "+ briefRecords.size() + " Transaction Inserts to MetaDataProcessor.");
+
+            for (JAXBElement<BriefRecordType> briefRecord : briefRecords) {
+                try {
+                    sendToMetaDataProcessor(briefRecord);
+                } catch (Exception e) {
+                    statusHandler
+                            .handle(Priority.PROBLEM,
+                                    "Unable to send BriefRecord to metadata Processor queue.",
+                                    e);
+                }
+            }
         }
     }
 
@@ -107,18 +224,216 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
      * 
      * Drops PDA remote file path into queue for retrieval
      * 
-     * @param destinationUri
      * @param filePath
      * @throws Exception
      */
     private void sendToFileRetrieval(String filePath) throws Exception {
 
         if (filePath != null) {
-
             PDACatalogServiceResponseWrapper psrw = new PDACatalogServiceResponseWrapper(filePath);
             byte[] bytes = SerializationUtil.transformToThrift(psrw);
-            EDEXUtil.getMessageProducer().sendAsync(destinationUri, bytes);
+            EDEXUtil.getMessageProducer().sendAsync(fileDestinationUri, bytes);
         }
     }
 
+    /**
+     * 
+     * Drops PDA transactions to metaData processor
+     * 
+     * @param BriefRecordType
+     *            briefRecord
+     * @throws Exception
+     */
+    private void sendToMetaDataProcessor(JAXBElement<BriefRecordType> briefRecord)
+            throws Exception {
+
+        if (briefRecord != null) {
+
+            String xml = getJaxbManager().marshalToXml(briefRecord);
+            EDEXUtil.getMessageProducer().sendAsync(transactionUri,
+                    xml.getBytes());
+        }
+    }
+
+    /**
+     * Gets the JAXB manager for use with BriefRecord decode
+     * 
+     * @return
+     */
+    private OgcJaxbManager getJaxbManager() {
+
+        if (jaxbManager == null) {
+            try {
+                this.jaxbManager = new OgcJaxbManager(classes);
+            } catch (JAXBException e) {
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "JaxbManager failed to initialize, can not deserialize CSW classes.",
+                                e);
+            }
+        }
+        
+        return jaxbManager;
+    }
+
+    /**
+     * Create a BriefRecord from the PDA Insert Transaction message
+     * 
+     * @param o
+     * @return
+     */
+    private JAXBElement<BriefRecordType> parseBriefRecord(Object o) {
+
+        JAXBElement<BriefRecordType> jaxbBriefRecord = null;
+        BriefRecordType brt = null;
+        String identifier = null;
+        String title = null;
+        String type = null;
+        String lowerCorner = null;
+        String upperCorner = null;
+
+        // PDA only sends insert and delete, no update, we don't care about
+        // delete.
+        if (o instanceof InsertType) {
+
+            InsertType trans = (InsertType) o;
+
+            for (int i = 0; i < trans.getAny().size(); i++) {
+
+                Element element = trans.getAny().get(i);
+
+                if (element.getLocalName().equals(ID)) {
+                    identifier = element.getFirstChild().getNodeValue();
+                } else if (element.getLocalName().equals(TITLE)) {
+                    title = element.getFirstChild().getNodeValue();
+                } else if (element.getLocalName().equals(TYPE)) {
+                    type = element.getFirstChild().getNodeValue();
+                } else if (element.getLocalName().equals(BOUNDING_BOX)) {
+
+                    NodeList nodes = element.getChildNodes();
+
+                    for (int j = 0; j < nodes.getLength(); j++) {
+
+                        Node node = nodes.item(j);
+
+                        if (node.getLocalName().equals(LOWER_CORNER)) {
+                            if (node.getFirstChild().getNodeValue() != null) {
+                                lowerCorner = node.getFirstChild()
+                                        .getNodeValue();
+                            }
+                        } else if (node.getLocalName().equals(UPPER_CORNER)) {
+                            if (node.getFirstChild().getNodeValue() != null) {
+                                upperCorner = node.getFirstChild()
+                                        .getNodeValue();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // process information
+            if (identifier != null && title != null && type != null) {
+
+                // identifier builder
+                List<JAXBElement<SimpleLiteral>> idLiterals = new ArrayList<JAXBElement<SimpleLiteral>>(
+                        1);
+                SimpleLiteral idLiteral = new SimpleLiteral();
+                List<String> ids = new ArrayList<String>(1);
+                ids.add(identifier);
+                idLiteral.setContent(ids);
+                JAXBElement<SimpleLiteral> jaxbIdLiteral = literalFactory
+                        .createIdentifier(idLiteral);
+                idLiterals.add(jaxbIdLiteral);
+
+                // title builder
+                List<JAXBElement<SimpleLiteral>> titleLiterals = new ArrayList<JAXBElement<SimpleLiteral>>(
+                        1);
+                SimpleLiteral titleLiteral = new SimpleLiteral();
+                List<String> titles = new ArrayList<String>(1);
+                titles.add(title);
+                titleLiteral.setContent(titles);
+                JAXBElement<SimpleLiteral> jaxbTitleLiteral = literalFactory
+                        .createTitle(titleLiteral);
+                titleLiterals.add(jaxbTitleLiteral);
+
+                // type builder
+                SimpleLiteral typeLiteral = new SimpleLiteral();
+                List<String> types = new ArrayList<String>(1);
+                types.add(type);
+                typeLiteral.setContent(types);
+
+                // Bounding Box
+                List<JAXBElement<BoundingBoxType>> boundingBoxes = new ArrayList<JAXBElement<BoundingBoxType>>(
+                        1);
+                List<Double> upperVals = null;
+                List<Double> lowerVals = null;
+
+                if (upperCorner != null && lowerCorner != null) {
+                    String[] uppers = upperCorner.split(SPACE);
+                    String[] lowers = lowerCorner.split(SPACE);
+                    // uppers
+                    upperVals = new ArrayList<Double>(2);
+                    upperVals.add(Double.parseDouble(uppers[0]));
+                    upperVals.add(Double.parseDouble(uppers[1]));
+                    // lowers
+                    lowerVals = new ArrayList<Double>(2);
+                    lowerVals.add(Double.parseDouble(lowers[0]));
+                    lowerVals.add(Double.parseDouble(lowers[1]));
+                }
+                // create the Box
+                BoundingBoxType bbt = new BoundingBoxType();
+                bbt.setCrs(serviceConfig.getConstantValue(DEFAULT_CRS));
+
+                if (upperCorner != null && lowerCorner != null) {
+                    bbt.setLowerCorner(lowerVals);
+                    bbt.setUpperCorner(upperVals);
+                }
+
+                // 2 dimensions
+                bbt.setDimensions(BigInteger.valueOf(new Integer(2).intValue()));
+                JAXBElement<BoundingBoxType> jaxbBoundingBox = boundingBoxFactory
+                        .createBoundingBox(bbt);
+                boundingBoxes.add(jaxbBoundingBox);
+                // Add everything to the BriefRecordType
+                brt = new BriefRecordType();
+                brt.setBoundingBox(boundingBoxes);
+                brt.setIdentifier(idLiterals);
+                brt.setTitle(titleLiterals);
+                brt.setType(typeLiteral);
+                // make the XMLable record
+                jaxbBriefRecord = briefRecordFactory.createBriefRecord(brt);
+
+            } else {
+
+                StringBuffer errorMessage = new StringBuffer(255);
+                errorMessage.append("Parsing CSW transaction failed: ");
+                // ID
+                if (identifier != null) {
+                    errorMessage.append(identifier + ", ");
+                } else {
+                    errorMessage.append("identifier is null, ");
+                }
+                // Title
+                if (title != null) {
+                    errorMessage.append(title + ", ");
+                } else {
+                    errorMessage.append("title is null, ");
+                }
+                // Type
+                if (type != null) {
+                    errorMessage.append(type);
+                } else {
+                    errorMessage.append("type is null");
+                }
+
+                statusHandler.warn(errorMessage.toString());
+            }
+
+        } else {
+            statusHandler
+                    .warn("Unknown or discarded CSW metadata transaction. Class: "+o.getClass().getName());
+        }
+
+        return jaxbBriefRecord;
+    }
 }
