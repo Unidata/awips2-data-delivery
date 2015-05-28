@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -43,6 +42,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Feb 22, 2013 1543       djohnson     Made public as YAJSW doesn't like Spring exceptions.
  * 4/9/2013     1802       bphillip     Changed to use new query method signatures in SessionManagedDao
  * Jun 03, 2013 2038       djohnson     Add method to get subscription retrievals by provider, dataset, and status.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -82,7 +82,7 @@ public class SubscriptionRetrievalDao extends
      */
     @Override
     public List<SubscriptionRetrieval> getByProviderDataSetReferenceTime(
-            String provider, String dataSetName, Calendar baseReferenceTime) {
+            String provider, String dataSetName, Date baseReferenceTime) {
         return query(
                 GET_SUBSCRIPTIONRETRIEVAL_BY_PROVIDER_AND_DATASET_AND_BASEREFERENCETIME,
                 "provider", provider, "dataSetName", dataSetName,
@@ -122,16 +122,10 @@ public class SubscriptionRetrievalDao extends
             String provider, String dataSetName, RetrievalStatus status,
             Date earliestDate, Date latestDate) {
 
-        final Calendar startDate = Calendar.getInstance();
-        startDate.setTime(earliestDate);
-
-        final Calendar endDate = Calendar.getInstance();
-        endDate.setTime(latestDate);
-
         final List<SubscriptionRetrieval> results = query(
                 GET_SUBSCRIPTIONRETRIEVAL_BY_PROVIDER_DATASET_STATUS_AND_DATES,
                 "provider", provider, "dataSetName", dataSetName, "status",
-                status, "startDate", startDate, "endDate", endDate);
+                status, "startDate", earliestDate, "endDate", latestDate);
 
         return orderByStart(results);
     }

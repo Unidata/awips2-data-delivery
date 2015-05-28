@@ -45,6 +45,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
  * Sept 14, 2014 2131      dhladky      PDA additions
  * Jan 15, 2014  3884      dhladky      Removed shutdown, replaced with restart(), shutdown undermined #2749 BWM ticket;
  * Mar 08, 2015 3950       dhladky      Better logging of foreign retrieval ID's.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -103,9 +104,9 @@ public class RetrievalManager {
             if (plan != null) {
 
                 if (bandwidthAllocation.getStartTime().before(
-                        plan.getPlanStart())
+                        plan.getPlanStart().getTime())
                         || bandwidthAllocation.getEndTime().after(
-                                plan.getPlanEnd())) {
+                                plan.getPlanEnd().getTime())) {
 
                     statusHandler
                             .warn("Attempt to schedule bandwidth outside current window. BandwidthAllocation ["
@@ -159,7 +160,7 @@ public class RetrievalManager {
         // Update the SubscriptionRetrieval in the database since the Retrievals
         // were completed outside the Bandwidth subsystem.
         subscriptionRetrieval.setStatus(RetrievalStatus.FULFILLED);
-        subscriptionRetrieval.setActualEnd(TimeUtil.newCalendar());
+        subscriptionRetrieval.setActualEnd(TimeUtil.newDate());
 
         bandwidthDao.update(subscriptionRetrieval);
 

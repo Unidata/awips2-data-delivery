@@ -20,7 +20,6 @@
 package com.raytheon.uf.common.datadelivery.registry;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -42,6 +41,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * ------------ ---------- ----------- --------------------------
  * May 19, 2014   3113     mpduff      Initial creation
  * 8/29/2014     3446      bphillip     SubscriptionUtil is now a singleton
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -148,7 +148,7 @@ public class SubscriptionUtil {
      * @throws RegistryHandlerException
      */
     public int getDataSetAvailablityOffset(Subscription<?, ?> subscription,
-            Calendar referenceTime) throws RegistryHandlerException {
+            Date referenceTime) throws RegistryHandlerException {
         return dataSetAvailabilityCalculator.getDataSetAvailablityOffset(
                 subscription, referenceTime);
     }

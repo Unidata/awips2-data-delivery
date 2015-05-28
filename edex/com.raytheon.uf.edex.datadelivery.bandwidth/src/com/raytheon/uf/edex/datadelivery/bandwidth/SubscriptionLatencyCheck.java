@@ -23,7 +23,6 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -72,6 +71,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial creation
  * Mar 09, 2015 4242       dhladky     Data integrity exception caused by dupe key ~ caused gaps in scheduling
+ * May 27, 2015  4531      dhladky     Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -644,9 +644,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     subscriptionLatencyData
                             .setSubscriptionName(bandwidthSubscription
                                     .getName());
-                    Calendar baseRefTime = bandwidthSubscription
-                            .getBaseReferenceTime();
-                    long baseRefTimeLong = baseRefTime.getTimeInMillis();
+                    long baseRefTimeLong = bandwidthSubscription
+                            .getBaseReferenceTime().getTime();
                     subscriptionLatencyData
                             .setBaseRefTimestamp(baseRefTimeLong);
 

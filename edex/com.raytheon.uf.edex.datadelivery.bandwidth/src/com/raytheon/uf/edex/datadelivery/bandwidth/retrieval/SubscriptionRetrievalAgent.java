@@ -61,6 +61,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Feb 10, 2014 2678       dhladky      Prevent duplicate allocations.
  * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
  * Feb 19, 2015 3998       dhladky      Fixed wrong date on notification center retrieval message.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -119,8 +120,8 @@ public class SubscriptionRetrievalAgent extends
                 // Check for most recent startTime, that's the one we want for
                 // retrieval.
                 SubscriptionRetrieval currentRetrieval = retrievalsMap.get(sub);
-                if (subRetrieval.getStartTime().getTime()
-                        .after(currentRetrieval.getStartTime().getTime())) {
+                if (subRetrieval.getStartTime()
+                        .after(currentRetrieval.getStartTime())) {
                     // Replace it in the map, set previous to canceled.
                     currentRetrieval.setStatus(RetrievalStatus.CANCELLED);
                     bandwidthDao.update(currentRetrieval);
@@ -161,7 +162,7 @@ public class SubscriptionRetrievalAgent extends
             bundle.setConnection(provider.getConnection());
             bundle.setSubscription(sub);
 
-            retrieval.setActualStart(TimeUtil.newGmtCalendar());
+            retrieval.setActualStart(TimeUtil.newDate());
             retrieval.setStatus(RetrievalStatus.RETRIEVAL);
 
             // update database

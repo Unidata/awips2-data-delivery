@@ -149,6 +149,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Jan 30, 2015 2746       dhladky      Handling special cases in notification message routing.
  *  Mar 08, 2015 3950       dhladky      Bandwidth change better handled.
  *  May 10, 2015 4493       dhladky      Deleted un-needed methods/vars
+ *  May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * </pre>
  * 
  * @author djohnson
@@ -844,8 +845,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 // This is the latest time on the data we care about, once the
                 // retrieval is signaled to go it retrieves everything up to
                 // its start time
-                final Date latestRetrievalDataTime = retrieval.getStartTime()
-                        .getTime();
+                final Date latestRetrievalDataTime = retrieval.getStartTime();
                 // This is the earliest possible time this retrieval cares about
                 final Date earliestRetrievalDataTime = new Date(
                         latestRetrievalDataTime.getTime()
@@ -1265,7 +1265,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     // Find DEFERRED Allocations and load them into the
                     // plan...
                     List<BandwidthAllocation> deferred = bandwidthDao
-                            .getDeferred(plan.getNetwork(), plan.getPlanEnd());
+                            .getDeferred(plan.getNetwork(), plan.getPlanEnd().getTime());
                     if (!deferred.isEmpty()) {
                         retrievalManager.schedule(deferred);
                     }

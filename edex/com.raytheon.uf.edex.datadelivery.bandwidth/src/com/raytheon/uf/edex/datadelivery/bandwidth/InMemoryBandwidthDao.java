@@ -20,7 +20,6 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
@@ -70,6 +69,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Oct 2,  2013 1797       dhladky      generics
  * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
  * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -187,15 +187,15 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(
-            String providerName, String dataSetName, Calendar baseReferenceTime) {
+            String providerName, String dataSetName, Date baseReferenceTime) {
         List<BandwidthDataSetUpdate> results = getBandwidthDataSetUpdate(
                 providerName, dataSetName);
 
         for (Iterator<BandwidthDataSetUpdate> iter = results.iterator(); iter
                 .hasNext();) {
             BandwidthDataSetUpdate current = iter.next();
-            if (current.getDataSetBaseTime().getTimeInMillis() == baseReferenceTime
-                    .getTimeInMillis()) {
+            if (current.getDataSetBaseTime().getTime() == baseReferenceTime
+                    .getTime()) {
                 continue;
             }
 
@@ -209,7 +209,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public List<BandwidthAllocation> getDeferred(Network network,
-            Calendar endTime) {
+            Date endTime) {
 
         List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
 
@@ -242,11 +242,10 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public BandwidthSubscription getBandwidthSubscription(String registryId,
-            Calendar baseReferenceTime) {
+            Date baseReferenceTime) {
         List<BandwidthSubscription> bandwidthSubscriptions = getBandwidthSubscriptionByRegistryId(registryId);
         for (BandwidthSubscription bandwidthSubscription : bandwidthSubscriptions) {
-            if (bandwidthSubscription.getBaseReferenceTime().getTimeInMillis() == baseReferenceTime
-                    .getTimeInMillis()) {
+            if (bandwidthSubscription.getBaseReferenceTime() == baseReferenceTime) {
                 return bandwidthSubscription;
             }
         }
@@ -297,7 +296,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals(
-            String provider, String dataSetName, Calendar baseReferenceTime) {
+            String provider, String dataSetName, Date baseReferenceTime) {
         List<SubscriptionRetrieval> results = Lists.newArrayList();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
@@ -307,9 +306,9 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
                 subscription = subscriptionRetrieval.getBandwidthSubscription();
                 if (provider.equals(subscription.getProvider())
                         && dataSetName.equals(subscription.getDataSetName())
-                        && baseReferenceTime.getTimeInMillis() == subscriptionRetrieval
+                        && baseReferenceTime.getTime() == subscriptionRetrieval
                                 .getBandwidthSubscription()
-                                .getBaseReferenceTime().getTimeInMillis()) {
+                                .getBaseReferenceTime().getTime()) {
                     results.add(subscriptionRetrieval.copy());
                 }
             }
@@ -358,15 +357,15 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptions(
-            String provider, String dataSetName, Calendar baseReferenceTime) {
+            String provider, String dataSetName, Date baseReferenceTime) {
         List<BandwidthSubscription> bandwidthSubscriptions = Lists
                 .newArrayList();
 
         for (BandwidthSubscription current : this.bandwidthSubscriptions) {
             if (provider.equals(current.getProvider())
                     && dataSetName.equals(current.getDataSetName())
-                    && baseReferenceTime.getTimeInMillis() == current
-                            .getBaseReferenceTime().getTimeInMillis()) {
+                    && baseReferenceTime.getTime() == current
+                            .getBaseReferenceTime().getTime()) {
                 bandwidthSubscriptions.add(current.copy());
             }
         }
@@ -394,7 +393,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public BandwidthSubscription newBandwidthSubscription(
-            Subscription<T, C> subscription, Calendar baseReferenceTime) {
+            Subscription<T, C> subscription, Date baseReferenceTime) {
         BandwidthSubscription entity = BandwidthUtil
                 .getSubscriptionDaoForSubscription(subscription,
                         baseReferenceTime);
@@ -591,7 +590,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
                 subscription = subscriptionRetrieval.getBandwidthSubscription();
 
                 final Date subRetrievalStartTime = subscriptionRetrieval
-                        .getStartTime().getTime();
+                        .getStartTime();
                 final boolean withinTimeLimits = !(earliestDate
                         .after(subRetrievalStartTime) || latestDate
                         .before(subRetrievalStartTime));

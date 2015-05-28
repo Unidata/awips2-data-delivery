@@ -1,7 +1,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.dao;
 
 import java.io.Serializable;
-import java.util.Calendar;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.DiscriminatorColumn;
@@ -23,7 +23,6 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
 import com.raytheon.uf.common.dataplugin.persist.IPersistableDataObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.IDeepCopyable;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
@@ -43,6 +42,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Jul 11, 2013 2106       djohnson     Use SubscriptionPriority enum.
  * Oct 30, 2013  2448      dhladky      Moved methods to TimeUtil.
  * Apr 02, 2014  2810      dhladky      Priority sorting of allocations.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -63,11 +63,11 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
 
     @Column(nullable = true)
     @DynamicSerializeElement
-    private Calendar actualEnd;
+    private Date actualEnd;
 
     @Column(nullable = true)
     @DynamicSerializeElement
-    private Calendar actualStart;
+    private Date actualStart;
 
     @Column(nullable = false)
     @DynamicSerializeElement
@@ -79,7 +79,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
 
     @Column(nullable = false)
     @DynamicSerializeElement
-    private Calendar endTime;
+    private Date endTime;
 
     @Column(nullable = false)
     @DynamicSerializeElement
@@ -103,7 +103,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
 
     @Column(nullable = false)
     @DynamicSerializeElement
-    private Calendar startTime;
+    private Date startTime;
 
     @Column(nullable = true)
     @DynamicSerializeElement
@@ -130,21 +130,21 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
      * @param from
      */
     public BandwidthAllocation(BandwidthAllocation from) {
-        final Calendar fromActualEnd = from.getActualEnd();
+        final Date fromActualEnd = from.getActualEnd();
         if (fromActualEnd != null) {
-            this.setActualEnd(TimeUtil.newCalendar(fromActualEnd));
+            this.setActualEnd(fromActualEnd);
         }
-        final Calendar fromActualStart = from.getActualStart();
+        final Date fromActualStart = from.getActualStart();
         if (fromActualStart != null) {
-            this.setActualStart(TimeUtil.newCalendar(fromActualStart));
+            this.setActualStart(fromActualStart);
         }
-        final Calendar fromStartTime = from.getStartTime();
+        final Date fromStartTime = from.getStartTime();
         if (fromStartTime != null) {
-            this.setStartTime(TimeUtil.newCalendar(fromStartTime));
+            this.setStartTime(fromStartTime);
         }
-        final Calendar fromEndTime = from.getEndTime();
+        final Date fromEndTime = from.getEndTime();
         if (fromEndTime != null) {
-            this.setEndTime(TimeUtil.newCalendar(fromEndTime));
+            this.setEndTime(fromEndTime);
         }
 
         this.setAgentType(from.getAgentType());
@@ -160,14 +160,14 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
     /**
      * @return the actualEnd
      */
-    public Calendar getActualEnd() {
+    public Date getActualEnd() {
         return actualEnd;
     }
 
     /**
      * @return the actualStart
      */
-    public Calendar getActualStart() {
+    public Date getActualStart() {
         return actualStart;
     }
 
@@ -182,7 +182,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
         return bandwidthBucket;
     }
 
-    public Calendar getEndTime() {
+    public Date getEndTime() {
         return this.endTime;
     }
 
@@ -216,7 +216,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
         return network;
     }
 
-    public Calendar getStartTime() {
+    public Date getStartTime() {
         return startTime;
     }
 
@@ -228,7 +228,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
      * @param actualEnd
      *            the actualEnd to set
      */
-    public void setActualEnd(Calendar actualEnd) {
+    public void setActualEnd(Date actualEnd) {
         this.actualEnd = actualEnd;
     }
 
@@ -236,7 +236,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
      * @param actualStart
      *            the actualStart to set
      */
-    public void setActualStart(Calendar actualStart) {
+    public void setActualStart(Date actualStart) {
         this.actualStart = actualStart;
     }
 
@@ -252,7 +252,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
         this.bandwidthBucket = bandwidthBucket;
     }
 
-    public void setEndTime(Calendar endTime) {
+    public void setEndTime(Date endTime) {
         this.endTime = endTime;
     }
 
@@ -286,7 +286,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
         this.network = network;
     }
 
-    public void setStartTime(Calendar startTime) {
+    public void setStartTime(Date startTime) {
         this.startTime = startTime;
     }
 

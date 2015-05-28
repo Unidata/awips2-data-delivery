@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import org.hibernate.Query;
@@ -43,6 +43,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * 4/9/2013     1802       bphillip    Changed to use new query method signatures in SessionManagedDao
  * Jun 24, 2013 2106       djohnson    Add ability to retrieve by network and start time.
  * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -132,7 +133,7 @@ abstract class BaseBandwidthAllocationDao<ENTITY extends BandwidthAllocation>
      * {@inheritDoc}
      */
     @Override
-    public List<ENTITY> getDeferred(Network network, Calendar endTime) {
+    public List<ENTITY> getDeferred(Network network, Date endTime) {
         return query(
                 String.format(GET_DEFERRED, getEntityClass().getSimpleName()),
                 "status", RetrievalStatus.DEFERRED, "network", network,

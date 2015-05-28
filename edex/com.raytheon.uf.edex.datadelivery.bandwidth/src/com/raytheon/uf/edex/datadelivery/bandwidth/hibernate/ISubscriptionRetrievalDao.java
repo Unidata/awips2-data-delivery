@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.SortedSet;
@@ -41,6 +40,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * ------------ ---------- ----------- --------------------------
  * Feb 13, 2013 1543       djohnson     Initial creation
  * Jun 03, 2013 2038       djohnson     Add method to get subscription retrievals by provider, dataset, and status.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -59,7 +59,7 @@ interface ISubscriptionRetrievalDao extends
      * @return
      */
     List<SubscriptionRetrieval> getByProviderDataSetReferenceTime(
-            String provider, String dataSetName, Calendar baseReferenceTime);
+            String provider, String dataSetName, Date baseReferenceTime);
 
     /**
      * Get by provider and dataset names.

@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.datadelivery.registry;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -54,6 +53,7 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
  * Apr 21, 2014  2887      dhladky      Added shouldScheduleForTime() to interface.
  * Jun 09, 2014  3113      mpduff       Added getRetrievalTimes().
  * Jul 28, 2014  2752      dhladky      Somehow setOwner() got left off the interface.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -344,7 +344,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
      * 
      * @return the valid subscription start Date.
      */
-    Calendar calculateStart(Calendar startConstraint);
+    Date calculateStart(Date startConstraint);
 
     /**
      * Calculate the latest that this subscription is valid based on active
@@ -355,7 +355,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
      * 
      * @return the valid subscription end Date.
      */
-    Calendar calculateEnd(Calendar endConstraint);
+    Date calculateEnd(Date endConstraint);
 
     /**
      * Check if the given value's month/day is in the Subscription's active
@@ -366,7 +366,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
      * 
      * @return true if in the active period; false otherwise
      */
-    boolean inActivePeriodWindow(Calendar time);
+    boolean inActivePeriodWindow(Date time);
 
     /**
      * isNotify flag for subscription.
@@ -749,7 +749,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
      * @param checkCal
      * @return
      */
-    boolean shouldScheduleForTime(Calendar checkCal);
+    boolean shouldScheduleForTime(Date checkCal);
 
     /**
      * Return the retrieval times for the provided plan start/end.
@@ -764,6 +764,6 @@ public interface Subscription<T extends Time, C extends Coverage> extends
      *            SubscriptionUtil instance
      * @return SortedSet of retrieval times
      */
-    SortedSet<Calendar> getRetrievalTimes(Calendar planStart, Calendar planEnd,
+    SortedSet<Date> getRetrievalTimes(Date planStart, Date planEnd,
             List<DataSetMetaData> dsmdList, SubscriptionUtil subUtil);
 }

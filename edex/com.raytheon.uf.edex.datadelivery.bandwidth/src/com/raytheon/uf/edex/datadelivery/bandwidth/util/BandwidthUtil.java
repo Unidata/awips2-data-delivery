@@ -46,6 +46,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * Apr 09, 2014 3012       dhladky     GMT Calendar use.
  * Jun 09, 2014 3113       mpduff      Moved getDataSetAvailablityOffset to SubscriptionUtil.
  * Nov 03, 2014 2414       dhladky     Refactored and moved some BWM methods.
+ * May 27, 2015  4531      dhladky     Remove excessive Calendar references. GMT standard the rest.
  * </pre>
  * 
  * @version 1.0
@@ -91,7 +92,7 @@ public class BandwidthUtil {
      * @return
      */
     public static Calendar now() {
-        Calendar now = TimeUtil.newCalendar();
+        Calendar now = TimeUtil.newGmtCalendar();
         now.set(Calendar.SECOND, 0);
         now.set(Calendar.MILLISECOND, 0);
         return now;
@@ -155,7 +156,7 @@ public class BandwidthUtil {
      *             on error serializing the subscription
      */
     public static BandwidthSubscription getSubscriptionDaoForSubscription(
-            Subscription<?, ?> subscription, Calendar baseReferenceTime) {
+            Subscription<?, ?> subscription, Date baseReferenceTime) {
         BandwidthSubscription dao = new BandwidthSubscription();
 
         dao.setDataSetName(subscription.getDataSetName());
@@ -165,7 +166,7 @@ public class BandwidthUtil {
         dao.setEstimatedSize(subscription.getDataSetSize());
         dao.setRoute(subscription.getRoute());
         dao.setBaseReferenceTime(baseReferenceTime);
-        dao.setCycle(baseReferenceTime.get(Calendar.HOUR_OF_DAY));
+        dao.setCycle(TimeUtil.newGmtCalendar(baseReferenceTime).get(Calendar.HOUR_OF_DAY));
         dao.setPriority(subscription.getPriority());
         dao.setRegistryId(subscription.getId());
         dao.setCheckForDataSetUpdate(subscription.getDataSetType() != DataType.POINT);
@@ -186,9 +187,8 @@ public class BandwidthUtil {
         // Set the fields we need to have..
         dao.setDataSetName(dataSetMetaData.getDataSetName());
         dao.setProviderName(dataSetMetaData.getProviderName());
-        dao.setUpdateTime(BandwidthUtil.now());
-        dao.setDataSetBaseTime(TimeUtil.newGmtCalendar(dataSetMetaData
-                .getDate()));
+        dao.setUpdateTime(BandwidthUtil.now().getTime());
+        dao.setDataSetBaseTime(dataSetMetaData.getDate());
         dao.setUrl(dataSetMetaData.getUrl());
 
         return dao;

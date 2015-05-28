@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import com.raytheon.uf.edex.database.dao.SessionManagedDao;
@@ -37,6 +37,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
  * Feb 13, 2013 1543       djohnson     Initial creation
  * Feb 22, 2013 1543       djohnson     Made public as YAJSW doesn't like Spring exceptions.
  * 4/9/2013     1802       bphillip    Changed to use new query method signatures in SessionManagedDao
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -80,7 +81,7 @@ public class BandwidthDataSetUpdateDao extends
      */
     @Override
     public List<BandwidthDataSetUpdate> getByProviderDataSetReferenceTime(
-            String providerName, String dataSetName, Calendar baseReferenceTime) {
+            String providerName, String dataSetName, Date baseReferenceTime) {
         return query(
                 GET_DATASETMETADATA_BY_PROVIDER_AND_DATASET_AND_BASEREFERENCETIME,
                 "providerName", providerName, "dataSetName", dataSetName,

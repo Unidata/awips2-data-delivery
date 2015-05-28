@@ -20,8 +20,8 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +78,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Feb 03, 2014 2745       mpduff       Don't display fulfilled or cancelled allocations.
  * Nov 03, 2014 2414       dhladky      Better error handling.
  * Feb 02, 2015 4041       dhladky      Changed to set adhoc subs actual baseRefTime
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -203,7 +204,7 @@ public class BandwidthGraphDataAdapter {
                     SubscriptionRetrieval sr = (SubscriptionRetrieval) ba;
                     BandwidthSubscription dao = sr.getBandwidthSubscription();
                     SubscriptionPriority priority = dao.getPriority();
-                    Calendar baseRefTime = ((SubscriptionRetrieval) ba)
+                    Date baseRefTime = ((SubscriptionRetrieval) ba)
                             .getBandwidthSubscription().getBaseReferenceTime();
                     int offset = ((SubscriptionRetrieval) ba)
                             .getDataSetAvailablityDelay();
@@ -251,19 +252,18 @@ public class BandwidthGraphDataAdapter {
 
                         if (dataSetMetaData != null) {
                             // set the actual baseRefTime
-                            baseRefTime = TimeUtil
-                                    .newGmtCalendar(dataSetMetaData.getDate());
+                            baseRefTime = dataSetMetaData.getDate();
                         }
 
                     }
 
                     final long startMillis = sr.getStartTime()
-                            .getTimeInMillis();
-                    final long endMillis = sr.getEndTime().getTimeInMillis();
+                            .getTime();
+                    final long endMillis = sr.getEndTime().getTime();
                     TimeWindowData window = new TimeWindowData(startMillis,
                             endMillis);
                    
-                    window.setBaseTime(baseRefTime.getTimeInMillis());
+                    window.setBaseTime(baseRefTime.getTime());
                     window.setOffset(offset);
                     windowData.addTimeWindow(window);
                 }

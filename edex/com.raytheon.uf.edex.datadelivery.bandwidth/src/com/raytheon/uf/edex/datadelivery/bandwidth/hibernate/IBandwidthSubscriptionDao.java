@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -36,6 +36,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 13, 2013 1543       djohnson     Initial creation
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -54,7 +55,7 @@ interface IBandwidthSubscriptionDao extends
      * @return
      */
     BandwidthSubscription getByRegistryIdReferenceTime(String registryId,
-            Calendar baseReferenceTime);
+            Date baseReferenceTime);
 
     /**
      * Get {@link BandwidthSubscription} instances by the subscription object's
@@ -84,6 +85,6 @@ interface IBandwidthSubscriptionDao extends
      * @return
      */
     List<BandwidthSubscription> getByProviderDataSetReferenceTime(
-            String provider, String dataSetName, Calendar baseReferenceTime);
+            String provider, String dataSetName, Date baseReferenceTime);
 
 }

@@ -157,6 +157,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Jan 15, 2014 3884       dhladky      Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
  * Jan 27, 2014 4041       dhladky      Consolidated time checks for Adhoc creations.
  * Feb 19, 2015 3998       dhladky      Streamlined adhoc subscription processing.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * </pre>
  * 
  * @author dhladky
@@ -473,7 +474,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         case SHOW_DEFERRED:
             StringBuilder sb = new StringBuilder();
             List<BandwidthAllocation> z = bandwidthDao.getDeferred(
-                    requestNetwork, request.getBegin());
+                    requestNetwork, request.getBegin().getTime());
             for (BandwidthAllocation allocation : z) {
                 sb.append(allocation).append("\n");
             }
@@ -628,8 +629,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                                 e1);
             }
 
-            SortedSet<Calendar> retrievalTimes = subscription
-                    .getRetrievalTimes(plan.getPlanStart(), plan.getPlanEnd(),
+            SortedSet<Date> retrievalTimes = subscription
+                    .getRetrievalTimes(plan.getPlanStart().getTime(), plan.getPlanEnd().getTime(),
                             dsmdList, SubscriptionUtil.getInstance());
 
             scheduleSubscriptionForRetrievalTimes(subscription, retrievalTimes);
@@ -696,8 +697,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                                 "Unable to look-up list of DataSetMetData during schedule updating. ",
                                 e1);
             }
-            SortedSet<Calendar> retrievalTimes = subscription
-                    .getRetrievalTimes(plan.getPlanStart(), plan.getPlanEnd(),
+            SortedSet<Date> retrievalTimes = subscription
+                    .getRetrievalTimes(plan.getPlanStart().getTime(), plan.getPlanEnd().getTime(),
                             dsmdList, SubscriptionUtil.getInstance());
             List<BandwidthSubscription> currentBandwidthSubscriptions = bandwidthDao
                     .getBandwidthSubscription(subscription);
@@ -705,7 +706,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             // Added safety checks 
             if (!currentBandwidthSubscriptions.isEmpty() && !retrievalTimes.isEmpty()) {
                 // Get the latest/max scheduled time
-                Calendar max = currentBandwidthSubscriptions.get(0)
+                Date max = currentBandwidthSubscriptions.get(0)
                         .getBaseReferenceTime();
                 for (BandwidthSubscription bs : currentBandwidthSubscriptions) {
                     if (bs.getBaseReferenceTime().after(max)) {
@@ -718,11 +719,12 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                  * increased and remove any retrieval times before the last
                  * scheduled time (max)
                  */
-                max.add(Calendar.MINUTE, 2);
-                Iterator<Calendar> iter = retrievalTimes.iterator();
+                long extraTime = max.getTime() + (TimeUtil.MILLIS_PER_MINUTE * 2);
+                max = new Date(extraTime);
+                Iterator<Date> iter = retrievalTimes.iterator();
                 while (iter.hasNext()) {
-                    Calendar c = iter.next();
-                    if (c.before(max)) {
+                    Date d = iter.next();
+                    if (d.before(max)) {
                         iter.remove();
                     }
                 }
@@ -772,7 +774,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @return the unscheduled subscriptions
      */
     private List<BandwidthAllocation> scheduleSubscriptionForRetrievalTimes(
-            Subscription<T, C> subscription, SortedSet<Calendar> retrievalTimes) {
+            Subscription<T, C> subscription, SortedSet<Date> retrievalTimes) {
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
 
@@ -787,7 +789,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 .newArrayListWithCapacity(numberOfRetrievalTimes);
         statusHandler.info("Scheduling subscription " + subscription.getName());
 
-        for (Calendar retrievalTime : retrievalTimes) {
+        for (Date retrievalTime : retrievalTimes) {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                 statusHandler.info("Scheduling subscription ["
                         + subscription.getName()
@@ -1039,15 +1041,14 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
                 BandwidthSubscription bandwidthSubscription = retrieval
                         .getBandwidthSubscription();
-                Calendar retrievalTime = bandwidthSubscription
+                Date retrievalTime = bandwidthSubscription
                         .getBaseReferenceTime();
-                Calendar startTime = TimeUtil.newGmtCalendar(retrievalTime
-                        .getTime());
+                Calendar startTime = TimeUtil.newGmtCalendar(retrievalTime);
 
                 startTime.add(Calendar.MINUTE,
                         retrieval.getDataSetAvailablityDelay());
                 int maxLatency = retrieval.getSubscriptionLatency();
-                retrieval.setStartTime(startTime);
+                retrieval.setStartTime(startTime.getTime());
 
                 Calendar endTime = TimeUtil.newGmtCalendar();
                 endTime.setTimeInMillis(startTime.getTimeInMillis());
@@ -1061,7 +1062,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 }
 
                 endTime.add(Calendar.MINUTE, maxLatency);
-                retrieval.setEndTime(endTime);
+                retrieval.setEndTime(endTime.getTime());
 
                 // Add SubscriptionRetrieval to the list to schedule..
                 reservations.add(retrieval);
@@ -1174,7 +1175,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         List<BandwidthSubscription> subscriptions = new ArrayList<BandwidthSubscription>();
         // Store the AdhocSubscription with a base time of now..
         subscriptions.add(bandwidthDao.newBandwidthSubscription(subscription,
-                now));
+                now.getTime()));
 
         /**
          * This check allows for retrieval of data older than current for grid.
@@ -1197,10 +1198,10 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                         subscriptions));
 
         for (SubscriptionRetrieval retrieval : retrievals) {
-            retrieval.setStartTime(now);
+            retrieval.setStartTime(now.getTime());
             Calendar endTime = TimeUtil.newCalendar(now);
             endTime.add(Calendar.MINUTE, retrieval.getSubscriptionLatency());
-            retrieval.setEndTime(endTime);
+            retrieval.setEndTime(endTime.getTime());
             // Store the SubscriptionRetrieval - retrievalManager expects
             // the BandwidthAllocations to already be stored.
             bandwidthDao.store(retrieval);
@@ -1275,7 +1276,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     // check for subscription in active period window
                     // check for whether subscription is expired
                     // check if subscription is active
-                    if (subscription.shouldScheduleForTime(nowCalendar)
+                    if (subscription.shouldScheduleForTime(nowCalendar.getTime())
                             && subscription.isActive()) {
                         unscheduled = scheduleAdhoc(adhoc);
 
@@ -1464,15 +1465,15 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             return new Date();
         }
 
-        Calendar latest = null;
+        Date latest = null;
         for (BandwidthAllocation allocation : bandwidthAllocations) {
-            final Calendar endTime = allocation.getEndTime();
+            final Date endTime = allocation.getEndTime();
             if (latest == null || endTime.after(latest)) {
                 latest = endTime;
             }
         }
 
-        return latest.getTime();
+        return latest;
     }
 
    

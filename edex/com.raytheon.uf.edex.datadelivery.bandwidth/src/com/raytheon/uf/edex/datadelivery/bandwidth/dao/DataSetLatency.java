@@ -20,7 +20,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.dao;
 
 import java.io.Serializable;
-import java.util.Calendar;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -50,6 +50,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial version
+ * May 27, 2015  4531      dhladky     Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -66,7 +67,6 @@ public class DataSetLatency implements Comparable<DataSetLatency>,
         IPersistableDataObject<Long>, Serializable,
         IDeepCopyable<DataSetLatency> {
 
-    @SuppressWarnings("unused")
     private static final long serialVersionUID = 713705044221370831L;
 
     @Id
@@ -88,7 +88,7 @@ public class DataSetLatency implements Comparable<DataSetLatency>,
     // BandwidthAllocation/Subscription Base Reference Timestamp (long)
     @Column(name = "basereferencetime")
     @DynamicSerializeElement
-    private Calendar baseReferenceTime;
+    private Date baseReferenceTime;
 
     // private long baseRefTimestamp;
 
@@ -101,7 +101,7 @@ public class DataSetLatency implements Comparable<DataSetLatency>,
     }
 
     public DataSetLatency(String dataSetName, String providerName,
-            int extendedLatency, Calendar baseRefTimestamp) {
+            int extendedLatency, Date baseReferenceTime) {
         this.dataSetName = dataSetName;
         this.providerName = providerName;
         this.extendedLatency = extendedLatency;
@@ -146,25 +146,24 @@ public class DataSetLatency implements Comparable<DataSetLatency>,
         this.extendedLatency = extendedLatency;
     }
 
-    public Calendar getBaseReferenceTime() {
+    public Date getBaseReferenceTime() {
         return this.baseReferenceTime;
     }
 
-    public void setBaseReferenceTime(Calendar baseReferenceTime) {
+    public void setBaseReferenceTime(Date baseReferenceTime) {
         this.baseReferenceTime = baseReferenceTime;
     }
 
     public long getBaseRefTimestamp() {
         if (baseReferenceTime != null) {
-            return (baseReferenceTime.getTimeInMillis());
+            return (baseReferenceTime.getTime());
         }
 
         return (0);
     }
 
     public void setBaseRefTimestamp(long baseRefTimestamp) {
-        this.baseReferenceTime = TimeUtil.newCalendar();
-        this.baseReferenceTime.setTimeInMillis(baseRefTimestamp);
+        this.baseReferenceTime = new Date(baseRefTimestamp);
     }
 
     public long getId() {
@@ -193,7 +192,7 @@ public class DataSetLatency implements Comparable<DataSetLatency>,
         sb.append("] providerName [").append(providerName);
         sb.append("] extendedLatency [").append(extendedLatency);
         sb.append("] baseRefTimestamp [").append(
-                TimeUtil.formatCalendar(this.baseReferenceTime));
+                TimeUtil.formatDate(this.baseReferenceTime));
         sb.append("] ]");
 
         return sb.toString();
@@ -281,7 +280,7 @@ public class DataSetLatency implements Comparable<DataSetLatency>,
     public long getDataSetLatencyValidUntil() {
         long baseRefTimestamp = 0;
         if (this.baseReferenceTime != null) {
-            baseRefTimestamp = this.baseReferenceTime.getTimeInMillis();
+            baseRefTimestamp = this.baseReferenceTime.getTime();
         }
         return (baseRefTimestamp + (extendedLatency * TimeUtil.MILLIS_PER_MINUTE));
     }
