@@ -66,6 +66,7 @@ import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
  * June 17, 2014 3120        dhladky     Initial creation
  * Sept 04, 2014 3121        dhladky     Adjustments to parsing, simulation.
  * Sept 27, 2014 3127        dhladky     Added metaDataID for geographic subsetting.
+ * Apr 27, 2015              dhladky     PDA changed the structure of the file format messages.
  * </pre>
  * 
  * @author dhladky
@@ -159,11 +160,14 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         ImmutableDate idate = null;
         // METADATA ID, unique to each record
         String metaDataID = record.getIdentifier().get(0).getValue().getContent().get(0);
+        System.out.println("metaDataID: "+metaDataID);
         // physical path relative to root provider URL
         String relativeDataURL = record.getTitle().get(0).getValue().getContent().get(0);
+        System.out.println("relativeURL: "+relativeDataURL);
         // metadata URL is the full URL path, (not relative) to the file
         // tack on the root provider URL from the provider connection.
         String metaDataURL = provider.getConnection().getUrl()+relativeDataURL;
+        System.out.println("metaDataURL: "+metaDataURL);
         // append the 
         // set date formatter
         setDateFormat(dateFormat);

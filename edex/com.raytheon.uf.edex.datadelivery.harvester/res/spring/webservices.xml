@@ -22,8 +22,9 @@
 	<!-- Define concrete implementation of the PDA catalog results handler service -->
 	<bean id="PDACatalogServiceResponseHandler"
 		class="com.raytheon.uf.edex.datadelivery.harvester.pda.PDACatalogServiceResponseHandler">
-		<!-- route to drop results too -->
+		<!-- routes to drop results too -->
 		<constructor-arg value="downloadPDACatalogFile" />
+		<constructor-arg value="pdaTransactionProcess" />
 	</bean>
 	
     <!-- PDA SOAP CSW Response Service definition -->

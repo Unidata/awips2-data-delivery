@@ -29,11 +29,11 @@ import java.util.List;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
-import org.apache.commons.io.FileDeleteStrategy;
-
 import net.opengis.cat.csw.v_2_0_2.AbstractRecordType;
 import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
 import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
+
+import org.apache.commons.io.FileDeleteStrategy;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
@@ -63,6 +63,7 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * ------------ ---------- ----------- --------------------------
  * June 13, 2014 3120      dhladky     Initial creation
  * Oct 14, 2014  3127      dhladky     Improved deletion of used files.
+ * Apr 21, 2015  4435      dhladky     PDA transaction processing.
  * 
  * </pre>
  * 
@@ -85,7 +86,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
     public PDAMetaDataHandler(IProviderHandler providerHandler) {
         this.providerHandler = providerHandler;
     }
-
+   
     /**
      * Process PDA metadata records
      * 
@@ -93,7 +94,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
      * @throws IOException 
      */
     @SuppressWarnings("rawtypes")
-    public void process(byte[] bytes) throws IOException {
+    public void processFile(byte[] bytes) throws IOException {
 
         GetRecordsResponseType briefRecords = null;
         String filePath = "unknown";
@@ -151,7 +152,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
         }
 
         if (briefRecords != null) {
-            // grab a parser instance
+            // Make a parser
             PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory.getParser(lastDate);
             // extract brief record(s) and send to parser
             List<JAXBElement<? extends AbstractRecordType>> briefs = briefRecords
@@ -192,6 +193,42 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                         FileDeleteStrategy.FORCE.delete(dir);
                     }
                 }
+            }
+        }
+    }
+    
+    /**
+     * Process PDA transaction based messages
+     * 
+     * @param bytes
+     */
+    @SuppressWarnings("rawtypes")
+    public void processTransaction(byte[] bytes) {
+
+        if (bytes != null) {
+
+            BriefRecordType briefRecord = null;
+            HarvesterConfig config = HarvesterConfigurationManager
+                    .getPDAConfiguration();
+            PDAAgent agent = (PDAAgent) config.getAgent();
+            Provider provider = config.getProvider();
+            @SuppressWarnings("unchecked")
+            IServiceFactory<BriefRecordType, PDAMetaDataParser, Time, Coverage> serviceFactory = ServiceTypeFactory
+                    .retrieveServiceFactory(config.getProvider());
+            Date lastDate = TimeUtil.newGmtCalendar().getTime();
+            
+            // Make a parser
+            PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory.getParser(lastDate);
+
+            try {
+                briefRecord = (BriefRecordType) getJaxbManager()
+                        .unmarshalFromXml(new String(bytes));
+                parser.parseMetaData(provider, agent.getDateFormat(),
+                        briefRecord);
+
+            } catch (Exception e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to process PDA transaction!", e);
             }
         }
     }

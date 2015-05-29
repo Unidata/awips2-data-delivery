@@ -65,6 +65,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Nov 15, 2014 3757       dhladky     General HTTPS configuration
  * Jan 21, 2015 3952       njensen     Updated call to setupCredentials()
  * Jan 26, 2015 3952       njensen     gzip handled by default
+ * May 10, 2015 4435       dhladky     Added keyStore retrieval to interface.
  * 
  * </pre>
  * 
@@ -117,6 +118,18 @@ public class WfsConnectionUtil {
         public boolean isValidateCertificates() {
             // TODO may validate with cert someday.
             return false;
+        }
+
+        @Override
+        public KeyStore getKeystore() {
+            // TODO may submit keys someday.
+            return null;
+        }
+
+        @Override
+        public char[] getKeystorePassword() {
+            // TODO Auto-generated method stub
+            return null;
         }
 
     };
