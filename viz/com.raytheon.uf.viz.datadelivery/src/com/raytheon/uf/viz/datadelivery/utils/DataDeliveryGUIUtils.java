@@ -65,6 +65,7 @@ import com.raytheon.uf.viz.core.VizApp;
  * Jan 25, 2013  1528      djohnson   Subscription priority has moved up in the world to the Subscription class.
  * May 17, 2013  1040      mpduff     Fixed JavaDoc and added tooltip.
  * May 20, 2013  2000      djohnson   Add methods for managing widget listeners.
+ * Jun 01, 2015  2805      dhladky    Dataset Discovery Browser wouldn't close with message box.
  * 
  * </pre>
  * 
@@ -277,7 +278,7 @@ public class DataDeliveryGUIUtils {
      */
     public static int showSettingsHaveChangedPopup(final Shell shell) {
         return DataDeliveryUtils
-                .showMessage(shell, SWT.YES | SWT.NO, "Save Changes?",
+                .showMessageNonCallback(shell, SWT.YES | SWT.NO, "Save Changes?",
                         "Settings have changed.\nAre you sure you want to exit without saving?");
     }
 

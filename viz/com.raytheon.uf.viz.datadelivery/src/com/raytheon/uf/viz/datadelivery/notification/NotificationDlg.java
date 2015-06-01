@@ -110,6 +110,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Mar 18, 2014  2433      mpduff     Implement view by priority check box menus.
  * Aug 18, 2014  2746      ccody      Non-local Subscription changes not updating dialogs
  * May 17, 2015  4047      dhladky    verified non-blocking.
+ * Jun 01, 2015  2805      dhladky    Made highlighted selections work properly through updates.
  * 
  * </pre>
  * 
@@ -876,6 +877,8 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
                                     .getMinimized() == true)) {
                         displayNotificationTip(records);
                     }
+                    
+                    updateFind();
                 }
             }
         });
@@ -993,5 +996,15 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         configManager.saveXml();
 
         tableComp.tableChangedAfterConfigLoad();
+    }
+    
+    /**
+     * Update the find selections for the table. Uses the last button clicked
+     * and preserves selection flags: caseFlag, excludeFlag, etc.
+     */
+    private void updateFind() {
+        if (fnd != null && !fnd.isDisposed() && fnd.isOpen()) {
+            fnd.tableRefresh();
+        }
     }
 }

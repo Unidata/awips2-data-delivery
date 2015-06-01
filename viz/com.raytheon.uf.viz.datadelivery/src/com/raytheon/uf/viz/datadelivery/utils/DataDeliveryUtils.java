@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.auth.resp.SuccessfulExecution;
@@ -100,6 +101,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jan 05, 2015 3950       dhladky      Added string constants for filtering notification records.
  * Apr 30, 2015 4047       dhladky      Use non-blocking dialogs.
  * May 17, 2015 4047       dhladky      Improved use of non-blocking dialogs.
+ * Jun 01, 2015  2805      dhladky      Dataset Discovery Browser wouldn't close with message box.
  * </pre>
  * 
  * @author mpduff
@@ -654,6 +656,27 @@ public class DataDeliveryUtils {
         SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle, messageText, style);
         messageDialog.open();
         return 1;
+    }
+    
+    /**
+     * Show a MessageBox without a closeable callback.
+     * 
+     * @param shell
+     *            The parent shell
+     * @param style
+     *            The message box style bits
+     * @param messageTitle
+     *            The message box title
+     * @param messageText
+     *            The message box message
+     * @return The selected return value
+     */
+    public static int showMessageNonCallback(Shell shell, int style, String messageTitle,
+            String messageText) {
+        MessageBox messageDialog = new MessageBox(shell, style);
+        messageDialog.setText(messageTitle);
+        messageDialog.setMessage(messageText);
+        return messageDialog.open();
     }
     
     /**

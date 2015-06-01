@@ -58,6 +58,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Sep 26, 2013   2417      mpduff     Reset the highlight all indices on close.
  * Feb 07, 2014   2453      mpduff     Refactored dialog.
  * Mar 18, 2014   2433      mpduff     Update javadoc.
+ * Jun 01, 2015   2805      dhladky    Made highlighted selections work properly through updates.
  * 
  * </pre>
  * 
@@ -108,6 +109,11 @@ public class FindDlg extends CaveSWTDialog {
 
     /** Exclude search flag */
     private boolean excludeFlag = false;
+    
+    /** Keeps track of the last button pushed.
+     * Determines what is done upon a table refresh.
+     */
+    private String lastButtonPushed = null;
 
     /**
      * Constructor.
@@ -307,6 +313,7 @@ public class FindDlg extends CaveSWTDialog {
         boolean exists = false;
         boolean hitEnd = false;
         selectedIndex = callback.getCurrentSelectionIndex() + 1;
+        lastButtonPushed = findBtn.getText();
 
         while (continueSearch) {
             if (selectedIndex < itemCount) {
@@ -370,6 +377,7 @@ public class FindDlg extends CaveSWTDialog {
         excludeFlag = exclusionBtn.getSelection();
 
         List<NotificationRowData> items = new ArrayList<NotificationRowData>();
+        lastButtonPushed = highlightBtn.getText();
 
         if (filteredTableList != null) {
             for (int i = 0; i < filteredTableList.getSize(); i++) {
@@ -418,5 +426,18 @@ public class FindDlg extends CaveSWTDialog {
             }
         }
         return matchFound;
+    }
+
+    /**
+     * On refresh, re-click the find selection buttons
+     */
+    public void tableRefresh() {
+        if (lastButtonPushed != null) {
+            if (lastButtonPushed.equals(highlightBtn.getText())) {
+                handleHighlightBtn();
+            } else if (lastButtonPushed.equals(findBtn.getText())) {
+                handleFindBtn();
+            }
+        }
     }
 }
