@@ -1,7 +1,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.dao;
 
 import java.io.Serializable;
-import java.util.Calendar;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,7 +17,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import com.raytheon.uf.common.dataplugin.persist.IPersistableDataObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.IDeepCopyable;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
@@ -34,6 +33,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Oct 19, 2012 0726       djohnson     Added SW history.
  * Jun 24, 2013 2106       djohnson     Add copy constructor.
  * Oct 30, 2013  2448      dhladky      Moved methods to TimeUtil.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -52,7 +52,7 @@ public class BandwidthDataSetUpdate implements IPersistableDataObject<Long>,
 
     @Column
     @DynamicSerializeElement
-    private Calendar dataSetBaseTime;
+    private Date dataSetBaseTime;
 
     @Id
     @Column(name = "identifier")
@@ -62,7 +62,7 @@ public class BandwidthDataSetUpdate implements IPersistableDataObject<Long>,
 
     @Column
     @DynamicSerializeElement
-    private Calendar updateTime;
+    private Date updateTime;
 
     @Column
     @DynamicSerializeElement
@@ -93,19 +93,19 @@ public class BandwidthDataSetUpdate implements IPersistableDataObject<Long>,
      *            the instance to copy
      */
     public BandwidthDataSetUpdate(BandwidthDataSetUpdate bandwidthDataSetUpdate) {
-        this.dataSetBaseTime = TimeUtil.newCalendar(bandwidthDataSetUpdate.dataSetBaseTime);
+        this.dataSetBaseTime = new Date(bandwidthDataSetUpdate.dataSetBaseTime.getTime());
         this.dataSetName = bandwidthDataSetUpdate.dataSetName;
         this.dataSetType = bandwidthDataSetUpdate.dataSetType;
         this.id = bandwidthDataSetUpdate.id;
         this.providerName = bandwidthDataSetUpdate.providerName;
-        this.updateTime = TimeUtil.newCalendar(bandwidthDataSetUpdate.updateTime);
+        this.updateTime = new Date(bandwidthDataSetUpdate.updateTime.getTime());
         this.url = bandwidthDataSetUpdate.url;
     }
 
     /**
      * @return the dataSetBaseTime
      */
-    public Calendar getDataSetBaseTime() {
+    public Date getDataSetBaseTime() {
         return dataSetBaseTime;
     }
 
@@ -141,7 +141,7 @@ public class BandwidthDataSetUpdate implements IPersistableDataObject<Long>,
     /**
      * @return the updateTime
      */
-    public Calendar getUpdateTime() {
+    public Date getUpdateTime() {
         return updateTime;
     }
 
@@ -149,7 +149,7 @@ public class BandwidthDataSetUpdate implements IPersistableDataObject<Long>,
      * @param dataSetBaseTime
      *            the dataSetBaseTime to set
      */
-    public void setDataSetBaseTime(Calendar dataSetBaseTime) {
+    public void setDataSetBaseTime(Date dataSetBaseTime) {
         this.dataSetBaseTime = dataSetBaseTime;
     }
 
@@ -204,7 +204,7 @@ public class BandwidthDataSetUpdate implements IPersistableDataObject<Long>,
      * @param updateTime
      *            the updateTime to set
      */
-    public void setUpdateTime(Calendar updateTime) {
+    public void setUpdateTime(Date updateTime) {
         this.updateTime = updateTime;
     }
 

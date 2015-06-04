@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -68,6 +67,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Oct 2,  2013 1797       dhladky      Generics
  * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
  * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -145,7 +145,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      */
     @Override
     public List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(
-            String providerName, String dataSetName, Calendar baseReferenceTime) {
+            String providerName, String dataSetName, Date baseReferenceTime) {
         return bandwidthDataSetUpdateDao.getByProviderDataSetReferenceTime(
                 providerName, dataSetName, baseReferenceTime);
     }
@@ -155,7 +155,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      */
     @Override
     public List<BandwidthAllocation> getDeferred(Network network,
-            Calendar endTime) {
+            Date endTime) {
         return bandwidthAllocationDao.getDeferred(network, endTime);
     }
 
@@ -182,7 +182,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      */
     @Override
     public BandwidthSubscription getBandwidthSubscription(String registryId,
-            Calendar baseReferenceTime) {
+            Date baseReferenceTime) {
         return bandwidthSubscriptionDao.getByRegistryIdReferenceTime(
                 registryId, baseReferenceTime);
     }
@@ -218,7 +218,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals(
-            String provider, String dataSetName, Calendar baseReferenceTime) {
+            String provider, String dataSetName, Date baseReferenceTime) {
         return subscriptionRetrievalDao.getByProviderDataSetReferenceTime(
                 provider, dataSetName, baseReferenceTime);
     }
@@ -268,7 +268,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptions(
-            String provider, String dataSetName, Calendar baseReferenceTime) {
+            String provider, String dataSetName, Date baseReferenceTime) {
         return bandwidthSubscriptionDao.getByProviderDataSetReferenceTime(
                 provider, dataSetName, baseReferenceTime);
     }
@@ -292,7 +292,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      */
     @Override
     public BandwidthSubscription newBandwidthSubscription(
-            Subscription<T, C> subscription, Calendar baseReferenceTime) {
+            Subscription<T, C> subscription, Date baseReferenceTime) {
         BandwidthSubscription entity = BandwidthUtil
                 .getSubscriptionDaoForSubscription(subscription,
                         baseReferenceTime);
@@ -552,8 +552,8 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                         @Override
                         public int compare(BandwidthSubscription o1,
                                 BandwidthSubscription o2) {
-                            Calendar date1 = o1.getBaseReferenceTime();
-                            Calendar date2 = o2.getBaseReferenceTime();
+                            Date date1 = o1.getBaseReferenceTime();
+                            Date date2 = o2.getBaseReferenceTime();
                             if (date1.before(date2)) {
                                 return -1;
                             } else if (date1.after(date2)) {
@@ -571,8 +571,8 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                         @Override
                         public int compare(SubscriptionRetrieval o1,
                                 SubscriptionRetrieval o2) {
-                            Calendar date1 = o1.getStartTime();
-                            Calendar date2 = o2.getStartTime();
+                            Date date1 = o1.getStartTime();
+                            Date date2 = o2.getStartTime();
                             if (date1.before(date2)) {
                                 return -1;
                             } else if (date1.after(date2)) {
@@ -585,10 +585,10 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                     });
 
             summary.setStartTime(subRetrievalList.get(0).getStartTime()
-                    .getTimeInMillis());
+                    .getTime());
             summary.setEndTime(subRetrievalList
                     .get(subRetrievalList.size() - 1).getEndTime()
-                    .getTimeInMillis());
+                    .getTime());
         }
 
         summary.setDataSize(sub.getDataSetSize());

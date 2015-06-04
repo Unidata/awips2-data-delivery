@@ -1,11 +1,10 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.io.Serializable;
-import java.util.Calendar;
+import java.util.Date;
 
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.IDeepCopyable;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
@@ -25,6 +24,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Jul 11, 2013 2106       djohnson    Use SubscriptionPriority enum.
  * Oct 30, 2013  2448      dhladky     Moved methods to TimeUtil.
  * Dec 02, 2013  2545      mpduff      Set size in bytes.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -47,9 +47,9 @@ public class BandwidthReservation implements Serializable,
 
     private final RetrievalStatus status = RetrievalStatus.RESERVED;
 
-    private Calendar startTime;
+    private Date startTime;
 
-    private Calendar endTime;
+    private Date endTime;
 
     private long bandwidthBucket;
 
@@ -89,12 +89,12 @@ public class BandwidthReservation implements Serializable,
      */
     public BandwidthReservation(BandwidthReservation from) {
         this.bandwidthBucket = from.bandwidthBucket;
-        this.endTime = TimeUtil.newCalendar(from.endTime);
+        this.endTime = new Date(from.endTime.getTime());
         this.id = from.id;
         this.network = from.network;
         this.priority = from.priority;
         this.size = from.size;
-        this.startTime = TimeUtil.newCalendar(from.startTime);
+        this.startTime = new Date(from.startTime.getTime());
     }
 
     @Override
@@ -168,14 +168,14 @@ public class BandwidthReservation implements Serializable,
      * @param startTime
      *            the startTime to set
      */
-    public void setStartTime(Calendar startTime) {
+    public void setStartTime(Date startTime) {
         this.startTime = startTime;
     }
 
     /**
      * @return the startTime
      */
-    public Calendar getStartTime() {
+    public Date getStartTime() {
         return startTime;
     }
 
@@ -183,14 +183,14 @@ public class BandwidthReservation implements Serializable,
      * @param endTime
      *            the endTime to set
      */
-    public void setEndTime(Calendar endTime) {
+    public void setEndTime(Date endTime) {
         this.endTime = endTime;
     }
 
     /**
      * @return the endTime
      */
-    public Calendar getEndTime() {
+    public Date getEndTime() {
         return endTime;
     }
 

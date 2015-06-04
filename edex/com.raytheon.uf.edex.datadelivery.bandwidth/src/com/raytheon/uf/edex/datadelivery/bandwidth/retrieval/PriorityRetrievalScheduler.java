@@ -1,7 +1,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -33,6 +33,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Dec 17, 2013 2636       bgonzale    When adding to buckets, call the constrained method.
  * Feb 14, 2014 2636       mpduff      Clean up logging.
  * Apr 02, 2014  2810      dhladky     Priority sorting of allocations.
+ * May 27, 2015  4531      dhladky     Remove excessive Calendar references.
  * </pre>
  * 
  * @version 1.0
@@ -55,11 +56,11 @@ public class PriorityRetrievalScheduler implements IRetrievalScheduler {
         // to compare the allocations that are not active to the
         // proposed allocation and see if we need to move already
         // scheduled allocations.
-        Calendar startTime = allocation.getStartTime();
-        Calendar endTime = allocation.getEndTime();
+        Date startTime = allocation.getStartTime();
+        Date endTime = allocation.getEndTime();
 
-        long startTimeMillis = startTime.getTimeInMillis();
-        long endTimeMillis = endTime.getTimeInMillis();
+        long startTimeMillis = startTime.getTime();
+        long endTimeMillis = endTime.getTime();
 
         if (startTimeMillis > endTimeMillis) {
             throw new IllegalArgumentException(String.format(

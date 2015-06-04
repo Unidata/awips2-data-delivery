@@ -1,7 +1,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.dao;
 
 import java.io.Serializable;
-import java.util.Calendar;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -18,7 +18,6 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
 import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.IDeepCopyable;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
@@ -38,6 +37,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Jun 24, 2013 2106       djohnson     Add copy constructor.
  * Jul 11, 2013 2106       djohnson     Use SubscriptionPriority enum, remove the Subscription.
  * Oct 30, 2013  2448      dhladky      Moved methods to TimeUtil.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -86,7 +86,7 @@ public class BandwidthSubscription extends PersistableDataObject<Long>
 
     @DynamicSerializeElement
     @Column(nullable = false)
-    private Calendar baseReferenceTime;
+    private Date baseReferenceTime;
 
     @DynamicSerializeElement
     @Column(nullable = false)
@@ -117,8 +117,7 @@ public class BandwidthSubscription extends PersistableDataObject<Long>
      * @param bandwidthSubscription
      */
     public BandwidthSubscription(BandwidthSubscription bandwidthSubscription) {
-        this.baseReferenceTime = TimeUtil.newCalendar(bandwidthSubscription
-                .getBaseReferenceTime());
+        this.baseReferenceTime = bandwidthSubscription.getBaseReferenceTime();
         this.checkForDataSetUpdate = bandwidthSubscription.checkForDataSetUpdate;
         this.cycle = bandwidthSubscription.cycle;
         this.dataSetName = bandwidthSubscription.dataSetName;
@@ -245,11 +244,11 @@ public class BandwidthSubscription extends PersistableDataObject<Long>
         return name;
     }
 
-    public void setBaseReferenceTime(Calendar baseReferenceTime) {
+    public void setBaseReferenceTime(Date baseReferenceTime) {
         this.baseReferenceTime = baseReferenceTime;
     }
 
-    public Calendar getBaseReferenceTime() {
+    public Date getBaseReferenceTime() {
         return baseReferenceTime;
     }
 

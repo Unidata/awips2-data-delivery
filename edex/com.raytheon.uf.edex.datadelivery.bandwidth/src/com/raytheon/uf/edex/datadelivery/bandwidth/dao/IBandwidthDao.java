@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.dao;
 
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -52,6 +51,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Jun 24, 2013 2106       djohnson     Add more methods.
  * Jul 18, 2013 1653       mpduff       Added getSubscriptionStatusSummary.
  * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -127,7 +127,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      *         providerName, dataSetName and baseReferenceTime.
      */
     List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(String providerName,
-            String dataSetName, Calendar baseReferenceTime);
+            String dataSetName, Date baseReferenceTime);
 
     /**
      * Get BandwidthAllocations with a status of
@@ -136,7 +136,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      * @return A List of BandwidthAllocations that have a status of
      *         {@link RetrievalStatus.DEFERRED}.
      */
-    List<BandwidthAllocation> getDeferred(Network network, Calendar endTime);
+    List<BandwidthAllocation> getDeferred(Network network, Date endTime);
 
     /**
      * Get a BandwidthSubscription.
@@ -165,7 +165,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      *         exists.
      */
     BandwidthSubscription getBandwidthSubscription(String registryId,
-            Calendar baseReferenceTime);
+            Date baseReferenceTime);
 
     /**
      * Get BandwidthSubscriptions.
@@ -222,7 +222,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      *         specified time.
      */
     List<SubscriptionRetrieval> getSubscriptionRetrievals(String provider,
-            String dataSetName, Calendar baseReferenceTime);
+            String dataSetName, Date baseReferenceTime);
 
     /**
      * Get all the subscription retrievals for the specified dataset, with the
@@ -312,7 +312,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      *         specified time.
      */
     List<BandwidthSubscription> getBandwidthSubscriptions(String provider,
-            String dataSetName, Calendar baseReferenceTime);
+            String dataSetName, Date baseReferenceTime);
 
     /**
      * Create a new BandwidthDataSetUpdate Object based on the dataSetMetaData
@@ -342,7 +342,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      * @return A newly created and persisted BandwidthSubscription Object.
      */
     BandwidthSubscription newBandwidthSubscription(
-            Subscription<T, C> subscription, Calendar baseReferenceTime);
+            Subscription<T, C> subscription, Date baseReferenceTime);
 
     /**
      * Get a SubscriptionRetrievals.

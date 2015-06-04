@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import com.raytheon.uf.edex.database.dao.ISessionManagedDao;
@@ -35,6 +35,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 13, 2013 1543       djohnson     Initial creation
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -65,6 +66,6 @@ interface IBandwidthDataSetUpdateDao extends
      * @return
      */
     List<BandwidthDataSetUpdate> getByProviderDataSetReferenceTime(
-            String providerName, String dataSetName, Calendar baseReferenceTime);
+            String providerName, String dataSetName, Date baseReferenceTime);
 
 }

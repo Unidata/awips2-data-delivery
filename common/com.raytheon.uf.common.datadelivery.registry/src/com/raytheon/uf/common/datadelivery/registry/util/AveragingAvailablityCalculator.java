@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.datadelivery.registry.util;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,7 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
-import com.raytheon.uf.common.status.StatusHandler;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 
 /**
@@ -49,6 +50,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Jan 06, 2014 2636       mpduff       Changed how offset is determined.
  * May 15, 2014   3113     mpduff      Calculate availability offset for gridded data sets without cycles.
  * 8/29/2014    3446       bphillip     Changed cache timeout
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -93,7 +95,7 @@ public class AveragingAvailablityCalculator {
      * @throws RegistryHandlerException
      */
     public int getDataSetAvailablityOffset(Subscription subscription,
-            Calendar referenceTime) throws RegistryHandlerException {
+            Date referenceTime) throws RegistryHandlerException {
         int offset = 0;
         NameProviderKey key = new NameProviderKey(
                 subscription.getDataSetName(), subscription.getProvider());
@@ -125,8 +127,9 @@ public class AveragingAvailablityCalculator {
      * @return The offset in minutes
      */
     private int getOffsetForGrid(List<DataSetMetaData> records,
-            Calendar referenceTime) {
-        int cycle = referenceTime.get(Calendar.HOUR_OF_DAY);
+            Date referenceTime) {
+        
+        int cycle = TimeUtil.newGmtCalendar(referenceTime).get(Calendar.HOUR_OF_DAY);
         int count = 0;
         int total = 0;
         for (DataSetMetaData md : records) {

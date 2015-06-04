@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
-import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Network;
@@ -39,6 +39,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Feb 13, 2013 1543       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Add ability to retrieve by network and start time.
  * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
+ * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
  * 
  * </pre>
  * 
@@ -103,6 +104,6 @@ interface IBaseBandwidthAllocationDao<ENTITY extends BandwidthAllocation>
      * @param endTime
      * @return
      */
-    List<ENTITY> getDeferred(Network network, Calendar endTime);
+    List<ENTITY> getDeferred(Network network, Date endTime);
 
 }

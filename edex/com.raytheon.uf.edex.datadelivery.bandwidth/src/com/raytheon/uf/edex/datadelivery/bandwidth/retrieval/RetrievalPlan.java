@@ -53,6 +53,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Jan 08, 2014 2615       bgonzale     Log registry bandwidth calculation errors.
  * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
  * Mar 10, 2015  3950      dhladky      Log bandwidth value in init.
+ * May 27, 2015  4531      dhladky      GMT standard all Calendar refs.
  * 
  * </pre>
  * 
@@ -129,7 +130,7 @@ public class RetrievalPlan {
             long bucketMillis = bucketMinutes * TimeUtil.MILLIS_PER_MINUTE;
             Calendar currentBucket = BandwidthUtil.now();
             planStart = BandwidthUtil.now();
-            planEnd = TimeUtil.newCalendar(planStart);
+            planEnd = TimeUtil.newGmtCalendar(planStart.getTime());
             planEnd.add(Calendar.DAY_OF_YEAR, planDays);
             long currentMillis = currentBucket.getTimeInMillis();
             long planEndMillis = planEnd.getTimeInMillis();
@@ -223,7 +224,7 @@ public class RetrievalPlan {
         // The end of the plan should always be planDays from
         // now...
         Calendar currentBucket = BandwidthUtil.now();
-        Calendar newEndOfPlan = TimeUtil.newCalendar(currentBucket);
+        Calendar newEndOfPlan = TimeUtil.newGmtCalendar(currentBucket.getTime());
         newEndOfPlan.add(Calendar.DAY_OF_YEAR, planDays);
 
         resize(currentBucket, newEndOfPlan);
@@ -507,13 +508,13 @@ public class RetrievalPlan {
     public Calendar getPlanEnd() {
         // Don't want an inadvertent change to plan end, so make a copy of the
         // Calendar Object and return that.
-        return TimeUtil.newCalendar(planEnd);
+        return TimeUtil.newGmtCalendar(planEnd.getTime());
     }
 
     public Calendar getPlanStart() {
         // Don't want an inadvertent change to plan start, so make a copy of the
         // Calendar Object and return that.
-        return TimeUtil.newCalendar(planStart);
+        return TimeUtil.newGmtCalendar(planStart.getTime());
     }
 
     /**
@@ -738,8 +739,8 @@ public class RetrievalPlan {
         this.bucketMinutes = fromPlan.bucketMinutes;
         this.bytesPerBucket = fromPlan.bytesPerBucket;
         this.planDays = fromPlan.planDays;
-        this.planEnd = TimeUtil.newCalendar(fromPlan.planEnd);
-        this.planStart = TimeUtil.newCalendar(fromPlan.planStart);
+        this.planEnd = TimeUtil.newGmtCalendar(fromPlan.planEnd.getTime());
+        this.planStart = TimeUtil.newGmtCalendar(fromPlan.planStart.getTime());
         this.requestMap.clear();
         this.requestMap.putAll(fromPlan.requestMap);
         this.associator.copyState(fromPlan.associator);
