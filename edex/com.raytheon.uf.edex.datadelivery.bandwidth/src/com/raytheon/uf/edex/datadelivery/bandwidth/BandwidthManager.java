@@ -158,6 +158,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Jan 27, 2014 4041       dhladky      Consolidated time checks for Adhoc creations.
  * Feb 19, 2015 3998       dhladky      Streamlined adhoc subscription processing.
  * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * Jun 09, 2015 4047       dhladky      Performance improvement on startup, initial startup scheduling async now.
  * </pre>
  * 
  * @author dhladky
@@ -540,14 +541,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         Set<BandwidthAllocation> unscheduledAllocations = new HashSet<BandwidthAllocation>();
         Map<String, SubscriptionRequestEvent> subscriptionEventsMap = new HashMap<String, SubscriptionRequestEvent>();
 
-        // Order list by Subscription Priority
-        // We want highest priority subscriptions scheduled first.
-        List<Subscription<T, C>> subscriptions = new ArrayList<Subscription<T, C>>(
-                insubscriptions.size());
-        subscriptions.addAll(insubscriptions);
-        Collections.sort(subscriptions);
-
-        for (Subscription<T, C> subscription : subscriptions) {
+        for (Subscription<T, C> subscription : orderSubscriptionsByPriority(insubscriptions)) {
 
             List<BandwidthAllocation> unscheduled = subscriptionUpdated(subscription);
             unscheduledAllocations.addAll(unscheduled);
@@ -1361,8 +1355,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             // First see if BandwidthManager has seen the subscription before.
             List<BandwidthSubscription> bandwidthSubscriptions = bandwidthDao
                     .getBandwidthSubscription(subscription);
-            statusHandler.info("Subscription: "+subscription.getName()+" status: "+subscription.getStatus().name());
-            
+                       
             // If BandwidthManager does not know about the subscription, and
             // it's active, attempt to add it..
             if (bandwidthSubscriptions.isEmpty()
@@ -1775,5 +1768,23 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     protected abstract void resetBandwidthManager(Network requestNetwork,
             String resetReasonMessage);
+    
+
+    /**
+     * Order list by Subscriptions Priority
+     * We want highest priority subscriptions scheduled first.
+     * @param insubscriptions
+     * @return
+     */
+    protected List<Subscription<T, C>> orderSubscriptionsByPriority(
+            List<Subscription<T, C>> insubscriptions) {
+
+        List<Subscription<T, C>> subscriptions = new ArrayList<Subscription<T, C>>(
+                insubscriptions.size());
+        subscriptions.addAll(insubscriptions);
+        Collections.sort(subscriptions);
+
+        return subscriptions;
+    }
     
 }

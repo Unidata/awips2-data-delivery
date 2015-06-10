@@ -40,6 +40,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Feb 06, 2013 1543       djohnson     Changes to correspond with EventBus changes.
  * May 28, 2013 1650       djohnson     Changes to match functionality in general event bus handling.
  * Jul 09, 2013 2106       djohnson     No Spring required to get thread pool sizes, remove subscriptionBus.
+ * Jun 09, 2015 4047       dhladky      Performance improvement on startup, brought back subscription bus.
  * 
  * </pre>
  * 
@@ -50,22 +51,27 @@ public class BandwidthAsyncEventBusFactory implements BandwidthEventBusFactory {
     private final AsyncEventBus dataSetBus;
 
     private final AsyncEventBus retrievalBus;
+    
+    private final AsyncEventBus subscriptionBus;
 
     public BandwidthAsyncEventBusFactory() {
         BandwidthEventBusConfig config = new BandwidthEventBusConfig();
 
         final int dataSetMetaDataPoolSize = config.getDataSetMetaDataPoolSize();
         final int retrievalPoolSize = config.getRetrievalPoolSize();
+        final int subscriptionPoolSize = config.getSubscriptionPoolSize();
 
         UFStatus.getHandler(BandwidthAsyncEventBusFactory.class)
                 .info(String
-                        .format("Creating event bus with dataSetMetaDataPoolSize [%s] retrievalPoolSize [%s].",
-                                dataSetMetaDataPoolSize, retrievalPoolSize));
+                        .format("Creating event bus with dataSetMetaDataPoolSize [%s] retrievalPoolSize [%s] subscriptionPoolSize [%s].",
+                                dataSetMetaDataPoolSize, retrievalPoolSize, subscriptionPoolSize));
 
         dataSetBus = new AsyncEventBus(
                 Executors.newFixedThreadPool(dataSetMetaDataPoolSize));
         retrievalBus = new AsyncEventBus(
                 Executors.newFixedThreadPool(retrievalPoolSize));
+        subscriptionBus = new AsyncEventBus(
+                Executors.newFixedThreadPool(subscriptionPoolSize));
     }
 
     /**
@@ -83,13 +89,21 @@ public class BandwidthAsyncEventBusFactory implements BandwidthEventBusFactory {
     public EventBus getRetrievalBus() {
         return retrievalBus;
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public EventBus getSubscriptionBus() {
+        return subscriptionBus;
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
     public List<EventBus> getEventBuses() {
-        return Arrays.<EventBus> asList(dataSetBus, retrievalBus);
+        return Arrays.<EventBus> asList(dataSetBus, retrievalBus, subscriptionBus);
     }
 
 }

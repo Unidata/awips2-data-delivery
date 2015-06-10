@@ -11,6 +11,7 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.notification;
  * ------------ ---------- ----------- --------------------------
  * Jul 3, 2012  0726      jspinks     Initial creation
  * Jul 09, 2013 2106      djohnson    No Spring required to get thread pool sizes, remove subscriptionBus.
+ * Jun 09, 2015 4047       dhladky    Performance improvement on startup, brought back subscription bus.
  * 
  * </pre>
  * 
@@ -24,7 +25,11 @@ public class BandwidthEventBusConfig {
             "bandwidth.dataSetMetaDataPoolSize", 2);
 
     private static final int retrievalPoolSize = Integer.getInteger(
-            "bandwidth.retrievalPoolSize", 3);
+            "bandwidth.retrievalPoolSize", 4);
+    
+    // Set reasonable default values
+    private static final int subscriptionPoolSize = Integer.getInteger(
+            "bandwidth.subscriptiontionPoolSize", 2);
 
     /**
      * Get attribute dataSetMetaDataPoolSize.
@@ -42,5 +47,9 @@ public class BandwidthEventBusConfig {
      */
     public int getRetrievalPoolSize() {
         return retrievalPoolSize;
+    }
+    
+    public int getSubscriptionPoolSize() {
+        return subscriptionPoolSize;
     }
 }

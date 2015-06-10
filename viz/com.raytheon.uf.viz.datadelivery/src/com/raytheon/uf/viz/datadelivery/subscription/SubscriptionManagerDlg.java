@@ -161,6 +161,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jan 30, 2015  2746      dhladky    Special shared sub delete handling.
  * Mar 20, 2015  2894      dhladky    Revisisted consistency in appliying default config.
  * May 17, 2015  4047      dhladky    verified non-blocking.
+ * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
  * 
  * </pre>
  * 
@@ -1188,9 +1189,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * @param activate
      *            Flag to activate (true) deactivate (false).
      */
+    @SuppressWarnings("rawtypes")
     private void handleActivateDeactivate(boolean activate) {
-        getShell().setCursor(getDisplay().getSystemCursor(SWT.CURSOR_WAIT));
-
+                        
         // Check for activate premissions
         final String permission = DataDeliveryPermission.SUBSCRIPTION_ACTIVATE
                 .toString();
@@ -1200,6 +1201,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         final String msg = username + " is not authorized to "
                 + ((activate) ? "Activate" : "Deactivate")
                 + " Subscriptions\nPermission: " + permission;
+        final boolean factivate = activate;
 
         try {
             if (DataDeliveryServices.getPermissionsService()
@@ -1215,9 +1217,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         return;
                     }
 
-                    final String actionText = (activate) ? "activate"
+                    final String actionText = (factivate) ? "activate"
                             : "deactivate";
-                    IForceApplyPromptDisplayText forceApplyPromptDisplayText = new CancelForceApplyAndIncreaseLatencyDisplayText(
+                    final IForceApplyPromptDisplayText forceApplyPromptDisplayText = new CancelForceApplyAndIncreaseLatencyDisplayText(
                             actionText, getShell());
 
                     for (int i = 0; i < selectionIndices.length; i++) {
@@ -1227,46 +1229,84 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         if (rowData == null) {
                             continue;
                         }
-                        Subscription sub = rowData.getSubscription();
+                        final Subscription sub = rowData.getSubscription();
                         if (activate) {
                             sub.activate();
                         } else {
                             sub.deactivate();
                         }
 
-                        try {
-                            SubscriptionServiceResult response = subscriptionService
-                                    .update(username, sub,
-                                            forceApplyPromptDisplayText);
-                            if (response.hasMessageToDisplay()) {
-                                DataDeliveryUtils.showMessage(getShell(),
-                                        SWT.OK, sub.getName() + " Activated",
-                                        response.getMessage());
-                            }
-
-                            if (!response.isAllowFurtherEditing()) {
-                                if (activate) {
-                                    subscriptionNotificationService
-                                            .sendSubscriptionActivatedNotification(
-                                                    sub, username);
-                                } else {
-                                    subscriptionNotificationService
-                                            .sendSubscriptionDeactivatedNotification(
-                                                    sub, username);
+                        Job job = new Job(
+                                "Activating/De-activating Subscriptions...") {
+                            @Override
+                            protected IStatus run(IProgressMonitor monitor) {
+                                DataDeliveryGUIUtils.markBusyInUIThread(shell);
+                                SubscriptionServiceResult response = null;
+                                
+                                try {
+                                    response = subscriptionService
+                                        .update(username, sub,
+                                                forceApplyPromptDisplayText);
+                                } catch (RegistryHandlerException re) {
+                                    statusHandler.error("Can't activate/deactivate subscription: "+sub.getName(), re);
                                 }
+                                
+                                final SubscriptionServiceResult fresponse = response;
+
+                                if (!response.isAllowFurtherEditing()) {
+                                    if (factivate) {
+                                        subscriptionNotificationService
+                                                .sendSubscriptionActivatedNotification(
+                                                        sub, username);
+                                    } else {
+                                        subscriptionNotificationService
+                                                .sendSubscriptionDeactivatedNotification(
+                                                        sub, username);
+                                    }
+                                }
+                                
+                
+                                if (response.hasMessageToDisplay()) {
+                                    VizApp.runAsync(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            DataDeliveryUtils.showMessage(
+                                                    shell, SWT.OK,
+                                                    sub.getName()
+                                                            + " Activated",
+                                                            fresponse.getMessage());
+                                            handleRefresh();
+                                        }
+                                    });
+                                }
+
+                                return Status.OK_STATUS;
                             }
-                        } catch (RegistryHandlerException e) {
-                            statusHandler.handle(Priority.PROBLEM,
-                                    "Error processing request.", e);
-                        }
+                        };
+                        job.addJobChangeListener(new JobChangeAdapter() {
+                            @Override
+                            public void done(IJobChangeEvent event) {
+                                VizApp.runAsync(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (isDisposed()) {
+                                            return;
+                                        }
+                                        handleRefresh();
+                                    }
+                                });
+
+                                DataDeliveryGUIUtils
+                                        .markNotBusyInUIThread(shell);
+                            }
+                        });
+                        job.schedule();
                     }
                 }
             }
         } catch (AuthException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
-
-        getShell().setCursor(null);
     }
 
     /**

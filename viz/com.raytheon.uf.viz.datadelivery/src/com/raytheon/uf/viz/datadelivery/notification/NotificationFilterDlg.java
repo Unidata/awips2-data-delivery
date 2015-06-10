@@ -39,10 +39,8 @@ import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableChange;
 import com.raytheon.uf.viz.datadelivery.notification.PriorityImages.Priority;
-import com.raytheon.uf.viz.datadelivery.notification.xml.MessageLoadXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationFilterXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.UserFilterXML;
-import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialogBase;
 import com.raytheon.viz.ui.widgets.duallist.DualList;
 import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
@@ -63,6 +61,7 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * Sep 27, 2013  #2419     lvenable   Update code to reflect changes made in
  *                                    the dual list.
  * Oct 03, 2013  2375      mpduff     Add an apply button.
+ * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
  * 
  * </pre>
  * 
@@ -83,9 +82,12 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
 
     /** DualList object */
     private DualList subDualList;
-
-    /** Notification handler */
-    private final NotificationHandler handler;
+    
+    /** user group **/
+    private Group userGroup;
+    
+    /** subscription group **/
+    private Group subGroup;
 
     /** Currently logged in user */
     String currentUser = LocalizationManager.getInstance().getCurrentUser();
@@ -96,6 +98,9 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
 
     /** Callback to NotificationDialog */
     private final ITableChange callback;
+    
+    /** list of notifications available **/
+    private List<NotificationRecord> notificationList;
 
     /**
      * Constructor.
@@ -105,11 +110,11 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
      * @param callback
      *            ITableChange callback
      */
-    public NotificationFilterDlg(Shell shell, ITableChange callback) {
-        super(shell, CAVE.INDEPENDENT_SHELL);
+    public NotificationFilterDlg(Shell shell, ITableChange callback, List<NotificationRecord> notificationList) {
+        super(shell, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText("Notification Filter Settings");
-        handler = new NotificationHandler();
         this.callback = callback;
+        this.notificationList = notificationList;
 
         LocalizationManager.getInstance().getCurrentUser();
     }
@@ -133,14 +138,17 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
      */
     @Override
     protected void initializeComponents(Shell shell) {
-
+                
         createUserGroup();
+       
         createSubscriptionGroup();
+        
         createPriorityGroup();
 
         createButtons();
 
         filterByPriority();
+
     }
 
     /**
@@ -151,7 +159,7 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         GridLayout gl = new GridLayout(1, false);
 
-        Group userGroup = new Group(shell, SWT.NONE);
+        userGroup = new Group(shell, SWT.NONE);
         userGroup.setLayout(gl);
         userGroup.setText(" Filter by User ");
         userGroup.setToolTipText("Select users to be visible in the table");
@@ -161,7 +169,7 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         topComp.setLayout(gl);
         topComp.setLayoutData(gd);
 
-        boolean selfInclude = configManager.getFilterXml().getUserFilterXml()
+        final boolean selfInclude = configManager.getFilterXml().getUserFilterXml()
                 .isSelfInclude();
 
         // Always include currently logged in user check box
@@ -221,21 +229,13 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
 
         gl = new GridLayout(3, false);
 
-        List<NotificationRecord> notificationList = null;
-
-        // Retrieve data from db
-        MessageLoadXML messageLoad = new MessageLoadXML();
-        messageLoad.setLoadAllMessages(true);
-        notificationList = handler.intialLoad(messageLoad, null);
-
-        if (notificationList == null) {
-            return;
-        }
-
         ArrayList<String> fullList = new ArrayList<String>();
 
-        // Grab the usernames of each record in the table and add them to the
-        // fullList
+        /**
+         * Grab the usernames of each record in the table and add them to the
+         * fullList
+         * 
+         */
         for (NotificationRecord record : notificationList) {
 
             if (!fullList.contains(record.getUsername())
@@ -255,7 +255,9 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         ArrayList<String> selectedList = xml.getUserFilterXml().getUserList();
         ArrayList<String> selectedListFinal = new ArrayList<String>();
 
-        // Check if everything in the selected list is still in the db
+        /*
+         * Check if everything in the selected list is still in the db
+         */
         for (String s : selectedList) {
 
             if (fullList.toString().contains(s)) {
@@ -272,13 +274,6 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         }
 
         // Create the user dual list
-        DualListConfig dualConfig = new DualListConfig();
-        dualConfig.setListHeight(120);
-        dualConfig.setListWidth(125);
-        dualConfig.setShowUpDownBtns(false);
-        dualConfig.setIncludeList(includeItems);
-        dualConfig.setAvailableListLabel("Available Users:");
-        dualConfig.setSelectedListLabel("Selected Users:");
 
         if (alwaysIncludeMeBtn.getSelection()
                 && !selectedListFinal.contains(currentUser)) {
@@ -286,11 +281,17 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         }
 
         // Set the available and selected lists
+        DualListConfig dualConfig = new DualListConfig();
+        dualConfig.setListHeight(120);
+        dualConfig.setListWidth(125);
+        dualConfig.setShowUpDownBtns(false);
+        dualConfig.setIncludeList(includeItems);
+        dualConfig.setAvailableListLabel("Available Users:");
+        dualConfig.setSelectedListLabel("Selected Users:");
         dualConfig.setFullList(fullList);
         dualConfig.setSelectedList(selectedListFinal);
 
         userDualList = new DualList(userGroup, SWT.NONE, dualConfig);
-
     }
 
     /**
@@ -331,7 +332,7 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         GridLayout gl = new GridLayout(1, false);
 
-        Group subGroup = new Group(shell, SWT.NONE);
+        subGroup = new Group(shell, SWT.NONE);
         subGroup.setLayout(gl);
         subGroup.setText(" Filter by Subscription ");
         subGroup.setToolTipText("Subscriptions moved to the Selected list will be visible");
@@ -343,21 +344,12 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
 
         gl = new GridLayout(3, false);
 
-        List<NotificationRecord> notificationList = null;
-
-        // Retrieve data from db
-        MessageLoadXML messageLoad = new MessageLoadXML();
-        messageLoad.setLoadAllMessages(true);
-        notificationList = handler.intialLoad(messageLoad, null);
-
-        if (notificationList == null) {
-            return;
-        }
-
         ArrayList<String> fullSubList = new ArrayList<String>();
 
-        // Grab the usernames of each record in the table and add them to the
-        // fullList
+        /*
+         * Grab the usernames of each record in the table and add them to the
+         * fullList
+         */
         for (NotificationRecord record : notificationList) {
 
             if (!fullSubList.contains(record.getCategory())
@@ -373,7 +365,8 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         ArrayList<String> selectedSubList = xml.getSubscriptionList();
         ArrayList<String> selectedSubListFinal = new ArrayList<String>();
 
-        // Check if everything in the selected list is still in the db
+        // Check if everything in the selected list is still in
+        // the db
         for (String s : selectedSubList) {
 
             if (fullSubList.toString().contains(s)) {

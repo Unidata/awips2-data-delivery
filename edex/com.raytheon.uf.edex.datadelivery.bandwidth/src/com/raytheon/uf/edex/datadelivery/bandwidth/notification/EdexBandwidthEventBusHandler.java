@@ -20,6 +20,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.notification;
 
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
+import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalFulfilled;
 import com.raytheon.uf.edex.event.BaseEdexEventBusHandler;
 
@@ -34,6 +35,8 @@ import com.raytheon.uf.edex.event.BaseEdexEventBusHandler;
  * ------------ ---------- ----------- --------------------------
  * May 28, 2013 1650       djohnson     Extracted from {@link BandwidthEventBus}.
  * Jul 09, 2013 2106       djohnson     Remove subscriptionBus.
+ * Jun 09, 2015 4047       dhladky      Performance improvement on startup, brought back subscription bus.
+ * 
  * 
  * </pre>
  * 
@@ -47,6 +50,8 @@ public class EdexBandwidthEventBusHandler extends
     private final com.google.common.eventbus.EventBus dataSetBus;
 
     private final com.google.common.eventbus.EventBus retrievalBus;
+    
+    private final com.google.common.eventbus.EventBus subscriptionBus;
 
     /**
      * Constructor.
@@ -65,6 +70,7 @@ public class EdexBandwidthEventBusHandler extends
         super(eventBusFactory);
         this.dataSetBus = eventBusFactory.getDataSetBus();
         this.retrievalBus = eventBusFactory.getRetrievalBus();
+        this.subscriptionBus = eventBusFactory.getSubscriptionBus();
     }
 
     /**
@@ -77,6 +83,8 @@ public class EdexBandwidthEventBusHandler extends
             retrievalBus.post(object);
         } else if (object instanceof DataSetMetaData) {
             dataSetBus.post(object);
+        } else if (object instanceof Subscription) {
+            subscriptionBus.post(object);
         } else {
             throw new IllegalArgumentException("Object type ["
                     + object.getClass().getName()
