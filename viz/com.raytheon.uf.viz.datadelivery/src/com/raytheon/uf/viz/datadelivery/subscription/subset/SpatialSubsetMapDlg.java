@@ -59,7 +59,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
 import com.raytheon.uf.viz.datadelivery.common.spatial.SpatialUtils;
 import com.raytheon.uf.viz.datadelivery.rsc.DrawBoxResource;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.viz.ui.actions.LoadSerializedXml;
+import com.raytheon.viz.ui.BundleLoader;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialogBase;
 import com.raytheon.viz.ui.editor.IMultiPaneEditor;
 import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
@@ -81,6 +81,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Dec 07, 2012 1278       bgonzale    added setter for spatialUtils.
  * Dec 10, 2012 1259       bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
  * May 17, 2015 4047       dhladky    verified non-blocking.
+ * Jun 10, 2015 4401       bkowal      Use {@link BundleLoader} instead of the deprecated
+ *                                     LoadSerializedXML#loadTo(IDisplayPaneContainer, Bundle).
  * 
  * </pre>
  * 
@@ -249,7 +251,7 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
                     desc.setGridGeometry(getGridGeometry());
                 }
             }
-            LoadSerializedXml.loadTo(this, b);
+            BundleLoader.loadTo(this, b);
             this.refresh();
         } catch (VizException e) {
             // statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
