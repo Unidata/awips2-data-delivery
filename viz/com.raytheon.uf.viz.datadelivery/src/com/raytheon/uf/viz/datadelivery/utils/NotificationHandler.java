@@ -33,6 +33,7 @@ import com.raytheon.uf.viz.datadelivery.notification.xml.MessageLoadXML;
  * Sep 05, 2013 2314       mpduff       support the load all messages option.
  * Feb 07, 2014 2453       mpduff       Remove username query param.
  * Oct 03, 2014 2749       ccody        Replace deprecated references to non-deprecated classes
+ * Jun 09, 2015 4047       dhladky      cleanup.
  * 
  * </pre>
  * 
@@ -152,7 +153,6 @@ public class NotificationHandler implements INotificationObserver {
      *            The array of messages being sent from 'notify.msg'
      */
     @Override
-    @SuppressWarnings("unchecked")
     public void notificationArrived(NotificationMessage[] messages) {
         ArrayList<Integer> deleteRecordIds = new ArrayList<Integer>();
         ArrayList<NotificationRecord> notificationRecords = new ArrayList<NotificationRecord>();

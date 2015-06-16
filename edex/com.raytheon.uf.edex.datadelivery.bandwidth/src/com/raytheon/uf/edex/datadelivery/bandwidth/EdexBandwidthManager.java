@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -150,6 +151,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *  Mar 08, 2015 3950       dhladky      Bandwidth change better handled.
  *  May 10, 2015 4493       dhladky      Deleted un-needed methods/vars
  *  May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ *  Jun 09, 2015 4047       dhladky      Performance improvement on startup, initial startup scheduling async now.
  * </pre>
  * 
  * @author djohnson
@@ -354,6 +356,59 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      ************************ Subscription Related Methods **************************************
      */
+    
+    /**
+     * Schedule the list of subscriptions.  This list is generally passed 
+     * from the in memory BWM and is processed here for scheduling (for real) 
+     * and DB persistence.
+     * 
+     * @param subscriptions
+     *            the subscriptions
+     * @return the set of subscription names unscheduled
+     * @throws SerializationException
+     */
+    protected Set<String> scheduleSubscriptions(
+            List<Subscription<T, C>> insubscriptions)
+            throws SerializationException {
+
+        /**
+         * This returns an empty unscheduled list by design. The actual storage
+         * is moved asynchronously to this process. We handle the processing of
+         * unscheduled there and then. This saves time at start-up that was
+         * eaten up waiting for the BWM keeping the JVM initialization from
+         * completing.
+         * 
+         * 
+         */
+        if (insubscriptions != null) {
+            for (Subscription<T, C> sub : orderSubscriptionsByPriority(insubscriptions)) {
+                BandwidthEventBus.publish(sub);
+            }
+        }
+
+        return new TreeSet<String>();
+    }
+
+    /**
+     * Process the subscription scheduling asynchronously for applying proposed
+     * subscriptions. Reads subs off the BandwidthEventBus placed by
+     * scheduleSubscriptions() method.
+     * 
+     * @param persistSubs
+     */
+    @Subscribe
+    public void persistScheduledSubscription(
+            Subscription<T, C> persistSub) {
+
+        statusHandler.info("Persisting Subscription: "+persistSub.getName()+" status: "+persistSub.getStatus().name());
+        subscriptionUpdated(persistSub);
+
+        /**
+         * We don't do anything with the unscheduled allocations at this point.
+         * We leave them to be cycled by the maintenance task (proposal flags then anyway).
+         * Also, do not send out a SubscriptionEvent, proposal has that covered.
+         */
+    }
 
     /**
      * Give a listing of the unscheduled subscriptions.

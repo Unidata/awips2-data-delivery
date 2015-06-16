@@ -128,7 +128,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Feb 03, 2015   4041     dhladky     GraphData requests were on the UI thread, moved to Job.  
  *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
  *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check   
- *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null                           
+ *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null 
+ *  Jun 09, 2015   4047     dhladky     BUG graph blocked CAVE on initial startup, fixed.       
  *
  *                                     
  * </pre>
@@ -301,8 +302,8 @@ public class BandwidthCanvasComp extends Composite
         this.parentComp = parentComp;
         this.display = this.parentComp.getDisplay();
         this.graphDataUtil = new GraphDataUtil(this);
-        if (this.graphDataUtil != null) {
-            this.bgd = this.graphDataUtil.getGraphDataSynchronously();
+        if (graphDataUtil != null) {
+            graphDataUtil.scheduleRetrieval();
         }
 
         init();

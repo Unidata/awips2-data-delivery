@@ -23,12 +23,19 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MenuDetectEvent;
@@ -74,6 +81,7 @@ import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationConfigXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationFilterXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.PrioritySettingXML;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
+import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
 import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler.INotificationArrivedListener;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
@@ -111,6 +119,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Aug 18, 2014  2746      ccody      Non-local Subscription changes not updating dialogs
  * May 17, 2015  4047      dhladky    verified non-blocking.
  * Jun 01, 2015  2805      dhladky    Made highlighted selections work properly through updates.
+ * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
  * 
  * </pre>
  * 
@@ -258,8 +267,29 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         createTable();
         createTrayControls();
 
-        tableComp.populateTableDataRows(null);
-        tableComp.populateTable();
+        Job job = new Job("Requesting Notification Records...") {
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
+
+                tableComp.populateTableDataRows(null);
+                return Status.OK_STATUS;
+            }
+        };
+        job.addJobChangeListener(new JobChangeAdapter() {
+            @Override
+            public void done(IJobChangeEvent event) {
+                VizApp.runAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isDisposed()) {
+                            return;
+                        }
+                        tableComp.populateTable();
+                    }
+                });
+            }
+        });
+        job.schedule();
 
         shell.addShellListener(new ShellAdapter() {
             @Override
@@ -624,15 +654,44 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      * Filter table action.
      */
     private void handleFilterSelection() {
-        NotificationFilterDlg filter = new NotificationFilterDlg(shell, this);
-        boolean change = false;
-        Object o = filter.open();
+        
+        final ITableChange callback = this;
+        DataDeliveryGUIUtils.markBusyInUIThread(shell);
+        
+        Job job = new Job("Requesting Notification Records...") {
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
 
-        if (o instanceof Boolean) {
-            if (change) {
-                tableComp.populateTable();
+                MessageLoadXML messageLoad = new MessageLoadXML();
+                messageLoad.setLoadAllMessages(true);
+                final List<NotificationRecord> filterNotificationList = handler.intialLoad(
+                        messageLoad, null);
+                
+                VizApp.runAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isDisposed()) {
+                            return;
+                        }
+                        
+                        NotificationFilterDlg filter = new NotificationFilterDlg(shell, callback, filterNotificationList);
+                        DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
+                        boolean change = false;
+                        Object o = filter.open();
+
+                        if (o instanceof Boolean) {
+                            if (change) {
+                                tableComp.populateTable();
+                            }
+                        }
+                    }
+                });
+
+                return Status.OK_STATUS;
             }
-        }
+        };
+        
+        job.schedule();
     }
 
     /**

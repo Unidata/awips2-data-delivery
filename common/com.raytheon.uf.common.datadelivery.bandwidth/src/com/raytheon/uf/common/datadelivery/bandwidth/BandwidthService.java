@@ -59,6 +59,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Dec 11, 2013 2625       mpduff       Fix error handling to not return null.
  * Apr 22, 2014 2992       dhladky      renamed BandwidthRequest
  * Nov 20, 2014 2749       ccody        Added "propose only" for  Set Avail Bandwidth
+ * Jun 09, 2015 4047       dhladky      cleanup.
  * 
  * </pre>
  * 
@@ -170,7 +171,6 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
      * 
      * @return
      */
-    @SuppressWarnings("unchecked")
     @Override
     public Set<String> schedule(Subscription<T, C> subscription) {
         return schedule(Arrays.asList(subscription));
@@ -206,7 +206,6 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("unchecked")
     @Override
     public IProposeScheduleResponse proposeSchedule(
             Subscription<T, C> subscription) {
@@ -255,7 +254,6 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings("unchecked")
     @Override
     public Date getEstimatedCompletionTime(AdhocSubscription<T, C> sub) {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
@@ -288,7 +286,6 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public SubscriptionStatusSummary getSubscriptionStatusSummary(
             Subscription<T, C> subscription) {

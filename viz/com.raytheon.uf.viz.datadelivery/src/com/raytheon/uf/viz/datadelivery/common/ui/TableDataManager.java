@@ -33,6 +33,7 @@ package com.raytheon.uf.viz.datadelivery.common.ui;
  * Feb 07, 2014   2453     mpduff       Added getSize().
  * Apr 18, 2014   3012     dhladky      Null check.
  * Dec 03, 2014   3840     ccody        Correct sorting "contract violation" issue
+ * Jun 09, 2015   4047     dhladky      Made thread safe.
  *
  * </pre>
  *
@@ -66,7 +67,6 @@ public class TableDataManager<T extends ITableData> {
      */
     public TableDataManager(TABLE_TYPE tableType) {
         tableData = new ArrayList<T>();
-
     }
 
     /**
@@ -76,7 +76,9 @@ public class TableDataManager<T extends ITableData> {
      *            Data to be added to the data array.
      */
     public void addDataRow(T data) {
-        tableData.add(data);
+        synchronized (tableData) {
+            tableData.add(data);
+        }
     }
 
     /**
@@ -85,7 +87,7 @@ public class TableDataManager<T extends ITableData> {
      * @return The data array.
      */
     public List<T> getDataArray() {
-        return tableData;
+        return this.getCopy();
     }
 
     /**
@@ -93,14 +95,18 @@ public class TableDataManager<T extends ITableData> {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void sortData(Comparator comparator) {
-        Collections.sort(this.tableData, comparator);
+        synchronized (tableData) {
+            Collections.sort(this.tableData, comparator);
+        }
     }
 
     /**
      * Clear the data array.
      */
     public void clearAll() {
-        tableData.clear();
+        synchronized (tableData) {
+            tableData.clear();
+        }
     }
 
     /**
@@ -110,7 +116,9 @@ public class TableDataManager<T extends ITableData> {
      *            The list of data to remove.
      */
     public void removeAll(List<T> removeList) {
-        tableData.removeAll(removeList);
+        synchronized (tableData) {
+            tableData.removeAll(removeList);
+        }
     }
 
     /**
@@ -121,13 +129,15 @@ public class TableDataManager<T extends ITableData> {
      * @return The data at the the specified index.
      */
     public T getDataRow(int index) {
-        if (index >= 0 && index < tableData.size()) {
-            return tableData.get(index);
-        } else {
-            if (!tableData.isEmpty()) {
-                return tableData.get(0);
+        synchronized (tableData) {
+            if (index >= 0 && index < tableData.size()) {
+                return tableData.get(index);
             } else {
-                return null;
+                if (!tableData.isEmpty()) {
+                    return tableData.get(0);
+                } else {
+                    return null;
+                }
             }
         }
     }
@@ -139,8 +149,10 @@ public class TableDataManager<T extends ITableData> {
      *            Index of the data to be removed.
      */
     public void removeDataRow(int index) {
-        if (index >= 0 && index < tableData.size()) {
-            tableData.remove(index);
+        synchronized (tableData) {
+            if (index >= 0 && index < tableData.size()) {
+                tableData.remove(index);
+            }
         }
     }
 
@@ -150,6 +162,26 @@ public class TableDataManager<T extends ITableData> {
      * @return The size
      */
     public int getSize() {
-        return this.tableData.size();
+        synchronized (tableData) {
+            return this.tableData.size();
+        }
+    }
+
+    /**
+     * Copy for thread safety
+     * 
+     * @return
+     */
+    private List<T> getCopy() {
+
+        List<T> tableDataCopy = null;
+        synchronized (tableData) {
+            tableDataCopy = new ArrayList<T>(tableData.size());
+            for (T row : tableData) {
+                T rowCopy = row;
+                tableDataCopy.add(rowCopy);
+            }
+        }
+        return tableDataCopy;
     }
 }
