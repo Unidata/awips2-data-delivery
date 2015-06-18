@@ -83,6 +83,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 17, 2015 4047       dhladky    verified non-blocking.
  * Jun 10, 2015 4401       bkowal      Use {@link BundleLoader} instead of the deprecated
  *                                     LoadSerializedXML#loadTo(IDisplayPaneContainer, Bundle).
+ * Jun 18, 2015 4401       bkowal      Use {@link BundleLoader} directly due to inability of
+ *                                     this dialog to support scheduled bundle loading.
  * 
  * </pre>
  * 
@@ -140,7 +142,8 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
      */
     public SpatialSubsetMapDlg(Shell shell, ISubset callback,
             ReferencedEnvelope fullEnvelope, ReferencedEnvelope subEnvelope) {
-        super(shell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
+        super(shell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL
+                | CAVE.DO_NOT_BLOCK);
         paneManager = new PaneManager();
         loopProperties = new LoopProperties();
         this.callback = callback;
@@ -156,7 +159,7 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
      */
     @Override
@@ -166,7 +169,7 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
      */
@@ -178,7 +181,7 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
      * .eclipse.swt.widgets.Shell)
@@ -251,7 +254,15 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
                     desc.setGridGeometry(getGridGeometry());
                 }
             }
-            BundleLoader.loadTo(this, b);
+            /*
+             * Note: this dialog currently does not schedule the bundles for
+             * loading because it accesses the loaded information immediately
+             * after it executes the load command. So, bundles are loaded
+             * synchronously. Without the synchronous loading, a Null Pointer
+             * Exception is generated when the dialog attempts to access the
+             * resources.
+             */
+            new BundleLoader(this, b).run();
             this.refresh();
         } catch (VizException e) {
             // statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
@@ -322,7 +333,7 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
 
     /**
      * OK Button action handler.
-     *
+     * 
      * @return true if data are valid
      */
     private boolean handleOk() {
@@ -665,10 +676,8 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
     public void cornerPointsChanged(BoxChangeEvent event) {
         Coordinate[] coordinates = (Coordinate[]) event.getSource();
 
-        subEnvelope = EnvelopeUtils.createSubenvelopeFromLatLon(
-fullEnvelope,
-                coordinates[0],
-                coordinates[1]);
+        subEnvelope = EnvelopeUtils.createSubenvelopeFromLatLon(fullEnvelope,
+                coordinates[0], coordinates[1]);
         setCorners();
     }
 
@@ -746,7 +755,7 @@ fullEnvelope,
             // Allow up to 5% error to handle rounding problems with formatted
             // LatLon values.
             if (!EnvelopeUtils.envelopeContainsLatLon(fullEnvelope, c, 0.05)) {
-                    return null;
+                return null;
             }
             return c;
         } catch (NumberFormatException e) {
