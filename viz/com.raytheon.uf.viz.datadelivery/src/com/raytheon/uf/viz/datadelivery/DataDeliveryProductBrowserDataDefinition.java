@@ -104,6 +104,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Jul 07, 2014  3135      bsteffen    Allow reuse of definition across multiple tree selections.
  * Sep 09, 2014  3356      njensen     Remove CommunicationException
  * Jun 11, 2015  4042      dhladky     Refactored using bsteffen's interface to make it thread safe, cleaner.
+ * Jun 16, 2015  4566      dhladky     Fixed error in map for Plugin names.
  * 
  * </pre>
  * 
@@ -125,7 +126,10 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /** Constant for sat plugin lookups*/
     private static final String PDA = "sat";
-    
+
+    /** Constant for point plugin lookups*/
+    private static final String POINT = "point";
+
     /** Plot model file */
     private static final String SVG = "madisObsDesign.svg";
 
@@ -162,7 +166,7 @@ public class DataDeliveryProductBrowserDataDefinition
         HashMap<DataType, String> protoProductMap = new HashMap<DataType, String>(3);
         protoProductMap.put(DataType.GRID, GRID);
         protoProductMap.put(DataType.PDA, PDA);
-        protoProductMap.put(DataType.POINT, MADIS);
+        protoProductMap.put(DataType.POINT, POINT);
         productMap = Collections.unmodifiableMap(protoProductMap);
     }
 
@@ -561,8 +565,21 @@ public class DataDeliveryProductBrowserDataDefinition
     public Map<ResourceType, List<DisplayType>> getDisplayTypes(String[] selection) {
 
         for (String selectedDataType : selection) {
-            if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())
-                    || selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
+            if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
+                Map<ResourceType, List<DisplayType>> type = new HashMap<ResourceType, List<DisplayType>>();
+                List<DisplayType> types = new ArrayList<DisplayType>();
+                types.add(DisplayType.CONTOUR);
+                types.add(DisplayType.IMAGE);
+                /*
+                 * Stage 2 of this process will be more tricky.
+                 * Need to determine in this ProductBroswer definition if both U & V wind components are available
+                 * Then query both sets of PDOs and merge them into a GeneralGridGeometry so you can call VectorDataUV 
+                 * (Draws barbs) with the data for both.
+                 */
+                //types.add(DisplayType.BARB);
+                type.put(ResourceType.PLAN_VIEW, types);
+                return type;
+            } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
                 Map<ResourceType, List<DisplayType>> type = new HashMap<ResourceType, List<DisplayType>>();
                 List<DisplayType> types = new ArrayList<DisplayType>();
                 types.add(DisplayType.CONTOUR);
@@ -648,7 +665,13 @@ public class DataDeliveryProductBrowserDataDefinition
 
     @Override
     public void loadResource(String[] selection, DisplayType displayType) {
-        
+
+        // Get the editor 
+        IDisplayPaneContainer container = getEditor();
+        if (container == null) {
+            return;
+        }
+
         // create the default load properties
         LoadProperties loadProperties = new GridLoadProperties();
         AbstractRequestableResourceData resourceData = getResourceData(selection);
@@ -668,12 +691,6 @@ public class DataDeliveryProductBrowserDataDefinition
         pair.setLoadProperties(loadProperties);
         pair.setProperties(new ResourceProperties());
                
-        // Get the editor 
-        IDisplayPaneContainer container = getEditor();
-        if (container == null) {
-            return;
-        }
-        
         // Construct the display, add the pair
         AbstractRenderableDisplay display = (AbstractRenderableDisplay) container
                 .getActiveDisplayPane().getRenderableDisplay();
