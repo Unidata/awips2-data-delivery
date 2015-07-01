@@ -103,6 +103,7 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
  * Jun 09, 2015  4047      dhladky      Dialog blocked CAVE at initial startup, fixed.
  * Jun 10, 2015  4059      dhladky      Fixed manual selections being blown away by updates. (under #4047 check in)
+ * Jul 01, 2015  4047      dhladky      Selected indexes never took paging into account.
  * 
  * 
  * </pre>
@@ -1065,6 +1066,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             // Extract selected notification ids from the table page
             List<NotificationRowData> highlights = new ArrayList<NotificationRowData>(indices.length);
             for (int index : indices) {
+                // have to account for paging
+                index = (rowsPerPage * pageSelection) + index;
                 NotificationRowData rowData = filteredTableList
                         .getDataRow(index);
                 if (rowData == null) {
