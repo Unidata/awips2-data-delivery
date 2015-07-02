@@ -83,6 +83,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.VerticalXML;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
+import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.presenter.IDisplay;
 
 /**
@@ -153,6 +154,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Sept 04, 2014  3121     dhladky      Setup for PDA data type
  * Feb 13, 2015   3852     dhladky      All messaging is handled by the BWM and registry.
  * May 17, 2015   4047     dhladky      verified non-blocking.
+ * Jul 01, 2015   4047     dhladky      Use callback YES NO dialog for closing.
  * 
  * </pre>
  * 
@@ -261,7 +263,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * @param subscription
      *            The subscription to edit
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     public SubsetManagerDlg(Shell shell, boolean loadDataSet,
             Subscription subscription) {
         super(shell, SWT.RESIZE | SWT.DIALOG_TRIM | SWT.MIN,
@@ -667,12 +669,30 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         if (!isDirty()) {
             close();
         } else {
-            int choice = DataDeliveryUtils
-                    .showMessage(shell, SWT.YES | SWT.NO, "Cancel Changes?",
-                            "Are you sure you wish to close without saving your subset?");
-            if (choice == SWT.YES) {
-                close();
-            }
+            // Create a closeable callback
+            ICloseCallback callback = new ICloseCallback() {
+
+                @Override
+                public void dialogClosed(Object returnValue) {
+                    if (returnValue != null) {
+
+                        int choice = (int) returnValue;
+
+                        if (choice == SWT.YES) {
+                            // close the dialog
+                            close();
+                        }
+                    }
+                }
+            };
+
+            DataDeliveryUtils
+                    .showCallbackMessageBox(
+                            shell,
+                            SWT.YES | SWT.NO,
+                            "Cancel Changes?",
+                            "Are you sure you wish to close without saving your subset?",
+                            callback);
         }
     }
 

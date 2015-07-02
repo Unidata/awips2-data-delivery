@@ -21,6 +21,7 @@ package com.raytheon.uf.viz.datadelivery.subscription;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -162,6 +163,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 20, 2015  2894      dhladky    Revisisted consistency in appliying default config.
  * May 17, 2015  4047      dhladky    verified non-blocking.
  * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
+ * Jul 01, 2015  4047      dhladky    RefreshTask was configured to not run often enough.
  * 
  * </pre>
  * 
@@ -314,7 +316,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
         this.filter = filter;
         scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(new RefreshTask(), 15, 15,
+        scheduler.scheduleAtFixedRate(new RefreshTask(), 2, 2,
                 TimeUnit.MINUTES);
         setText("Data Delivery Subscription Manager");
     }
@@ -1627,7 +1629,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     private class RefreshTask implements Runnable {
         @Override
         public void run() {
-            if (TimeUtil.currentTimeMillis() - tableComp.getLastUpdateTime() >= TimeUtil.MILLIS_PER_MINUTE * 5) {
+            if (TimeUtil.currentTimeMillis() - tableComp.getLastUpdateTime() >= TimeUtil.MILLIS_PER_MINUTE * 2) {
+                statusHandler.info("Running SubscriptionManager refresh task,lastUpdate: "+new Date(tableComp.getLastUpdateTime()));
                 VizApp.runAsync(new Runnable() {
                     @Override
                     public void run() {
