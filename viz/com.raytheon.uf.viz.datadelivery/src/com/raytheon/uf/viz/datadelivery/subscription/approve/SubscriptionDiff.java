@@ -59,6 +59,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 08, 2013 1826       djohnson     Remove delivery options.
  * Sept 25, 2013 1797      dhladky      Handle gridded times
  * Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
+ * Jul 08, 2015 4566       dhladky      Use AWIPS naming rather than provider naming.
  * 
  * </pre>
  * 
@@ -265,11 +266,11 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
 
         // Check for new or removed parameters
         for (Parameter p : subParamList) {
-            subParams.add(p.getProviderName());
+            subParams.add(p.getName());
         }
 
         for (Parameter p : pendingSubParamList) {
-            pendingSubParams.add(p.getProviderName());
+            pendingSubParams.add(p.getName());
         }
 
         // Check for new parameters, if in pending list, but not sub list
@@ -291,12 +292,12 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         ArrayList<ParameterDiff> parameterDiffList = new ArrayList<ParameterDiff>();
         if (subParamList.size() > pendingSubParamList.size()) {
             for (Parameter p : subParamList) {
-                if (subParams.contains(p.getProviderName())) {
+                if (subParams.contains(p.getName())) {
                     // See if anything changed for this parameter, which is
                     // layer or fcstHr
                     for (Parameter pendingP : pendingSubParamList) {
-                        if (p.getProviderName().equals(
-                                pendingP.getProviderName())) {
+                        if (p.getName().equals(
+                                pendingP.getName())) {
                             parameterDiffList
                                     .add(new ParameterDiff(p, pendingP));
                             break;
@@ -306,12 +307,12 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
             }
         } else {
             for (Parameter pendingP : pendingSubParamList) {
-                if (subParams.contains(pendingP.getProviderName())) {
+                if (subParams.contains(pendingP.getName())) {
                     // See if anything changed for this parameter, which is
                     // layer or fcstHr
                     for (Parameter p : subParamList) {
-                        if (p.getProviderName().equals(
-                                pendingP.getProviderName())) {
+                        if (p.getName().equals(
+                                pendingP.getName())) {
                             parameterDiffList
                                     .add(new ParameterDiff(p, pendingP));
                             break;
@@ -345,8 +346,8 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
 
         for (Parameter p : pendingSubParamList) {
             for (String newParameter : newParameters) {
-                if (p.getProviderName().equals(newParameter)) {
-                    tmpBuffer.append("Parameter: ").append(p.getProviderName())
+                if (p.getName().equals(newParameter)) {
+                    tmpBuffer.append("Parameter: ").append(p.getName())
                             .append(nl);
                     if (p.getLevelType().size() > 0) {
                         List<DataLevelType> dltList = p.getLevelType();

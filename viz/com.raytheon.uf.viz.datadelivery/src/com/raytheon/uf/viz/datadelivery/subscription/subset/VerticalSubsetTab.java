@@ -68,6 +68,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.VerticalXML;
  * Jan 10, 2013 1444       mpduff     Add updateSettings method.
  * Sept 30, 1797 1797      dhladky    separated time from gridded time
  * Oct 09, 2013 2267       bgonzale   Fix Collection cast to List error.
+ * Jul 08, 2015 4566       dhladky    Use AWIPS naming rather than provider naming.
  * 
  * </pre>
  * 
@@ -230,7 +231,7 @@ public class VerticalSubsetTab extends SubsetTab implements
 
         for (Parameter param : paramMap.values()) {
             if (param.getLevelType().contains(levelType)) {
-                returnList.add(param.getProviderName());
+                returnList.add(param.getName());
             }
         }
 
