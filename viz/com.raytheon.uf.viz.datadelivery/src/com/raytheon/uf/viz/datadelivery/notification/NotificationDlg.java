@@ -120,6 +120,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * May 17, 2015  4047      dhladky    verified non-blocking.
  * Jun 01, 2015  2805      dhladky    Made highlighted selections work properly through updates.
  * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
+ * Jul 08, 2015  2805      dhladky    Added boolean check for whether to allow find highlighting.
  * 
  * </pre>
  * 
@@ -1062,7 +1063,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      * and preserves selection flags: caseFlag, excludeFlag, etc.
      */
     private void updateFind() {
-        if (fnd != null && !fnd.isDisposed() && fnd.isOpen()) {
+        if (fnd != null && !fnd.isDisposed() && fnd.isOpen() && tableComp.isFindable()) {
             fnd.tableRefresh();
         }
     }

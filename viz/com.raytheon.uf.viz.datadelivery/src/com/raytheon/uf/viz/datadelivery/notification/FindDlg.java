@@ -59,6 +59,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Feb 07, 2014   2453      mpduff     Refactored dialog.
  * Mar 18, 2014   2433      mpduff     Update javadoc.
  * Jun 01, 2015   2805      dhladky    Made highlighted selections work properly through updates.
+ * Jul 08, 2015   2805      dhladky    Added boolean check for whether to allow find highlighting.
  * 
  * </pre>
  * 
@@ -253,6 +254,8 @@ public class FindDlg extends CaveSWTDialog {
         findBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
+                // allow highlight and selection in table by find dialog
+                ((NotificationTableComp)callback).setFindable(true);
                 handleFindBtn();
             }
         });
@@ -288,6 +291,7 @@ public class FindDlg extends CaveSWTDialog {
      * Find Button action handler. Find the next matching row upon button click.
      */
     private void handleFindBtn() {
+
         int prevSelectedIndex = selectedIndex;
 
         // Text in the find text box
