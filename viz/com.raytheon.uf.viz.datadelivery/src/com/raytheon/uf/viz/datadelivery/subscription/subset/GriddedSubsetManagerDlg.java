@@ -107,6 +107,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Sept 25, 2013 1797      dhladky      Separated Time from GriddedTime
  * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
  * Sept 04, 2014 2131      dhladky      Changes to allow for PDA data type
+ * Jul 08, 2015 4566       dhladky      Use AWIPS naming rather than provider naming.
  * 
  * 
  * </pre>
@@ -354,7 +355,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                     levelMap.put(levelType.getKey(), v);
                 }
                 VerticalXML v = levelMap.get(levelType.getKey());
-                v.addParameter(p.getProviderName());
+                v.addParameter(p.getName());
 
                 // TODO - This is set up to only have one level type with
                 // Multiple parameters. This will need to change if other
