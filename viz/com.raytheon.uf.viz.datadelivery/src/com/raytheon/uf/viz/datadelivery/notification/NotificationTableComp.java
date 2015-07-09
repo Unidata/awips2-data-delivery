@@ -104,7 +104,7 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * Jun 09, 2015  4047      dhladky      Dialog blocked CAVE at initial startup, fixed.
  * Jun 10, 2015  4059      dhladky      Fixed manual selections being blown away by updates. (under #4047 check in)
  * Jul 01, 2015  4047      dhladky      Selected indexes never took paging into account.
- * Jul 08, 2015  2805      dhladky      Added boolean check for whether to allow find highlighting.
+ * Jul 08, 2015  2805      dhladky      Removed re-evaluation of find dialog buttons on update.
  * 
  * 
  * </pre>
@@ -1121,6 +1121,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
      */
     @Override
     public void selectRow(NotificationRowData row) {
+
         int dataIndex = filteredTableList.getDataArray().indexOf(row);
 
         int selectedPage = dataIndex / rowsPerPage + 1;
@@ -1131,6 +1132,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         TableItem item = table.getItem(pageIndex);
         table.setSelection(item);
         this.pageSelection = pageCbo.getSelectionIndex();
+        highlightRows.clear();
+        highlightRows.add(row);
     }
 
     /**
