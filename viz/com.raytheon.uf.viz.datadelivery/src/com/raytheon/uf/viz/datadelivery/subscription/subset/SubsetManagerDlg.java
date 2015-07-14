@@ -167,7 +167,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     private final static String DATASETS_NOT_SUPPORTED = "Datasets of type [%s] are currently not supported!";
 
     protected final String POPUP_TITLE = "Notice";
-    
+
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubsetManagerDlg.class);
@@ -503,11 +503,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     public void launchCreateSubscriptionGui(Subscription sub) {
         DataDeliveryGUIUtils.markBusyInUIThread(shell);
         try {
-            if (handleOK(sub)) {
-                // Prevent editing while creating subscriptions
-                // When create dialog submits, thew shell will close this dialog.
-                this.hide();
-            }
+            handleOK(sub);
         } finally {
             DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
         }
@@ -566,9 +562,11 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 return;
             }
             try {
-                String currentUser = LocalizationManager.getInstance().getCurrentUser();
+                String currentUser = LocalizationManager.getInstance()
+                        .getCurrentUser();
                 as.setSubscriptionType(SubscriptionType.QUERY);
-                SubscriptionServiceResult result = subscriptionService.store(currentUser, as, this);
+                SubscriptionServiceResult result = subscriptionService.store(
+                        currentUser, as, this);
 
                 if (result.hasMessageToDisplay()) {
                     DataDeliveryUtils.showMessage(getShell(), SWT.OK,
@@ -863,7 +861,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * @param subsetName
      *            Name of the subset to load
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void handleLoadSubset(String subsetName) {
         SubsetXML loadedSubsetXml = SubsetFileManager.getInstance().loadSubset(
