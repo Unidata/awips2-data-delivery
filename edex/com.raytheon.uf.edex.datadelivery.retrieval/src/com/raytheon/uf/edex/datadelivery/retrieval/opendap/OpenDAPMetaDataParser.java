@@ -100,6 +100,7 @@ import opendap.dap.NoSuchAttributeException;
  * Jun 09, 2014  3113      mpduff       Save the ArrivalTime.
  * Jul 08, 2014  3120      dhladky      Generics, interface realignment
  * Apr 12, 2015  4400      dhladky      Switched over to DAP2 protocol.
+ * Jul 13, 2015  4566      dhladky      Added the AWIPS parameter name to the Dataset when present.
  * 
  * </pre>
  * 
@@ -413,8 +414,13 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                         newParams.add(parm);
                     }
 
-                    // TODO: Figure out why some NCDC datasets have no param
-                    // descriptions, default fill, or missing vals.
+                    // Rename the parameter using the AWIPS name if diff from
+                    // the provider
+                    if (!name.equals(parm.getName())) {
+                        name = parm.getName();
+                    }
+
+                    // UNKNOWN DESCRIPTION
                     String description = "unknown description";
                     try {
                         description = OpenDAPParseUtility.getInstance().trim(
@@ -453,6 +459,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     parm.setLevels(getLevels(type, collectionName, gdsmd, dz,
                             levMin, levMax));
                     parm.addLevelType(type);
+                    // add to map
                     parameters.put(name, parm);
 
                 } catch (Exception le) {
