@@ -62,6 +62,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Feb 20, 2013   1589     mpduff     Fix to allow saving custom areas.
  * Jun 14, 2013   2064     mpudff     Force an update of region controls.
  * Oct 11, 2013   2386     mpduff     Refactor DD Front end.
+ * Aug 25, 2015   4747     dhladky    Button on message box returns.
  * 
  * </pre>
  * 
@@ -239,7 +240,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
     private void handleSave() {
 
         if (!DataDeliveryGUIUtils.hasText(savedRegionTxt)) {
-            DataDeliveryUtils.showMessage(parentComp.getShell(), SWT.ERROR,
+            DataDeliveryUtils.showMessageCancel(parentComp.getShell(),
                     "Name Required",
                     "Name required. A Region Name must be entered.");
             return;
@@ -248,7 +249,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
         String saveName = getRegionSaveText();
         if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(saveName.trim())
                 .find()) {
-            DataDeliveryUtils.showMessage(parentComp.getShell(), SWT.ERROR,
+            DataDeliveryUtils.showMessageCancel(parentComp.getShell(),
                     DataDeliveryGUIUtils.INVALID_CHARS_TITLE,
                     DataDeliveryGUIUtils.INVALID_CHARS_MESSAGE);
             return;

@@ -102,6 +102,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 30, 2015 4047       dhladky      Use non-blocking dialogs.
  * May 17, 2015 4047       dhladky      Improved use of non-blocking dialogs.
  * Jun 01, 2015  2805      dhladky      Dataset Discovery Browser wouldn't close with message box.
+ * Aug 25, 2015  4747      dhladky      Better options on message box returns.
  * </pre>
  * 
  * @author mpduff
@@ -710,7 +711,7 @@ public class DataDeliveryUtils {
      *            the message
      */
     public static int showYesNoMessage(Shell shell, String title, String message) {
-        return showMessage(shell, SWT.YES | SWT.NO, title, message);
+        return showMessageNonCallback(shell, SWT.YES | SWT.NO, title, message);
     }
 
     /**
@@ -720,8 +721,28 @@ public class DataDeliveryUtils {
      *            the shell reference
      */
     public static void showChangesWereAppliedMessage(Shell shell) {
-        showMessage(shell, SWT.OK, "Changes Applied",
+        showMessageNonCallback(shell, SWT.OK, "Changes Applied",
                 "The changes were successfully applied.");
+    }
+    
+    /**
+     * Return a message dialog with ok button
+     * 
+     * @param shell
+     *            the shell reference
+     */
+    public static void showMessageOk(Shell shell, String title, String message) {
+        showMessageNonCallback(shell, SWT.OK, title, message);
+    }
+    
+    /**
+     * Return a message dialog with cancel button
+     * 
+     * @param shell
+     *            the shell reference
+     */
+    public static void showMessageCancel(Shell shell, String title, String message) {
+        showMessageNonCallback(shell, SWT.CANCEL, title, message);
     }
 
     /**
