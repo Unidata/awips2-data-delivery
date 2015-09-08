@@ -41,6 +41,7 @@
         <include>datadelivery-wfo-cron.xml</include>
         <include>bandwidth-datadelivery-.*-wfo.xml</include>
         <include>nwsauth-request.xml</include>
+        <include>utility-request.xml</include>
         <exclude>.*datadelivery.*-ncf.*</exclude>
         <exclude>.*datadelivery.*-monolithic.*</exclude>
         <exclude>harvester-*</exclude>
@@ -52,6 +53,7 @@
         <includeMode>dataDeliveryTemplate</includeMode>
         <include>bandwidth-datadelivery-.*-ncf.xml</include>
         <include>nwsauth-request.xml</include>
+        <include>utility-request.xml</include>
         <exclude>.*datadelivery.*-wfo.*</exclude>
         <exclude>.*datadelivery.*-monolithic.*</exclude>
     </mode>
@@ -116,6 +118,7 @@
     <mode name="devRegistry">
         <include>ebxml.*\.xml</include>
         <include>nwsauth-request.xml</include>
+        <include>utility-request.xml</include>
         <include>datadelivery-wfo-cron.xml</include>
         <includeMode>dataDeliveryTemplate</includeMode>
         <include>bandwidth-datadelivery-edex-impl-monolithic.xml</include>
