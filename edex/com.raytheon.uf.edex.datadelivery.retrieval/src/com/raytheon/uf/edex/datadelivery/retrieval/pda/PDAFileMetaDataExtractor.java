@@ -45,6 +45,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Sept 04, 2014 3121        dhladky     Some rework on the parsing.
  * Nov 10, 2014  3826        dhladky     Added more logging, improved versatility of parser.
  * Apr 27, 2015  4435        dhladky     PDA added more formats of messages.
+ * Sept 14, 2015 4881        dhladky     Updates to PDA processing.
  * 
  * </pre>
  * 
@@ -69,7 +70,7 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
     public static final String timeReplace = "DT_";
           
     public PDAFileMetaDataExtractor() {
-    
+        super();
     }
    
     /** 
@@ -173,30 +174,66 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
             }
             // don't care about 0-3
             paramMap.put("satelliteName", separated[parseInterator]);
-            statusHandler.info("satelliteName: "+separated[parseInterator]);
-            // collection name and parameter name are the same here
-            paramMap.put("collectionName", separated[parseInterator+1]);
-            statusHandler.info("collectionName: "+separated[parseInterator+1]);
-            paramMap.put("paramName", separated[parseInterator+2]);
-            statusHandler.info("paramName: "+separated[parseInterator+2]);
-            // this part is unused
-            String macroDateSection = separated[parseInterator+3];
-            statusHandler.info("macroDateSection: "+separated[parseInterator+3]);
-            String[] extensionSeparated = extensionSeparator.split(separated[parseInterator+4]);
-            String[] dataSetTimeSeparated = paramSeperator.split(extensionSeparated[0]);
-            String dataSetName = dataSetTimeSeparated[1];
-            statusHandler.info("dataSetName: "+dataSetName);
-            paramMap.put("dataSetName", dataSetName);
-            // parse the times out           
-            String startTime = dataSetTimeSeparated[3].substring(1, dataSetTimeSeparated[3].length());
-            statusHandler.info("start timeSection: "+startTime);
-            paramMap.put("startTime", startTime);
-            String endTime = dataSetTimeSeparated[4].substring(1, dataSetTimeSeparated[4].length());
-            statusHandler.info("end timeSection: "+endTime);
-            paramMap.put("endTime", endTime);
-            String dataTime = dataSetTimeSeparated[5].substring(1, dataSetTimeSeparated[5].length());
-            statusHandler.info("data timeSection: "+dataTime);
-            paramMap.put("dataTime", dataTime);
+            if (debug) {
+                statusHandler.info("satelliteName: "
+                        + separated[parseInterator]);
+            }
+            paramMap.put("collectionName", separated[parseInterator + 1]);
+            if (debug) {
+                statusHandler.info("collectionName: "
+                        + separated[parseInterator + 1]);
+
+                // macro date is unused
+                // paramMap.put("macroDateSection",
+                // separated[parseInterator+2]);
+                statusHandler.info("macroDateSection: "
+                        + separated[parseInterator + 2]);
+            }
+            String paramDateSection = separated[parseInterator + 3];
+            if (debug) {
+                statusHandler.info("paramDateSection: "
+                        + separated[parseInterator + 3]);
+            }
+            String[] paramDateSectionNoExtension = extensionSeparator
+                    .split(paramDateSection);
+            // Get something like this out of that
+            // OR_ABI-L2-MCMIPF-M3_G16_s20152101517467_e20150500321041_c20150500321109
+            String[] paramDataSetTimeSeparated = paramSeperator
+                    .split(paramDateSectionNoExtension[0]);
+            // we ignore paramDataSetTimeSeparated[0], The OR in our example
+            if (debug) {
+                statusHandler
+                        .info("Ignored first term in paramDataSetTimeSeparated : "
+                                + paramDataSetTimeSeparated[0]);
+            }
+            String dataSetNamePlusParameter = paramDataSetTimeSeparated[1];
+            // You have something like this, ABI-L2-MCMIPF-M3
+            if (debug) {
+                statusHandler.info("DataSet + Parameter : "
+                        + dataSetNamePlusParameter);
+            }
+            String[] paramDataSetResults = parseDataSetAndParameterName(dataSetNamePlusParameter);
+            if (debug) {
+                statusHandler.info("dataSetName: " + paramDataSetResults[0]);
+            }
+            paramMap.put("dataSetName", paramDataSetResults[0]);
+            if (debug) {
+                statusHandler.info("paramName: " + paramDataSetResults[1]);
+            }
+            paramMap.put("paramName", paramDataSetResults[1]);
+            String[] dateResults = parseDates(paramDataSetTimeSeparated);
+            if (debug) {
+                statusHandler.info("start timeSection: " + dateResults[0]);
+            }
+            paramMap.put("startTime", dateResults[0]);
+            if (debug) {
+                statusHandler.info("end timeSection: " + dateResults[1]);
+            }
+            paramMap.put("endTime", dateResults[1]);
+            if (debug) {
+                statusHandler.info("data timeSection: " + dateResults[2]);
+            }
+            paramMap.put("dataTime", dateResults[2]);
              
         } else {
             statusHandler.error("Coudn't create parameter mappings from file!", fileName);
@@ -208,6 +245,57 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor<String, Strin
     @Override
     public void setDataDate() throws Exception {
         // No implementation in PDA file extractor
+    }
+    
+   
+    /**
+     * Parse out the DataSetName and the Parameter from a string in NESDIS format
+     * @param dataSetPlusParameter
+     * @return results
+     */
+    private String[] parseDataSetAndParameterName(String dataSetPlusParameter) {
+        
+        // You have something like this, ABI-L2-MCMIPF-M3
+        String[] results = new String[2];
+        String[] parsedDataSetPlusParameter = param2Seperator.split(dataSetPlusParameter);
+        // sets the parameter
+        results[1] = parsedDataSetPlusParameter[parsedDataSetPlusParameter.length - 1];
+        StringBuffer dataSetName = new StringBuffer(32);
+        
+        for (int i = 0; i < parsedDataSetPlusParameter.length - 1; i++) {
+            dataSetName.append(parsedDataSetPlusParameter[i]);
+            if (i < parsedDataSetPlusParameter.length - 2) {
+                dataSetName.append("-");
+            }
+        }
+        
+        // sets the dataSetName
+        results[0] = dataSetName.toString();
+        
+        return results;
+    }
+    
+    /**
+     * Parse out the dates from the NESDIS standard data file naming string.
+     * @param args
+     */
+    private String[] parseDates(String[] paramDataSetTimeSeparated) {
+        // Parse using NESDIS standard format
+        String[] results = new String[3];
+        for (int i = 0; i < paramDataSetTimeSeparated.length; i++) {
+            if (paramDataSetTimeSeparated[i].startsWith("s")) {
+                // start time
+                results[0] = paramDataSetTimeSeparated[i].substring(1, paramDataSetTimeSeparated[i].length());
+            } else if (paramDataSetTimeSeparated[i].startsWith("e")) {
+                // end time
+                results[1] = paramDataSetTimeSeparated[i].substring(1, paramDataSetTimeSeparated[i].length());
+            } else if (paramDataSetTimeSeparated[i].startsWith("c")) {
+                // data time
+                results[2] = paramDataSetTimeSeparated[i].substring(1, paramDataSetTimeSeparated[i].length());
+            }
+        }
+        
+        return results;
     }
     
     /**

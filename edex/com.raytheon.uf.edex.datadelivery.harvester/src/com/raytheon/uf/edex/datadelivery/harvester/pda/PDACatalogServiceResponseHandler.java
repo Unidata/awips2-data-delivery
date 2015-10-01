@@ -70,6 +70,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Jun 16, 2014 3120       dhladky     Initial creation
  * Nov 10, 2014 3826       dhladky     Added more logging.
  * Apr 21, 2015 4435       dhladky     Connecting to PDA transactions
+ * Sept 11, 2015 4881      dhladky     Updates to PDA processing, better tracking.
  * 
  * </pre>
  * 
@@ -79,90 +80,107 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 
 @WebService(name = "PDACatalogServiceResponseHandler", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2")
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
-@XmlSeeAlso({net.opengis.cat.csw.v_2_0_2.ObjectFactory.class, net.opengis.gml.v_3_1_1.ObjectFactory.class, net.opengis.filter.v_1_1_0.ObjectFactory.class})
-public class PDACatalogServiceResponseHandler implements IPDACatalogServiceResponseHandler {
+@XmlSeeAlso({ net.opengis.cat.csw.v_2_0_2.ObjectFactory.class,
+        net.opengis.gml.v_3_1_1.ObjectFactory.class,
+        net.opengis.filter.v_1_1_0.ObjectFactory.class })
+public class PDACatalogServiceResponseHandler implements
+        IPDACatalogServiceResponseHandler {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDACatalogServiceResponseHandler.class);
 
     /** catalog destination queue **/
     private String fileDestinationUri = null;
-    
+
     /** transaction destination queue **/
     private String transactionUri = null;
-    
+
     /** JAXB Manager **/
     private OgcJaxbManager jaxbManager = null;
-    
+
     /** CSW/OWS/GML class factory **/
     private static final Class<?>[] classes = new Class<?>[] {
             net.opengis.cat.csw.v_2_0_2.ObjectFactory.class,
             net.opengis.gml.v_3_1_1.ObjectFactory.class,
             net.opengis.filter.v_1_1_0.ObjectFactory.class,
-            net.opengis.ows.v_1_0_0.ObjectFactory.class};
-    
+            net.opengis.ows.v_1_0_0.ObjectFactory.class };
+
     /** space split pattern **/
     private static final String SPACE = " ";
-    
+
     /** DEFAULT_CRS, unspecified by provider **/
     private static final String DEFAULT_CRS = "DEFAULT_CRS ";
-    
+
     /** internal use service config for PDA service **/
     private static ServiceConfig serviceConfig = null;
-    
+
     /** Simple Literal OWS factory **/
     private static ObjectFactory literalFactory = null;
-    
-    /** Version 1.0.0 Bounding Box factory  **/
+
+    /** Version 1.0.0 Bounding Box factory **/
     private static net.opengis.ows.v_1_0_0.ObjectFactory boundingBoxFactory = null;
-    
+
     private static net.opengis.cat.csw.v_2_0_2.ObjectFactory briefRecordFactory = null;
-    
+
     /** Variables for BriefRecordType parse **/
     private static final String ID = "identifier";
-    
+
     private static final String TYPE = "type";
-    
+
     private static final String TITLE = "title";
-        
+
     private static final String BOUNDING_BOX = "BoundingBox";
-    
+
     private static final String LOWER_CORNER = "LowerCorner";
-    
+
     private static final String UPPER_CORNER = "UpperCorner";
-    
-    /** load PDA service config and factories**/
+
+    /** DEBUG PDA system **/
+    private static final String DEBUG = "DEBUG";
+
+    /** debug state */
+    private static Boolean debug = false;
+
+    /** load PDA service config and factories **/
     static {
         serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.PDA);
-        
+        // debugging MetaData parsing.
+        String debugVal = serviceConfig.getConstantValue(DEBUG);
+        debug = Boolean.valueOf(debugVal);
         literalFactory = new net.opengis.cat.csw.v_2_0_2.dc.elements.ObjectFactory();
         boundingBoxFactory = new net.opengis.ows.v_1_0_0.ObjectFactory();
         briefRecordFactory = new net.opengis.cat.csw.v_2_0_2.ObjectFactory();
     }
-    
+
     /** Spring constructor **/
-    public PDACatalogServiceResponseHandler(String fileDestinationUri, String transactionUri) {
+    public PDACatalogServiceResponseHandler(String fileDestinationUri,
+            String transactionUri) {
         this.fileDestinationUri = fileDestinationUri;
         this.transactionUri = transactionUri;
     }
-    
+
     @Override
     @WebMethod
     public void handleGetRecordsResponse(
             @WebParam(name = "GetRecordsResponse", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
             GetRecordsResponseType response) throws ServiceExceptionReport {
-        
+
+        statusHandler
+                .info("-------Incoming GetRecords() response from PDA -----------");
+
         if (response.getSearchStatus() != null) {
             // we got a valid search response!
             SearchResultsType srt = response.getSearchResults();
-            
+
             int numberOfRecords = srt.getNumberOfRecordsMatched().intValue();
 
             if (numberOfRecords > 0) {
-                statusHandler.info("Recieved " + numberOfRecords
+                statusHandler.info("Recieved "
+                        + numberOfRecords
                         + " new records from "
-                        + HarvesterConfigurationManager.getPDAConfiguration().getProvider().getName());
+                        + HarvesterConfigurationManager.getPDAConfiguration()
+                                .getProvider().getName());
                 // we have an actual result link
                 String recordFilePath = srt.getResultSetId();
                 statusHandler.info("Record File Path: " + recordFilePath);
@@ -176,15 +194,16 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
                                     e);
                 }
             }
-        } 
+        }
     }
-    
+
     @Override
     @WebMethod
     public void handleTransaction(
             @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
             TransactionType transactions) throws ServiceExceptionReport {
 
+        statusHandler.info("-------Incoming Transaction from PDA -----------");
         List<Object> records = transactions.getInsertOrUpdateOrDelete();
 
         if (records != null) {
@@ -205,7 +224,8 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
             }
 
             statusHandler.handle(Priority.INFO,
-                    "Sending "+ briefRecords.size() + " Transaction Inserts to MetaDataProcessor.");
+                    "Sending " + briefRecords.size()
+                            + " Transaction Inserts to MetaDataProcessor.");
 
             for (JAXBElement<BriefRecordType> briefRecord : briefRecords) {
                 try {
@@ -230,7 +250,8 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
     private void sendToFileRetrieval(String filePath) throws Exception {
 
         if (filePath != null) {
-            PDACatalogServiceResponseWrapper psrw = new PDACatalogServiceResponseWrapper(filePath);
+            PDACatalogServiceResponseWrapper psrw = new PDACatalogServiceResponseWrapper(
+                    filePath);
             byte[] bytes = SerializationUtil.transformToThrift(psrw);
             EDEXUtil.getMessageProducer().sendAsync(fileDestinationUri, bytes);
         }
@@ -244,8 +265,8 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
      *            briefRecord
      * @throws Exception
      */
-    private void sendToMetaDataProcessor(JAXBElement<BriefRecordType> briefRecord)
-            throws Exception {
+    private void sendToMetaDataProcessor(
+            JAXBElement<BriefRecordType> briefRecord) throws Exception {
 
         if (briefRecord != null) {
 
@@ -272,7 +293,7 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
                                 e);
             }
         }
-        
+
         return jaxbManager;
     }
 
@@ -297,17 +318,29 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
         if (o instanceof InsertType) {
 
             InsertType trans = (InsertType) o;
+            if (debug) {
+                statusHandler.info("Insert Message:  " + trans.toString());
+            }
 
             for (int i = 0; i < trans.getAny().size(); i++) {
 
-                Element element = trans.getAny().get(i);
+ Element element = trans.getAny().get(i);
 
                 if (element.getLocalName().equals(ID)) {
                     identifier = element.getFirstChild().getNodeValue();
+                    if (debug) {
+                        statusHandler.info("indentifier: " + identifier);
+                    }
                 } else if (element.getLocalName().equals(TITLE)) {
                     title = element.getFirstChild().getNodeValue();
+                    if (debug) {
+                        statusHandler.info("title: " + title);
+                    }
                 } else if (element.getLocalName().equals(TYPE)) {
                     type = element.getFirstChild().getNodeValue();
+                    if (debug) {
+                        statusHandler.info("type: " + type);
+                    }
                 } else if (element.getLocalName().equals(BOUNDING_BOX)) {
 
                     NodeList nodes = element.getChildNodes();
@@ -317,14 +350,26 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
                         Node node = nodes.item(j);
 
                         if (node.getLocalName().equals(LOWER_CORNER)) {
-                            if (node.getFirstChild().getNodeValue() != null) {
-                                lowerCorner = node.getFirstChild()
-                                        .getNodeValue();
+                            if (debug) {
+                                statusHandler.info("LOWER_CORNER: "
+                                        + node.toString());
+                            }
+                            if (node.getFirstChild() != null) {
+                                if (node.getFirstChild().getNodeValue() != null) {
+                                    lowerCorner = node.getFirstChild()
+                                            .getNodeValue();
+                                }
                             }
                         } else if (node.getLocalName().equals(UPPER_CORNER)) {
-                            if (node.getFirstChild().getNodeValue() != null) {
-                                upperCorner = node.getFirstChild()
-                                        .getNodeValue();
+                            if (debug) {
+                                statusHandler.info("UPPER_CORNER: "
+                                        + node.toString());
+                            }
+                            if (node.getFirstChild() != null) {
+                                if (node.getFirstChild().getNodeValue() != null) {
+                                    upperCorner = node.getFirstChild()
+                                            .getNodeValue();
+                                }
                             }
                         }
                     }
@@ -369,6 +414,7 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
                 List<Double> lowerVals = null;
 
                 if (upperCorner != null && lowerCorner != null) {
+                    // These arranged LAT LON!!!!!!!!!!!!!!!
                     String[] uppers = upperCorner.split(SPACE);
                     String[] lowers = lowerCorner.split(SPACE);
                     // uppers
@@ -431,7 +477,8 @@ public class PDACatalogServiceResponseHandler implements IPDACatalogServiceRespo
 
         } else {
             statusHandler
-                    .warn("Unknown or discarded CSW metadata transaction. Class: "+o.getClass().getName());
+                    .debug("Unknown or discarded CSW metadata transaction. Class: "
+                            + o.getClass().getName());
         }
 
         return jaxbBriefRecord;

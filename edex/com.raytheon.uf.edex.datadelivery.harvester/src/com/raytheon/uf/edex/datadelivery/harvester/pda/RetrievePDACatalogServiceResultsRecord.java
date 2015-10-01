@@ -21,15 +21,26 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  **/
 
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
 import com.raytheon.uf.common.datadelivery.harvester.PDACatalogServiceResponseWrapper;
 import com.raytheon.uf.common.datadelivery.registry.Connection;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAConnectionUtil;
 
 /**
@@ -41,6 +52,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAConnectionUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * June 13, 2014 3120      dhladky     Initial creation
+ * Sept 14, 2015 4881      dhladky     Updates to PDA processing/ better debugging.
  * 
  * </pre>
  * 
@@ -56,10 +68,20 @@ public class RetrievePDACatalogServiceResultsRecord {
     
     /** PDA harvester config **/
     private HarvesterConfig hc = null;
-
+    
+    /** DEBUG PDA system **/
+    private static final String DEBUG = "DEBUG";
+    
+    /** PDA service config **/
+    private static ServiceConfig pdaServiceConfig;
+    
+    /** debug state */
+    private Boolean debug = false;
+    
     /** spring constructor **/
     public RetrievePDACatalogServiceResultsRecord() {
-
+        String dbValue = getServiceConfig().getConstantByName(DEBUG).getValue();
+        debug = Boolean.valueOf(dbValue);
     }
     
     /**
@@ -124,6 +146,32 @@ public class RetrievePDACatalogServiceResultsRecord {
             statusHandler
                     .info("Retrieved PDA Catalog Service getRecords() results file: "
                             + localFilePath);
+            try {
+                if (debug) {
+                    // Makes a copy on local file system for comparison.
+                    String tmpDir = System.getProperty("java.io.tmpdir");
+                    if (tmpDir != null) {
+                        FileUtil.copyFile(
+                                new File(localFilePath),
+                                new File(tmpDir + "/getRecordsRequestFile"
+                                        + (System.currentTimeMillis()) + ".xml"));
+                        statusHandler
+                                .info("Copied file to saved location file: "
+                                        + localFilePath);
+                    } else {
+                        statusHandler
+                                .error("Couldn't copy getRecordsRequest File, tmpDir not set!: "
+                                        + localFilePath);
+                    }
+
+                }
+            } catch (IOException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to copy file to saved directory!!!!", e);
+
+            }
+            
+           
         } else {
             throw new IllegalArgumentException(
                     "Provider information not valid!" + recordFilePath);
@@ -142,5 +190,19 @@ public class RetrievePDACatalogServiceResultsRecord {
 
         return outBytes;
     }
-
+   
+    /**
+     * Get the instance of the service config
+     * @return
+     */
+    private static ServiceConfig getServiceConfig() {
+        
+        if (pdaServiceConfig == null) {
+            pdaServiceConfig = HarvesterServiceManager.getInstance()
+            .getServiceConfig(ServiceType.PDA);
+        }
+        
+        return pdaServiceConfig;
+    }
+    
 }

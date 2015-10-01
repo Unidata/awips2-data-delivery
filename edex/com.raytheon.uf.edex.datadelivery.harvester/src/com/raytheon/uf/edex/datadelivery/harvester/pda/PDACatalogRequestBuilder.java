@@ -29,6 +29,7 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * June 20, 2014 3120      dhladky     Initial creation
+ * July 28, 2015 4881      dhladky     Tweaks done to conform to PDA web service.
  * 
  * </pre>
  * 
@@ -42,27 +43,9 @@ public class PDACatalogRequestBuilder {
     
     private StringBuilder sb = null;
     
-    private static String header = createHeader();
-    
-    private static String footer = createFooter();
-    
     public PDACatalogRequestBuilder(String responseURL) {
         this.responseURL = responseURL;
         this.sb = new StringBuilder();
-    }
-    
-    /**
-     * Creates the WFS XML Query header
-     * @return
-     */
-    private static String createHeader() {
-         StringBuilder sb1 = new StringBuilder();
-         sb1.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-         sb1.append("<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\">\n");
-         sb1.append("<SOAP-ENV:Header/>\n");
-         sb1.append("<SOAP-ENV:Body>\n");
-         
-        return sb1.toString();
     }
     
     /**
@@ -71,35 +54,21 @@ public class PDACatalogRequestBuilder {
      */
     private void createContent() {
 
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         sb.append("<csw:GetRecords xmlns:csw=\"http://www.opengis.net/cat/csw/2.0.2\" service=\"CSW\" version=\"2.0.2\">\n");
-        sb.append("<csw:Query typeNames=\"csw:Record\"/>\n");
-        sb.append("<ResponseHandler>"+ responseURL +"</ResponseHandler>\n");
+        sb.append("<csw:ResponseHandler>"+ responseURL +"</csw:ResponseHandler>\n");
+        sb.append("<csw:Query typeNames=\"csw:Record\">\n");
+        sb.append("<csw:ElementSetName typeNames=\"csw:Record\">brief</csw:ElementSetName>\n");
+        sb.append("</csw:Query>\n");
         sb.append("</csw:GetRecords>\n");
     }
-    
-    /**
-     * Creates the CSW XML Query Footer
-     * @return
-     */
-    private static String createFooter() {
-        
-        StringBuilder sb2 = new StringBuilder(128);
-        sb2.append("</SOAP-ENV:Body>\n");
-        sb2.append("</SOAP-ENV:Envelope>\n");
-        
-        return sb2.toString();
-    }
-    
+     
     /**
      * Creates the CSW XML Query
      * @return
      */
     public String getXMLMessage() {
-
-        sb.append(header);
         createContent();
-        sb.append(footer);
-        
         return sb.toString();
     }
 

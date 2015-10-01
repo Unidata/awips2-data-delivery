@@ -20,6 +20,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * further licensing information.
  **/
 
+import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
+import net.opengis.ows.v_1_0_0.BoundingBoxType;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
@@ -66,7 +68,7 @@ import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
  * June 17, 2014 3120        dhladky     Initial creation
  * Sept 04, 2014 3121        dhladky     Adjustments to parsing, simulation.
  * Sept 27, 2014 3127        dhladky     Added metaDataID for geographic subsetting.
- * Apr 27, 2015              dhladky     PDA changed the structure of the file format messages.
+ * Apr 27, 2015  4881        dhladky     PDA changed the structure of the file format messages.
  * </pre>
  * 
  * @author dhladky
@@ -90,6 +92,12 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     private static final String endTime = "endTime";
     private static final String dataTime = "dataTime";
     
+    /** DEBUG PDA system **/
+    private static final String DEBUG = "DEBUG";
+    
+    /** debug state */
+    protected Boolean debug = false;
+    
     private String mode = null;
     
     private String dateFormat = null;
@@ -98,6 +106,9 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
                 ServiceType.PDA);
         setMode(serviceConfig.getConstantValue("MODE"));
+        // debugging MetaData parsing.
+        String debugVal = serviceConfig.getConstantValue(DEBUG);
+        debug = Boolean.valueOf(debugVal);
     }
     
     /**
@@ -160,14 +171,17 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         ImmutableDate idate = null;
         // METADATA ID, unique to each record
         String metaDataID = record.getIdentifier().get(0).getValue().getContent().get(0);
-        System.out.println("metaDataID: "+metaDataID);
         // physical path relative to root provider URL
         String relativeDataURL = record.getTitle().get(0).getValue().getContent().get(0);
-        System.out.println("relativeURL: "+relativeDataURL);
         // metadata URL is the full URL path, (not relative) to the file
         // tack on the root provider URL from the provider connection.
         String metaDataURL = provider.getConnection().getUrl()+relativeDataURL;
-        System.out.println("metaDataURL: "+metaDataURL);
+        
+        if (debug == true) {
+            statusHandler.info("metaDataID: "+metaDataID);
+            statusHandler.info("relativeURL: "+relativeDataURL);
+            statusHandler.info("metaDataURL: "+metaDataURL);
+        }
         // append the 
         // set date formatter
         setDateFormat(dateFormat);
@@ -203,10 +217,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             }
         }
       
-        // set the coverage
-        if (!record.getBoundingBox().isEmpty()) {
-            coverage = getCoverage(record.getBoundingBox().get(0).getValue());
-        }
         // These are the params for setting up metadata/datasets/params
         String myCollectionName = paramMap.get(collectionName);
         String relation = paramMap.get(satelliteName);
@@ -254,32 +264,46 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                
         // create data set Name      
         String dataSetName = createDataSetName(myCollectionName, relation, dataSet, myFormat);
-        PDADataSet pdaDataSet = new PDADataSet();
-        pdaDataSet.setCollectionName(myCollectionName);
-        pdaDataSet.setDataSetName(dataSetName);
-        pdaDataSet.setProviderName(provider.getName());
-        pdaDataSet.setDataSetType(DataType.PDA);
-        pdaDataSet.setTime(time);
-        pdaDataSet.setArrivalTime(arrivalTime.getTime());
-        // there is only one parameter per briefRecord at this point
-        Map<String, Parameter> parameters = getParameters(myParamName, myCollectionName, provider.getName(), myUnits, myFillValue, myMissingValue);
-        pdaDataSet.setParameters(parameters);
-        // set the coverage
-        pdaDataSet.setCoverage(coverage);
-        // Store the parameter, data Set name, data Set
-        for (Entry<String, Parameter> parm: parameters.entrySet()) {
-            storeParameter(parm.getValue());
+
+        // Lookup for coverage information
+        if (!record.getBoundingBox().isEmpty()) {
+            coverage = getCoverage(record.getBoundingBox().get(0).getValue());
         }
-        storeDataSetName(pdaDataSet);
-        storeDataSet(pdaDataSet);
         
+        /**
+         * This portion of the MetaData parser is only used when processing a getRecordsResopnse()
+         */
+        if (coverage != null) {
+
+            PDADataSet pdaDataSet = new PDADataSet();
+            pdaDataSet.setCollectionName(myCollectionName);
+            pdaDataSet.setDataSetName(dataSetName);
+            pdaDataSet.setProviderName(provider.getName());
+            pdaDataSet.setDataSetType(DataType.PDA);
+            pdaDataSet.setTime(time);
+            pdaDataSet.setArrivalTime(arrivalTime.getTime());
+            // there is only one parameter per briefRecord at this point
+            Map<String, Parameter> parameters = getParameters(myParamName,
+                    myCollectionName, provider.getName(), myUnits, myFillValue,
+                    myMissingValue);
+            pdaDataSet.setParameters(parameters);
+            // set the coverage
+            pdaDataSet.setCoverage(coverage);
+            // Store the parameter, data Set name, data Set
+            for (Entry<String, Parameter> parm : parameters.entrySet()) {
+                storeParameter(parm.getValue());
+            }
+            storeDataSetName(pdaDataSet);
+            storeDataSet(pdaDataSet);
+        }
+
         // create Data Set MetaData
         PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
         pdadsmd.setMetaDataID(metaDataID);
         pdadsmd.setArrivalTime(arrivalTime.getTime());
         pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(myCollectionName, time.getStart().getTime()));
         pdadsmd.setDataSetName(dataSetName);
-        pdadsmd.setDataSetDescription(metaDataID + " " + pdaDataSet.getDataSetName());
+        pdadsmd.setDataSetDescription(metaDataID + " " + dataSetName);
         pdadsmd.setDate(idate);
         pdadsmd.setProviderName(provider.getName());
         // in PDA's case it's actually a file name
@@ -297,17 +321,61 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
      */
     private Coverage getCoverage(
             net.opengis.ows.v_1_0_0.BoundingBoxType boundingBoxType) {
-
-
-        if (boundingBoxType.getCrs() == null) {
-            boundingBoxType.setCrs(serviceConfig.getConstantValue("DEFAULT_CRS"));
-        }
         
         ReferencedEnvelope envelope = null;
         Coverage coverage = new Coverage();
 
         try {
-            envelope = BoundingBoxUtil.convert2D(boundingBoxType);
+            /*
+             * Need to convert values! PDA sends LAT LON instead of the correct
+             * LON LAT format for Bounding Box. Need to covert before
+             * creating the envelope.
+             */
+            List<Double> inUppers = boundingBoxType.getUpperCorner();
+            List<Double> inLowers = boundingBoxType.getLowerCorner();
+
+            // uppers
+            List<Double> upperVals = new ArrayList<Double>(2);
+            upperVals.add(inUppers.get(1));
+            upperVals.add(inUppers.get(0));
+            
+            // lowers
+            List<Double> lowerVals = new ArrayList<Double>(2);
+            lowerVals.add(inLowers.get(1));
+            lowerVals.add(inLowers.get(0));
+                   
+            BoundingBoxType reOrderedBox = (BoundingBoxType) boundingBoxType.createNewInstance();
+            
+            reOrderedBox.setUpperCorner(upperVals);
+            reOrderedBox.setLowerCorner(lowerVals);
+            // enforce 2 dimensions
+            Integer i = new Integer(2);
+            BigInteger bi = BigInteger.valueOf(i.longValue());
+            reOrderedBox.setDimensions(bi);
+            // set the CRS
+            if (boundingBoxType.getCrs() == null) {
+                String crs = serviceConfig.getConstantValue("DEFAULT_CRS");
+                reOrderedBox.setCrs(crs);
+            } else {
+                reOrderedBox.setCrs(boundingBoxType.getCrs());
+            }
+
+            if (debug == true) {
+                statusHandler.info("Parsed LOWER LON: "
+                        + reOrderedBox.getLowerCorner().get(0) + " LOWER LAT: "
+                        + reOrderedBox.getLowerCorner().get(1) + " size: "
+                        + reOrderedBox.getLowerCorner().size());
+                statusHandler.info("Parsed UPPER LON: "
+                        + reOrderedBox.getUpperCorner().get(0) + " UPPER LAT: "
+                        + reOrderedBox.getUpperCorner().get(1) + " size: "
+                        + reOrderedBox.getUpperCorner().size());
+                statusHandler.info("CRS: " + reOrderedBox.getCrs());
+                statusHandler.info("Dimensions: "
+                        + reOrderedBox.getDimensions());
+            }
+
+            envelope = BoundingBoxUtil.convert2D(reOrderedBox);
+            
             coverage.setEnvelope(envelope);
 
         } catch (OgcException e) {

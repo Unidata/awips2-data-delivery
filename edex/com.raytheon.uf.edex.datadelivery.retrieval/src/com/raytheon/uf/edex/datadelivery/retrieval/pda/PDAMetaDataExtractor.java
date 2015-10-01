@@ -21,6 +21,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  **/
 
 import com.raytheon.uf.common.datadelivery.registry.Connection;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
 
 /**
@@ -32,6 +34,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * July 08, 2014 3120        dhladky     Initial creation
+ * Sept 11, 2015 4881        dhladky     Improved debug tracking.
  * 
  * </pre>
  * 
@@ -41,9 +44,21 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
  */
 
 public abstract class PDAMetaDataExtractor<O, D> extends MetaDataExtractor<O, D> {
-
+    
+    /** DEBUG PDA system **/
+    private static final String DEBUG = "DEBUG";
+    
+    /** debug state */
+    protected Boolean debug = false;
+    
     public PDAMetaDataExtractor() {
         super(new Connection());
+        
+        serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
+                ServiceType.PDA);
+        // debugging MetaData parsing.
+        String debugVal = serviceConfig.getConstantValue(DEBUG);
+        debug = Boolean.valueOf(debugVal);
     }
 
 }

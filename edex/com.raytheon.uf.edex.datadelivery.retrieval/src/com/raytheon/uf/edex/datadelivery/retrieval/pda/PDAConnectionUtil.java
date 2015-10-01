@@ -51,6 +51,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Sep 14, 2104  3121        dhladky    Added binary transfer switch
  * Oct 14, 2014  3127        dhladky    Fine tuning for FTPS
  * Nov 10, 2014  3826        dhladky     Added more logging.
+ * Aug 02, 2015  4881        dhladky    Disable Remote verification, FTPS comms are proxied.
  * </pre>
  * 
  * @author dhladky
@@ -127,7 +128,11 @@ public class PDAConnectionUtil {
                 String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(remoteFilename, rootUrl);
                 // Do this after you separate!
                 rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
-                remoteFileDirectory = remotePathAndFile[0];
+                remoteFileDirectory = serviceConfig.getConstantValue("REMOTE_DIR_PATH");
+                statusHandler.handle(Priority.INFO,
+                        "remoteFileDirectory: " + remoteFileDirectory);
+                statusHandler.handle(Priority.INFO,
+                        "rootUrl: " + rootUrl);
                 fileName = remotePathAndFile[1];
                 localFileDirectory = serviceConfig.getConstantValue("FTPS_DROP_DIR");
                 String port = serviceConfig.getConstantValue("PORT");
@@ -161,9 +166,10 @@ public class PDAConnectionUtil {
                 ftpRequest.setDestinationDirectoryPath(localFileDirectory);
                 ftpRequest.setRemoteDirectoryPath(remoteFileDirectory);
                 ftpRequest.setFileName(fileName);
-                // PDA downloads are all binary and passive
+                // PDA downloads are all binary, passive, and remote verification is disabled as connections are proxied.
                 ftpRequest.addAdditionalParameter("binary", serviceConfig.getConstantValue("BINARY_TRANSFER"));
                 ftpRequest.addAdditionalParameter("passiveMode", serviceConfig.getConstantValue("PASSIVE_MODE"));
+                ftpRequest.addAdditionalParameter("ftpClient.isRemoteVerificationEnabled", serviceConfig.getConstantValue("REMOTE_VERIFICATION"));
 
                 FTP ftp = new FTP(ftpRequest);
                 localFileName = ftp.executeConsumer();
@@ -197,6 +203,8 @@ public class PDAConnectionUtil {
         try {
 
             int j;
+            
+            statusHandler.info("remoteFilePath: "+remoteFilePath+ " rootUrl: "+rootUrl);
             
             if (remoteFilePath.equals(rootUrl)) {
                 // skip first 2
