@@ -155,6 +155,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Feb 13, 2015   3852     dhladky      All messaging is handled by the BWM and registry.
  * May 17, 2015   4047     dhladky      verified non-blocking.
  * Jul 01, 2015   4047     dhladky      Use callback YES NO dialog for closing.
+ * Oct 15, 2015   4657     rferrel      Make data the return value to allow cleanup in the callback.
  * 
  * </pre>
  * 
@@ -383,6 +384,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         // Set the min size of the shell to the current
         // shell size since it has been packed before this call
         shell.setMinimumSize(shell.getSize());
+        setReturnValue(this.dataSet);
     }
 
     /** Create the tabs */

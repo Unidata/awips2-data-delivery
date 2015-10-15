@@ -22,7 +22,9 @@ package com.raytheon.uf.viz.datadelivery.browser;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -125,6 +127,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Sep 26, 2013   2413     mpduff       Added isDirty check to New Configuration menu selection.
  * Oct 11, 2013   2386     mpduff       Refactor DD Front end.
  * Apr 10, 2014   2892     mpduff       Fix problems with loading of saved configs.
+ * Oct 15, 2015   4657     rferrel      Limit the number of Subset Manager dialogs.
  * 
  * </pre>
  * 
@@ -238,6 +241,9 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
     /** Composite for main table. */
     private Composite mainTableComp = null;
+
+    /** Only allow one Subset Manager Dialog for a given set of data. */
+    private final Map<DataSet<?, ?>, SubsetManagerDlg> smDialogs = new HashMap<DataSet<?, ?>, SubsetManagerDlg>();
 
     /**
      * Constructor.
@@ -684,10 +690,25 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                     mb.open();
                     return;
                 }
+                SubsetManagerDlg dlg = smDialogs.get(data);
+                if ((dlg != null) && !dlg.isDisposed()) {
+                    dlg.bringToTop();
+                } else {
 
-                SubsetManagerDlg dlg = SubsetManagerDlg
-                        .fromDataSet(shell, data);
-                dlg.open();
+                    dlg = SubsetManagerDlg.fromDataSet(shell, data);
+                    smDialogs.put(data, dlg);
+                    dlg.setCloseCallback(new ICloseCallback() {
+
+                        @Override
+                        public void dialogClosed(Object returnValue) {
+                            if (returnValue instanceof DataSet<?, ?>) {
+                                DataSet<?, ?> data = (DataSet<?, ?>) returnValue;
+                                smDialogs.remove(data);
+                            }
+                        }
+                    });
+                    dlg.open();
+                }
             }
         } catch (AuthException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);

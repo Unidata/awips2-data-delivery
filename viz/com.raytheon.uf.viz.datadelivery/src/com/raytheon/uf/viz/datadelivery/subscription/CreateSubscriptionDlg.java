@@ -157,6 +157,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Jan 05, 2015   3898     ccody       Delete existing Site subscription if it is updated to a Shared Subscription
  * Feb 13, 2015   3852     dhladky     All messaging is done from the BWM and Registry regarding subscriptions.
  * May 17, 2015  4047      dhladky     verified non-blocking.
+ * Oct 15, 2015   4657     rferrel     Make blocking so parent dialog stays busy.
  * 
  * </pre>
  * 
@@ -266,8 +267,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      */
     public CreateSubscriptionDlg(Shell parent, boolean create, DataSet dataSet,
             IGuiThreadTaskExecutor guiThreadTaskExecutor) {
+        // Make blocking so parent shell stays busy until the dialog closes.
         super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL
-                | CAVE.PERSPECTIVE_INDEPENDENT | CAVE.DO_NOT_BLOCK);
+                | CAVE.PERSPECTIVE_INDEPENDENT);
         this.create = create;
         this.dataSet = dataSet;
         this.guiThreadTaskExecutor = guiThreadTaskExecutor;
@@ -1617,7 +1619,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             result = subscriptionService.store(username, subscription,
                     new CancelForceApplyAndIncreaseLatencyDisplayText("create",
                             getShell()));
-    
+
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to create subscription.", e);
