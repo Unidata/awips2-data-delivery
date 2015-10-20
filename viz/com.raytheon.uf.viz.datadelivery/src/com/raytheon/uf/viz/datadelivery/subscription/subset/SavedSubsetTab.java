@@ -47,6 +47,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jun  4, 2012    645     jpiatt     Added tooltips.
  * Nov  1, 2012   1278     mpduff     Formatted to meet coding standard.
  * Apr 10, 2014   2864     mpduff     Changed how saved subset files are stored.
+ * Oct 20, 2015   4992     dhladky    Added OK button message at tester request.
  * 
  * </pre>
  * 
@@ -183,7 +184,7 @@ public class SavedSubsetTab extends SubsetTab {
                 loadList();
             }
         } else {
-            DataDeliveryUtils.showMessage(comp.getShell(), SWT.ERROR,
+            DataDeliveryUtils.showMessageOk(comp.getShell(),
                     "No Subset Selection", "Please select a Subset to Delete.");
         }
 
@@ -198,7 +199,7 @@ public class SavedSubsetTab extends SubsetTab {
             subsetName = subsetName + extension;
             callback.handleLoadSubset(subsetName);
         } else {
-            DataDeliveryUtils.showMessage(comp.getShell(), SWT.ERROR,
+            DataDeliveryUtils.showMessageOk(comp.getShell(),
                     "No Subset Selection", "Please select a Subset to load.");
         }
     }
