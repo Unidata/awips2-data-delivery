@@ -47,6 +47,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jun  4, 2012    645     jpiatt     Added tooltips.
  * Nov  1, 2012   1278     mpduff     Formatted to meet coding standard.
  * Apr 10, 2014   2864     mpduff     Changed how saved subset files are stored.
+ * Oct 19, 2015   4996     dhladky    Fixed message dialog call for subsets.
  * Oct 20, 2015   4992     dhladky    Added OK button message at tester request.
  * 
  * </pre>
@@ -172,7 +173,7 @@ public class SavedSubsetTab extends SubsetTab {
 
     private void handleDeleteSubset() {
         if (subsetList.getSelectionCount() > 0) {
-            int response = DataDeliveryUtils.showMessage(comp.getShell(),
+            int response = DataDeliveryUtils.showMessageNonCallback(comp.getShell(),
                     SWT.YES | SWT.NO, "Delete Subset?",
                     "Are you sure you want to delete this subset?");
             String subsetName = subsetList.getItem(subsetList
