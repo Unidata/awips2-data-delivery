@@ -21,7 +21,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
 
 import java.util.EnumMap;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
@@ -34,8 +34,8 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
 import com.raytheon.uf.common.util.registry.GenericRegistry;
 import com.raytheon.uf.common.util.registry.RegistryException;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
-import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactoryLookup;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactoryLookup;
 
 /**
  * Retrieve {@link ServiceType} specific implementations of interfaces.
@@ -64,10 +64,9 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
             .getHandler(ServiceTypeFactory.class);
 
     @SuppressWarnings("rawtypes")
-    //TODO Figure a way to not have to do raw types with IServiceFactory
+    // TODO Figure a way to not have to do raw types with IServiceFactory
     private static class ServiceTypeRegistry extends
-             GenericRegistry<ServiceType, Class<IServiceFactory>> {
-
+            GenericRegistry<ServiceType, Class<IServiceFactory>> {
 
         private <O, D, T, C> ServiceTypeRegistry() {
             super(new EnumMap<ServiceType, Class<IServiceFactory>>(
@@ -97,9 +96,9 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
      * Default {@link IServiceFactoryLookup} to be used in production code.
      */
     @SuppressWarnings("rawtypes")
-    //TODO Figure a way to not have to do raw types with IServiceFactory
+    // TODO Figure a way to not have to do raw types with IServiceFactory
     private static class ServiceTypeFactoryLookup<O, D, T, C> implements
-      IServiceFactoryLookup {
+            IServiceFactoryLookup {
 
         @Override
         public IServiceFactory getProviderServiceFactory(Provider provider) {
@@ -132,8 +131,8 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
     }
 
     /**
-     * Retrieve the {@link IServiceFactory} to handle a specific {@link Provider}
-     * .
+     * Retrieve the {@link IServiceFactory} to handle a specific
+     * {@link Provider} .
      * 
      * @param provider
      *            the provider
@@ -141,9 +140,10 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
      */
 
     @SuppressWarnings("rawtypes")
-    //TODO Figure a way to not have to do raw types with IServiceFactory
-    public static <O, D, T, C> IServiceFactory retrieveServiceFactory(Provider provider) {
-        return (IServiceFactory) SERVICE_FACTORY_LOOKUP.getProviderServiceFactory(provider);
+    // TODO Figure a way to not have to do raw types with IServiceFactory
+    public static <O, D, T, C> IServiceFactory retrieveServiceFactory(
+            Provider provider) {
+        return SERVICE_FACTORY_LOOKUP.getProviderServiceFactory(provider);
     }
 
     /**
@@ -155,7 +155,8 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
      * @return the retrieval adapter
      */
     @SuppressWarnings("rawtypes")
-    //TODO Figure why T,C can not be parameterized when erasure extends Time and Coverage
+    // TODO Figure why T,C can not be parameterized when erasure extends Time
+    // and Coverage
     public static <T, C> RetrievalAdapter retrieveServiceRetrievalAdapter(
             ServiceType serviceType) {
         Provider provider = new Provider();
@@ -170,7 +171,7 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
      * @return the registry
      */
     @SuppressWarnings("rawtypes")
-    //TODO Figure a way to not have to do raw types with IServiceFactory
+    // TODO Figure a way to not have to do raw types with IServiceFactory
     public static GenericRegistry<ServiceType, Class<IServiceFactory>> getServiceTypeRegistry() {
         return serviceTypeRegistry;
     }

@@ -28,8 +28,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.raytheon.uf.common.dataplugin.persist.IPersistableDataObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
@@ -58,8 +58,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
 public class RetrievalRequestRecordPK implements
-        IPersistableDataObject<RetrievalRequestRecordPK>,
-        Serializable {
+        IPersistableDataObject<RetrievalRequestRecordPK>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -122,7 +121,7 @@ public class RetrievalRequestRecordPK implements
         }
         return super.equals(obj);
     }
-    
+
     @Override
     public int hashCode() {
         HashCodeBuilder builder = new HashCodeBuilder();

@@ -35,8 +35,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.google.common.collect.Sets;
 import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
@@ -960,34 +960,37 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
         long latency = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
         if (getSubscriptionStart() == null) {
-            throw new IllegalStateException("Subscription start can not be null!");
+            throw new IllegalStateException(
+                    "Subscription start can not be null!");
         }
         long startTime = getSubscriptionStart().getTime();
 
         long offset = 0l;
-        
-        switch(dataSetType) {
+
+        switch (dataSetType) {
 
         // special case of grids
         case GRID:
             // get the step time in milliseconds.
-            offset = ((GriddedTime) getTime()).findForecastStepUnit() * TimeUtil.MILLIS_PER_SECOND;
+            offset = ((GriddedTime) getTime()).findForecastStepUnit()
+                    * TimeUtil.MILLIS_PER_SECOND;
             break;
-            
+
         case POINT:
             // point uses an interval (in Minutes)
-            offset = ((PointTime) getTime()).getInterval() * TimeUtil.MILLIS_PER_MINUTE;
+            offset = ((PointTime) getTime()).getInterval()
+                    * TimeUtil.MILLIS_PER_MINUTE;
             break;
-            
+
         default:
-             // no offset value set
-             break;
+            // no offset value set
+            break;
         }
-        
+
         if ((startTime - offset - latency) > date.getTime()) {
             before = true;
         }
-     
+
         return before;
     }
 
@@ -1036,8 +1039,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      */
     @Override
     public boolean shouldScheduleForTime(Date checkCal) {
-        if (!isExpired(checkCal)
-                && !isBeforeStart(checkCal)
+        if (!isExpired(checkCal) && !isBeforeStart(checkCal)
                 && inActivePeriodWindow(checkCal)) {
             return true;
         }
@@ -1189,9 +1191,8 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     }
 
     @Override
-    public SortedSet<Date> getRetrievalTimes(Date planStart,
-            Date planEnd, List<DataSetMetaData> dsmdList,
-            SubscriptionUtil subUtil) {
+    public SortedSet<Date> getRetrievalTimes(Date planStart, Date planEnd,
+            List<DataSetMetaData> dsmdList, SubscriptionUtil subUtil) {
         SortedSet<Date> retrievalTimes = null;
         switch (dataSetType) {
         case GRID:
@@ -1212,7 +1213,8 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
                 while (lastArrival.before(planStart)) {
                     lastArrival.add(Calendar.MINUTE, interval);
                 }
-                retrievalTimes = getTimes(interval, lastArrival.getTime(), planEnd);
+                retrievalTimes = getTimes(interval, lastArrival.getTime(),
+                        planEnd);
             }
             break;
         case POINT:
@@ -1247,8 +1249,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      *            The end
      * @return sorted set of calendar objects
      */
-    private SortedSet<Date> getTimes(int interval, Date planStart,
-            Date planEnd) {
+    private SortedSet<Date> getTimes(int interval, Date planStart, Date planEnd) {
         SortedSet<Date> subscriptionTimes = new TreeSet<Date>();
 
         if (interval == SubscriptionUtil.MISSING || interval <= 0) {
@@ -1256,11 +1257,13 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         }
         // starting time when subscription is first valid for scheduling
         // based on plan start and subscription start.
-        Calendar subscriptionCalculatedStart = TimeUtil.newGmtCalendar(calculateStart(planStart));
+        Calendar subscriptionCalculatedStart = TimeUtil
+                .newGmtCalendar(calculateStart(planStart));
 
         // end time when when subscription is last valid for scheduling based on
         // plan end and subscription end.
-        Calendar subscriptionCalculatedEnd = TimeUtil.newGmtCalendar(calculateEnd(planEnd));
+        Calendar subscriptionCalculatedEnd = TimeUtil
+                .newGmtCalendar(calculateEnd(planEnd));
 
         subscriptionCalculatedStart = TimeUtil.minCalendarFields(
                 subscriptionCalculatedStart, Calendar.MINUTE, Calendar.SECOND,
@@ -1299,9 +1302,9 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      *            end time
      * @return sorted set of calendar objects
      */
-    private SortedSet<Date> getTimes(TreeSet<Integer> cycles,
-            Date planStart, Date planEnd) {
-        
+    private SortedSet<Date> getTimes(TreeSet<Integer> cycles, Date planStart,
+            Date planEnd) {
+
         SortedSet<Date> subscriptionTimes = new TreeSet<Date>();
         /* calendar used in these calcs with grid */
         Calendar cplanStart = TimeUtil.newGmtCalendar(planStart);
@@ -1310,13 +1313,15 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
          * starting time when subscription is first valid for scheduling based
          * on plan start and subscription start.
          */
-        Calendar subscriptionCalculatedStart = TimeUtil.newGmtCalendar(calculateStart(planStart));
+        Calendar subscriptionCalculatedStart = TimeUtil
+                .newGmtCalendar(calculateStart(planStart));
 
         /*
          * end time when when subscription is last valid for scheduling based on
          * plan end and subscription end.
          */
-        Calendar subscriptionCalculatedEnd = TimeUtil.newGmtCalendar(calculateEnd(planEnd));
+        Calendar subscriptionCalculatedEnd = TimeUtil
+                .newGmtCalendar(calculateEnd(planEnd));
 
         subscriptionCalculatedStart = TimeUtil.minCalendarFields(
                 subscriptionCalculatedStart, Calendar.MINUTE, Calendar.SECOND,
@@ -1333,8 +1338,8 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
                 // calculate the offset, every hour
                 int availabilityOffset = 0;
                 try {
-                    availabilityOffset = SubscriptionUtil.getInstance().getDataSetAvailablityOffset(
-                            this, start.getTime());
+                    availabilityOffset = SubscriptionUtil.getInstance()
+                            .getDataSetAvailablityOffset(this, start.getTime());
                 } catch (RegistryHandlerException e) {
                     // Error occurred querying the registry. Log and continue on
                     statusHandler

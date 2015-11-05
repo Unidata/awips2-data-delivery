@@ -10,8 +10,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.raytheon.uf.common.registry.annotations.RegistryObject;
 import com.raytheon.uf.common.registry.annotations.RegistryObjectDescription;
@@ -53,7 +53,8 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso({ GriddedDataSetMetaData.class,
-        OpenDapGriddedDataSetMetaData.class, PointDataSetMetaData.class, PDADataSetMetaData.class })
+        OpenDapGriddedDataSetMetaData.class, PointDataSetMetaData.class,
+        PDADataSetMetaData.class })
 @RegistryObject({ "url" })
 @RegistryObjectVersion(value = 1.1f)
 public abstract class DataSetMetaData<T extends Time> {

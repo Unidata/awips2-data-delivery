@@ -22,7 +22,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -58,7 +58,7 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractMetadataAdapter.class);
-    
+
     protected boolean isPointData = false;
 
     protected PluginDataObject[] pdos;
@@ -68,7 +68,8 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
     protected static Map<String, String[]> parameterMap = new HashMap<String, String[]>();
 
     @SuppressWarnings("rawtypes")
-    //TODO Figure a way to not have to do raw types with AbstractMetadataAdapter
+    // TODO Figure a way to not have to do raw types with
+    // AbstractMetadataAdapter
     protected static GenericRegistry<String, Class<AbstractMetadataAdapter>> metadataAdapterRegistry = new GenericRegistry<String, Class<AbstractMetadataAdapter>>() {
 
         /**
@@ -77,7 +78,7 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
         @Override
         public Object register(String t, Class<AbstractMetadataAdapter> s)
                 throws RegistryException {
-            
+
             Validate.notNull(t);
             Validate.notNull(s);
 
@@ -90,9 +91,10 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
     };
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    //TODO Figure a way to not have to do raw types with RecordKey, T, C
-    public static <RecordKey, T, C> AbstractMetadataAdapter<RecordKey, ?, ?> getMetadataAdapter(Class<?> clazz,
-            RetrievalAttribute attXML) throws InstantiationException {
+    // TODO Figure a way to not have to do raw types with RecordKey, T, C
+    public static <RecordKey, T, C> AbstractMetadataAdapter<RecordKey, ?, ?> getMetadataAdapter(
+            Class<?> clazz, RetrievalAttribute attXML)
+            throws InstantiationException {
 
         final String className = clazz.getName();
         Class<AbstractMetadataAdapter> adapterClass = metadataAdapterRegistry
@@ -107,7 +109,7 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
         try {
             // Must return a new instance every time, because none of the
             // metadata adapters are thread safe
-            AbstractMetadataAdapter<RecordKey, ?, ?> adapter = (AbstractMetadataAdapter<RecordKey, ?, ?>) adapterClass
+            AbstractMetadataAdapter<RecordKey, ?, ?> adapter = adapterClass
                     .newInstance();
             adapter.processAttributeXml(attXML);
             return adapter;
@@ -123,7 +125,7 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
      * 
      * @throws InstantiationException
      */
-    public abstract void processAttributeXml(RetrievalAttribute<T,C> attXML)
+    public abstract void processAttributeXml(RetrievalAttribute<T, C> attXML)
             throws InstantiationException;
 
     // setup an individual record from the direct plugin translation
@@ -131,7 +133,7 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
 
     // set the size of the PDO array to return
     public abstract void allocatePdoArray(int size);
-    
+
     /**
      * get the PDO list
      * 
@@ -145,21 +147,23 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
      * @return the metadataAdapterRegistry
      */
     @SuppressWarnings("rawtypes")
-    //TODO Figure a way to not have to do raw types with AbstractMetadataAdapter
+    // TODO Figure a way to not have to do raw types with
+    // AbstractMetadataAdapter
     public static GenericRegistry<String, Class<AbstractMetadataAdapter>> getMetadataAdapterRegistry() {
         return metadataAdapterRegistry;
     }
-    
+
     /**
      * Sets whether this adapter is pointData or not
+     * 
      * @param isPointData
      */
     public void setIsPointData(boolean isPointData) {
         this.isPointData = isPointData;
     }
-    
+
     public boolean isPointData() {
         return isPointData;
     }
-   
+
 }

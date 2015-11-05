@@ -8,8 +8,8 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionRetrievalEvent;
@@ -73,8 +73,7 @@ public class SubscriptionNotifyTask implements Runnable {
         final String key;
 
         final Long retrievalRequestTime;
-        
-        
+
         SubscriptionDelay(String subName, String owner, String plugin,
                 SubscriptionType subscriptionType, Network network,
                 String provider, Long subRetrievalKey, long delayedUntilMillis,
@@ -125,7 +124,8 @@ public class SubscriptionNotifyTask implements Runnable {
                 eqBuilder.append(network, other.network);
                 eqBuilder.append(provider, other.provider);
                 eqBuilder.append(subRetrievalKey, other.subRetrievalKey);
-                eqBuilder.append(retrievalRequestTime, other.retrievalRequestTime);
+                eqBuilder.append(retrievalRequestTime,
+                        other.retrievalRequestTime);
                 return eqBuilder.isEquals();
             }
             return super.equals(obj);
@@ -159,17 +159,17 @@ public class SubscriptionNotifyTask implements Runnable {
         }
 
         /**
-         * Returns The date time (long) of the Data Retrieval Request.
-         * has passed.
+         * Returns The date time (long) of the Data Retrieval Request. has
+         * passed.
          * 
-         * @return retrievalRequestTime  Time that Retrieval Request was generated
+         * @return retrievalRequestTime Time that Retrieval Request was
+         *         generated
          */
         @VisibleForTesting
         Long getRetrievalRequestTime() {
-            return(retrievalRequestTime);
+            return (retrievalRequestTime);
         }
 
-        
         @Override
         public int hashCode() {
             HashCodeBuilder hcBuilder = new HashCodeBuilder();
@@ -211,11 +211,13 @@ public class SubscriptionNotifyTask implements Runnable {
         try {
             Retrieval retrievalObject = record.getRetrievalObj();
             if (retrievalObject != null) {
-                retrievalRequestTimeLong = retrievalObject.getRequestRetrievalTime();
+                retrievalRequestTimeLong = retrievalObject
+                        .getRequestRetrievalTime();
             }
-        }
-        catch(SerializationException se) {
-            statusHandler.error("Error occurred unmarshalling retrieval object for determining Subscriptiong Request time.", se);
+        } catch (SerializationException se) {
+            statusHandler
+                    .error("Error occurred unmarshalling retrieval object for determining Subscriptiong Request time.",
+                            se);
         }
 
         if (retrievalRequestTimeLong == null) {
@@ -226,8 +228,7 @@ public class SubscriptionNotifyTask implements Runnable {
                 record.getOwner(), record.getPlugin(),
                 record.getSubscriptionType(), record.getNetwork(),
                 record.getProvider(), record.getSubRetrievalKey(),
-                startTime + 11000,
-                retrievalRequestTimeLong );
+                startTime + 11000, retrievalRequestTimeLong);
     }
 
     // set written to by other threads
@@ -280,7 +281,7 @@ public class SubscriptionNotifyTask implements Runnable {
                 subscriptionQueue.addAll(subscriptionsInProcess.values());
                 subscriptionsInProcess.clear();
             }
-            
+
             SubscriptionDelay subToCheck = subscriptionQueue.poll();
             while (subToCheck != null) {
                 Map<RetrievalRequestRecord.State, Integer> stateCounts = dao
@@ -300,7 +301,7 @@ public class SubscriptionNotifyTask implements Runnable {
                             .name());
                     event.setNetwork(subToCheck.network.name());
                     event.setRetrievalRequestTime(subToCheck.retrievalRequestTime);
-                    
+
                     RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
                     retrievalManagerNotifyEvent.setId(Long
                             .toString(subToCheck.subRetrievalKey));
@@ -353,7 +354,7 @@ public class SubscriptionNotifyTask implements Runnable {
                     } else {
                         event.setNumFailed(numFailed);
                     }
-                    
+
                     EventBus.publish(event);
                     EventBus.publish(retrievalManagerNotifyEvent);
                     dao.removeSubscription(subToCheck.subName);
