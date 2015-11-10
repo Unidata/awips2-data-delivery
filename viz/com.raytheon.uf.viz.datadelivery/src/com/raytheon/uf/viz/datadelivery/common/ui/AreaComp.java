@@ -95,6 +95,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
  * Jan 10, 2014  2452      mpduff       Add label stating all lat/lons will be converted to easting.
  * Jan 25, 2014  2452      mpduff       Changed label based on feedback.
+ * Nov 10, 2015  5024      dhladky      Can toggle full data set and regions with previous selection preserved.
+ * 
  * 
  * </pre>
  * 
@@ -189,6 +191,9 @@ public class AreaComp extends Composite implements ISubset {
 
     /** Envelope valid flag */
     private boolean envelopeValid = false;
+    
+    /** Keeps track of the previous selection on the regionComboBox **/
+    private int previousRegionComboSelection = -1;
 
     /**
      * Constructor.
@@ -611,7 +616,8 @@ public class AreaComp extends Composite implements ISubset {
 
         if (flag == true) {
             updateRegionControls();
-        }
+            handleRegionChange();
+        } 
     }
 
     /**
@@ -623,15 +629,20 @@ public class AreaComp extends Composite implements ISubset {
                 && selectCombo.getItem(selectCombo.getSelectionIndex()).equals(
                         REGION_GROUPS.PRE_DEFINED.getRegionGroup())) {
             regionCombo.setItems(predefinedRegions);
-            regionCombo.select(0);
-            handleRegionSelection(true);
+            
         } else {
             regionCombo.setItems(getUserRegions());
-            if (regionCombo.getItemCount() > 0) {
-                regionCombo.select(0);
-                handleRegionSelection(true);
-            }
         }
+        
+        if (regionCombo.getItemCount() > 0) {
+            if (previousRegionComboSelection >= regionCombo.getItemCount()) {
+                previousRegionComboSelection = regionCombo.getItemCount() - 1;
+            } 
+            
+            regionCombo.select(previousRegionComboSelection);
+            handleRegionSelection(true);
+        }
+
     }
 
     public boolean isUserDefinedRegion() {
@@ -658,11 +669,13 @@ public class AreaComp extends Composite implements ISubset {
      *            when true user is alerted to validation errors.
      */
     private void handleRegionSelection(boolean verbose) {
-        if (!regionRdo.getSelection()) {
+        if (!regionRdo.getSelection() || regionCombo.getItemCount() == 0) {
             return;
         }
+        
         ReferencedEnvelope regionEnvelope = null;
         String name = regionCombo.getItem(regionCombo.getSelectionIndex());
+        previousRegionComboSelection = regionCombo.getSelectionIndex();
 
         if (!isUserDefinedRegion()) {
             ManagedMapScale mapScale = MapScalesManager.getInstance()
