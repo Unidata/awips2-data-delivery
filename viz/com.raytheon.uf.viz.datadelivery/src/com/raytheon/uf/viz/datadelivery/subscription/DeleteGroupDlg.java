@@ -51,6 +51,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Jan 2, 2013  1441       djohnson     Initial creation
  * Jan 18, 2013 1441       djohnson     Use group definition service.
  * Feb 26, 2013 1643       djohnson     Catch any exception.
+ * Oct 19, 2015 4996       dhladky      Removed "are you sure" un-needed double auth message.
  * 
  * </pre>
  * 
@@ -145,22 +146,14 @@ public class DeleteGroupDlg extends CaveSWTDialog {
 
             final String groupName = groupSelectComp.getGroupName();
 
-            if (SWT.YES == DataDeliveryUtils.showYesNoMessage(getShell(),
-                    "Delete Group", "Are you sure you wish to delete "
-                            + groupName + "?")) {
-
-                try {
-                    groupService
-                            .deleteGroupDefinition(
-                                    DataDeliveryHandlers
-                                            .getGroupDefinitionHandler()
-                                            .getByName(groupName));
-                    groupAction.loadGroupNames();
-                    return true;
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.ERROR,
-                            "Unable to delete a group.", e);
-                }
+            try {
+                groupService.deleteGroupDefinition(DataDeliveryHandlers
+                        .getGroupDefinitionHandler().getByName(groupName));
+                groupAction.loadGroupNames();
+                return true;
+            } catch (Exception e) {
+                statusHandler.handle(Priority.ERROR,
+                        "Unable to delete a group.", e);
             }
         } else {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, "Delete Group",
