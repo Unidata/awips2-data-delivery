@@ -44,6 +44,7 @@ import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOver
  *                                     against half of uneven numbers of attributes.
  *                                     Renamed sub1 and sub2 to otherSub and sub to make
  *                                     it easier to see what is compared against.
+ * Nov 12, 2015  4644      dhladky     warning mitigation.
  * 
  * </pre>
  * 
@@ -69,6 +70,7 @@ public class PointOverlapData<T extends PointTime, C extends Coverage> extends
      * @param otherSub
      * @param config
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public PointOverlapData(Subscription sub, Subscription otherSub,
             SubscriptionOverlapConfig config) {
         super(sub, otherSub, config);

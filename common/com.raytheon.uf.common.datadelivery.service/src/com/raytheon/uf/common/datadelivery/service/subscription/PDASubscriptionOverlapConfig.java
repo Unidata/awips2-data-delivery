@@ -36,6 +36,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug, 21 2013  3121      dhladky     Grid Subscription Overlap
+ * Nov, 10, 2015 4644      dhladky     Fixed PDA overlaps
  * 
  * </pre>
  * 
@@ -47,10 +48,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
 
     @XmlElement(required = true)
-    private int maxAllowedForecastHourDuplication;
+    private int maxAllowedParameterDuplication;
 
     @XmlElement(required = true)
-    private int maxAllowedCycleDuplication;
+    private int maxAllowedTimeDuplication;
 
     /**
      * Constructor.
@@ -60,22 +61,20 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
     }
 
     /**
-     * Constructor.
+     * Constructor
      * 
      * @param maxAllowedParameterDuplication
-     * @param maxAllowedForecastHourDuplication
-     * @param maxAllowedCycleDuplication
+     * @param maxAllowedTimeDuplication
      * @param maxAllowedSpatialDuplication
      * @param matchStrategy
      */
     public PDASubscriptionOverlapConfig(int maxAllowedParameterDuplication,
-            int maxAllowedForecastHourDuplication,
-            int maxAllowedCycleDuplication, int maxAllowedSpatialDuplication,
+            int maxAllowedTimeDuplication,
+            int maxAllowedSpatialDuplication,
             SubscriptionOverlapMatchStrategy matchStrategy) {
 
         this.maxAllowedParameterDuplication = maxAllowedParameterDuplication;
-        this.maxAllowedForecastHourDuplication = maxAllowedForecastHourDuplication;
-        this.maxAllowedCycleDuplication = maxAllowedCycleDuplication;
+        this.maxAllowedTimeDuplication = maxAllowedTimeDuplication;
         this.maxAllowedSpatialDuplication = maxAllowedSpatialDuplication;
         this.matchStrategy = matchStrategy;
     }
@@ -83,32 +82,17 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
     /**
      * @return the maxAllowedForecastHourDuplication
      */
-    public int getMaxAllowedForecastHourDuplication() {
-        return maxAllowedForecastHourDuplication;
+    public int getMaxAllowedTimeDuplication() {
+        return maxAllowedTimeDuplication;
     }
 
     /**
      * @param maxAllowedForecastHourDuplication
      *            the maxAllowedForecastHourDuplication to set
      */
-    public void setMaxAllowedForecastHourDuplication(
-            int maxAllowedForecastHourDuplication) {
-        this.maxAllowedForecastHourDuplication = maxAllowedForecastHourDuplication;
-    }
-
-    /**
-     * @return the maxAllowedCycleDuplication
-     */
-    public int getMaxAllowedCycleDuplication() {
-        return maxAllowedCycleDuplication;
-    }
-
-    /**
-     * @param maxAllowedCycleDuplication
-     *            the maxAllowedCycleDuplication to set
-     */
-    public void setMaxAllowedCycleDuplication(int maxAllowedCycleDuplication) {
-        this.maxAllowedCycleDuplication = maxAllowedCycleDuplication;
+    public void setMaxAllowedTimeDuplication(
+            int maxAllowedTimeDuplication) {
+        this.maxAllowedTimeDuplication = maxAllowedTimeDuplication;
     }
 
     /**
@@ -116,8 +100,7 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
      */
     @Override
     public SubscriptionOverlapConfig getNeverOverlaps() {
-        return new GridSubscriptionOverlapConfig(
-                SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
+        return new PDASubscriptionOverlapConfig(
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,

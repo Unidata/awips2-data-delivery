@@ -16,6 +16,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * ------------ ---------- ----------- --------------------------
  * Sep 24, 2013   2386     dhladky     Grid Subscription Overlap
  * Oct 21, 2013   2292     mpduff      Change overlap rules
+ * Nov 10, 2015   4644     dhladky     Added level overlap rules
  * 
  * </pre>
  * 
@@ -31,6 +32,9 @@ public class GridSubscriptionOverlapConfig extends SubscriptionOverlapConfig {
 
     @XmlElement(required = true)
     private int maxAllowedCycleDuplication;
+    
+    @XmlElement(required = true)
+    private int maxAllowedLevelDuplication;
 
     /**
      * Constructor.
@@ -43,17 +47,20 @@ public class GridSubscriptionOverlapConfig extends SubscriptionOverlapConfig {
      * Constructor.
      * 
      * @param maxAllowedParameterDuplication
+     * @param maxAllowedLevelDuplication
      * @param maxAllowedForecastHourDuplication
      * @param maxAllowedCycleDuplication
      * @param maxAllowedSpatialDuplication
      * @param matchStrategy
      */
     public GridSubscriptionOverlapConfig(int maxAllowedParameterDuplication,
+            int maxAllowedLevelDuplication,
             int maxAllowedForecastHourDuplication,
             int maxAllowedCycleDuplication, int maxAllowedSpatialDuplication,
             SubscriptionOverlapMatchStrategy matchStrategy) {
 
         this.maxAllowedParameterDuplication = maxAllowedParameterDuplication;
+        this.maxAllowedLevelDuplication = maxAllowedLevelDuplication;
         this.maxAllowedForecastHourDuplication = maxAllowedForecastHourDuplication;
         this.maxAllowedCycleDuplication = maxAllowedCycleDuplication;
         this.maxAllowedSpatialDuplication = maxAllowedSpatialDuplication;
@@ -90,6 +97,19 @@ public class GridSubscriptionOverlapConfig extends SubscriptionOverlapConfig {
     public void setMaxAllowedCycleDuplication(int maxAllowedCycleDuplication) {
         this.maxAllowedCycleDuplication = maxAllowedCycleDuplication;
     }
+    
+
+    public int getMaxAllowedLevelDuplication() {
+        return maxAllowedLevelDuplication;
+    }
+
+    /**
+     * max allowed level duplication percentage
+     * @param maxAllowedLevelDuplication
+     */
+    public void setMaxAllowedLevelDuplication(int maxAllowedLevelDuplication) {
+        this.maxAllowedLevelDuplication = maxAllowedLevelDuplication;
+    }
 
     /**
      * {@inheritDoc}
@@ -101,6 +121,8 @@ public class GridSubscriptionOverlapConfig extends SubscriptionOverlapConfig {
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
+                SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapMatchStrategy.MATCH_ALL);
     }
+
 }

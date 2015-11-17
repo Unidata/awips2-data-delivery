@@ -55,6 +55,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Oct 03, 2013  2386      mpduff       Moved the subscription overlap rules files into the rules directory.
  * Oct 25, 2013  2292      mpduff       Move overlap checks to edex.
  * Nov 12, 2013  2361      njensen      Made JAXBManager static and initialized on first use
+ * Nov 10, 2015  4644      dhladky      Added PDA overlap strategies
  * </pre>
  * 
  * @author djohnson
@@ -83,7 +84,8 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
                 Class<?>[] clazzes = new Class<?>[] {
                         SubscriptionOverlapConfig.class,
                         GridSubscriptionOverlapConfig.class,
-                        PointSubscriptionOverlapConfig.class };
+                        PointSubscriptionOverlapConfig.class,
+                        PDASubscriptionOverlapConfig.class};
                 jaxbManager = new JAXBManager(clazzes);
             } catch (JAXBException e) {
                 throw new ExceptionInInitializerError(e);
@@ -120,6 +122,10 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
         } else if (config instanceof GridSubscriptionOverlapConfig) {
             fileName = SUBSCRIPTION_OVERLAP_CONFIG_FILE_PATH
                     + DataType.GRID.name()
+                    + SUBSCRIPTION_OVERLAP_CONFIG_FILE_ROOT;
+        } else if (config instanceof PDASubscriptionOverlapConfig) {
+            fileName = SUBSCRIPTION_OVERLAP_CONFIG_FILE_PATH
+                    + DataType.PDA.name()
                     + SUBSCRIPTION_OVERLAP_CONFIG_FILE_ROOT;
         } else {
             throw new IllegalArgumentException(config.getClass()
@@ -163,6 +169,9 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
                 config = localizationFile.jaxbUnmarshal(
                         PointSubscriptionOverlapConfig.class, getJaxbManager());
 
+            } else if (type == DataType.PDA) {
+                config = localizationFile.jaxbUnmarshal(
+                        PointSubscriptionOverlapConfig.class, getJaxbManager());
             }
 
         } catch (Exception e) {
@@ -174,6 +183,9 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
             } else if (type == DataType.POINT) {
                 config = new PointSubscriptionOverlapConfig()
                         .getNeverOverlaps();
+            } else if (type == DataType.PDA) {
+                config = new PDASubscriptionOverlapConfig()
+                .getNeverOverlaps();
             }
         }
 

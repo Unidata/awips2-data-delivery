@@ -44,6 +44,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 1, 2013    2386     mpduff      Initial creation
+ * Nov 12, 2015   4644     dhladky     Added Level checks for gridded subs.
  * 
  * </pre>
  * 
@@ -57,6 +58,9 @@ public class GridSubscriptionRuleComposite extends SubscriptionComposite {
 
     /** Cycles spinner */
     private Spinner cycleSpinner;
+    
+    /** Levels spinner */
+    private Spinner levelSpinner;
 
     /**
      * Constructor.
@@ -75,7 +79,7 @@ public class GridSubscriptionRuleComposite extends SubscriptionComposite {
     protected void initTypeSpecific(Group grp) {
         grp.setText(" Gridded Attributes ");
 
-        GridLayout gl = new GridLayout(2, false);
+        GridLayout gl = new GridLayout(3, false);
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         Composite comp = new Composite(grp, SWT.NONE);
         comp.setLayout(gl);
@@ -124,6 +128,28 @@ public class GridSubscriptionRuleComposite extends SubscriptionComposite {
                 setButtonsEnabled();
             }
         });
+        
+        gl = new GridLayout(2, false);
+        gl.marginRight = 10;
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, false, false);
+        Composite levelComp = new Composite(comp, SWT.NONE);
+        levelComp.setLayout(gl);
+        levelComp.setLayoutData(gd);
+
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        Label levelLbl = new Label(levelComp, SWT.NONE);
+        levelLbl.setText("Levels:");
+        levelLbl.setLayoutData(gd);
+
+        levelSpinner = new Spinner(levelComp, SWT.BORDER);
+        levelSpinner.setMinimum(0);
+        levelSpinner.setMaximum(100);
+        levelSpinner.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                setButtonsEnabled();
+            }
+        });
     }
 
     /**
@@ -139,6 +165,8 @@ public class GridSubscriptionRuleComposite extends SubscriptionComposite {
                     .getMaxAllowedCycleDuplication());
             this.fcstHrSpinner.setSelection(config
                     .getMaxAllowedForecastHourDuplication());
+            this.levelSpinner.setSelection(config
+                    .getMaxAllowedForecastHourDuplication());
         }
     }
 
@@ -153,6 +181,8 @@ public class GridSubscriptionRuleComposite extends SubscriptionComposite {
         config.setMaxAllowedSpatialDuplication(commonComp.getSpatialValue());
         config.setMaxAllowedCycleDuplication(this.cycleSpinner.getSelection());
         config.setMaxAllowedForecastHourDuplication(this.fcstHrSpinner
+                .getSelection());
+        config.setMaxAllowedLevelDuplication(this.levelSpinner
                 .getSelection());
         config.setMatchStrategy((SubscriptionOverlapMatchStrategy) matchStrategyCombo
                 .getData(matchStrategyCombo.getText()));
