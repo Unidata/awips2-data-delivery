@@ -2,7 +2,7 @@ package com.raytheon.uf.common.comm;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -22,7 +22,7 @@ public class CatalogProxyTest {
 
     /**
      * Simple starter for a jetty HTTPS server.
-     * 
+     *
      * @param args
      * @throws Exception
      */
@@ -32,11 +32,12 @@ public class CatalogProxyTest {
         SslContextFactory sslContextFactory = new SslContextFactory(
                 KEYSTORE_LOCATION);
         sslContextFactory.setKeyStorePassword(KEYSTORE_PASS);
-        sslContextFactory.setTrustStore(TRUSTSTORE_LOCATION);
+        sslContextFactory.setTrustStorePath(TRUSTSTORE_LOCATION);
         sslContextFactory.setTrustStorePassword(TRUSTSTORE_PASS);
         sslContextFactory.setNeedClientAuth(true);
         // create a https connector
-        SslSocketConnector connector = new SslSocketConnector(sslContextFactory);
+        NetworkTrafficSelectChannelConnector connector = new NetworkTrafficSelectChannelConnector(
+                server, sslContextFactory);
         connector.setPort(8443);
         // register the connector
         server.setConnectors(new Connector[] { connector });

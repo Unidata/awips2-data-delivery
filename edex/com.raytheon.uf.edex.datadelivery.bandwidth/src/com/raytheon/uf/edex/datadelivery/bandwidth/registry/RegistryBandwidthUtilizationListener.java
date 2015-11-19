@@ -3,28 +3,28 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.registry;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
@@ -46,18 +46,18 @@ import com.raytheon.uf.edex.registry.ebxml.web.RegistryWebServer;
 
 /**
  * {@link RegistryBandwidthUtilizationListener} Keeps track of network traffic for registry
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 06, 2013 1736       dhladky     Initial creation
  * 6/5/2014     1712       bphillip    Changed registry Jetty server class
- * 
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
@@ -66,22 +66,22 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RegistryBandwidthUtilizationListener.class);
-    
+
     /* Is this registry federated or not */
     private boolean isFederated = false;
-    
+
     /* Total bytes collected since last run */
     private AtomicInteger totalBytes = new AtomicInteger(0);
-    
+
     /* The millis of the last run */
-    private Long lastRun; 
-    
+    private Long lastRun;
+
     /** network for data traffic  */
     private Network network = Network.OPSNET;;
-    
+
     /** size of bucket in minutes */
     private int bucketSize = 0;
-    
+
     /** bucket dao class */
     private IBandwidthBucketDao bucketDao;
 
@@ -92,7 +92,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
      * @param BandwidthMap
      */
     public RegistryBandwidthUtilizationListener(RegistryWebServer server, Boolean isFederated, BandwidthMap map, IBandwidthBucketDao bucketDao) {
-        
+
         // We only care about OPSNET in this listener
         this.setFederated(isFederated);
         this.lastRun = TimeUtil.currentTimeMillis();
@@ -101,7 +101,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
         this.bucketDao = bucketDao;
         String cron = getCronString(route.getBucketSizeMinutes());
         createQuartzCron(cron, network.name());
-        
+
         for (Connector connector: server.getJettyServer().getConnectors()) {
             if (connector instanceof NetworkTrafficSelectChannelConnector) {
                 NetworkTrafficSelectChannelConnector nconnector = ((NetworkTrafficSelectChannelConnector)connector);
@@ -110,8 +110,8 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
             }
         }
     }
-    
-    
+
+
     @Override
     public void opened(Socket socket) {
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
@@ -120,25 +120,25 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
     }
 
     @Override
-    public void incoming(Socket socket, Buffer bytes) {
+    public void incoming(Socket socket, ByteBuffer bytes) {
 
         // Ignore local traffic if federated
         if (isFilteredTraffic(socket)) {
             return;
         }
-        
+
         // add bytes to total
         addBytes(bytes);
     }
 
     @Override
-    public void outgoing(Socket socket, Buffer bytes) {
+    public void outgoing(Socket socket, ByteBuffer bytes) {
 
         // Ignore local traffic if federated
         if (isFilteredTraffic(socket)) {
             return;
         }
-        
+
         // add bytes to total
         addBytes(bytes);
     }
@@ -154,8 +154,8 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
      * Add the bytes
      * @param bytes
      */
-    private void addBytes(Buffer bytes) {
-        totalBytes.getAndAdd(bytes.length());
+    private void addBytes(ByteBuffer bytes) {
+        totalBytes.getAndAdd(bytes.remaining());
     }
 
 
@@ -167,7 +167,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
     public void setFederated(boolean isFederated) {
         this.isFederated = isFederated;
     }
-    
+
     /**
      * Filter un-needed traffic
      * @param socket
@@ -176,7 +176,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
     private boolean isFilteredTraffic(Socket socket) {
 
         if (isFederated()) {
-            
+
             InetAddress address = socket.getInetAddress();
 
             if (address.isLoopbackAddress()) {
@@ -184,10 +184,10 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Get the string to submit as the cron
      * @param minutes
@@ -196,21 +196,21 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
     private String getCronString(int minutes) {
         return new String("0 0/"+minutes+" * * * ?");
     }
-    
+
     /**
-     * Creates a dynamic quartz cron for the Bandwidth Utilization based on the 
+     * Creates a dynamic quartz cron for the Bandwidth Utilization based on the
      * size of the Bandwidth Bucket in minutes.
      * @param cron
      * @param name
      */
     private void createQuartzCron(String cron, String name) {
-        
+
         try {
 
             SchedulerFactory schedFactory = new org.quartz.impl.StdSchedulerFactory();
             Scheduler schedular = schedFactory.getScheduler();
             JobDetail jobDetail = null;
-            
+
             try {
                 jobDetail = schedular.getJobDetail(name, "BandwidthUtilization");
             } catch (SchedulerException se) {
