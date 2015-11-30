@@ -32,7 +32,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -55,6 +55,8 @@ import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationFilterXML;
  * Apr 25, 2013   1820     mpduff     Add deleteXml method.
  * Aug 30, 2013   2314     mpduff     Removed initial XML read, added null check.
  * Mar 17, 2015   2894     dhladky    Consistent loading of configuration.
+ * Nov 30, 2015   4834     njensen    Changed LocalizationOpFailedException to LocalizationException
+ * 
  * </pre>
  * 
  * @author mpduff
@@ -81,7 +83,7 @@ public class NotificationConfigManager {
     /** Configuration XML File */
     private final String DEFAULT_CONFIG_XML_FILE = "notificationManagerConfig"
             + IPathManager.SEPARATOR + "DefaultNotificationConfig.xml";
-    
+
     /** Path for Notification Configuration files */
     private final String CONFIG_PREFIX = "dataDelivery";
 
@@ -222,8 +224,6 @@ public class NotificationConfigManager {
 
             marshaller.marshal(filterXml, filterLocFile.getFile());
             filterLocFile.save();
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
@@ -246,7 +246,7 @@ public class NotificationConfigManager {
             if (currentConfigFile == null) {
                 setConfigFile(this.defaultConfigFile);
             }
-        } catch (LocalizationOpFailedException e) {
+        } catch (LocalizationException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error deleting " + file.getName(), e);
         }

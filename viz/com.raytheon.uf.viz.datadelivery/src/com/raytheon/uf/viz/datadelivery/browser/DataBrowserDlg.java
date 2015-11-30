@@ -62,7 +62,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -128,6 +128,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Oct 11, 2013   2386     mpduff       Refactor DD Front end.
  * Apr 10, 2014   2892     mpduff       Fix problems with loading of saved configs.
  * Oct 15, 2015   4657     rferrel      Limit the number of Subset Manager dialogs.
+ * Nov 30, 2015   4834     njensen      Changed LocalizationOpFailedException to LocalizationException
  * 
  * </pre>
  * 
@@ -1004,7 +1005,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                                 if (locFile != null) {
                                     locFile.delete();
                                 }
-                            } catch (LocalizationOpFailedException e) {
+                            } catch (LocalizationException e) {
                                 statusHandler.handle(Priority.PROBLEM,
                                         e.getLocalizedMessage(), e);
                             }
@@ -1230,7 +1231,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     /**
      * Load the complete list of data types .
      * 
-     * @param list
+     * @param dataTypesList
      *            of strings the list of data Types
      */
     @Override

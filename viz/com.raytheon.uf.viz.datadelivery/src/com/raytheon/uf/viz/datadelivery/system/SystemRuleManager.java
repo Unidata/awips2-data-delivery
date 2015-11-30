@@ -48,7 +48,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -83,6 +83,7 @@ import com.raytheon.uf.viz.datadelivery.utils.TypeOperationItems;
  * Sept 04, 2014  2131      dhladky    PDA data type added.
  * Nov 20, 2014   2749      ccody      Put Set Avail Bandwidth Save into async, non-UI thread
  * Nov 12, 2015   4644      dhladky    Added actual rules file for PDA.
+ * Nov 30, 2015   4834      njensen    ChangedLocalizationOpFailedException to LocalizationException
  * 
  * </pre>
  * 
@@ -111,7 +112,7 @@ public class SystemRuleManager {
     /** Grid overlap rule file */
     private final String GRID_SUB_RULE_FILE = RULE_PATH
             + "GRIDSubscriptionOverlapRules.xml";
-    
+
     /** PDA overlap rule file */
     private final String PDA_SUB_RULE_FILE = RULE_PATH
             + "PDASubscriptionOverlapRules.xml";
@@ -285,9 +286,7 @@ public class SystemRuleManager {
                 marshaller.marshal(xmlObj, priorityRulesLocFile.getFile());
                 return priorityRulesLocFile.save();
             }
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
-        } catch (LocalizationOpFailedException e) {
+        } catch (JAXBException | LocalizationException e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
         }
 
@@ -320,9 +319,7 @@ public class SystemRuleManager {
                 marshaller.marshal(xmlObj, latencyRulesLocFile.getFile());
                 return latencyRulesLocFile.save();
             }
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
-        } catch (LocalizationOpFailedException e) {
+        } catch (JAXBException | LocalizationException e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
         }
 
@@ -995,9 +992,7 @@ public class SystemRuleManager {
         try {
             marshaller.marshal(config, configFile.getFile());
             return configFile.save();
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
-        } catch (LocalizationOpFailedException e) {
+        } catch (JAXBException | LocalizationException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
 

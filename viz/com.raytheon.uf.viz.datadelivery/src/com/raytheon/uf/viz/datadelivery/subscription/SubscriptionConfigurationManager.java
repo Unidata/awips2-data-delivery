@@ -36,7 +36,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -61,6 +61,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
  * Nov 06, 2013  2358      mpduff     Remove default configuration code.
  * Dec 03, 2014  3840      ccody      Implement Comparator based sorting.
  * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency. Bad path config.
+ * Nov 30, 2015   4834     njensen    Changed LocalizationOpFailedException to LocalizationException
+ * 
  * </pre>
  * 
  * @author mpduff
@@ -153,10 +155,6 @@ public class SubscriptionConfigurationManager {
                     xml = new SubscriptionManagerConfigXML();
                 }
             }
-        } catch (JAXBException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
-
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
@@ -185,8 +183,6 @@ public class SubscriptionConfigurationManager {
         try {
             marshaller.marshal(xml, file);
             locFile.save();
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
@@ -201,7 +197,7 @@ public class SubscriptionConfigurationManager {
 
         saveXml();
     }
-    
+
     /**
      * Load the default localization File
      */
@@ -290,7 +286,7 @@ public class SubscriptionConfigurationManager {
      * @param configFile
      */
     public void setConfigFile(LocalizationFile configFile) {
-        
+
         File file = configFile.getFile();
         fileName = configFile.getName();
         this.currentConfigFile = configFile;
@@ -412,7 +408,7 @@ public class SubscriptionConfigurationManager {
      * Set the sorted Column
      * 
      * @param columnName
-     * @param sortDirection
+     * @param sortOrder
      */
     public void setSortedColumn(String columnName, boolean sortOrder) {
         xml.setSortColumn(columnName, sortOrder);
@@ -463,7 +459,7 @@ public class SubscriptionConfigurationManager {
                 statusHandler.handle(Priority.WARN,
                         "Error deleting " + file.getName());
             }
-        } catch (LocalizationOpFailedException e) {
+        } catch (LocalizationException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error deleting " + file.getName(), e);
         }

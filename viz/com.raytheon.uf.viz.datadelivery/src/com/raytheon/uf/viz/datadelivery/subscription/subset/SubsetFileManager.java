@@ -42,7 +42,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -73,6 +73,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jun 04, 2013   223      mpduff     Added PointTimeXML to JaxB context.
  * Oct 11, 2013   2386     mpduff     Refactor DD Front end.
  * Apr 10, 2014   2864     mpduff     Changed how saved subset files are stored.
+ * Nov 30, 2015   4834     njensen    Changed LocalizationOpFailedException to LocalizationException
  * 
  * </pre>
  * 
@@ -179,9 +180,7 @@ public class SubsetFileManager {
             marshaller.marshal(area, areaLocFile.getFile());
             areaLocFile.save();
             return true;
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
-        } catch (LocalizationOpFailedException e) {
+        } catch (JAXBException | LocalizationException e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
         }
 
@@ -210,7 +209,7 @@ public class SubsetFileManager {
             if (areaLocFile.getFile().exists()) {
                 return areaLocFile.delete();
             }
-        } catch (LocalizationOpFailedException e) {
+        } catch (LocalizationException e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
         }
         return false;
@@ -321,9 +320,7 @@ public class SubsetFileManager {
             subsetLocFile.save();
             subsetFiles.get(type).add(subsetLocFile);
             return true;
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
-        } catch (LocalizationOpFailedException e) {
+        } catch (JAXBException | LocalizationException e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
         }
 
@@ -393,7 +390,7 @@ public class SubsetFileManager {
                     lf.delete();
                     file = lf;
                     break;
-                } catch (LocalizationOpFailedException e) {
+                } catch (LocalizationException e) {
                     statusHandler.handle(Priority.PROBLEM,
                             e.getLocalizedMessage(), e);
                 }
