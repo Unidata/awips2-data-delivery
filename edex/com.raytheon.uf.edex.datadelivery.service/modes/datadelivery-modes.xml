@@ -36,13 +36,10 @@
 	</mode>
 	<mode name="registry">
         <!-- Registry production mode -->
-        <include>ebxml.*\.xml</include>
         <includeMode>dataDeliveryTemplate</includeMode>
+        <includeMode>ebxmlRegistry</includeMode>
         <include>datadelivery-wfo-cron.xml</include>
         <include>bandwidth-datadelivery-.*-wfo.xml</include>
-        <include>nwsauth-request.xml</include>
-        <include>utility-common.xml</include>
-        <include>utility-request.xml</include>
         <exclude>.*datadelivery.*-ncf.*</exclude>
         <exclude>.*datadelivery.*-monolithic.*</exclude>
         <exclude>harvester-*</exclude>
@@ -50,17 +47,13 @@
 	</mode>
     <mode name="centralRegistry">
         <!-- Central Registry production mode -->
-        <include>ebxml.*\.xml</include>
         <includeMode>dataDeliveryTemplate</includeMode>
+        <includeMode>ebxmlRegistry</includeMode>
         <include>bandwidth-datadelivery-.*-ncf.xml</include>
-        <include>nwsauth-request.xml</include>
-        <include>utility-common.xml</include>
-        <include>utility-request.xml</include>
         <exclude>.*datadelivery.*-wfo.*</exclude>
         <exclude>.*datadelivery.*-monolithic.*</exclude>
     </mode>
     <mode name="dataDeliveryTemplate" template="true">
-    	<include>edex-security.xml</include>
         <include>database-common.xml</include>
         <include>dataaccess-common.xml</include>
         <include>.*datadelivery.*</include>
@@ -69,6 +62,7 @@
         <exclude>.*bandwidth.*-inmemory.*.xml</exclude>
         <!-- Exclude DPA -->
         <exclude>dpa-datadelivery.xml</exclude>
+        <!-- General requirements for DD -->
         <include>time-common.xml</include>
         <include>auth-common.xml</include>
         <include>nwsauth-request.xml</include>
@@ -87,15 +81,11 @@
         <include>pointdata-common.xml</include>
         <include>obs-common.xml</include>
         <include>madis-common.xml</include>
-        <include>level-common.xml</include>
-        <include>levelhandler-common.xml</include>
+        <!--  General Data plugin requirements for DD -->
         <include>persist-ingest.xml</include>
         <include>management-common.xml</include>
         <include>event-ingest.xml</include>
         <include>purge-logs.xml</include>
-        <include>geo-common.xml</include>
-        <include>request-service-common.xml</include>
-
         <!-- 
             The pattern datadelivery-registry is used to signify spring configurations 
             that should be loaded when running datadelivery and the registry in a single JVM 
@@ -118,12 +108,9 @@
 	<!-- modes listed below are not supported in a production setting, they 
 		are for DEVELOPMENT purposes only -->
     <mode name="devRegistry">
-        <include>ebxml.*\.xml</include>
-        <include>nwsauth-request.xml</include>
-        <include>utility-request.xml</include>
-        <include>utility-common.xml</include>
-        <include>datadelivery-wfo-cron.xml</include>
         <includeMode>dataDeliveryTemplate</includeMode>
+        <includeMode>ebxmlRegistry</includeMode>
+        <include>datadelivery-wfo-cron.xml</include>
         <include>bandwidth-datadelivery-edex-impl-monolithic.xml</include>
         <include>bandwidth-datadelivery-wfo.xml</include>
         <exclude>.*datadelivery.*-ncf.*</exclude>
