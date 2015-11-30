@@ -57,10 +57,10 @@
 		
 		<!-- OGC/DPA services -->
 		<include>ogc-common.xml</include>
-		<include>.*-ogc-request.xml</include>
-		<include>.*-ogc-rest-request.xml</include>
-		<include>.*-ogc-soap-request.xml</include>
-		<include>.*-ogc-soap-wsdl.xml</include>
+		<include>wfs-ogc-request.xml</include>
+		<include>wfs-ogc-rest-request.xml</include>
+		<include>wfs-ogc-soap-request.xml</include>
+		<include>wfs-ogc-soap-wsdl.xml</include>
 		<!--  Purge OGC/DPA registred plugins -->
 		<include>purge-spring.xml</include>
 		<include>purge-spring-impl.xml</include>
