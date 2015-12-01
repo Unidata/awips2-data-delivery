@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
 import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
@@ -43,21 +42,24 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.registry.ebxml.web.RegistryWebServer;
+import com.raytheon.uf.edex.registry.ebxml.web.security.NetworkTrafficSelectChannelConnector;
 
 /**
- * {@link RegistryBandwidthUtilizationListener} Keeps track of network traffic for registry
- *
+ * {@link RegistryBandwidthUtilizationListener} Keeps track of network traffic
+ * for registry
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 06, 2013 1736       dhladky     Initial creation
  * 6/5/2014     1712       bphillip    Changed registry Jetty server class
- *
+ * Dec 01, 2015 5152       nabowle     Use custom NetworkTrafficSelectChannelConnector.
+ * 
  * </pre>
- *
+ * 
  * @author dhladky
  * @version 1.0
  */
