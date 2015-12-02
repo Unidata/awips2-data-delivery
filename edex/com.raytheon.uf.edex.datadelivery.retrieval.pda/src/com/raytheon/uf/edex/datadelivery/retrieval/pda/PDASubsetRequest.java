@@ -50,6 +50,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sept 27, 2014 3127        dhladky      created.
+ * Nov 15, 2015   5139       dhladky     PDA changed interface, requires a SOAP header.
  * 
  * </pre>
  * 
@@ -67,6 +68,8 @@ public class PDASubsetRequest extends PDARequestBuilder {
     
     private OgcJaxbManager manager = null;
     
+    private static final String SOAP_ACTION = "urn:getCoverage";
+
     private String metaDataID = null;
     
     /** SOAP HEADER for request **/
@@ -173,7 +176,7 @@ public class PDASubsetRequest extends PDARequestBuilder {
         try {
             // Gets an XML string response from the PDA server
             String response = PDARequestConnectionUtil.connect(
-                    this.getRequest(), subsetRequestURL);
+                    this.getRequest(), SOAP_ACTION, subsetRequestURL);
             GridCoverageType coverage = (GridCoverageType) getManager()
                     .unmarshalFromXml(response);
             // the FTPS URL for the subset
