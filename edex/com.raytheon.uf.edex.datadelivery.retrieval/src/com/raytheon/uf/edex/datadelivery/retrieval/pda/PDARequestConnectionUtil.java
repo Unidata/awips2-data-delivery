@@ -29,14 +29,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 
+import com.raytheon.uf.common.comm.HttpAuthHandler;
 import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.HttpsUtils;
-import com.raytheon.uf.common.comm.IHttpsHandler;
 import com.raytheon.uf.common.datadelivery.registry.Connection;
-import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -60,7 +60,8 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Nov  10, 2014 3826       dhladky    Need HTTPS for connection to PDA, have to create dummy HTTPS handler for that.
  * Nov  15, 2014 3757       dhladky    More General HTTPS configuration
  * Jan  26, 2015 3952       njensen    gzip handled by default
- * May  08. 2015 4435       dhladky    Fixed type on truststore, JKS, added Keystore 
+ * May  08. 2015 4435       dhladky    Fixed type on truststore, JKS, added Keystore
+ * Dec  07, 2015 4834       njensen    getCredentials() now takes a URI 
  * 
  * </pre>
  * 
@@ -79,7 +80,7 @@ public class PDARequestConnectionUtil {
 
     /** truststore path set by Data Delivery in the serviceConfig XML */
     protected static final String truststore = "TRUSTSTORE_FILE";
-    
+
     /** keystore path set by Data Delivery in the serviceConfig XML */
     protected static final String keystore = "KEYSTORE_FILE";
 
@@ -90,7 +91,7 @@ public class PDARequestConnectionUtil {
 
     /** HTTP connection client **/
     private static volatile HttpClient httpClient;
-    
+
     /**
      * connections indexed by URI host:port keys
      */
@@ -98,10 +99,9 @@ public class PDARequestConnectionUtil {
 
     /** truststore password AES encrypted in security properties file **/
     private static final String TRUSTSTORE_PASS = "edex.security.truststore.password";
-    
+
     /** keystore password AES encrypted in security properties file **/
     private static final String KEYSTORE_PASS = "edex.security.keystore.password";
-    
 
     /**
      * Connect to the PDA service
@@ -122,7 +122,7 @@ public class PDARequestConnectionUtil {
             URI uri = new URI(serviceURL);
             // check for the need to do a username password auth check
             Connection localConnection = getLocalConnection(uri, providerName);
-            
+
             if (localConnection != null
                     && localConnection.getProviderKey() != null) {
                 statusHandler.handle(Priority.INFO,
@@ -132,10 +132,10 @@ public class PDARequestConnectionUtil {
                 String userName = localConnection.getUnencryptedUsername();
                 String password = localConnection.getUnencryptedPassword();
 
-                httpClient.setupCredentials(uri.getHost(), uri.getPort(), userName,
-                        password);
+                httpClient.setupCredentials(uri.getHost(), uri.getPort(),
+                        userName, password);
             }
-            
+
             HttpPost post = new HttpPost(uri);
             StringEntity entity = new StringEntity(request, charset);
             entity.setContentType(contentType);
@@ -158,7 +158,7 @@ public class PDARequestConnectionUtil {
 
         if (httpClient == null) {
             HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
-            builder.setHttpsHandler(httpsHandler);
+            builder.setHttpAuthHandler(httpsHandler);
             httpClient = new HttpClient(builder.build());
         }
 
@@ -168,16 +168,15 @@ public class PDARequestConnectionUtil {
     /**
      * HTTPS handler for PDA
      */
-    private static final IHttpsHandler httpsHandler = new IHttpsHandler() {
+    private static final HttpAuthHandler httpsHandler = new HttpAuthHandler() {
 
         final ServiceConfig serviceConfig = getServiceConfig();
 
         final SecurityConfiguration sc = getSecurityConfiguration();
 
         @Override
-        public String[] getCredentials(String host, int port, String authValue) {
-            
-            String key = createConnectionKey(host, port);
+        public String[] getCredentials(URI uri, String authValue) {
+            String key = createConnectionKey(uri.getHost(), uri.getPort());
             Connection connection = uriConnections.get(key);
             String[] rval = null;
             if (connection != null) {
@@ -187,7 +186,7 @@ public class PDARequestConnectionUtil {
             } else {
                 statusHandler.warn("Missing credentials for service at " + key);
             }
-            
+
             return rval;
         }
 
@@ -206,15 +205,16 @@ public class PDARequestConnectionUtil {
                 try {
                     trustStore = HttpsUtils.loadKeystore(filePath, storeType,
                             sc.getProperty(TRUSTSTORE_PASS));
-                    statusHandler.info("Loaded the truststore! "+filePath);    
+                    statusHandler.info("Loaded the truststore! " + filePath);
                 } catch (Exception e) {
-                    statusHandler.error("Couldn't load truststore! "+filePath, e);
+                    statusHandler.error(
+                            "Couldn't load truststore! " + filePath, e);
                 }
             }
 
             return trustStore;
         }
-        
+
         @Override
         public KeyStore getKeystore() {
             KeyStore keyStore = null;
@@ -224,9 +224,10 @@ public class PDARequestConnectionUtil {
                 try {
                     keyStore = HttpsUtils.loadKeystore(filePath, storeType,
                             sc.getProperty(KEYSTORE_PASS));
-                    statusHandler.info("Loaded the keystore! "+filePath);    
+                    statusHandler.info("Loaded the keystore! " + filePath);
                 } catch (Exception e) {
-                    statusHandler.error("Couldn't load keystore! "+filePath, e);
+                    statusHandler.error("Couldn't load keystore! " + filePath,
+                            e);
                 }
             }
 
@@ -281,7 +282,7 @@ public class PDARequestConnectionUtil {
 
         return sc;
     }
-    
+
     /**
      * @param uri
      * @param providerName
@@ -303,7 +304,7 @@ public class PDARequestConnectionUtil {
         }
         return rval;
     }
-    
+
     /**
      * @param host
      * @param port

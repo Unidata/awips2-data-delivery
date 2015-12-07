@@ -30,10 +30,10 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 
+import com.raytheon.uf.common.comm.HttpAuthHandler;
 import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
-import com.raytheon.uf.common.comm.IHttpsHandler;
 import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -42,7 +42,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 
 /**
- * 
  * WFS Connection.
  * 
  * <pre>
@@ -66,6 +65,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Jan 21, 2015 3952       njensen     Updated call to setupCredentials()
  * Jan 26, 2015 3952       njensen     gzip handled by default
  * May 10, 2015 4435       dhladky     Added keyStore retrieval to interface.
+ * Dec 07, 2015 4834       njensen     getCredentials() now takes a URI
  * 
  * </pre>
  * 
@@ -85,11 +85,11 @@ public class WFSConnectionUtil {
      */
     private static final Map<String, Connection> uriConnections = new ConcurrentHashMap<String, Connection>();
 
-    private static final IHttpsHandler credentialHandler = new IHttpsHandler() {
+    private static final HttpAuthHandler credentialHandler = new HttpAuthHandler() {
 
         @Override
-        public String[] getCredentials(String host, int port, String authValue) {
-            String key = createConnectionKey(host, port);
+        public String[] getCredentials(URI uri, String authValue) {
+            String key = createConnectionKey(uri.getHost(), uri.getPort());
             Connection connection = uriConnections.get(key);
             String[] rval = null;
             if (connection != null) {
@@ -144,7 +144,7 @@ public class WFSConnectionUtil {
             synchronized (credentialHandler) {
                 if (httpClient == null) {
                     HttpClientConfigBuilder builder = new HttpClientConfigBuilder();
-                    builder.setHttpsHandler(credentialHandler);
+                    builder.setHttpAuthHandler(credentialHandler);
                     httpClient = new HttpClient(builder.build());
                 }
             }
@@ -155,8 +155,8 @@ public class WFSConnectionUtil {
     /**
      * Connect to the provided URL and return the xml response.
      * 
-     * @param url
-     *            The URL
+     * @param request
+     *            The request
      * @param providerConn
      *            The Connection object
      * @param providerName
