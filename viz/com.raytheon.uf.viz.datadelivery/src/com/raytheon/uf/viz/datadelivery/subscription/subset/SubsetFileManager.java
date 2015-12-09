@@ -74,6 +74,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Oct 11, 2013   2386     mpduff     Refactor DD Front end.
  * Apr 10, 2014   2864     mpduff     Changed how saved subset files are stored.
  * Nov 30, 2015   4834     njensen    Changed LocalizationOpFailedException to LocalizationException
+ * Dec 09, 2015   4834     njensen    updates for API changes to LocalizationFile
  * 
  * </pre>
  * 
@@ -165,7 +166,7 @@ public class SubsetFileManager {
         LocalizationFile areaLocFile = pm.getLocalizationFile(context,
                 AREA_PATH + area.getRegionName());
 
-        if (areaLocFile.getFile().exists()) {
+        if (areaLocFile.exists()) {
             String msg = "The file "
                     + areaLocFile.getFile().getName()
                     + " already exists.\n\nWould you like to overwrite the file?";
@@ -192,10 +193,8 @@ public class SubsetFileManager {
      * 
      * @param areaName
      *            The name of the area to delete
-     * 
-     * @return true if successful; false otherwise
      */
-    public boolean deleteArea(String areaName) {
+    public void deleteArea(String areaName) {
         if (!areaName.endsWith("xml")) {
             areaName = areaName + ".xml";
         }
@@ -206,13 +205,12 @@ public class SubsetFileManager {
                 AREA_PATH + areaName);
 
         try {
-            if (areaLocFile.getFile().exists()) {
-                return areaLocFile.delete();
+            if (areaLocFile.exists()) {
+                areaLocFile.delete();
             }
         } catch (LocalizationException e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
         }
-        return false;
     }
 
     /**
@@ -304,7 +302,7 @@ public class SubsetFileManager {
                 SUBSET_PATH + File.separator + type.toString() + File.separator
                         + subset.getSubsetName());
 
-        if (subsetLocFile.getFile().exists()) {
+        if (subsetLocFile.exists()) {
             String msg = "The file "
                     + subsetLocFile.getFile().getName()
                     + " already exists.\n\nWould you like to overwrite the file?";
@@ -361,7 +359,6 @@ public class SubsetFileManager {
      * @return The SubsetXML object or null if none exist
      */
     public SubsetXML loadSubset(LocalizationFile file) {
-
         if (file.exists()) {
             try {
                 return (SubsetXML) unmarshaller.unmarshal(file.getFile());

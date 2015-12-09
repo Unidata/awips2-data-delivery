@@ -56,6 +56,7 @@ import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationFilterXML;
  * Aug 30, 2013   2314     mpduff     Removed initial XML read, added null check.
  * Mar 17, 2015   2894     dhladky    Consistent loading of configuration.
  * Nov 30, 2015   4834     njensen    Changed LocalizationOpFailedException to LocalizationException
+ * Dec 09, 2015   4834     njensen    updates for API changes to LocalizationFile
  * 
  * </pre>
  * 
@@ -237,12 +238,7 @@ public class NotificationConfigManager {
      */
     public void deleteXml(LocalizationFile file) {
         try {
-            boolean success = file.delete();
-            if (!success) {
-                statusHandler.handle(Priority.WARN,
-                        "Error deleting " + file.getName());
-            }
-
+            file.delete();
             if (currentConfigFile == null) {
                 setConfigFile(this.defaultConfigFile);
             }

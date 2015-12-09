@@ -62,6 +62,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
  * Dec 03, 2014  3840      ccody      Implement Comparator based sorting.
  * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency. Bad path config.
  * Nov 30, 2015   4834     njensen    Changed LocalizationOpFailedException to LocalizationException
+ * Dec 09, 2015   4834     njensen    updates for API changes to LocalizationFile
  * 
  * </pre>
  * 
@@ -286,7 +287,6 @@ public class SubscriptionConfigurationManager {
      * @param configFile
      */
     public void setConfigFile(LocalizationFile configFile) {
-
         File file = configFile.getFile();
         fileName = configFile.getName();
         this.currentConfigFile = configFile;
@@ -454,11 +454,7 @@ public class SubscriptionConfigurationManager {
      */
     public void deleteXml(LocalizationFile file) {
         try {
-            boolean success = file.delete();
-            if (!success) {
-                statusHandler.handle(Priority.WARN,
-                        "Error deleting " + file.getName());
-            }
+            file.delete();
         } catch (LocalizationException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error deleting " + file.getName(), e);
