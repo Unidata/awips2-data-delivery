@@ -31,6 +31,7 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * June 20, 2014 3120      dhladky     Initial creation
  * July 28, 2015 4881      dhladky     Tweaks done to conform to PDA web service.
  * Nov 15, 2015  5139      dhladky     PDA interface changes that require adding <soapenv> tags back to request.
+ * Dec 14, 2015            dhladky     Added response handler CSW designator, soapenv tags.
  * 
  * </pre>
  * 
@@ -59,9 +60,10 @@ public class PDACatalogRequestBuilder {
      * @return
      */
     private static String createHeader() {
+
         StringBuilder sb1 = new StringBuilder();
         sb1.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        sb1.append("<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\">\n");
+        sb1.append("<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n");
         sb1.append("<soapenv:Header/>\n");
         sb1.append("<soapenv:Body>\n");
 
@@ -76,8 +78,7 @@ public class PDACatalogRequestBuilder {
     private void createContent() {
 
         sb.append("<csw:GetRecords xmlns:csw=\"http://www.opengis.net/cat/csw/2.0.2\" service=\"CSW\" version=\"2.0.2\">\n");
-        sb.append("<csw:ResponseHandler>" + responseURL
-                + "</csw:ResponseHandler>\n");
+        sb.append("<csw:ResponseHandler>"+ responseURL +"</csw:ResponseHandler>\n");
         sb.append("<csw:Query typeNames=\"csw:Record\">\n");
         sb.append("<csw:ElementSetName typeNames=\"csw:Record\">brief</csw:ElementSetName>\n");
         sb.append("</csw:Query>\n");
