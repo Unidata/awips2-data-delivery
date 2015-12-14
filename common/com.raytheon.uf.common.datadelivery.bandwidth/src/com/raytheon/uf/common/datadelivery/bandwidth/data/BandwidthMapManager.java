@@ -22,8 +22,8 @@ package com.raytheon.uf.common.datadelivery.bandwidth.data;
 import java.io.File;
 import java.util.Map;
 
-import com.raytheon.uf.common.localization.FileUpdatedMessage;
-import com.raytheon.uf.common.localization.ILocalizationFileObserver;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationPathObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
@@ -41,6 +41,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 6, 2014            mpduff     Initial creation
+ * Dec 14 2015   5204     dhladky    Update to new ILocalizationPathObserver pattern.
  * 
  * </pre>
  * 
@@ -48,7 +49,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * @version 1.0
  */
 
-public class BandwidthMapManager {
+public class BandwidthMapManager implements ILocalizationPathObserver {
 
     /** Singleton instance */
     private static BandwidthMapManager instance;
@@ -62,12 +63,15 @@ public class BandwidthMapManager {
 
     /** The {@link BandwidthMap} */
     private BandwidthMap bandwidthMap;
+    
+    /** Flags whether BandwidthMapManager has been initialized **/
+    private boolean isInit = false;
 
     /**
      * private constructor
      */
     private BandwidthMapManager() {
-        readBandwidthMapConfig();
+        
     }
 
     /**
@@ -78,6 +82,7 @@ public class BandwidthMapManager {
     public static synchronized final BandwidthMapManager getInstance() {
         if (instance == null) {
             instance = new BandwidthMapManager();
+            instance.readBandwidthMapConfig();
         }
 
         return instance;
@@ -92,17 +97,15 @@ public class BandwidthMapManager {
                 .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
                         CONFIG_FILE);
         locFile = fileMap.get(LocalizationLevel.SITE);
+        
         if (locFile == null) {
             locFile = fileMap.get(LocalizationLevel.BASE);
         }
-        locFile.addFileUpdatedObserver(new ILocalizationFileObserver() {
-            @Override
-            public void fileUpdated(FileUpdatedMessage message) {
-                if (message.getFileName().equals(CONFIG_FILE)) {
-                    readBandwidthMapConfig();
-                }
-            }
-        });
+
+        if (!isInit) {
+            pm.addLocalizationPathObserver(locFile.getPath(), instance);
+            isInit = true;
+        }
 
         File file = locFile.getFile();
         this.bandwidthMap = BandwidthMap.load(file);
@@ -115,5 +118,10 @@ public class BandwidthMapManager {
      */
     public BandwidthMap getBandwidthMap() {
         return bandwidthMap;
+    }
+
+    @Override
+    public void fileChanged(ILocalizationFile file) {
+        readBandwidthMapConfig();
     }
 }
