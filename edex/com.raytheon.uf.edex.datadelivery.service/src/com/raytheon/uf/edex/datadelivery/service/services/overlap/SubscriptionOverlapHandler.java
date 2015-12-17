@@ -51,6 +51,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Nov 01, 2013    2292    dhladky     Don't check against yourself for duplication
  * Feb 11, 2014    2771    bgonzale    Use Data Delivery ID instead of Site.
  * Dec 08, 2014    3891    dhladky     Allow for promotion of site subscriptions to shared.
+ * Nov 23, 2015    5145    dhladky     Prevent false positive matches for subscriptions.
  * 
  * </pre>
  * 
@@ -83,22 +84,26 @@ public class SubscriptionOverlapHandler implements
                 DataType dataType = subscription.getDataSetType();
                 Set<String> overlappingSubscriptions = new HashSet<String>();
                 for (Subscription potentialDuplicate : potentialDuplicates) {
-                    // Check for special promotion case
-                    if (subscription instanceof SharedSubscription
-                            && potentialDuplicate instanceof SiteSubscription) {
-                        // Not as stringent a check as the ID's won't be equal
-                        // but the names still will
-                        if (potentialDuplicate.getName().equals(
-                                subscription.getName())) {
-                            continue;
-                        }
-                    } else {
-                        // Normal sequence, don't check self
-                        if (potentialDuplicate.getId().equals(
-                                subscription.getId())) {
+                    /*
+                     * Check to see if the names/ids are the same. 
+                     * If they are this can be one of two cases. 
+                     * Case 1 : Promotion of a Site Subscription to a SharedSubscription (Name match) 
+                     * Case 2 : Any RecurringSubscription being updated.  (ID match)
+                     * Ignore either one.
+                     */
+                    if (potentialDuplicate.getName().equals(
+                            subscription.getName())) {
+                        // CASE 1
+                        if ((potentialDuplicate instanceof SharedSubscription && subscription instanceof SiteSubscription)
+                                || (potentialDuplicate instanceof SiteSubscription && subscription instanceof SharedSubscription)) {
                             continue;
                         }
                     }
+                    // CASE 2
+                    if (potentialDuplicate.getId().equals(subscription.getId())) {
+                        continue;
+                    }
+
                     OverlapData od = OverlapDataFactory.getOverlapData(
                             subscription, potentialDuplicate);
 

@@ -960,8 +960,8 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
         long latency = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
         if (getSubscriptionStart() == null) {
-            throw new IllegalStateException(
-                    "Subscription start can not be null!");
+            // If subscription has no registered start time, It can't be before checked time.
+            return before;
         }
         long startTime = getSubscriptionStart().getTime();
 
