@@ -61,6 +61,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Nov  15, 2014 3757       dhladky    More General HTTPS configuration
  * Jan  26, 2015 3952       njensen    gzip handled by default
  * May  08. 2015 4435       dhladky    Fixed type on truststore, JKS, added Keystore
+ * Nov  18, 2015 5139       dhladky    PDA altered their interface yet again, requiring SOAP headers now.
  * Dec  07, 2015 4834       njensen    getCredentials() now takes a URI 
  * 
  * </pre>
@@ -87,7 +88,11 @@ public class PDARequestConnectionUtil {
     /** truststore type, AWIPS2 uses JKS by default **/
     protected static final String storeType = "JKS";
 
+    /** provider **/
     protected static final String providerName = "PDA";
+    
+    /** SOAPACtion header is required for talking to PDA **/
+    protected static final String SOAP_ACTION = "SOAPAction";
 
     /** HTTP connection client **/
     private static volatile HttpClient httpClient;
@@ -106,12 +111,12 @@ public class PDARequestConnectionUtil {
     /**
      * Connect to the PDA service
      * 
-     * @param request
-     *            (XML)
+     * @param request (XML)
+     * @param soapAction
      * @param serviceURL
      * @return
      */
-    public static String connect(String request, String serviceURL) {
+    public static String connect(String request, String soapAction, String serviceURL) {
 
         String xmlResponse = null;
 
@@ -135,8 +140,14 @@ public class PDARequestConnectionUtil {
                 httpClient.setupCredentials(uri.getHost(), uri.getPort(),
                         userName, password);
             }
-
+            
             HttpPost post = new HttpPost(uri);
+            
+            // Add soap action if necessary.
+            if (soapAction != null) {
+                post.addHeader(SOAP_ACTION, soapAction);
+            }
+            
             StringEntity entity = new StringEntity(request, charset);
             entity.setContentType(contentType);
             post.setEntity(entity);

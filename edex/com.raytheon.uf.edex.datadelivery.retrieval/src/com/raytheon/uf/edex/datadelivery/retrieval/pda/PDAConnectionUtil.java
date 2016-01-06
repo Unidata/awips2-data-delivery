@@ -50,8 +50,9 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Jun 12, 2014 3012         dhladky    initial release
  * Sep 14, 2104  3121        dhladky    Added binary transfer switch
  * Oct 14, 2014  3127        dhladky    Fine tuning for FTPS
- * Nov 10, 2014  3826        dhladky     Added more logging.
+ * Nov 10, 2014  3826        dhladky    Added more logging.
  * Aug 02, 2015  4881        dhladky    Disable Remote verification, FTPS comms are proxied.
+ * Dec 05, 2015  5209        dhladky    Remove relative URL workaround.  Relative and actual URL are equal now.
  * </pre>
  * 
  * @author dhladky
@@ -125,10 +126,10 @@ public class PDAConnectionUtil {
                 // encryption method for password storage and decrypt.
                 userName = localConnection.getUnencryptedUsername();
                 password = localConnection.getUnencryptedPassword();
-                String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(remoteFilename, rootUrl);
+                String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(remoteFilename);
                 // Do this after you separate!
                 rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
-                remoteFileDirectory = serviceConfig.getConstantValue("REMOTE_DIR_PATH");
+                remoteFileDirectory = remotePathAndFile[0];
                 statusHandler.handle(Priority.INFO,
                         "remoteFileDirectory: " + remoteFileDirectory);
                 statusHandler.handle(Priority.INFO,
@@ -193,59 +194,34 @@ public class PDAConnectionUtil {
     /**
      * Separate the remoteFileDirectory and filename from the remote path
      * @param remoteFilePath
-     * @param rootUrl
      * @return
      */
-    private static String[] separateRemoteFileDirectoryAndFileName(String remoteFilePath, String rootUrl) {
+    private static String[] separateRemoteFileDirectoryAndFileName(String remoteFilePath) {
         
         String[] returnValues = new String[2];
         
         try {
 
-            int j;
-            
-            statusHandler.info("remoteFilePath: "+remoteFilePath+ " rootUrl: "+rootUrl);
-            
-            if (remoteFilePath.equals(rootUrl)) {
-                // skip first 2
-                j = 3;
-            } else {
-                // carve off the rootURL if it is listed as part of the remoteFilename
-                remoteFilePath = remoteFilePath.replaceAll(rootUrl, "");
-                j = 0;
-            }
-            // then carve into it's pieces
-            String[] parts = remoteFilePath.split(PATH_PATTERN.pattern());
+            // Carve it up and reconstruct it
+            String[] parts = PATH_PATTERN.split(remoteFilePath);
             
             StringBuilder buf = new StringBuilder();
-
-            if (j == 3) {
-               buf.append(File.separator);
-            }
                         
-            for (int i = j;i < parts.length; i++) {
+            for (int i = 0;i < parts.length; i++) {
                 // this is the fileName
                 if (i == 0) {
-                    // ignore first part
+                    buf.append(File.separator);
+                    buf.append(parts[i]);
                 } else if (i == parts.length-1) {  
                     returnValues[1] = parts[i];
                 } else {
-                    // this is the path
-                    if (i == 1) {
-                        buf.append(File.separator);
-                    }
-                    
                     buf.append(parts[i]);
                     buf.append(File.separator);
                 }
             }
 
             returnValues[0] = buf.toString();
-            
-            if (returnValues[0].endsWith(returnValues[1])) {
-                returnValues[0] = returnValues[0].replaceAll(returnValues[1], "");
-            }
-
+          
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR, "Couldn't properly parse remoteFilePath: "+remoteFilePath, e);
         }
@@ -281,6 +257,19 @@ public class PDAConnectionUtil {
         }
         
         return sc;
+    }
+    
+    /**
+     * Used for internal testing
+     * @param args
+     */
+    public static void main(String args[])  {
+       String[] results = separateRemoteFileDirectoryAndFileName(args[0]);
+       String rootUrl = removeProtocolsAndFilesFromRootUrl(args[1]);
+       System.out.println("Path: "+results[0]);
+       System.out.println("Filename: "+results[1]);
+       System.out.println("Root URL: "+rootUrl);
+        
     }
     
 }

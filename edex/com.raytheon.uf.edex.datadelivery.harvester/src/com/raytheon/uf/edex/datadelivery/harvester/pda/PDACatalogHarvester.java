@@ -36,6 +36,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARequestConnectionUtil;
  * ------------ ---------- ----------- --------------------------
  * June 13, 2014 3120      dhladky     Initial creation
  * Nov 10, 2014  3826      dhladky     Added more logging.
+ * Nov 18, 2015  5139      dhladky     PDA changed interface, requires SOAP header.
  * 
  * </pre>
  * 
@@ -50,6 +51,8 @@ public class PDACatalogHarvester {
             .getHandler(PDACatalogHarvester.class);
     
     private HarvesterConfig hc = null;
+    
+    private static final String SOAP_ACTION = "urn:getRecords";
     
     public PDACatalogHarvester() {
         
@@ -92,7 +95,7 @@ public class PDACatalogHarvester {
                     + catalogServerURL + "\n" + xml);
 
             String response = PDARequestConnectionUtil.connect(xml,
-                    catalogServerURL);
+                    SOAP_ACTION, catalogServerURL);
 
             statusHandler.info("Catalog Server response: \n" + response);
             status = true;
