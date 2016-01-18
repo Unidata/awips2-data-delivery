@@ -39,9 +39,9 @@ import org.eclipse.swt.widgets.Text;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.viz.datadelivery.subscription.AwipsCalendar;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
+import com.raytheon.viz.ui.dialogs.AwipsCalendar;
 
 /**
  * This is the subscription duration composite. This class is intended to be
@@ -55,6 +55,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * ------------ ---------- ----------- --------------------------
  * Jun 27, 2012   702      jpiatt      Initial creation.
  * May 15, 2013  1040      mpduff      Fixed button width.
+ * Jan 15, 2016  5259      randerso    Changed to use viz.ui AwipsCalendar
  * 
  * </pre>
  * 
@@ -275,7 +276,8 @@ public class DurationComp extends Composite {
             date = cal.getTime();
         }
 
-        AwipsCalendar ac = new AwipsCalendar(getShell(), date, showHour);
+        AwipsCalendar ac = new AwipsCalendar(getShell(), date, (showHour ? 1
+                : 0));
         Object obj = ac.open();
 
         if ((obj != null) && (obj instanceof Calendar)) {

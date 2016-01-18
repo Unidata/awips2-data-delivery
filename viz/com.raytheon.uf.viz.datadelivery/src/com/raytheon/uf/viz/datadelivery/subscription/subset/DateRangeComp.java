@@ -36,30 +36,31 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 
-import com.raytheon.uf.viz.datadelivery.subscription.AwipsCalendar;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.DateRangeTimeXML;
+import com.raytheon.viz.ui.dialogs.AwipsCalendar;
 
 /**
  * Date Range Composite.
  * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 12, 2012   223      mpduff      Initial creation
- *
+ * Jan 15, 2016  5259      randerso    Changed to use viz.ui AwipsCalendar
+ * 
  * </pre>
- *
+ * 
  * @author mpduff
- * @version 1.0	
+ * @version 1.0
  */
 
 public class DateRangeComp extends Composite {
     /** Default group text. */
     private String groupText = " Date Range ";
-    
+
     /** Get Latest Data check box */
     private Button latestDataChk;
 
@@ -83,30 +84,30 @@ public class DateRangeComp extends Composite {
         @Override
         protected SimpleDateFormat initialValue() {
             SimpleDateFormat sTemp = new SimpleDateFormat("MM/dd/yyyy");
-            sTemp.setTimeZone(TimeZone.getTimeZone("GMT"));  
+            sTemp.setTimeZone(TimeZone.getTimeZone("GMT"));
             return sTemp;
         }
-        
-    };    
-    
+
+    };
+
     /**
-     * Constructor. 
+     * Constructor.
      * 
      * @param parent
      */
     public DateRangeComp(Composite parent) {
         this(parent, null);
     }
-    
+
     /**
-     * Constructor. 
+     * Constructor.
      * 
      * @param parent
      * @param groupTxt
      */
     public DateRangeComp(Composite parent, String groupTxt) {
         super(parent, SWT.NONE);
-        
+
         if (groupTxt != null) {
             this.groupText = groupTxt;
         }
@@ -142,7 +143,7 @@ public class DateRangeComp extends Composite {
             public void widgetSelected(SelectionEvent e) {
                 setDateRangeDirty(true);
                 fromBtn.setEnabled(!latestDataChk.getSelection());
-                toBtn.setEnabled(!latestDataChk.getSelection());   
+                toBtn.setEnabled(!latestDataChk.getSelection());
             }
         });
 
@@ -180,7 +181,7 @@ public class DateRangeComp extends Composite {
                             }
                         }
                     }
-                    
+
                     setDateRangeDirty(true);
                 }
             }
@@ -223,7 +224,7 @@ public class DateRangeComp extends Composite {
      * @return The selected Date
      */
     private Date getDate() {
-        AwipsCalendar ac = new AwipsCalendar(this.getShell(), false);
+        AwipsCalendar ac = new AwipsCalendar(this.getShell(), 0);
         Object obj = ac.open();
         if ((obj != null) && (obj instanceof Calendar)) {
             return ((Calendar) obj).getTime();
@@ -243,20 +244,20 @@ public class DateRangeComp extends Composite {
         }
         return null;
     }
-    
+
     private Date parseDate(String date) throws ParseException {
-        Date d = null; 
+        Date d = null;
         if (date != null && !date.isEmpty()) {
             SimpleDateFormat format = sdf.get();
             d = format.parse(date);
         }
-        
+
         return d;
     }
-    
+
     public void populate(DateRangeTimeXML time) {
         latestDataChk.setSelection(time.isLatestData());
-        
+
         if (time.getRangeStart() != null) {
             fromBtn.setText(time.getRangeStart());
         } else {
@@ -279,10 +280,10 @@ public class DateRangeComp extends Composite {
         if (!toBtn.getText().startsWith("Select")) {
             time.setRangeEnd(toBtn.getText());
         }
-        
+
         return time;
     }
-    
+
     /**
      * Set boolean to whether or not date selections have changed.
      * 
@@ -300,11 +301,11 @@ public class DateRangeComp extends Composite {
     public boolean isDateCycleDirty() {
         return dateRangeDirty;
     }
-    
+
     public boolean isLatestDateChecked() {
         return latestDataChk.getSelection();
     }
-    
+
     public void setLatestDateSelection(boolean selection) {
         this.latestDataChk.setSelection(selection);
     }
@@ -317,7 +318,8 @@ public class DateRangeComp extends Composite {
     }
 
     /**
-     * @param fromDate the fromDate to set
+     * @param fromDate
+     *            the fromDate to set
      */
     public void setFromDate(Date fromDate) {
         this.fromDate = fromDate;
@@ -331,12 +333,13 @@ public class DateRangeComp extends Composite {
     }
 
     /**
-     * @param toDate the toDate to set
+     * @param toDate
+     *            the toDate to set
      */
     public void setToDate(Date toDate) {
         this.toDate = toDate;
     }
-    
+
     /**
      * Set the To Date.
      * 
@@ -346,7 +349,7 @@ public class DateRangeComp extends Composite {
     public void setToDate(String dateStr) throws ParseException {
         this.toDate = this.parseDate(dateStr);
     }
-    
+
     /**
      * Set the From date.
      * 
@@ -356,24 +359,24 @@ public class DateRangeComp extends Composite {
     public void setFromDate(String dateStr) throws ParseException {
         this.fromDate = this.parseDate(dateStr);
     }
-    
+
     public String getFromDateString() {
         String fromStr = null;
         if (fromDate != null) {
             SimpleDateFormat format = sdf.get();
             fromStr = format.format(fromDate);
         }
-        
+
         return fromStr;
     }
-    
+
     public String getToDateString() {
         String toStr = null;
         if (toDate != null) {
             SimpleDateFormat format = sdf.get();
             toStr = format.format(toDate);
         }
-        
+
         return toStr;
     }
 }
