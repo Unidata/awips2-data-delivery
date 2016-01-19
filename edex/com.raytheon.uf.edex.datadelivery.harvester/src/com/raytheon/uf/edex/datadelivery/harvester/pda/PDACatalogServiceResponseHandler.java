@@ -33,10 +33,8 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
 import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
-import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
 import net.opengis.cat.csw.v_2_0_2.InsertType;
 import net.opengis.cat.csw.v_2_0_2.SearchResultsType;
-import net.opengis.cat.csw.v_2_0_2.TransactionType;
 import net.opengis.cat.csw.v_2_0_2.dc.elements.ObjectFactory;
 import net.opengis.cat.csw.v_2_0_2.dc.elements.SimpleLiteral;
 import net.opengis.ows.v_1_0_0.BoundingBoxType;
@@ -71,6 +69,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Nov 10, 2014 3826       dhladky     Added more logging.
  * Apr 21, 2015 4435       dhladky     Connecting to PDA transactions
  * Sept 11, 2015 4881      dhladky     Updates to PDA processing, better tracking.
+ * Jan 18, 2016  5260      dhladky     FQDN usage to lessen OGC class collisions.
  * 
  * </pre>
  * 
@@ -82,7 +81,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @XmlSeeAlso({ net.opengis.cat.csw.v_2_0_2.ObjectFactory.class,
         net.opengis.gml.v_3_1_1.ObjectFactory.class,
-        net.opengis.filter.v_1_1_0.ObjectFactory.class })
+        net.opengis.filter.v_1_1_0.ObjectFactory.class})
 public class PDACatalogServiceResponseHandler implements
         IPDACatalogServiceResponseHandler {
 
@@ -164,7 +163,7 @@ public class PDACatalogServiceResponseHandler implements
     @WebMethod
     public void handleGetRecordsResponse(
             @WebParam(name = "GetRecordsResponse", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            GetRecordsResponseType response) throws ServiceExceptionReport {
+            net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType response) throws ServiceExceptionReport {
 
         statusHandler
                 .info("-------Incoming GetRecords() response from PDA -----------");
@@ -201,7 +200,7 @@ public class PDACatalogServiceResponseHandler implements
     @WebMethod
     public void handleTransaction(
             @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            TransactionType transactions) throws ServiceExceptionReport {
+            net.opengis.cat.csw.v_2_0_2.TransactionType transactions) throws ServiceExceptionReport {
 
         statusHandler.info("-------Incoming Transaction from PDA -----------");
         List<Object> records = transactions.getInsertOrUpdateOrDelete();

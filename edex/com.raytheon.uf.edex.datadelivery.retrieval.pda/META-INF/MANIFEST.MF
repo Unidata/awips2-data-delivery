@@ -25,7 +25,9 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.
  com.raytheon.edex.common;bundle-version="1.14.1",
  com.raytheon.uf.common.wmo;bundle-version="1.14.0",
  com.raytheon.edex.plugin.goessounding;bundle-version="1.14.0",
- com.raytheon.uf.common.dataplugin.goessounding;bundle-version="1.14.0"
+ com.raytheon.uf.common.dataplugin.goessounding;bundle-version="1.14.0",
+ net.opengis_v2;bundle-version="1.0.0"
 Import-Package: com.raytheon.uf.common.util
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval.pda,
  com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata
+Bundle-ClassPath: .

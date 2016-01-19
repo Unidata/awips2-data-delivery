@@ -24,8 +24,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.geotools.geometry.jts.ReferencedEnvelope;
-
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
@@ -57,6 +55,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Jun 13, 2014 3120       dhladky     Initial creation
  * Sept 14, 2104 3121      dhladky     Sharpened Retrieval generation.
  * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
+ * Jan 18, 2016  5260      dhladky     Testing changes.
  * 
  * </pre>
  * 
@@ -69,6 +68,8 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARetrievalGenerator.class);
+        
+    protected static final String FTPS_REQUEST_URL = "FTPS_REQUEST_URL";
     
     public PDARetrievalGenerator(ServiceType serviceType) {
         super(serviceType);
@@ -134,18 +135,10 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         retrieval.setSubscriptionName(sub.getName());
         retrieval.setServiceType(getServiceType());
         retrieval.setConnection(bundle.getConnection());
-
-        // this is the filepath in PDA retrievals, this is essentially the request!
-        retrieval.getConnection().setUrl(sub.getUrl());
         retrieval.setOwner(sub.getOwner());
-        retrieval.setSubscriptionType(getSubscriptionType(sub));
-        retrieval.setNetwork(sub.getRoute());
-
-        // Coverage and type processing
-        retrieval.setSubscriptionType(getSubscriptionType(sub));
-        retrieval.setNetwork(sub.getRoute());
-
         Coverage cov = sub.getCoverage();
+        // null out the URL, we will request the actual one.
+        retrieval.getConnection().setUrl(null);
 
         if (cov instanceof Coverage) {
             retrieval.setDataType(DataType.PDA);
@@ -163,21 +156,32 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         att.setCoverage(cov);
  
         /*
-         * Coverage and type processing
+         * Coverage and type processing.
          * 
-         * PDA retrievals work in two modes, full dataset requests are
-         * passed directly to the PDA ConnectionUtil and FTPS'd down.
-         * geographically Sub-setted requests make a WCS request and retrieve
-         * the URL returned by that request. 
+         * PDA retrievals are a unique 2 step process. 1.) Request the
+         * URL/filePath based on the metaDataID. 2.) Then FTPS the URL/filePath
+         * from PDA.
          */
-        String url = determineSubsetting(sub, time.getRequestStart(), att);
-        // This is the filepath in PDA retrievals, this is essentially the request!
-        retrieval.getConnection().setUrl(url);
+        // This is essentially the request!
+        String filePath = getCoverageUrl(sub, time.getRequestStart(), att);
+        
+        if (filePath != null) {
+            statusHandler.handle(Priority.INFO, "Dataset file path: " + filePath);
+            // You get just a relative filePath from PDA.
+            // Now we have to construct the full URL (ftpsRootUrl + filePath)
+            String ftpsRequestRootUrl = getServiceConfig().getConstantValue(
+                    FTPS_REQUEST_URL);
+            String url = ftpsRequestRootUrl + filePath;
+            retrieval.getConnection().setUrl(url);
+        } else {
+            throw new IllegalArgumentException("PDA dataset filePath query failed!");
+        }
+
         retrieval.setSubscriptionType(getSubscriptionType(sub));
         retrieval.setNetwork(sub.getRoute());
-                
+
         if (param != null) {
-            
+
             Parameter lparam = processParameter(param);
             lparam.setLevels(param.getLevels());
             att.setParameter(lparam);
@@ -203,59 +207,54 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
     }
     
     /**
-     * Check to see if this coverage is subsetted
-     * @param coverage
-     * @return
-     */
-    private boolean isSubsetted(Coverage coverage) {
-        
-        ReferencedEnvelope requestEnv = coverage.getRequestEnvelope();
-        ReferencedEnvelope fullEnv = coverage.getEnvelope();
-          
-        return !fullEnv.equals(requestEnv);
-    }
-
-    /**
-     * Determine whether a dataset has been subsetted.
-     * If so, a query is made to PDA for the URL of the subset
-     * which is then retrieved during retrieval processing.
+     * Retrieve the Coverage URL for this Retrieval Attribute
+     * 
      * @param sub
      * @param dataSetTime
      * @param ra
-     * @return String (URL)
+     * @return String (Filepath on PDA)
      */
-    private String determineSubsetting(Subscription<Time, Coverage> sub,
+    private String getCoverageUrl(Subscription<Time, Coverage> sub,
             Date dataSetTime, RetrievalAttribute<Time, Coverage> ra) {
 
-        String url = null;
+        String filePath = null;
+        String metaDataKey = null;
+        PDASubsetRequest request = null;
 
-        // If they are equal, it's a full dataSet retrieval, no subset
-        // necessary. Otherwise you have to do this.
-        if (isSubsetted(sub.getCoverage())) {
+        try {
+                    
+            statusHandler.handle(Priority.INFO,
+                    "Time of Subset request: " + dataSetTime.toString());
 
-            String metaDataKey = null;
-            PDASubsetRequest request = null;
-
-            try {
-                PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
-                        .getDataSetMetaDataHandler().getByDataSetDate(
-                                sub.getDataSetName(), sub.getProvider(),
-                                dataSetTime);
-                metaDataKey = pdadsmd.getMetaDataID();
-                request = new PDASubsetRequest(ra, metaDataKey);
-                url = request.performSubsetRequest();
-
-            } catch (Exception e) {
-                statusHandler.handle(Priority.ERROR,
-                        "Couldn not perform Subset request: " + metaDataKey
-                                + " : " + sub.getName(), e);
+            /** This query is broken temporarily in 16.2.1.  REMOVE FOR 16.2.2
+            PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
+                    .getDataSetMetaDataHandler().getByDataSetDate(
+                            sub.getDataSetName(), sub.getProvider(),
+                            dataSetTime);
+            */
+            PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
+                   .getDataSetMetaDataHandler().getMostRecentDataSetMetaData(sub.getDataSetName(), sub.getProvider());
+            
+            if (pdadsmd != null) {
+                statusHandler.handle(Priority.INFO, "DataSetMetaData: " + pdadsmd.getDataSetDescription());
+                statusHandler.handle(Priority.INFO, "MetaDataID: " + pdadsmd.getMetaDataID()); 
+            } else {
+                throw new IllegalArgumentException("No DataSetMetaData matches query criteria!");
             }
-        } else {
-            // no subset
-            url = sub.getUrl();
+            
+            metaDataKey = pdadsmd.getMetaDataID();
+            request = new PDASubsetRequest(ra, metaDataKey);
+          
+            // make the request
+            filePath = request.performRequest();
+
+        } catch (Exception e) {
+            statusHandler.handle(Priority.ERROR,
+                    "Could not perform dataset request: " + metaDataKey + " : "
+                            + sub.getName(), e);
         }
 
-        return url;
+        return filePath;
     }
 
 }
