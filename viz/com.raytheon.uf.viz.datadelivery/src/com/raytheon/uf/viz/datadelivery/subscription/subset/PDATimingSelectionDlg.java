@@ -49,8 +49,10 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 12, 2014  3121      dhladky      Initial creation.
- * May 17, 2015  4047      dhladky      verified non-blocking.
+ * Aug 12, 2014  3121      dhladky     Initial creation.
+ * May 17, 2015  4047      dhladky     Verified non-blocking.
+ * Jan 19, 2016  5054      randerso    Fixed dialog to display with title bar  
+ *                                     and in correct location.
  * 
  * </pre>
  * 
@@ -84,7 +86,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     private final PDADataSet dataset;
 
     private final java.util.List<String> dateList;
-    
+
     /** List of dates/cycles */
     private List dateCycleList;
 
@@ -98,7 +100,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
      */
     public PDATimingSelectionDlg(Shell parentShell, PDADataSet dataset,
             Subscription subscription, java.util.List<String> dateList) {
-        super(parentShell, CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK);
         setText("Select Date");
         this.subscription = subscription;
         this.dataset = dataset;
@@ -218,7 +220,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     public boolean isLatestDataEnabled() {
         return useLatestChk.getSelection();
     }
-    
+
     /**
      * Set the date/cycle list enabled.
      */
@@ -240,8 +242,9 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         if (!isLatestDataEnabled()) {
             String selection = dateCycleList.getItem(dateCycleList
                     .getSelectionIndex());
-            DataDeliveryGUIUtils.latencyValidChk(
-                    priorityComp.getLatencyValue(), getMaxLatency(subscription));
+            DataDeliveryGUIUtils
+                    .latencyValidChk(priorityComp.getLatencyValue(),
+                            getMaxLatency(subscription));
             data.setDate(selection);
         } else {
             data.setLatest(true);
@@ -250,4 +253,3 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         setReturnValue(data);
     }
 }
-

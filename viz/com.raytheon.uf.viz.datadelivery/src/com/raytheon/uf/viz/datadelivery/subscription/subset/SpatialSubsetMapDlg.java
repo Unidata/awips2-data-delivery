@@ -60,7 +60,7 @@ import com.raytheon.uf.viz.datadelivery.common.spatial.SpatialUtils;
 import com.raytheon.uf.viz.datadelivery.rsc.DrawBoxResource;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.BundleLoader;
-import com.raytheon.viz.ui.dialogs.CaveSWTDialogBase;
+import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.editor.IMultiPaneEditor;
 import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
 import com.raytheon.viz.ui.panes.PaneManager;
@@ -79,12 +79,13 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Oct 31, 2012   1278     mpduff      Integrated SpatialUtils and allow for
  *                                     display of already selected area on the map.
  * Dec 07, 2012 1278       bgonzale    added setter for spatialUtils.
- * Dec 10, 2012 1259       bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
- * May 17, 2015 4047       dhladky    verified non-blocking.
+ * Dec 10, 2012 1259       bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * May 17, 2015 4047       dhladky     verified non-blocking.
  * Jun 10, 2015 4401       bkowal      Use {@link BundleLoader} instead of the deprecated
  *                                     LoadSerializedXML#loadTo(IDisplayPaneContainer, Bundle).
  * Jun 18, 2015 4401       bkowal      Use {@link BundleLoader} directly due to inability of
  *                                     this dialog to support scheduled bundle loading.
+ * Jan 18, 2016  5054      randerso    Changed to extend CaveSWTDialog
  * 
  * </pre>
  * 
@@ -92,7 +93,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @version 1.0
  */
 
-public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
+public class SpatialSubsetMapDlg extends CaveSWTDialog implements
         IMultiPaneEditor, BoxListener {
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -143,7 +144,7 @@ public class SpatialSubsetMapDlg extends CaveSWTDialogBase implements
     public SpatialSubsetMapDlg(Shell shell, ISubset callback,
             ReferencedEnvelope fullEnvelope, ReferencedEnvelope subEnvelope) {
         super(shell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL
-                | CAVE.DO_NOT_BLOCK);
+                | CAVE.PERSPECTIVE_INDEPENDENT | CAVE.DO_NOT_BLOCK);
         paneManager = new PaneManager();
         loopProperties = new LoopProperties();
         this.callback = callback;

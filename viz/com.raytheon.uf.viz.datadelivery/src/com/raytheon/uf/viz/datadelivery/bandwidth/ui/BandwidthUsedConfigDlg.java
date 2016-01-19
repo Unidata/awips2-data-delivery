@@ -31,7 +31,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 
-import com.raytheon.viz.ui.dialogs.CaveSWTDialogBase;
+import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.widgets.TwoValueSliderCanvas;
 
 /**
@@ -44,6 +44,7 @@ import com.raytheon.viz.ui.widgets.TwoValueSliderCanvas;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 27, 2013    2430    mpduff      Initial creation
+ * Jan 15, 2016  5054      randerso    Changed to extend CaveSWTDialog
  * 
  * </pre>
  * 
@@ -51,7 +52,7 @@ import com.raytheon.viz.ui.widgets.TwoValueSliderCanvas;
  * @version 1.0
  */
 
-public class BandwidthUsedConfigDlg extends CaveSWTDialogBase {
+public class BandwidthUsedConfigDlg extends CaveSWTDialog {
 
     private TwoValueSliderCanvas slider;
 
@@ -84,7 +85,7 @@ public class BandwidthUsedConfigDlg extends CaveSWTDialogBase {
     public BandwidthUsedConfigDlg(Shell shell, int lowerVal, int upperVal,
             RGB lowerColor, RGB midColor, RGB upperColor) {
         super(shell, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK
-                | CAVE.INDEPENDENT_SHELL);
+                | CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT);
         this.setText("Utilization Threshold");
         this.lowerVal = lowerVal;
         this.upperVal = upperVal;
