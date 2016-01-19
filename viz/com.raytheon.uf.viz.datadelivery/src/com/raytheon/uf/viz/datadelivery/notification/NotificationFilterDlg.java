@@ -41,7 +41,7 @@ import com.raytheon.uf.viz.datadelivery.common.ui.ITableChange;
 import com.raytheon.uf.viz.datadelivery.notification.PriorityImages.Priority;
 import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationFilterXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.UserFilterXML;
-import com.raytheon.viz.ui.dialogs.CaveSWTDialogBase;
+import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.widgets.duallist.DualList;
 import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 
@@ -54,14 +54,15 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb  6, 2012            mpduff     Initial creation.
- * Mar 20, 2012   240      jpiatt     Updates to filter notification table data.
- * Jun  1, 2012   645      jpiatt     Added tooltips.
- * Sep 25, 2013  2408      mpduff     Added sort to subscription lists.
- * Sep 27, 2013  #2419     lvenable   Update code to reflect changes made in
- *                                    the dual list.
- * Oct 03, 2013  2375      mpduff     Add an apply button.
- * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
+ * Feb  6, 2012            mpduff      Initial creation.
+ * Mar 20, 2012   240      jpiatt      Updates to filter notification table data.
+ * Jun  1, 2012   645      jpiatt      Added tooltips.
+ * Sep 25, 2013  2408      mpduff      Added sort to subscription lists.
+ * Sep 27, 2013  #2419     lvenable    Update code to reflect changes made in
+ *                                     the dual list.
+ * Oct 03, 2013  2375      mpduff      Add an apply button.
+ * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
+ * Jan 18, 2016  5054      randerso    Changed to extend CaveSWTDialog
  * 
  * </pre>
  * 
@@ -69,7 +70,7 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * @version 1.0
  */
 
-public class NotificationFilterDlg extends CaveSWTDialogBase {
+public class NotificationFilterDlg extends CaveSWTDialog {
 
     /** Always include notifications checkbox */
     private Button alwaysIncludeMeBtn;
@@ -82,10 +83,10 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
 
     /** DualList object */
     private DualList subDualList;
-    
+
     /** user group **/
     private Group userGroup;
-    
+
     /** subscription group **/
     private Group subGroup;
 
@@ -98,7 +99,7 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
 
     /** Callback to NotificationDialog */
     private final ITableChange callback;
-    
+
     /** list of notifications available **/
     private List<NotificationRecord> notificationList;
 
@@ -110,8 +111,10 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
      * @param callback
      *            ITableChange callback
      */
-    public NotificationFilterDlg(Shell shell, ITableChange callback, List<NotificationRecord> notificationList) {
-        super(shell, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
+    public NotificationFilterDlg(Shell shell, ITableChange callback,
+            List<NotificationRecord> notificationList) {
+        super(shell, CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT
+                | CAVE.DO_NOT_BLOCK);
         setText("Notification Filter Settings");
         this.callback = callback;
         this.notificationList = notificationList;
@@ -138,11 +141,11 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
      */
     @Override
     protected void initializeComponents(Shell shell) {
-                
+
         createUserGroup();
-       
+
         createSubscriptionGroup();
-        
+
         createPriorityGroup();
 
         createButtons();
@@ -169,8 +172,8 @@ public class NotificationFilterDlg extends CaveSWTDialogBase {
         topComp.setLayout(gl);
         topComp.setLayoutData(gd);
 
-        final boolean selfInclude = configManager.getFilterXml().getUserFilterXml()
-                .isSelfInclude();
+        final boolean selfInclude = configManager.getFilterXml()
+                .getUserFilterXml().isSelfInclude();
 
         // Always include currently logged in user check box
         alwaysIncludeMeBtn = new Button(topComp, SWT.CHECK);
