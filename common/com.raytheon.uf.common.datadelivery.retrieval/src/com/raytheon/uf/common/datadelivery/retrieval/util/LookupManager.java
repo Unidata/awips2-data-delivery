@@ -21,7 +21,7 @@ package com.raytheon.uf.common.datadelivery.retrieval.util;
  **/
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,12 +37,14 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.LevelLookup;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitLookup;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -63,7 +65,8 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  * Jan 18, 2013   1513     dhladky     Level lookup refit.
  * Mar 21, 2013   1794     djohnson    ServiceLoaderUtil now requires the requesting class.
  * Nov 07, 2013   2361     njensen     Use JAXBManager for XML
- * Jam 14, 2014            dhladky     AvailabilityOffset calculations
+ * Jan 14, 2014            dhladky     AvailabilityOffset calculations
+ * Jan 20, 2016   5244     njensen     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -72,62 +75,54 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  */
 
 public class LookupManager {
+
     /**
      * Implementation of the xml writers that writes to localization files.
      */
     private class LocalizationXmlWriter implements LevelXmlWriter,
             ParameterXmlWriter, DataSetInformationXmlWriter {
-        /**
-         * {@inheritDoc}
-         */
+
         @Override
         public void writeLevelXml(LevelLookup ll, String modelName)
                 throws Exception {
-
             IPathManager pm = PathManagerFactory.getPathManager();
             LocalizationContext lc = pm.getContext(
                     LocalizationType.COMMON_STATIC, LocalizationLevel.SITE);
             String fileName = getLevelFileName(modelName);
-            LocalizationFile lf = pm.getLocalizationFile(lc, fileName);
-            File file = lf.getFile();
-
-            getJaxbManager().marshalToXmlFile(ll, file.getAbsolutePath());
+            ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
+            try (SaveableOutputStream sos = lf.openOutputStream()) {
+                getJaxbManager().marshalToStream(ll, sos);
+                sos.save();
+            }
         }
 
-        /**
-         * 
-         * {@inheritDoc}
-         */
         @Override
         public void writeParameterXml(ParameterLookup pl, String modelName)
                 throws Exception {
-
             IPathManager pm = PathManagerFactory.getPathManager();
             LocalizationContext lc = pm.getContext(
                     LocalizationType.COMMON_STATIC, LocalizationLevel.SITE);
             String fileName = getParamFileName(modelName);
-            LocalizationFile lf = pm.getLocalizationFile(lc, fileName);
-            File file = lf.getFile();
-
-            getJaxbManager().marshalToXmlFile(pl, file.getAbsolutePath());
+            ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
+            try (SaveableOutputStream sos = lf.openOutputStream()) {
+                getJaxbManager().marshalToStream(pl, sos);
+                sos.save();
+            }
         }
-
 
         @Override
         public void writeDataSetInformationXml(DataSetInformationLookup dsi)
                 throws Exception {
-            
             IPathManager pm = PathManagerFactory.getPathManager();
             LocalizationContext lc = pm.getContext(
                     LocalizationType.COMMON_STATIC, LocalizationLevel.SITE);
             String fileName = getDataSetInformationFileName();
-            LocalizationFile lf = pm.getLocalizationFile(lc, fileName);
-            File file = lf.getFile();
-            
-            getJaxbManager().marshalToXmlFile(dsi, file.getAbsolutePath());
-            
+            ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
+            try (SaveableOutputStream sos = lf.openOutputStream()) {
+                getJaxbManager().marshalToStream(dsi, sos);
+                sos.save();
+            }
         }
-
     }
 
     private static final IUFStatusHandler statusHandler = UFStatus
@@ -141,7 +136,7 @@ public class LookupManager {
             + File.separatorChar + "lookups" + File.separatorChar;
 
     private static final String CONFIG_FILE_PARAM = "ParameterLookup.xml";
-    
+
     private static final String CONFIG_FILE_DATASETINFO = "DataSetInformationLookup.xml";
 
     private static final String CONFIG_FILE_LEVEL = "LevelLookup.xml";
@@ -152,28 +147,28 @@ public class LookupManager {
      * Get an instance of this singleton.
      * 
      * @return Instance of this class
-     * @throws FileNotFoundException
      */
     public static LookupManager getInstance() {
         return instance;
     }
 
-    private final Map<String, ParameterLookup> parameters = new HashMap<String, ParameterLookup>(1);
+    private final Map<String, ParameterLookup> parameters = new HashMap<>(1);
 
-    private final Map<String, LevelLookup> levels = new HashMap<String, LevelLookup>(1);
-    
-    private final Map<String, DataSetInformation> dataSetInformations = new HashMap<String, DataSetInformation>(1);
+    private final Map<String, LevelLookup> levels = new HashMap<>(1);
+
+    private final Map<String, DataSetInformation> dataSetInformations = new HashMap<>(
+            1);
 
     private UnitLookup unitLookup = null;
 
     private final LevelXmlWriter levelXmlWriter = ServiceLoaderUtil.load(
-            LookupManager.class,
-            LevelXmlWriter.class, new LocalizationXmlWriter());
+            LookupManager.class, LevelXmlWriter.class,
+            new LocalizationXmlWriter());
 
     private final ParameterXmlWriter parameterXmlWriter = ServiceLoaderUtil
             .load(LookupManager.class, ParameterXmlWriter.class,
                     new LocalizationXmlWriter());
-    
+
     private final DataSetInformationXmlWriter dataSetInformationXmlWriter = ServiceLoaderUtil
             .load(LookupManager.class, DataSetInformationXmlWriter.class,
                     new LocalizationXmlWriter());
@@ -212,7 +207,6 @@ public class LookupManager {
      * @return
      */
     public LevelLookup getLevels(String modelName) {
-
         LevelLookup modelLevels = null;
 
         if (levels.containsKey(modelName)) {
@@ -227,9 +221,8 @@ public class LookupManager {
     }
 
     private LevelLookup getLevelsFromFile(String modelName) {
-
         LevelLookup levelLoookup = null;
-        LocalizationFile file = null;
+        ILocalizationFile file = null;
         String fileName = getLevelFileName(modelName);
 
         try {
@@ -241,12 +234,12 @@ public class LookupManager {
 
         if (file != null) {
             try {
-                levelLoookup = readLevelXml(file.getFile());
+                levelLoookup = readLevelXml(file);
             } catch (Exception e) {
                 statusHandler.handle(
                         Priority.PROBLEM,
                         "Failed to Read Level Lookup from file: "
-                                + file.getName(), e);
+                                + file.getPath(), e);
             }
         }
 
@@ -259,9 +252,8 @@ public class LookupManager {
      * @param fileName
      * @return
      */
-    private LocalizationFile getLocalizationFile(String fileName) {
-
-        LocalizationFile lf = null;
+    private ILocalizationFile getLocalizationFile(String fileName) {
+        ILocalizationFile lf = null;
         IPathManager pm = PathManagerFactory.getPathManager();
         Map<LocalizationLevel, LocalizationFile> files = pm
                 .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
@@ -299,9 +291,8 @@ public class LookupManager {
     }
 
     private ParameterLookup getParametersFromFile(String modelName) {
-
         ParameterLookup paramLoookup = null;
-        LocalizationFile file = null;
+        ILocalizationFile file = null;
         String fileName = getParamFileName(modelName);
 
         try {
@@ -313,18 +304,18 @@ public class LookupManager {
 
         if (file != null) {
             try {
-                paramLoookup = readParameterXml(file.getFile());
+                paramLoookup = readParameterXml(file);
             } catch (Exception e) {
                 statusHandler.handle(
                         Priority.PROBLEM,
                         "Failed to Read Parameter Lookup from file: "
-                                + file.getName(), e);
+                                + file.getPath(), e);
             }
         }
 
         return paramLoookup;
     }
-    
+
     /**
      * Gets the Data Set Information
      * 
@@ -332,56 +323,54 @@ public class LookupManager {
      * @return
      */
     public DataSetInformation getDataSetInformation(String modelName) {
-
         DataSetInformation dsi = null;
 
         if (dataSetInformations.isEmpty()) {
-            
             DataSetInformationLookup dataSetInformationLookup = getDataSetInformationLookupFromFile();
-            
+
             if (dataSetInformationLookup == null) {
                 dataSetInformationLookup = new DataSetInformationLookup();
             }
-            
-            for (DataSetInformation dataSetinfo: dataSetInformationLookup.getDataSetInformations()){
-                dataSetInformations.put(dataSetinfo.getModelName(), dataSetinfo);
+
+            for (DataSetInformation dataSetinfo : dataSetInformationLookup
+                    .getDataSetInformations()) {
+                dataSetInformations
+                        .put(dataSetinfo.getModelName(), dataSetinfo);
             }
-        } 
-        
+        }
+
         if (dataSetInformations.containsKey(modelName)) {
             dsi = dataSetInformations.get(modelName);
         }
-      
+
         return dsi;
     }
 
     private DataSetInformationLookup getDataSetInformationLookupFromFile() {
-
         DataSetInformationLookup dataSetInformationLookup = null;
-        LocalizationFile file = null;
+        ILocalizationFile file = null;
         String fileName = getDataSetInformationFileName();
 
         try {
             file = getLocalizationFile(fileName);
         } catch (Exception e) {
-            statusHandler
-                    .error(" Failed to read Data Set Information Lookup: " + fileName, e);
+            statusHandler.error(" Failed to read Data Set Information Lookup: "
+                    + fileName, e);
         }
 
         if (file != null) {
             try {
-                dataSetInformationLookup = readDataSetInformationXml(file.getFile());
+                dataSetInformationLookup = readDataSetInformationXml(file);
             } catch (Exception e) {
-                statusHandler.handle(
-                        Priority.PROBLEM,
+                statusHandler.handle(Priority.PROBLEM,
                         "Failed to Read Data Set Information Lookup from file: "
-                                + file.getName(), e);
+                                + file.getPath(), e);
             }
         }
 
         return dataSetInformationLookup;
     }
-    
+
     /**
      * Availability Offset file name
      * 
@@ -391,7 +380,7 @@ public class LookupManager {
     private String getDataSetInformationFileName() {
         return CONFIG_FILE_ROOT + CONFIG_FILE_DATASETINFO;
     }
-    
+
     /**
      * Read Data Set Information lookup
      * 
@@ -399,22 +388,24 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private DataSetInformationLookup readDataSetInformationXml(File file) throws Exception {
-
+    private DataSetInformationLookup readDataSetInformationXml(
+            ILocalizationFile file) throws Exception {
         DataSetInformationLookup dsi = null;
 
         if (file != null && file.exists()) {
-            dsi = getJaxbManager().unmarshalFromXmlFile(
-                    DataSetInformationLookup.class, file);
+            try (InputStream is = file.openInputStream()) {
+                dsi = (DataSetInformationLookup) getJaxbManager()
+                        .unmarshalFromInputStream(is);
+            }
         }
 
         return dsi;
     }
-    
+
     /**
      * Modify or create a data set information lookup
      * 
-     * @param modelName
+     * @param dsi
      */
     public void modifyDataSetInformationLookup(DataSetInformation dsi) {
 
@@ -425,7 +416,7 @@ public class LookupManager {
 
                 dataSetInformations.put(dsi.getModelName(), dsi);
                 dataSetInformationLookup = getDataSetInformationLookupFromFile();
-                
+
                 if (dataSetInformationLookup == null) {
                     dataSetInformationLookup = new DataSetInformationLookup();
                 }
@@ -464,12 +455,10 @@ public class LookupManager {
     /**
      * Does a availability offset lookup exist?
      * 
-     * @param modelName
      * @return
      */
     public boolean dataSetInformationLookupExists() {
-
-        LocalizationFile file = null;
+        ILocalizationFile file = null;
         String fileName = getDataSetInformationFileName();
         try {
             file = getLocalizationFile(fileName);
@@ -484,8 +473,6 @@ public class LookupManager {
 
         return false;
     }
-
-
 
     /**
      * param file name
@@ -526,8 +513,7 @@ public class LookupManager {
      * @return
      */
     private UnitLookup getUnitsFromFile() {
-
-        LocalizationFile file = null;
+        ILocalizationFile file = null;
         String fileName = getUnitFileName();
 
         try {
@@ -539,12 +525,12 @@ public class LookupManager {
 
         if (file != null) {
             try {
-                unitLookup = readUnitsXml(file.getFile());
+                unitLookup = readUnitsXml(file);
             } catch (Exception e) {
                 statusHandler.handle(
                         Priority.PROBLEM,
                         "Failed to Read Unit Lookup from file: "
-                                + file.getName(), e);
+                                + file.getPath(), e);
             }
         }
 
@@ -558,8 +544,7 @@ public class LookupManager {
      * @return
      */
     public boolean levelLookupExists(String modelName) {
-
-        LocalizationFile file = null;
+        ILocalizationFile file = null;
         String fileName = getLevelFileName(modelName);
 
         try {
@@ -608,7 +593,6 @@ public class LookupManager {
 
         boolean gen = false;
 
-        
         if (CollectionUtil.isNullOrEmpty(levs)) {
             ll.setLevelXml(new ArrayList<Double>());
             levs = ll.getLevelXml();
@@ -640,7 +624,6 @@ public class LookupManager {
 
         levels.put(modelName, ll);
         statusHandler.info("Updated/Created level lookup! " + modelName);
-
     }
 
     /**
@@ -649,7 +632,6 @@ public class LookupManager {
      * @param modelName
      */
     public void modifyParamLookups(String modelName, List<Parameter> newParams) {
-
         try {
             ParameterLookup pl = null;
             List<ParameterConfig> params = null;
@@ -695,8 +677,7 @@ public class LookupManager {
      * @return
      */
     public boolean paramLookupExists(String modelName) {
-
-        LocalizationFile file = null;
+        ILocalizationFile file = null;
         String fileName = getParamFileName(modelName);
         try {
             file = getLocalizationFile(fileName);
@@ -719,13 +700,14 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private LevelLookup readLevelXml(File file) throws Exception {
-
+    private LevelLookup readLevelXml(ILocalizationFile file) throws Exception {
         LevelLookup levelXml = null;
 
         if (file != null && file.exists()) {
-            levelXml = getJaxbManager().unmarshalFromXmlFile(
-                    LevelLookup.class, file);
+            try (InputStream is = file.openInputStream()) {
+                levelXml = (LevelLookup) getJaxbManager()
+                        .unmarshalFromInputStream(is);
+            }
         }
 
         return levelXml;
@@ -738,13 +720,15 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private ParameterLookup readParameterXml(File file) throws Exception {
-
+    private ParameterLookup readParameterXml(ILocalizationFile file)
+            throws Exception {
         ParameterLookup paramXml = null;
 
         if (file != null && file.exists()) {
-            paramXml = getJaxbManager().unmarshalFromXmlFile(
-                    ParameterLookup.class, file);
+            try (InputStream is = file.openInputStream()) {
+                paramXml = (ParameterLookup) getJaxbManager()
+                        .unmarshalFromInputStream(is);
+            }
         }
 
         return paramXml;
@@ -757,17 +741,17 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private UnitLookup readUnitsXml(File file) throws Exception {
-
+    private UnitLookup readUnitsXml(ILocalizationFile file) throws Exception {
         UnitLookup unitXml = null;
 
         if (file != null && file.exists()) {
-            unitXml = getJaxbManager().unmarshalFromXmlFile(
-                    UnitLookup.class, file);
+            try (InputStream is = file.openInputStream()) {
+                unitXml = (UnitLookup) getJaxbManager()
+                        .unmarshalFromInputStream(is);
+            }
         }
 
         return unitXml;
     }
-    
-    
+
 }
