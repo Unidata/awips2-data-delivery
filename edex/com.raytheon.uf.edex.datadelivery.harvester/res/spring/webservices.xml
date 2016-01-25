@@ -34,7 +34,6 @@
 		</jaxws:serviceBean>
 		<jaxws:inInterceptors>
 			<ref bean="authenticationInterceptor" />
-			<ref bean="xacmlInterceptor" />
 		</jaxws:inInterceptors>
 		<jaxws:outInterceptors>
 			<ref bean="securityOutInterceptor" />
