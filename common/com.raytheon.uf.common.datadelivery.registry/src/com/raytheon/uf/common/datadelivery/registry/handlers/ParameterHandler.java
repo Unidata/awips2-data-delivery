@@ -49,6 +49,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Oct 03, 2012 1241       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Now composes a registryHandler.
  * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Jan 20, 2016  5280      dhladky     Increase efficiency of replication.
  * 
  * </pre>
  * 
@@ -230,4 +231,22 @@ public class ParameterHandler extends
 
         return new HashSet<String>(response.getResults());
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Parameter getByName(String parameterName)
+            throws RegistryHandlerException {
+        ParameterQuery pQuery = getQuery();
+        pQuery.setParameterName(parameterName);
+
+        RegistryQueryResponse<Parameter> response = registryHandler
+                .getObjects(pQuery);
+
+        checkResponse(response, "getByName");
+
+        return response.getSingleResult();
+    }
+   
 }

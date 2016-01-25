@@ -53,6 +53,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Nov 10, 2014  3826        dhladky    Added more logging.
  * Aug 02, 2015  4881        dhladky    Disable Remote verification, FTPS comms are proxied.
  * Dec 05, 2015  5209        dhladky    Remove relative URL workaround.  Relative and actual URL are equal now.
+ * Jan 20, 2016  5280        dhladky    Added FTP type configuration.
  * </pre>
  * 
  * @author dhladky
@@ -113,7 +114,6 @@ public class PDAConnectionUtil {
 
         try {
 
-            rootUrl = providerConn.getUrl();
             ProviderCredentials creds = ProviderCredentialsUtil
                     .retrieveCredentials(providerName);
             Connection localConnection = creds.getConnection();
@@ -126,8 +126,10 @@ public class PDAConnectionUtil {
                 // encryption method for password storage and decrypt.
                 userName = localConnection.getUnencryptedUsername();
                 password = localConnection.getUnencryptedPassword();
+
                 String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(remoteFilename);
                 // Do this after you separate!
+                rootUrl = serviceConfig.getConstantValue("FTPS_REQUEST_URL");
                 rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
                 remoteFileDirectory = remotePathAndFile[0];
                 statusHandler.handle(Priority.INFO,
@@ -137,8 +139,10 @@ public class PDAConnectionUtil {
                 fileName = remotePathAndFile[1];
                 localFileDirectory = serviceConfig.getConstantValue("FTPS_DROP_DIR");
                 String port = serviceConfig.getConstantValue("PORT");
-
-                ftpRequest = new FTPRequest(FTPType.FTPS, rootUrl, userName, password, port);
+                String conn_type = serviceConfig.getConstantValue("CONN_TYPE");
+                
+                FTPType type = getFTPType(conn_type);
+                ftpRequest = new FTPRequest(type, rootUrl, userName, password, port);
       
                 // These only apply to FTPS
                 if (ftpRequest.getType() == FTPType.FTPS) {
@@ -257,6 +261,24 @@ public class PDAConnectionUtil {
         }
         
         return sc;
+    }
+    
+    /**
+     * Determine the type of FTP request
+     * @param conn_type
+     * @return
+     */
+    private static FTPType getFTPType(String conn_type) {
+
+        if (FTPType.FTP.name().equals(conn_type)) {
+            return FTPType.FTP;
+        } else if (FTPType.FTPS.name().equals(conn_type)) {
+            return FTPType.FTPS;
+        } else if (FTPType.SFTP.name().equals(conn_type)) {
+            return FTPType.SFTP;
+        }
+        // default
+        return FTPType.FTP;
     }
     
     /**

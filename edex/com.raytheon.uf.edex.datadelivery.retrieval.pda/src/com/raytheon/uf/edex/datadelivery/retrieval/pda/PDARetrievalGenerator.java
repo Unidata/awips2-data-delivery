@@ -56,6 +56,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Sept 14, 2104 3121      dhladky     Sharpened Retrieval generation.
  * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
  * Jan 18, 2016  5260      dhladky     Testing changes.
+ * Jan 20, 2016  5280      dhladky     removed FTPSURL from request URL.
  * 
  * </pre>
  * 
@@ -68,8 +69,6 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARetrievalGenerator.class);
-        
-    protected static final String FTPS_REQUEST_URL = "FTPS_REQUEST_URL";
     
     public PDARetrievalGenerator(ServiceType serviceType) {
         super(serviceType);
@@ -167,12 +166,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         
         if (filePath != null) {
             statusHandler.handle(Priority.INFO, "Dataset file path: " + filePath);
-            // You get just a relative filePath from PDA.
-            // Now we have to construct the full URL (ftpsRootUrl + filePath)
-            String ftpsRequestRootUrl = getServiceConfig().getConstantValue(
-                    FTPS_REQUEST_URL);
-            String url = ftpsRequestRootUrl + filePath;
-            retrieval.getConnection().setUrl(url);
+            retrieval.getConnection().setUrl(filePath);
         } else {
             throw new IllegalArgumentException("PDA dataset filePath query failed!");
         }

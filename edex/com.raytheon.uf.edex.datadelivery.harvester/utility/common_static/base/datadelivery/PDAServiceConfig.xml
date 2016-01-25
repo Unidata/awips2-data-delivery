@@ -8,7 +8,7 @@
     <constant name="MODE" value="file"/>
     <constant name="BLANK" value=""/>
     <constant name="PROTOCOL" value="SSL"/>
-    <constant name="CONN_TYPE" value="ftps"/>
+    <constant name="CONN_TYPE" value="FTPS"/>
     <constant name="PORT" value="21"/>
     <constant name="FTPS_DROP_DIR" value="/awips2/edex/data/ftps" />
     <constant name="MISSING_VALUE" value="-999999"/>
@@ -27,7 +27,6 @@
     <constant name="PASSIVE_MODE" value="true" />
     <constant name="SUBSET_REQUEST_URL" value="https://pda.espds.com" />
     <constant name="FTPS_REQUEST_URL" value="ftps://pda.espds.com" />
-    <constant name="REMOTE_DIR_PATH" value="/PDAFileLinks/" />
     <constant name="REMOTE_VERIFICATION" value="false" />
     <constant name="DEBUG" value="true" />
     <!--

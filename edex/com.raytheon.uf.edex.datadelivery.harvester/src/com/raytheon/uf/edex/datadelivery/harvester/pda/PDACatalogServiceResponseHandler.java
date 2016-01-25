@@ -70,6 +70,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Apr 21, 2015 4435       dhladky     Connecting to PDA transactions
  * Sept 11, 2015 4881      dhladky     Updates to PDA processing, better tracking.
  * Jan 18, 2016  5260      dhladky     FQDN usage to lessen OGC class collisions.
+ * Jan 20, 2016  5280      dhladky     Logging improvement.
  * 
  * </pre>
  * 
@@ -215,7 +216,9 @@ public class PDACatalogServiceResponseHandler implements
                 // metadata through our own methods.
                 try {
                     JAXBElement<BriefRecordType> brt = parseBriefRecord(o);
-                    briefRecords.add(brt);
+                    if (brt != null) {
+                        briefRecords.add(brt);
+                    }
                 } catch (Exception e) {
                     statusHandler.error(
                             "Errror parsing Transaction message from PDA.", e);
