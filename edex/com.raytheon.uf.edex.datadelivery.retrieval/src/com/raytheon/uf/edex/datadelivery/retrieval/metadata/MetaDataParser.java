@@ -122,19 +122,20 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
     @SuppressWarnings("rawtypes")
     protected void storeDataSet(final DataSet dataSet) {
 
-        DataSet dataSetToStore = getDataSetToStore(dataSet);
-        final String dataSetName = dataSetToStore.getDataSetName();
-        IDataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
+        String dataSetName = null;
         
         try {
      
+            DataSet dataSetToStore = getDataSetToStore(dataSet);
+            dataSetName = dataSetToStore.getDataSetName();
+            IDataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
             boolean store = false;
             
             if (dataSetToStore != null) {
                 if (!dataSetToStore.equals(dataSet)) {
                     store = true;
                 }
-            } 
+            }
             
             if (store) {
                 handler.update(RegistryUtil.registryUser, dataSetToStore);
