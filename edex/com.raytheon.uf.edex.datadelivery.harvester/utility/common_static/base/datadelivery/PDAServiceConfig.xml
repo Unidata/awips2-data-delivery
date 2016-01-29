@@ -23,6 +23,8 @@
     <constant name="BASE_TYPE" value="Float"/>
     <constant name="UNITS" value="NONE"/>
     <constant name="DEFAULT_FORMAT" value="BUFR"/>
+    <!-- Decoder type (temporary, until metadata improves from PDA) -->
+    <constant name="DEFAULT_TYPE" value="goesr"/>
     <!--  Default PDA OGC CRS (WGS 84) -->
     <constant name="DEFAULT_CRS" value="CRS:84"/>
     <!-- PDA test data is old, when using it, set this to true so times show as current. -->
