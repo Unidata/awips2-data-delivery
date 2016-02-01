@@ -73,6 +73,7 @@ import com.raytheon.viz.ui.presenter.components.WidgetConf;
  * Mar 31, 2014  2889      dhladky     Added username for notification center tracking.
  * Jan 05, 2015  3881      dhladky     Changed from store to update for existing(and new) subscriptions.
  * May 17, 2015  4047      dhladky     verified non-blocking.
+ * Feb 01, 2016  5289      tgurney     Add missing minimize button in trim
  * 
  * </pre>
  * 
@@ -112,7 +113,8 @@ public class GroupAddDlg extends CaveSWTDialog {
      */
     public GroupAddDlg(Shell parent, Subscription subscription,
             IGroupAction callback) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN,
+                CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText("Add To Group");
         this.subscription = subscription;
         this.callback = callback;

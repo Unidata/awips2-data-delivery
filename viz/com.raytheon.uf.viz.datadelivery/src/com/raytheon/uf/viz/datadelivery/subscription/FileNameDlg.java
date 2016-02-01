@@ -48,7 +48,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Dec 17, 2012   1434     mpduff      Don't allow underscores in name.
  * Nov 14, 2013   2538     mpduff      Check for same name entered.
  * May 17, 2015   4047     dhladky     verified non-blocking, restored functionality (copy was broken)
- * 
+ * Feb 01, 2016   5289     tgurney     Add missing minimize button in trim
  * </pre>
  * 
  * @author mpduff
@@ -71,7 +71,8 @@ public class FileNameDlg extends CaveSWTDialog {
      *            The original subscription name
      */
     public FileNameDlg(Shell parent, String origName) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK | CAVE.INDEPENDENT_SHELL);
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN,
+                CAVE.DO_NOT_BLOCK | CAVE.INDEPENDENT_SHELL);
         this.setText("Copy Subscription");
         this.origName = origName;
     }

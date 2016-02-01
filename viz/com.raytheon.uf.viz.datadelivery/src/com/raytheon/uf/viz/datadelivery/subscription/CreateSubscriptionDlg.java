@@ -158,6 +158,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Feb 13, 2015   3852     dhladky     All messaging is done from the BWM and Registry regarding subscriptions.
  * May 17, 2015  4047      dhladky     verified non-blocking.
  * Oct 15, 2015   4657     rferrel     Make blocking so parent dialog stays busy.
+ * Feb 01, 2016   5289     tgurney     Add missing minimize button in trim
  * 
  * </pre>
  * 
@@ -268,7 +269,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     public CreateSubscriptionDlg(Shell parent, boolean create, DataSet dataSet,
             IGuiThreadTaskExecutor guiThreadTaskExecutor) {
         // Make blocking so parent shell stays busy until the dialog closes.
-        super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN,
+                CAVE.INDEPENDENT_SHELL
                 | CAVE.PERSPECTIVE_INDEPENDENT);
         this.create = create;
         this.dataSet = dataSet;

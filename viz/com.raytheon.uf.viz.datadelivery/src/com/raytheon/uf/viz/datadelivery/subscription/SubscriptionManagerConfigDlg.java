@@ -56,6 +56,7 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * Sep 04, 2013  2314      mpduff     Load/save config dialog now non-blocking.
  * Nov 06, 2013  2358      mpduff     Removed configuration file management from this dialog.
  * May 17, 2015  4047      dhladky    verified non-blocking.
+ * Feb 01, 2016  5289      tgurney    Add missing minimize button in trim
  * 
  * </pre>
  * 
@@ -85,7 +86,8 @@ public class SubscriptionManagerConfigDlg extends CaveSWTDialog {
      * @param callback
      */
     public SubscriptionManagerConfigDlg(Shell parentShell, ITableChange callback) {
-        super(parentShell, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN,
+                CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         
         setText("Subscription Manager Configuration");
         this.callback = callback;

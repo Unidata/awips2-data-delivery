@@ -129,6 +129,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 10, 2014   2892     mpduff       Fix problems with loading of saved configs.
  * Oct 15, 2015   4657     rferrel      Limit the number of Subset Manager dialogs.
  * Nov 30, 2015   4834     njensen      Changed LocalizationOpFailedException to LocalizationException
+ * Jan 29, 2016   5289     tgurney      Add missing minimize/maximize buttons in trim
  * 
  * </pre>
  * 
@@ -253,7 +254,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
      *            Parent shell.
      */
     public DataBrowserDlg(Shell parentShell) {
-        super(parentShell, SWT.DIALOG_TRIM | SWT.RESIZE, CAVE.INDEPENDENT_SHELL
+        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE,
+                CAVE.INDEPENDENT_SHELL
                 | CAVE.PERSPECTIVE_INDEPENDENT);
 
         setText(WINDOW_TITLE);

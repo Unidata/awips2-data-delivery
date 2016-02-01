@@ -67,6 +67,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Aug 30, 2013  2314     mpduff     Fixed sorting ambiguity.
  * Sep 16, 2013  2375     mpduff     Add apply button.
  * May 17, 2015  4047     dhladky    verified non-blocking.
+ * Feb 01, 2016  5289     tgurney    Add missing minimize button in trim
  * 
  * </pre>
  * 
@@ -137,7 +138,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
      * @param callback
      */
     public NotificationConfigDlg(Shell parentShell, ITableChange callback) {
-        super(parentShell, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN,
+                CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText("Notification Configuration");
         this.callback = callback;
     }

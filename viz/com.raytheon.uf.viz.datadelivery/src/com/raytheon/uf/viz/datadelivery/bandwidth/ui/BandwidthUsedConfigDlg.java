@@ -45,6 +45,7 @@ import com.raytheon.viz.ui.widgets.TwoValueSliderCanvas;
  * ------------ ---------- ----------- --------------------------
  * Sep 27, 2013    2430    mpduff      Initial creation
  * Jan 15, 2016  5054      randerso    Changed to extend CaveSWTDialog
+ * Jan 29, 2016  5289      tgurney     Added missing minimize button in trim
  * 
  * </pre>
  * 
@@ -84,7 +85,7 @@ public class BandwidthUsedConfigDlg extends CaveSWTDialog {
      */
     public BandwidthUsedConfigDlg(Shell shell, int lowerVal, int upperVal,
             RGB lowerColor, RGB midColor, RGB upperColor) {
-        super(shell, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK
+        super(shell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.DO_NOT_BLOCK
                 | CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT);
         this.setText("Utilization Threshold");
         this.lowerVal = lowerVal;

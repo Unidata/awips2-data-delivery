@@ -63,6 +63,7 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * Oct 03, 2013  2375      mpduff      Add an apply button.
  * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
  * Jan 18, 2016  5054      randerso    Changed to extend CaveSWTDialog
+ * Feb 01, 2016  5289      tgurney     Add missing close button in trim
  * 
  * </pre>
  * 
@@ -113,7 +114,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
      */
     public NotificationFilterDlg(Shell shell, ITableChange callback,
             List<NotificationRecord> notificationList) {
-        super(shell, CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT
+        super(shell, SWT.CLOSE, CAVE.INDEPENDENT_SHELL
+                | CAVE.PERSPECTIVE_INDEPENDENT
                 | CAVE.DO_NOT_BLOCK);
         setText("Notification Filter Settings");
         this.callback = callback;
