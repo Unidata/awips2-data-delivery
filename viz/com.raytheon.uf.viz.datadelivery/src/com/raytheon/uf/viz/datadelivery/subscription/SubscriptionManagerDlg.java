@@ -164,6 +164,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * May 17, 2015  4047      dhladky    verified non-blocking.
  * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
  * Jul 01, 2015  4047      dhladky    RefreshTask was configured to not run often enough.
+ * Feb 10, 2016  5144      dhladky    Remove set of originatingSite on update.  This caused many problems with Shared Subscriptions.
  * 
  * </pre>
  * 
@@ -1025,10 +1026,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         if (sub instanceof SharedSubscription) {
                             sub.getOfficeIDs().remove(CURRENT_SITE);
                             if (sub.getOfficeIDs().size() > 0) {
-                                // Set site originating change on change
-                                sub.setOriginatingSite(CURRENT_SITE);
                                 subsToUpdate.add(sub);
-
                             } else {
                                 subsToDelete.add(sub);
                             }
