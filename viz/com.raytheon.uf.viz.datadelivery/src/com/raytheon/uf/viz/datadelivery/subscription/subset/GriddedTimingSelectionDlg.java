@@ -62,6 +62,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * May 17, 2015  4047      dhladky     Verified non-blocking.
  * Jan 19, 2016  5054      randerso    Fixed dialog to display with title bar  
  *                                     and in correct location.
+ * Feb 09, 2016  5324      randerso    Remove CAVE.DO_NOT_BLOCK until DR #5327 is worked
  * 
  * </pre>
  * 
@@ -112,7 +113,7 @@ public class GriddedTimingSelectionDlg extends CaveSWTDialog {
      */
     public GriddedTimingSelectionDlg(Shell parentShell, GriddedDataSet dataset,
             Subscription subscription, java.util.List<String> dateList) {
-        super(parentShell, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM);
         setText("Select Date/Cycle");
         this.cycleTimes = dataset.getCycles();
         this.subscription = subscription;
