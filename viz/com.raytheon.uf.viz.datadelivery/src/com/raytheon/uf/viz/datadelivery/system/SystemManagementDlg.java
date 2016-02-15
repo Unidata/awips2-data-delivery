@@ -69,6 +69,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
  * Nov 20, 2014 2749       ccody       Changed System Management to a non-modal dialog
  * Nov 12, 2015 4644       dhladky     Added rules for PDA subscriptions.
+ * Jan 18, 2016 5260       dhladky     Rule updates.
  * </pre>
  * 
  * @author jpiatt

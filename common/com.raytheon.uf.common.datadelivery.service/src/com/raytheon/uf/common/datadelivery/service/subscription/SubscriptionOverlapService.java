@@ -60,7 +60,11 @@ import com.raytheon.uf.common.util.FileUtil;
  * Oct 25, 2013  2292      mpduff       Move overlap checks to edex.
  * Nov 12, 2013  2361      njensen      Made JAXBManager static and initialized on first use
  * Nov 10, 2015  4644      dhladky      Added PDA overlap strategies
+ * Jan 18, 2016 5260       dhladky      Updated with better values.
  * Jan 20, 2016  5244      njensen      Replaced calls to deprecated LocalizationFile methods
+ *
+ *
+ * 
  * 
  * </pre>
  * 

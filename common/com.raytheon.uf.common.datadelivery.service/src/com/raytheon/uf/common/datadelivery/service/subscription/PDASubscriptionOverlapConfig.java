@@ -37,6 +37,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * ------------ ---------- ----------- --------------------------
  * Aug, 21 2013  3121      dhladky     Grid Subscription Overlap
  * Nov, 10, 2015 4644      dhladky     Fixed PDA overlaps
+ * Jan 18, 2016 5260       dhladky     Updated with better values.
  * 
  * </pre>
  * 
@@ -107,4 +108,3 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
                 SubscriptionOverlapMatchStrategy.MATCH_ALL);
     }
 }
-
