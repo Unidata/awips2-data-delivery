@@ -51,6 +51,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Dec 07, 2012  1278      bgonzale   Coordinate Array initialization in ctor.
  * Dec 10, 2012  1259      bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
  * Jul 12, 2013  2141      mpduff     Fix typo.
+ * Feb 10, 2016  5323      tjensen    Fix error with cancel
  * 
  * </pre>
  * 
@@ -91,34 +92,16 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
         this(parentShell, null, envelope);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
         return new GridLayout(1, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
-     */
     @Override
     protected Object constructShellLayoutData() {
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
 
@@ -164,8 +147,7 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 int answer = DataDeliveryUtils
-                        .showMessage(getShell(), SWT.YES | SWT.NO,
-                                "Cancel Changes?",
+                        .showYesNoMessage(getShell(), "Cancel Changes?",
                                 "Are you sure you wish to close without selecting an area?");
                 if (answer == SWT.YES) {
                     setReturnValue(false);
