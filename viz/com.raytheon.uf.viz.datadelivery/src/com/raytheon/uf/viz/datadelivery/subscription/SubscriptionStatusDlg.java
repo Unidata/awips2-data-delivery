@@ -51,6 +51,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Aug 21, 2013    2248    bgonzale    Changed label to minutes.
  * Aug 28, 2013    2290    mpduff      Changed output to work with unscheduled subs.
  * May 17, 2015    4047    dhladky     verified non-blocking.
+ * Feb 16, 2016    5319    tjensen     Make Subscription Summary block so user can read it.
  * 
  * </pre>
  * 
@@ -78,7 +79,7 @@ public class SubscriptionStatusDlg extends CaveSWTDialog {
      */
     public SubscriptionStatusDlg(Shell parent,
             SubscriptionStatusSummary summary, String statusMsg) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK);
+        super(parent, SWT.DIALOG_TRIM, CAVE.NONE);
 
         this.summary = summary;
         this.statusMsg = statusMsg;
