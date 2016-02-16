@@ -101,6 +101,7 @@ import opendap.dap.NoSuchAttributeException;
  * Jul 08, 2014  3120      dhladky      Generics, interface realignment
  * Apr 12, 2015  4400      dhladky      Switched over to DAP2 protocol.
  * Jul 13, 2015  4566      dhladky      Added the AWIPS parameter name to the Dataset when present.
+ * Feb 16, 2016  5365      dhladky      Interface change.
  * 
  * </pre>
  * 
@@ -803,7 +804,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
     @Override
     public void parseMetaData(Provider provider, String dataDateFormat,
-            LinkStore object) throws Exception {
+            LinkStore object, boolean isFile) throws Exception {
         throw new UnsupportedOperationException("Not implemented for this type");
         
     }

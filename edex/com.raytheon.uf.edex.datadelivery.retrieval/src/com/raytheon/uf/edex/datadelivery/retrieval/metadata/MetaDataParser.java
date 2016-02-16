@@ -70,6 +70,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
  * Jun 21, 2014 3120       dhladky      Added more helper methods
  * Jan 20, 2016 5280       dhladky      Increase efficiency of object replication.
+ * Feb 16, 2016 5365       dhladky      Refined interface for transaction, getRecords() exclusions.
  * 
  * </pre>
  * 
@@ -135,7 +136,7 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
                 if (!dataSetToStore.equals(dataSet)) {
                     store = true;
                 }
-            }
+            } 
             
             if (store) {
                 handler.update(RegistryUtil.registryUser, dataSetToStore);
@@ -160,18 +161,37 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
         IDataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
         final String description = metaData.getDataSetDescription();
+        DataSetMetaData<?> currentMetaData = null;
+        boolean store = false;
 
         try {
-            handler.update(RegistryUtil.registryUser, metaData);
-            statusHandler.info("DataSetMetaData [" + description
-                    + "] successfully stored in Registry");
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
-                    + description + "] failed to store in Registry");
+            // "url" is ID for metaData
+            currentMetaData = handler.getById(metaData.getUrl());
+        } catch (RegistryHandlerException e1) {
+            statusHandler
+                    .handle(Priority.PROBLEM, "Unable to lookup metadata ID: "+metaData.getUrl(), e1);
+        }
 
+        if (currentMetaData != null) {
+            if (!currentMetaData.equals(metaData)) {
+                store = true;
+            }
+        } else {
+            store = true;
+        }
+
+        if (store) {
+            try {
+                handler.update(RegistryUtil.registryUser, metaData);
+                statusHandler.info("DataSetMetaData [" + description
+                        + "] successfully stored in Registry");
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
+                        + description + "] failed to store in Registry");
+
+            }
         }
     }
-
 
     /**
      * Stores the name of the dataset, used in lookups.
@@ -189,7 +209,7 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
         // Now add the parameter Objects so we can associate
         // the DataSetName with parameters..
         dsn.setParameters(dataSetToStore.getParameters());
-
+ 
         try {
             DataDeliveryHandlers.getDataSetNameHandler().update(RegistryUtil.registryUser, dsn);
             statusHandler.info("DataSetName object store complete, dataset ["
@@ -213,18 +233,40 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
         IDataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
         Iterator<DataSetMetaData<?>> iter = metaDatas.iterator();
+        
         while (iter.hasNext()) {
+
             final DataSetMetaData<?> dsmd = iter.next();
+            DataSetMetaData<?> currentMetaData = null;
             final String url = dsmd.getUrl();
+            boolean store = false;
 
             try {
-                handler.update(RegistryUtil.registryUser, dsmd);
-                statusHandler.info("DataSetMetaData [" + url
-                        + "] successfully stored in Registry");
-            } catch (RegistryHandlerException e) {
-                statusHandler.info("DataSetMetaData [" + url
-                        + "] failed to store in Registry");
+                // "url" is ID for metaData
+                currentMetaData = handler.getById(dsmd.getUrl());
+            } catch (RegistryHandlerException e1) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to lookup metadata ID: " + dsmd.getUrl(), e1);
+            }
 
+            if (currentMetaData != null) {
+                if (!currentMetaData.equals(dsmd)) {
+                    store = true;
+                }
+            } else {
+                store = true;
+            }
+
+            if (store) {
+                try {
+                    handler.update(RegistryUtil.registryUser, dsmd);
+                    statusHandler.info("DataSetMetaData [" + url
+                            + "] successfully stored in Registry");
+                } catch (RegistryHandlerException e) {
+                    statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
+                            + url + "] failed to store in Registry");
+
+                }
             }
         }
     }
