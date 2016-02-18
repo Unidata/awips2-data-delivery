@@ -15,8 +15,8 @@
 			<url>ftps://pda.espds.noaa.gov</url>
 		</connection>
 	</provider>	
-    <!-- default one week of DataSetMetaData retention -->
-    <retention>7</retention>
+    <!-- default 6 hours of DataSetMetaData retention for PDA-->
+    <retention>0.25</retention>
 	<agent xsi:type="pdaAgent" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	    <!--        20141216065934 -->
 		<dateFormat>YYYYMMddHHmmss</dateFormat>
@@ -25,7 +25,7 @@
 		<responseHandler>https://${harvester.external.address}:8082/PDAHarvesterResponseHandler</responseHandler>
 		<!-- CSW (catalog service) URL -->
 		<cswURL>https://pda.espds.noaa.gov</cswURL>
-		<!-- Collect records every 15 minutes -->
-		<mainScan>0 0/15 * * * ?</mainScan>
+		<!-- Call getRecords only once a day, We get most metadata from transactions -->
+		<mainScan>0 0 0 * * ?</mainScan>
 	</agent>
 </harvester>
