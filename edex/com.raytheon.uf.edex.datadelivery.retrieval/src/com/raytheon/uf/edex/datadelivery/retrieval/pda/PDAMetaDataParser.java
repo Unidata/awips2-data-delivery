@@ -70,6 +70,7 @@ import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
  * Sept 27, 2014 3127        dhladky     Added metaDataID for geographic subsetting.
  * Apr 27, 2015  4881        dhladky     PDA changed the structure of the file format messages.
  * Jan 20, 2016  5280        dhladky     Don't send datasetname separately.
+ * Feb 16, 2016  5365        dhladky     Streamlined to exclude metaData updates for getRecords().
  * </pre>
  * 
  * @author dhladky
@@ -158,7 +159,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
      */
     @Override
     public void parseMetaData(Provider provider, String dateFormat,
-            BriefRecordType record) {
+            BriefRecordType record, boolean isMetaData) {
 
         Map<String, String> paramMap = null;
         PDAMetaDataExtractor<?,String> extractor = null;
@@ -272,7 +273,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         }
         
         /**
-         * This portion of the MetaData parser is only used when processing a getRecordsResopnse()
+         * This portion of the MetaData parser is only used when a coverage exists.
          */
         if (coverage != null) {
 
@@ -297,21 +298,26 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
             storeDataSet(pdaDataSet);
         }
-
-        // create Data Set MetaData
-        PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
-        pdadsmd.setMetaDataID(metaDataID);
-        pdadsmd.setArrivalTime(arrivalTime.getTime());
-        pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(myCollectionName, time.getStart().getTime()));
-        pdadsmd.setDataSetName(dataSetName);
-        pdadsmd.setDataSetDescription(metaDataID + " " + dataSetName);
-        pdadsmd.setDate(idate);
-        pdadsmd.setProviderName(provider.getName());
-        // in PDA's case it's actually a file name
-        pdadsmd.setUrl(metaDataURL);
         
-        // store the metaData
-        storeMetaData(pdadsmd);
+        /*
+         * This portion of the code is only used when processing a Transaction.
+         */
+        if (isMetaData) {
+
+            PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
+            pdadsmd.setMetaDataID(metaDataID);
+            pdadsmd.setArrivalTime(arrivalTime.getTime());
+            pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
+                    myCollectionName, time.getStart().getTime()));
+            pdadsmd.setDataSetName(dataSetName);
+            pdadsmd.setDataSetDescription(metaDataID + " " + dataSetName);
+            pdadsmd.setDate(idate);
+            pdadsmd.setProviderName(provider.getName());
+            // In PDA's case it's actually a file name
+            pdadsmd.setUrl(metaDataURL);
+            
+            storeMetaData(pdadsmd);
+        }
     }
 
     /**
