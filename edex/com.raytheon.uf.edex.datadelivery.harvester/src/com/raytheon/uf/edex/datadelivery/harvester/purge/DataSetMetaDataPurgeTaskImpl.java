@@ -62,6 +62,7 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  * Sept 30, 2013 1797      dhladky      Generics
  * Apr 12,2014   3012     dhladky      Purge never worked, fixed to make work.
  * Jan 18, 2016  5261     dhladky      Enabled purging for PDA.
+ * Feb 18, 2016  5280     dhladky      Metadata not purging enough for PDA.
  * 
  * </pre>
  * 
@@ -193,30 +194,37 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
 
                 DataSetMetaData<?> metaData = DataDeliveryHandlers
                         .getDataSetMetaDataHandler().getById(id);
-                Integer retention = Integer.valueOf(configMap.get(metaData.getProviderName()));
+                Number retention = Double.valueOf(configMap.get(metaData.getProviderName()));
 
                 if (retention != null) {
 
-                    if (retention == -1) {
+                    if (retention.intValue() == -1) {
                         // no purging for this DSMD type
                         continue;
                     } else {
-                        // retention is in days
-                        retention = retention * (-1);
+                        /* 
+                         * Retention is calculated in hours.
+                         * We consider the whole day to be 24 hours.
+                         * So, a value of .25 would be considered 6 hours or, -24 * .25 = 6.0.
+                         * Or with more than one day it could be, -24 * 7 = 168.
+                         * We let Number int conversion round to nearest whole hour.
+                         */
+                        retention = retention.doubleValue() * (-1) * TimeUtil.HOURS_PER_DAY;
+                        
                         // we are subtracting from current
                         Calendar thresholdTime = TimeUtil.newGmtCalendar();
-                        thresholdTime.add(Calendar.DAY_OF_YEAR, retention);
+                        thresholdTime.add(Calendar.HOUR_OF_DAY, retention.intValue());
 
                         if (thresholdTime.getTimeInMillis() >= metaData
                                 .getDate().getTime()) {
                             purgeMetaData(metaData);
                             deletes++;
                         }
-                    }
+                    } 
 
                 } else {
                     statusHandler
-                            .warn("No retention time set for this DataSetMetaData provider! "
+                            .warn("Retention time unreadable for this DataSetMetaData provider! "
                                     + id
                                     + "Provider: "
                                     + metaData.getProviderName());
