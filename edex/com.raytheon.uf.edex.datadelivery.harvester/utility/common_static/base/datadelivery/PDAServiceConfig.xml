@@ -7,9 +7,12 @@
     
     <constant name="MODE" value="file"/>
     <constant name="BLANK" value=""/>
-    <constant name="PROTOCOL" value="SSL"/>
-    <constant name="CONN_TYPE" value="ftps"/>
+    <!-- Command Channel FTP protocol encryption type. -->
+    <constant name="PROTOCOL" value="TLS"/>
+    <!-- FTP variant used by PDA -->
+    <constant name="CONN_TYPE" value="FTPS"/>
     <constant name="PORT" value="21"/>
+    <!--  Directory camel drops FTP files into for ingest delivery. -->
     <constant name="FTPS_DROP_DIR" value="/awips2/edex/data/ftps" />
     <constant name="MISSING_VALUE" value="-999999"/>
     <constant name="FILL_VALUE" value="-888888"/>
@@ -20,18 +23,37 @@
     <constant name="BASE_TYPE" value="Float"/>
     <constant name="UNITS" value="NONE"/>
     <constant name="DEFAULT_FORMAT" value="BUFR"/>
+    <!-- Decoder type (temporary, until metadata improves from PDA) -->
+    <constant name="DEFAULT_TYPE" value="goesr"/>
+    <!--  Default PDA OGC CRS (WGS 84) -->
     <constant name="DEFAULT_CRS" value="CRS:84"/>
-    <constant name="SIMULATE" value="true"/>
+    <!-- PDA test data is old, when using it, set this to true so times show as current. -->
+    <constant name="SIMULATE" value="false"/>
+    <!-- PDA data is binary -->
     <constant name="BINARY_TRANSFER" value="true"/>
-    <constant name="IMPLICIT_SECURITY" value="false" />
-    <constant name="PASSIVE_MODE" value="true" />
-    <constant name="SUBSET_REQUEST_URL" value="https://pda.espds.com" />
-    <constant name="REMOTE_DIR_PATH" value="/PDAFileLinks/" />
-    <constant name="REMOTE_VERIFICATION" value="false" />
-    <constant name="DEBUG" value="true" />
-    <!--
-    <constant name="KEYSTORE_FILE" value="/awips2/edex/conf/security/keystore.jks" />
-    <constant name="TRUSTSTORE_FILE" value="/awips2/edex/conf/security/truststore.jks" />
-     -->
+    <!-- IMPLICIT_SECURITY, Will automatically try to encrypt both command and data channel, 
+         PDA data channel is not encrypted so we have this false. -->
+    <constant name="IMPLICIT_SECURITY" value="false"/>
+    <!-- PDA FTPS(S) server requires PASSV mode for FTP -->
+    <constant name="PASSIVE_MODE" value="true"/>
+    <!-- HTTPS subset request root URL -->
+    <constant name="SUBSET_REQUEST_URL" value="https://140.90.190.159/services/OGC_In_Proxy"/>
+    <!-- FTPS retrieval root URL -->
+    <constant name="FTPS_REQUEST_URL" value="ftps://140.90.190.155"/>
+    <!-- REMOTE_VERIFICATION, False when you are hitting a load balanced FTP(S) server -->
+    <constant name="REMOTE_VERIFICATION" value="false"/>
+    <!-- Disables the secure data channel defaults (execProc=P execPbsz=0). 
+         Enabling this means you must manually specific the security protocol
+         and Buffer size for the Data Channel in FTPS -->
+    <constant name="DISABLE_SECURE_DATA_CHANNEL_DEFAULTS" value="true"/>
+    <!-- secure data channel override of default execProc=P -->
+    <constant name="EXEC_PROT" value="C"/>
+    <!-- secure data channel override of default execPbsz=0 -->
+    <constant name="EXEC_PBSZ" value="1024"/>
+    <!-- Debug metadata and retrieval portions of PDA subsystem -->
+    <constant name="DEBUG" value="true"/>
+    <!-- JKS based keystore and trust modules for DD -->
+    <constant name="KEYSTORE_FILE" value="/awips2/edex/conf/security/keystore.jks"/>
+    <constant name="TRUSTSTORE_FILE" value="/awips2/edex/conf/security/truststore.jks"/>
 
 </serviceConfig>
