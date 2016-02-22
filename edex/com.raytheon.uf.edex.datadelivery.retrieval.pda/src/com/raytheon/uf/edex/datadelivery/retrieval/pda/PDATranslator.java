@@ -26,7 +26,6 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -46,6 +45,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sept 12, 2014 3121        dhladky      created.
+ * Jan 28, 2016  #5299       dhladky      Generic PDO type change.
  * 
  * </pre>
  * 
@@ -53,7 +53,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * @version 1.0
  */
 
-public class PDATranslator extends RetrievalTranslator<Time, Coverage, SatelliteRecord> {
+public class PDATranslator extends RetrievalTranslator<Time, Coverage, PluginDataObject> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDATranslator.class);
