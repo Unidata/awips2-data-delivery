@@ -96,7 +96,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jan 10, 2014  2452      mpduff       Add label stating all lat/lons will be converted to easting.
  * Jan 25, 2014  2452      mpduff       Changed label based on feedback.
  * Nov 10, 2015  5024      dhladky      Can toggle full data set and regions with previous selection preserved.
- * 
+ * Feb 25, 2016  5413      tjensen      Changed default Region to be the first match instead of the last and
+ *                                       fixed validaiton of lat/lon text fields.
  * 
  * </pre>
  * 
@@ -191,7 +192,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /** Envelope valid flag */
     private boolean envelopeValid = false;
-    
+
     /** Keeps track of the previous selection on the regionComboBox **/
     private int previousRegionComboSelection = -1;
 
@@ -249,17 +250,18 @@ public class AreaComp extends Composite implements ISubset {
         createControls();
         updateRegionControls();
         if (regionRdo.getSelection()) {
-            // Try to find the smallest region that intersects, assum regions
-            // are listed largest to smallest.
-            for (int i = regionCombo.getItemCount() - 1; i >= 0; i -= 1) {
+            // Try to find a region that intersects
+            for (int i = 0; i < regionCombo.getItemCount(); i++) {
                 regionCombo.select(i);
                 handleRegionSelection(false);
                 if (envelopeValid) {
                     break;
                 }
             }
-            // if non of the predefined regions are valid default to the full
-            // envelope.
+            /*
+             * if none of the predefined regions are valid default to the full
+             * envelope.
+             */
             if (!envelopeValid) {
                 updateBounds(fullEnvelope);
                 setCustom();
@@ -617,7 +619,7 @@ public class AreaComp extends Composite implements ISubset {
         if (flag == true) {
             updateRegionControls();
             handleRegionChange();
-        } 
+        }
     }
 
     /**
@@ -629,16 +631,18 @@ public class AreaComp extends Composite implements ISubset {
                 && selectCombo.getItem(selectCombo.getSelectionIndex()).equals(
                         REGION_GROUPS.PRE_DEFINED.getRegionGroup())) {
             regionCombo.setItems(predefinedRegions);
-            
+
         } else {
             regionCombo.setItems(getUserRegions());
         }
-        
+
         if (regionCombo.getItemCount() > 0) {
             if (previousRegionComboSelection >= regionCombo.getItemCount()) {
-                previousRegionComboSelection = regionCombo.getItemCount() - 1;
-            } 
-            
+                previousRegionComboSelection = 0;
+            } else if (previousRegionComboSelection < 0) {
+                previousRegionComboSelection = 0;
+            }
+
             regionCombo.select(previousRegionComboSelection);
             handleRegionSelection(true);
         }
@@ -672,7 +676,7 @@ public class AreaComp extends Composite implements ISubset {
         if (!regionRdo.getSelection() || regionCombo.getItemCount() == 0) {
             return;
         }
-        
+
         ReferencedEnvelope regionEnvelope = null;
         String name = regionCombo.getItem(regionCombo.getSelectionIndex());
         previousRegionComboSelection = regionCombo.getSelectionIndex();
@@ -748,8 +752,10 @@ public class AreaComp extends Composite implements ISubset {
         ReferencedEnvelope dlgEnvelope = this.subEnvelope;
         if (!dlgEnvelope.getCoordinateReferenceSystem().equals(
                 fullEnvelope.getCoordinateReferenceSystem())) {
-            // the dialog should always use an envelope in the same crs as the
-            // data.
+            /*
+             * the dialog should always use an envelope in the same crs as the
+             * data.
+             */
             try {
                 dlgEnvelope = MapUtil.reprojectAndIntersect(dlgEnvelope,
                         fullEnvelope);
@@ -818,13 +824,25 @@ public class AreaComp extends Composite implements ISubset {
         lr.x = getDouble(lowerRightLonTxt.getText());
         lr.y = getDouble(lowerRightLatTxt.getText());
 
-        // Allow up to 5% error to handle rounding problems with formatted
-        // LatLon values.
+        /*
+         * Allow up to 5% error to handle rounding problems with formatted
+         * LatLon values.
+         */
         boolean ulValid = EnvelopeUtils.envelopeContainsLatLon(fullEnvelope,
                 ul, 0.05);
         boolean lrValid = EnvelopeUtils.envelopeContainsLatLon(fullEnvelope,
                 lr, 0.05);
 
+        /*
+         * Double check that the Lat values are all valid. Not checking Lon
+         * values due to different possible Lon projections.
+         */
+        if (ul.x > 90.0 || ul.x < -90.0) {
+            ulValid = false;
+        }
+        if (lr.x > 90.0 || lr.x < -90.0) {
+            lrValid = false;
+        }
         envelopeValid = ulValid && lrValid;
 
         int lrColor = SWT.COLOR_WHITE;
@@ -917,12 +935,6 @@ public class AreaComp extends Composite implements ISubset {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.subscription.subset.ISubset#
-     * updateSelectionState(boolean, java.lang.String)
-     */
     @Override
     public void updateSelectionState(boolean selected, String id) {
         // Not used
