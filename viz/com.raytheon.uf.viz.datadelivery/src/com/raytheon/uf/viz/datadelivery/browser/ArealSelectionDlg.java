@@ -22,6 +22,8 @@ package com.raytheon.uf.viz.datadelivery.browser;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.ShellAdapter;
+import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -52,6 +54,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Dec 10, 2012  1259      bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
  * Jul 12, 2013  2141      mpduff     Fix typo.
  * Feb 10, 2016  5323      tjensen    Fix error with cancel
+ * Feb 22, 2016  5323      tjensen    Add Confirm Cancel when closing with X button.
  * 
  * </pre>
  * 
@@ -152,6 +155,20 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
                 if (answer == SWT.YES) {
                     setReturnValue(false);
                     close();
+                }
+            }
+        });
+
+        shell.addShellListener(new ShellAdapter() {
+            @Override
+            public void shellClosed(ShellEvent event) {
+                int answer = DataDeliveryUtils
+                        .showYesNoMessage(getShell(), "Cancel Changes?",
+                                "Are you sure you wish to close without selecting an area?");
+                if (answer == SWT.YES) {
+                    close();
+                } else {
+                    event.doit = false;
                 }
             }
         });
