@@ -41,7 +41,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.viz.ui.dialogs.AwipsCalendar;
+import com.raytheon.viz.ui.dialogs.CalendarDialog;
 
 /**
  * This is the subscription active period composite. This class is intended to
@@ -58,6 +58,7 @@ import com.raytheon.viz.ui.dialogs.AwipsCalendar;
  * Sep 06, 2012  1137      jpiatt      Corrected validation.
  * Sep 06, 2012   687      mpduff      Make dates relative when validating.
  * Jan 15, 2016  5259      randerso    Changed to use viz.ui AwipsCalendar
+ * Mar 01, 2016  3989      tgurney     Rename AwipsCalendar to CalendarDialog
  * 
  * </pre>
  * 
@@ -280,7 +281,7 @@ public class ActivePeriodComp extends Composite {
             date = cal.getTime();
         }
 
-        AwipsCalendar ac = new AwipsCalendar(getShell(), date, (showHour ? 1
+        CalendarDialog ac = new CalendarDialog(getShell(), date, (showHour ? 1
                 : 0));
         Object obj = ac.open();
 
