@@ -98,6 +98,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Nov 10, 2015  5024      dhladky      Can toggle full data set and regions with previous selection preserved.
  * Feb 25, 2016  5413      tjensen      Changed default Region to be the first match instead of the last and
  *                                       fixed validaiton of lat/lon text fields.
+ * Mar 01, 2016  5413      tjensen      Fixed validaiton of lat/lon text fields.
  * 
  * </pre>
  * 
@@ -837,10 +838,10 @@ public class AreaComp extends Composite implements ISubset {
          * Double check that the Lat values are all valid. Not checking Lon
          * values due to different possible Lon projections.
          */
-        if (ul.x > 90.0 || ul.x < -90.0) {
+        if (ul.y > 90.0 || ul.y < -90.0) {
             ulValid = false;
         }
-        if (lr.x > 90.0 || lr.x < -90.0) {
+        if (lr.y > 90.0 || lr.y < -90.0) {
             lrValid = false;
         }
         envelopeValid = ulValid && lrValid;
