@@ -276,12 +276,11 @@ public class DurationComp extends Composite {
             date = cal.getTime();
         }
 
-        AwipsCalendar ac = new AwipsCalendar(getShell(), date, (showHour ? 1
-                : 0));
+        AwipsCalendar ac = new AwipsCalendar(getShell(), date, showHour ? 1 : 0);
         Object obj = ac.open();
 
-        if ((obj != null) && (obj instanceof Calendar)) {
-            return ((Calendar) obj).getTime();
+        if (obj != null && obj instanceof Date) {
+            return (Date) obj;
         }
 
         return null;
