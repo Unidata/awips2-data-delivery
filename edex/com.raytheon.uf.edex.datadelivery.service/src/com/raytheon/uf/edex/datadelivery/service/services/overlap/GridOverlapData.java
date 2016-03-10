@@ -46,6 +46,7 @@ import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOver
  *                                     changed the spatial check to check the intersection
  *                                     coverage of sub, not otherSub.
  * Nov 12, 2015   4622    dhladky      Added Level checks for Grids.
+ * Mar 09, 2016   4644    tjensen      Fix comparison of overlapping levels
  * 
  * </pre>
  * 
@@ -64,7 +65,7 @@ public class GridOverlapData<T extends GriddedTime, C extends GriddedCoverage>
 
     /** Cycle time duplication percent */
     private int cycleDuplication = -999;
-    
+
     /** level duplication percent */
     private int levelDuplication = -999;
 
@@ -125,10 +126,10 @@ public class GridOverlapData<T extends GriddedTime, C extends GriddedCoverage>
                 gtimeOther.getSelectedTimeIndices(),
                 gtime.getSelectedTimeIndices());
     }
-    
+
     /**
-     * Calculates the percent, 0-100, of how many levels from sub are
-     * the same as otherSub by parameter match.
+     * Calculates the percent, 0-100, of how many levels from sub are the same
+     * as otherSub by parameter match.
      * 
      * @param sub
      * @param otherSub
@@ -143,16 +144,17 @@ public class GridOverlapData<T extends GriddedTime, C extends GriddedCoverage>
         for (Parameter parm : sub.getParameter()) {
             for (Parameter otherParm : otherSub.getParameter()) {
                 if (parm.getName().equals(otherParm.getName())
-                        && parm.getLevels().getLevel() != null
-                        && otherParm.getLevels().getLevel() != null) {
+                        && parm.getLevels().getSelectedLevelIndices() != null
+                        && otherParm.getLevels().getSelectedLevelIndices() != null) {
                     /**
                      * Find the highest overlap percent between any matching
                      * parameters with levels common between the two compared
                      * subscriptions.
                      */
-                    int localPercentOverlap = getDuplicationPercent(parm
-                            .getLevels().getLevel(), otherParm.getLevels()
-                            .getLevel());
+                    int localPercentOverlap = getDuplicationPercent(otherParm
+                            .getLevels().getSelectedLevelIndices(), parm
+                            .getLevels().getSelectedLevelIndices());
+
                     if (localPercentOverlap > highestPercentOverlap) {
                         highestPercentOverlap = localPercentOverlap;
                     }
@@ -172,14 +174,14 @@ public class GridOverlapData<T extends GriddedTime, C extends GriddedCoverage>
         calculateCycleDuplicationPercent(sub, otherSub);
         calculateForecastHourDuplicationPercent(sub, otherSub);
         calculateLevelOverlapPercent(sub, otherSub);
-        
+
         GridSubscriptionOverlapConfig config = (GridSubscriptionOverlapConfig) this.config;
 
         fcstHrPass = fcstHrDuplication >= config
                 .getMaxAllowedForecastHourDuplication();
 
         cyclePass = cycleDuplication >= config.getMaxAllowedCycleDuplication();
-        
+
         levelPass = levelDuplication >= config.getMaxAllowedLevelDuplication();
     }
 
@@ -192,9 +194,11 @@ public class GridOverlapData<T extends GriddedTime, C extends GriddedCoverage>
         boolean response = false;
 
         if (matchStrategy == SubscriptionOverlapMatchStrategy.MATCH_ALL) {
-            response = cyclePass && fcstHrPass && parameterPass && levelPass && spatialPass;
+            response = cyclePass && fcstHrPass && parameterPass && levelPass
+                    && spatialPass;
         } else if (matchStrategy == SubscriptionOverlapMatchStrategy.MATCH_ANY) {
-            response = cyclePass || fcstHrPass || parameterPass || levelPass || spatialPass;
+            response = cyclePass || fcstHrPass || parameterPass || levelPass
+                    || spatialPass;
         } else if (matchStrategy == SubscriptionOverlapMatchStrategy.AT_LEAST_HALF) {
             int halfNumAttrs = (numberOfGridAttributes + numberOfCommonAttributes) / 2;
             List<Boolean> toCheck = new ArrayList<Boolean>();
@@ -203,7 +207,7 @@ public class GridOverlapData<T extends GriddedTime, C extends GriddedCoverage>
             toCheck.add(parameterPass);
             toCheck.add(levelPass);
             toCheck.add(spatialPass);
-            
+
             int exceeded = 0;
             for (boolean check : toCheck) {
                 if (check) {
