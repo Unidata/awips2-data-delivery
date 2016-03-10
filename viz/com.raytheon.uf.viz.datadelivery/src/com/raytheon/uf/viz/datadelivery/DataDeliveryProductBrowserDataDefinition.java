@@ -25,8 +25,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.ui.IEditorPart;
@@ -39,10 +43,12 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
-import com.raytheon.uf.common.dataquery.requests.DbQueryRequest;
+import com.raytheon.uf.common.dataplugin.grid.GridConstants;
+import com.raytheon.uf.common.dataplugin.grid.derivparam.CommonGridInventory;
+import com.raytheon.uf.common.dataplugin.level.Level;
+import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint.ConstraintType;
-import com.raytheon.uf.common.dataquery.responses.DbQueryResponse;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.registry.handler.RegistryObjectHandlers;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -51,29 +57,27 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.BinOffset;
 import com.raytheon.uf.viz.core.DescriptorMap;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
-import com.raytheon.uf.viz.core.RecordFactory;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
-import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.grid.rsc.GridLoadProperties;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
 import com.raytheon.uf.viz.core.procedures.Bundle;
-import com.raytheon.uf.viz.core.requests.ThriftClient;
 import com.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.uf.viz.core.rsc.ResourceType;
 import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
+import com.raytheon.uf.viz.datacube.DataCubeContainer;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserDataDefinition;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
 import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
 import com.raytheon.viz.grid.GridProductBrowserDataFormatter;
-import com.raytheon.viz.grid.inv.GridInventory;
 import com.raytheon.viz.grid.rsc.GridResourceData;
+import com.raytheon.viz.grid.xml.FieldDisplayTypesFactory;
 import com.raytheon.viz.pointdata.PlotModels;
 import com.raytheon.viz.pointdata.rsc.PlotResourceData;
 import com.raytheon.viz.pointdata.util.PointDataInventory;
@@ -105,6 +109,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Sep 09, 2014  3356      njensen     Remove CommunicationException
  * Jun 11, 2015  4042      dhladky     Refactored using bsteffen's interface to make it thread safe, cleaner.
  * Jun 16, 2015  4566      dhladky     Fixed error in map for Plugin names.
+ * Mar 08, 2016  4621      tjensen     Added support for Derived Parameters for Grid products
  * 
  * </pre>
  * 
@@ -112,22 +117,22 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * @version 1.0
  */
 
-public class DataDeliveryProductBrowserDataDefinition
-        implements ProductBrowserDataDefinition, PreferenceBasedDataDefinition {
-    
+public class DataDeliveryProductBrowserDataDefinition implements
+        ProductBrowserDataDefinition, PreferenceBasedDataDefinition {
+
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataDeliveryProductBrowserDataDefinition.class);
 
-    /** Constant for MADIS plugin lookups*/
+    /** Constant for MADIS plugin lookups */
     private static final String MADIS = "madis";
 
     /** Constant for GRID plugin lookups */
     private static final String GRID = "grid";
 
-    /** Constant for sat plugin lookups*/
+    /** Constant for sat plugin lookups */
     private static final String PDA = "sat";
 
-    /** Constant for point plugin lookups*/
+    /** Constant for point plugin lookups */
     private static final String POINT = "point";
 
     /** Plot model file */
@@ -140,16 +145,16 @@ public class DataDeliveryProductBrowserDataDefinition
     private static final String DATA_DELIVERY = "Data Delivery";
 
     /** Point order */
-    private static final String[] POINT_ORDER = new String[] { "type", "subscription",
-            "level" };
-    
+    private static final String[] POINT_ORDER = new String[] { "type",
+            "subscription", "level" };
+
     /** PDA order, same as point */
     private static final String[] PDA_ORDER = POINT_ORDER;
 
     private static final String[] GRID_ORDER = new String[] {
-            GridInventory.MODEL_NAME_QUERY, GridInventory.PARAMETER_QUERY,
-            GridInventory.MASTER_LEVEL_QUERY, GridInventory.LEVEL_ID_QUERY };
-    
+            GridConstants.DATASET_ID, GridConstants.PARAMETER_ABBREVIATION,
+            GridConstants.MASTER_LEVEL_NAME, GridConstants.LEVEL_ID };
+
     /** cache lookup plugins to DataDelivery names map **/
     private Map<DataType, String> productMap;
 
@@ -157,13 +162,14 @@ public class DataDeliveryProductBrowserDataDefinition
      * Setup as 5 mins +- (60x5=300) from a reference time
      */
     private static final int frameOffset = 300;
-    
+
     /**
      * Constructor.
      */
     public DataDeliveryProductBrowserDataDefinition() {
 
-        HashMap<DataType, String> protoProductMap = new HashMap<DataType, String>(3);
+        HashMap<DataType, String> protoProductMap = new HashMap<DataType, String>(
+                3);
         protoProductMap.put(DataType.GRID, GRID);
         protoProductMap.put(DataType.PDA, PDA);
         protoProductMap.put(DataType.POINT, POINT);
@@ -174,7 +180,7 @@ public class DataDeliveryProductBrowserDataDefinition
      * {@inheritDoc}
      */
     public List<ProductBrowserLabel> populateData(String[] selection) {
-       
+
         if (selection.length == 1) {
             // Get provider names
             String[] dataTypes = getDataTypes();
@@ -199,7 +205,7 @@ public class DataDeliveryProductBrowserDataDefinition
                 // version
                 String[] usedSelection = realignSelection(selection);
 
-                return populateUpperData(usedSelection);
+                return populateGridUpperData(usedSelection);
             }
         }
 
@@ -209,18 +215,20 @@ public class DataDeliveryProductBrowserDataDefinition
                 // version
                 String[] usedSelection = realignSelection(selection);
 
-                return populateUpperData(usedSelection);
+                return populateGridUpperData(usedSelection);
             }
         }
         return null;
     }
-    
+
     /**
-     * Populate the Upper (Higher Level menus) of the product drop downs
+     * Populate the Upper (Higher Level menus) of the product drop downs for
+     * Grid data
+     * 
      * @param selection
      * @return
      */
-    public List<ProductBrowserLabel> populateUpperData(String[] selection) {
+    protected List<ProductBrowserLabel> populateGridUpperData(String[] selection) {
 
         List<ProductBrowserLabel> parameters = null;
         boolean product = false;
@@ -230,11 +238,41 @@ public class DataDeliveryProductBrowserDataDefinition
                 selection, order);
         product = selection.length == order.length;
 
-        String[] temp = queryData(param, queryList, selection);
+        String[] temp = null;
+
+        try {
+            CommonGridInventory inventory = (CommonGridInventory) DataCubeContainer
+                    .getInventory(GridConstants.GRID);
+            BlockingQueue<String> returnQueue = new LinkedBlockingQueue<String>();
+            if (param.equals(GridConstants.DATASET_ID)) {
+                inventory.checkSources(queryList, returnQueue);
+                temp = returnQueue.toArray(new String[0]);
+            } else if (param.equals(GridConstants.PARAMETER_ABBREVIATION)) {
+                inventory.checkParameters(queryList, false, returnQueue);
+                temp = returnQueue.toArray(new String[0]);
+            } else if (param.equals(GridConstants.MASTER_LEVEL_NAME)) {
+                inventory.checkLevels(queryList, returnQueue);
+                Set<String> masterlevels = new HashSet<String>();
+                LevelFactory lf = LevelFactory.getInstance();
+                for (String levelid : returnQueue) {
+                    Level level = lf.getLevel(levelid);
+                    masterlevels.add(level.getMasterLevel().getName());
+                }
+                temp = masterlevels.toArray(new String[0]);
+            } else if (param.equals(GridConstants.LEVEL_ID)) {
+                inventory.checkLevels(queryList, returnQueue);
+                temp = returnQueue.toArray(new String[0]);
+            }
+        } catch (InterruptedException e) {
+            statusHandler.handle(Priority.WARN,
+                    "Unable to determine available menu data for " + product);
+        }
+
         if (temp != null) {
             parameters = formatData(param, temp, selection);
         } else {
-            throw new IllegalArgumentException("Query for menu data cannot be null..."+product);
+            throw new IllegalArgumentException(
+                    "Query for menu data cannot be null..." + product);
         }
 
         if (parameters != null) {
@@ -290,16 +328,18 @@ public class DataDeliveryProductBrowserDataDefinition
             return temp;
         }
     }
-    
+
     /**
-     * Function for taking upper menu (higher level) data and renaming it for the product browser tree
+     * Function for taking upper menu (higher level) data and renaming it for
+     * the product browser tree
      * 
      * 
      * @param param
      * @param parameters
      * @return
      */
-    public List<ProductBrowserLabel> formatUpperData(String param, String[] parameters) {
+    public List<ProductBrowserLabel> formatUpperData(String param,
+            String[] parameters) {
         List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
         for (int i = 0; i < parameters.length; i++) {
             temp.add(new ProductBrowserLabel(parameters[i], null));
@@ -342,9 +382,9 @@ public class DataDeliveryProductBrowserDataDefinition
      */
     public HashMap<String, RequestConstraint> getProductParameters(
             String[] selection, String[] order) {
-        
+
         String productName = extractProductName(selection);
-        
+
         if (productName.equalsIgnoreCase(DataType.POINT.name())) {
             return getPointProductParameters(selection, order);
         } else if (productName.equalsIgnoreCase(DataType.GRID.name())
@@ -355,9 +395,10 @@ public class DataDeliveryProductBrowserDataDefinition
                     + productName);
         }
     }
-    
+
     /**
-     * Getting the map of request constraints for upper menus populating the resource data
+     * Getting the map of request constraints for upper menus populating the
+     * resource data
      * 
      * @param selection
      * @param order
@@ -366,7 +407,7 @@ public class DataDeliveryProductBrowserDataDefinition
     public HashMap<String, RequestConstraint> getUpperProductParameters(
             String[] selection, String[] order) {
         HashMap<String, RequestConstraint> queryList = new HashMap<String, RequestConstraint>();
-        String productName =  extractProductName(selection);
+        String productName = extractProductName(selection);
         queryList.put(PLUGIN_NAME, new RequestConstraint(productName));
 
         String[] usedSelection = realignSelection(selection);
@@ -504,6 +545,7 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Extract data types from the subscriptions listed
+     * 
      * @return string[]
      */
     @SuppressWarnings("rawtypes")
@@ -555,28 +597,48 @@ public class DataDeliveryProductBrowserDataDefinition
         return subList;
     }
 
-    /*
-     * (non-Javadoc)
+    protected Map<String, String> createKeyValMap(String[] selection) {
+        Map<String, String> keyVals = new HashMap<>();
+        int index = 2;
+        String[] order = extractOrder(selection);
+        for (int i = 0; i < order.length; i++) {
+            if (index < selection.length) {
+                keyVals.put(order[i], selection[index]);
+                index += 1;
+            } else {
+                break;
+            }
+        }
+        return keyVals;
+    }
+
+    /**
+     * Determine valid display types depending on the DataType of the selection
      * 
-     * @see
-     * com.raytheon.uf.viz.productbrowser.AbstractProductBrowserDataDefinition
-     * #getDisplayTypes()
+     * @param selection
+     * @return
      */
-    public Map<ResourceType, List<DisplayType>> getDisplayTypes(String[] selection) {
+    public Map<ResourceType, List<DisplayType>> getDisplayTypes(
+            String[] selection) {
+        Map<String, String> keyValMap = createKeyValMap(selection);
 
         for (String selectedDataType : selection) {
             if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
                 Map<ResourceType, List<DisplayType>> type = new HashMap<ResourceType, List<DisplayType>>();
                 List<DisplayType> types = new ArrayList<DisplayType>();
-                types.add(DisplayType.CONTOUR);
-                types.add(DisplayType.IMAGE);
-                /*
-                 * Stage 2 of this process will be more tricky.
-                 * Need to determine in this ProductBroswer definition if both U & V wind components are available
-                 * Then query both sets of PDOs and merge them into a GeneralGridGeometry so you can call VectorDataUV 
-                 * (Draws barbs) with the data for both.
-                 */
-                //types.add(DisplayType.BARB);
+
+                if (keyValMap.containsKey(GridConstants.PARAMETER_ABBREVIATION)) {
+                    types = FieldDisplayTypesFactory
+                            .getInstance()
+                            .getDisplayTypes(
+                                    keyValMap
+                                            .get(GridConstants.PARAMETER_ABBREVIATION));
+                } else {
+                    // Default to these
+                    types.add(DisplayType.CONTOUR);
+                    types.add(DisplayType.IMAGE);
+                }
+
                 type.put(ResourceType.PLAN_VIEW, types);
                 return type;
             } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
@@ -600,6 +662,7 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Gets the Display pane for the editor
+     * 
      * @return
      */
     private IDisplayPaneContainer getEditor() {
@@ -617,6 +680,7 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Open the editor
+     * 
      * @param editorId
      * @return
      */
@@ -640,12 +704,13 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Get the descriptor for these resources
+     * 
      * @return
      */
     private Class<? extends IDescriptor> getDescriptorClass() {
         return MapDescriptor.class;
     }
-        
+
     @Override
     public boolean checkAvailability() {
         return true;
@@ -655,8 +720,8 @@ public class DataDeliveryProductBrowserDataDefinition
     public Collection<DisplayType> getValidDisplayTypes(String[] selection) {
         Map<ResourceType, List<DisplayType>> displayTypeMap = getDisplayTypes(selection);
         EnumSet<DisplayType> result = EnumSet.noneOf(DisplayType.class);
-        if(displayTypeMap != null){
-            for(List<DisplayType> displayTypes: displayTypeMap.values()){
+        if (displayTypeMap != null) {
+            for (List<DisplayType> displayTypes : displayTypeMap.values()) {
                 result.addAll(displayTypes);
             }
         }
@@ -666,7 +731,7 @@ public class DataDeliveryProductBrowserDataDefinition
     @Override
     public void loadResource(String[] selection, DisplayType displayType) {
 
-        // Get the editor 
+        // Get the editor
         IDisplayPaneContainer container = getEditor();
         if (container == null) {
             return;
@@ -675,32 +740,34 @@ public class DataDeliveryProductBrowserDataDefinition
         // create the default load properties
         LoadProperties loadProperties = new GridLoadProperties();
         AbstractRequestableResourceData resourceData = getResourceData(selection);
-        
+
         if (displayType != null) {
-            loadProperties.getCapabilities().getCapability(resourceData, DisplayTypeCapability.class)
+            loadProperties.getCapabilities()
+                    .getCapability(resourceData, DisplayTypeCapability.class)
                     .setDisplayType(displayType);
         }
-        
+
         // processing specific to MADIS, points
         String[] order = extractOrder(selection);
         (resourceData).setMetadataMap(getProductParameters(selection, order));
-         
+
         // Make the resource pair
         ResourcePair pair = new ResourcePair();
         pair.setResourceData(resourceData);
         pair.setLoadProperties(loadProperties);
         pair.setProperties(new ResourceProperties());
-               
+
         // Construct the display, add the pair
         AbstractRenderableDisplay display = (AbstractRenderableDisplay) container
                 .getActiveDisplayPane().getRenderableDisplay();
         display = (AbstractRenderableDisplay) display.createNewDisplay();
         display.getDescriptor().getResourceList().add(pair);
-  
+
         // Get the bundle, add display
         Bundle b = new Bundle();
         b.setDisplays(new AbstractRenderableDisplay[] { display });
-        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b).schedule();
+        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b)
+                .schedule();
     }
 
     @Override
@@ -708,7 +775,8 @@ public class DataDeliveryProductBrowserDataDefinition
         if (selection.length == 0) {
             // This is only used for the initial population of the tree
             String[] order = extractOrder(selection);
-            ProductBrowserLabel label = new ProductBrowserLabel(DATA_DELIVERY, DATA_DELIVERY);
+            ProductBrowserLabel label = new ProductBrowserLabel(DATA_DELIVERY,
+                    DATA_DELIVERY);
             label.setData(DATA_DELIVERY);
             label.setProduct(order.length == 0);
             return Collections.singletonList(label);
@@ -727,52 +795,18 @@ public class DataDeliveryProductBrowserDataDefinition
         }
         return stringBuilder.toString();
     }
-    
-    /**
-     * Query the levels and types for the menus items
-     * @param param
-     * @param queryList
-     * @return
-     */
-    protected String[] queryData(String param,
-            Map<String, RequestConstraint> queryList, String[] selection) {
-        try {
-            String queryPluginName = extractProductName(selection);
-            DbQueryRequest request = new DbQueryRequest();
-            request.setEntityClass(RecordFactory.getInstance().getPluginClass(
-                    queryPluginName));
-            request.setConstraints(queryList);
-            request.addRequestField(param);
-            request.setDistinct(true);
-            DbQueryResponse response = (DbQueryResponse) ThriftClient
-                    .sendRequest(request);
-            Object[] paramObjs = response.getFieldObjects(param, Object.class);
-            if (paramObjs != null) {
-                String[] params = new String[paramObjs.length];
-                for (int i = 0; i < params.length; i += 1) {
-                    if (paramObjs[i] != null) {
-                        params[i] = paramObjs[i].toString();
-                    }
-                }
-                return params;
-            }
-        } catch (VizException e) {
-            statusHandler
-                    .handle(Priority.PROBLEM, "Unable to perform query", e);
-        }
-        return null;
-    }
-    
+
     /**
      * Extracts the product (plugin) name from the selection string array
+     * 
      * @param selection
      * @return
      */
     private String extractProductName(String[] selection) {
-        
+
         String productName = null;
-        
-        for (String name: selection) {
+
+        for (String name : selection) {
             if (name.equalsIgnoreCase(DataType.GRID.name())) {
                 productName = productMap.get(DataType.GRID);
                 break;
@@ -784,17 +818,18 @@ public class DataDeliveryProductBrowserDataDefinition
                 break;
             }
         }
-        
+
         return productName;
     }
 
     /**
      * Extract the correct click level order list
+     * 
      * @param selection
      * @return
      */
     private String[] extractOrder(String[] selection) {
-        
+
         String[] order = null;
         // return default, point is default
         if (selection.length < 2) {
@@ -810,11 +845,11 @@ public class DataDeliveryProductBrowserDataDefinition
                 } else if (name.equalsIgnoreCase(DataType.POINT.name())) {
                     order = POINT_ORDER;
                     break;
-                } 
+                }
             }
         }
 
         return order;
     }
-     
+
 }
