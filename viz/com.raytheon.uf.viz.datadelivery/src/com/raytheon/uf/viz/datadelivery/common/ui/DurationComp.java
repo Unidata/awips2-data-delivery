@@ -281,8 +281,8 @@ public class DurationComp extends Composite {
                 : 0));
         Object obj = ac.open();
 
-        if ((obj != null) && (obj instanceof Calendar)) {
-            return ((Calendar) obj).getTime();
+        if (obj != null && obj instanceof Date) {
+            return (Date) obj;
         }
 
         return null;
