@@ -63,6 +63,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalPersistUtil;
  * Aug 09, 2013 1822       bgonzale     Added parameters to processRetrievedPluginDataObjects.
  * Aug 06, 2013 1654       bgonzale     Added AdhocDataRetrievalEvent.
  * Oct 01, 2013 2267       bgonzale     Removed request parameter.  Return RetrievalRequestRecord.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 

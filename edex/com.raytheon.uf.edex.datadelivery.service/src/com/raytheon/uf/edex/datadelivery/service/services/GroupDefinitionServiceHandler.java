@@ -27,15 +27,15 @@ import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinitionServiceRequest;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.service.IGroupDefinitionService;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.service.GroupDefinitionService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 
 /**
- * Handles request from the {@link IGroupDefinitionService}.
+ * Handles request from the {@link GroupDefinitionService}.
  * 
  * <pre>
  * 
@@ -46,6 +46,7 @@ import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
  * Jan 18, 2013 1441       djohnson     Initial creation
  * Nov 12, 2013 2506       bgonzale     Refactored out notification service.
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -93,7 +94,7 @@ public class GroupDefinitionServiceHandler extends
     private void handleDelete(GroupDefinition group, IUser user)
             throws RegistryHandlerException {
 
-        ISubscriptionHandler handler = DataDeliveryHandlers
+        SubscriptionHandler handler = DataDeliveryHandlers
                 .getSubscriptionHandler();
         List<Subscription> subsForGroup = handler.getByGroupName(group
                 .getGroupName());

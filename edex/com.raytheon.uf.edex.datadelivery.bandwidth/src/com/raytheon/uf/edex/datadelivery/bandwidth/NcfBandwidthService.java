@@ -20,13 +20,12 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
-import com.raytheon.uf.common.datadelivery.bandwidth.IBandwidthService;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
 
 /**
- * Implementation of {@link IBandwidthService} that communicates with the NCF
+ * Implementation of {@link BandwidthService} that communicates with the NCF
  * bandwidth manager.
  * 
  * <pre>
@@ -43,7 +42,8 @@ import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
  * @author djohnson
  * @version 1.0
  */
-public class NcfBandwidthService<T extends Time, C extends Coverage> extends BandwidthService<T, C> {
+public class NcfBandwidthService<T extends Time, C extends Coverage> extends
+        BandwidthService<T, C> {
 
     /**
      * Constructor.

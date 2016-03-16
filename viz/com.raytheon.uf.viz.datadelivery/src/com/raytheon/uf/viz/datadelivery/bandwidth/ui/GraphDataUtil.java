@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.core.exception.VizCommunicationException;
  * Jan 29, 2014 2722       mpduff       Callback is now passed in.
  * Oct 03, 2014 2749       ccody        Add clearGraphData method.
  * Feb 03, 2015 4041       dhladky      Restructured to run off UI thread.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -63,10 +64,10 @@ public class GraphDataUtil extends Job {
     /** UFStatus handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(GraphDataUtil.class);
-    
+
     /** Callback called when the data has been updated */
-    private final IDataUpdated dataUpdatedCB;
-    
+    private final BandwidthCanvasComp dataUpdatedCB;
+
     /** Graph data request object */
     private final GraphDataRequest request = new GraphDataRequest();
 
@@ -75,7 +76,7 @@ public class GraphDataUtil extends Job {
 
     /** Bandwidth graph data */
     private BandwidthGraphData graphData;
-    
+
     /**
      * Constructor.
      * 
@@ -83,24 +84,23 @@ public class GraphDataUtil extends Job {
      *            Call back called when the data has been updated via separate
      *            thread.
      */
-    public GraphDataUtil(IDataUpdated dataUpdatedCB) {
+    public GraphDataUtil(BandwidthCanvasComp dataUpdatedCB) {
         super("Bandwidth Utilization Graph Update");
         this.dataUpdatedCB = dataUpdatedCB;
     }
- 
+
     /**
-     * schedule a retrieval 
+     * schedule a retrieval
      */
     public void scheduleRetrieval() {
 
-        if (this.getState() == Job.RUNNING
-                || this.getState() == Job.SLEEPING
+        if (this.getState() == Job.RUNNING || this.getState() == Job.SLEEPING
                 || this.getState() == Job.WAITING) {
             return;
         }
         this.schedule();
     }
-    
+
     /**
      * Perform a data retrieval on the UI thread.
      */
@@ -112,7 +112,7 @@ public class GraphDataUtil extends Job {
             graphData = response.getGraphData();
         }
     }
-    
+
     /**
      * Send a request for the bandwidth graph data.
      * 
@@ -134,28 +134,30 @@ public class GraphDataUtil extends Job {
 
         return null;
     }
-    
+
     /**
      * Callback will call this to retrieve current GraphData
+     * 
      * @return
      */
     public BandwidthGraphData getGraphData() {
         return graphData;
     }
-    
+
     /**
      * Initial call waits for first GraphData request to finish entirely.
+     * 
      * @return
      */
     public BandwidthGraphData getGraphDataSynchronously() {
-        
+
         retrieveData();
         return graphData;
     }
 
     @Override
     protected IStatus run(IProgressMonitor monitor) {
-        
+
         retrieveData();
 
         if (dataUpdatedCB != null) {
@@ -165,4 +167,3 @@ public class GraphDataUtil extends Job {
         return Status.OK_STATUS;
     }
 }
-

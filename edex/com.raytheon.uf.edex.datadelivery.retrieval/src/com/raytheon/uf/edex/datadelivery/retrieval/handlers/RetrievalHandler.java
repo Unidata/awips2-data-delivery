@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,6 +17,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -48,7 +47,8 @@ import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
  * Aug 09, 2012 1022       djohnson    Use {@link ExecutorService} for retrieval.
  * Mar 04, 2013 1647       djohnson    RetrievalTasks are now scheduled via constructor parameter.
  * Mar 27, 2013 1802       bphillip    Scheduling of retrieval tasks now occurs after camel/spring have been initialized
- * Jan 30, 2014 2686       dhladky      refactor of retrieval.
+ * Jan 30, 2014 2686       dhladky     refactor of retrieval.
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -92,7 +92,7 @@ public class RetrievalHandler implements RegistryInitializedListener {
      *            wrapper as byte array
      */
     public void notify(byte[] bytes) {
-        
+
         SubscriptionRetrievalRequestWrapper srrw = null;
 
         try {
@@ -118,9 +118,10 @@ public class RetrievalHandler implements RegistryInitializedListener {
         scheduledExecutorService.scheduleWithFixedDelay(subNotifyTask, 30000,
                 subnotifyTaskFrequency.getMillis(), TimeUnit.MILLISECONDS);
     }
-    
+
     /**
      * Get a RetrievalTask for the given network
+     * 
      * @param network
      * @return RetrievalTask
      */

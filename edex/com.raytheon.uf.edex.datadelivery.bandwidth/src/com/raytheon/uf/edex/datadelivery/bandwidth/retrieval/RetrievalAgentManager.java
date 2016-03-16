@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,6 +17,7 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.util.Map;
 
@@ -38,6 +37,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
  * ------------ ---------- ----------- --------------------------
  * Oct 11, 2012 0726       djohnson     Add SW history, prevent duplicate start calls, add generics.
  * Oct 29, 2012 1286       djohnson     Only start threads if bandwidth management enabled.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 

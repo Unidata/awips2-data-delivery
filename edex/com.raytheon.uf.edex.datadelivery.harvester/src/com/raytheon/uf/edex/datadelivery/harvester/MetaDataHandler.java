@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.harvester;
 
 import java.io.File;
@@ -10,7 +29,7 @@ import com.raytheon.uf.common.datadelivery.harvester.Agent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -23,7 +42,8 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
 
 /**
- * Handler for harvesting MetaData/Parameter/DataSet objects from harvested provider inputs.
+ * Handler for harvesting MetaData/Parameter/DataSet objects from harvested
+ * provider inputs.
  * 
  * <pre>
  * 
@@ -31,6 +51,7 @@ import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 17, 2014 3120       dhladky     abstracted out from CrawlMetaData handler.
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -42,7 +63,7 @@ public abstract class MetaDataHandler implements RegistryInitializedListener {
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MetaDataHandler.class);
-    
+
     /**
      * Read in the config files
      * 
@@ -96,7 +117,7 @@ public abstract class MetaDataHandler implements RegistryInitializedListener {
     /**
      * The provider handler
      */
-    protected IProviderHandler providerHandler = null;
+    protected ProviderHandler providerHandler = null;
 
     @Override
     public void executeAfterRegistryInit() {
@@ -123,4 +144,3 @@ public abstract class MetaDataHandler implements RegistryInitializedListener {
     }
 
 }
-

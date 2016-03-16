@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 
 import java.util.List;
@@ -40,11 +59,12 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * ------------ ---------- ----------- --------------------------
  * Aug 9, 2012  1022       djohnson     No longer extends Thread, simplify {@link SubscriptionDelay}.
  * Oct 10, 2012 0726       djohnson     Use the subRetrievalKey for notifying the retrieval manager.
- * Nov 25, 2012  1268      dhladky      Added additional fields to process subscription tracking
+ * Nov 25, 2012 1268       dhladky      Added additional fields to process subscription tracking
  * Feb 05, 2013 1580       mpduff       EventBus refactor.
  * Mar 05, 2013 1647       djohnson     Debug log running message.
  * Jan 08, 2013 2645       bgonzale     Catch all exceptions in run to prevent the recurring timer from failing.
  * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 

@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.harvester.pda;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,6 +17,7 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.harvester.pda;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,7 +41,7 @@ import com.raytheon.uf.common.datadelivery.harvester.PDACatalogServiceResponseWr
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -61,9 +60,10 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * June 13, 2014 3120      dhladky     Initial creation
+ * Jun 13, 2014  3120      dhladky     Initial creation
  * Oct 14, 2014  3127      dhladky     Improved deletion of used files.
  * Apr 21, 2015  4435      dhladky     PDA transaction processing.
+ * Mar 16, 2016  3919      tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -83,15 +83,15 @@ public class PDAMetaDataHandler extends MetaDataHandler {
             net.opengis.gml.v_3_1_1.ObjectFactory.class,
             net.opengis.filter.v_1_1_0.ObjectFactory.class };
 
-    public PDAMetaDataHandler(IProviderHandler providerHandler) {
+    public PDAMetaDataHandler(ProviderHandler providerHandler) {
         this.providerHandler = providerHandler;
     }
-   
+
     /**
      * Process PDA metadata records
      * 
      * @param bytes
-     * @throws IOException 
+     * @throws IOException
      */
     @SuppressWarnings("rawtypes")
     public void processFile(byte[] bytes) throws IOException {
@@ -115,14 +115,19 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                             PDACatalogServiceResponseWrapper.class, bytes);
             filePath = wrapper.getFilePath();
 
-            // this filePath is actually a directory when pulled by camel
-            // extract the actual file
+            /*
+             * this filePath is actually a directory when pulled by camel
+             * extract the actual file
+             */
             if (filePath != null) {
                 directory = new File(filePath);
                 if (directory.isDirectory()) {
                     for (File file : directory.listFiles()) {
                         if (file.getName().endsWith(fileExtension)) {
-                            // you will only ever find one file with .xml extension.
+                            /*
+                             * you will only ever find one file with .xml
+                             * extension.
+                             */
                             fileName = file.getAbsolutePath();
                             break;
                         }
@@ -135,8 +140,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                         + " for MetaData.....");
 
                 briefRecords = (GetRecordsResponseType) getJaxbManager()
-                        .unmarshalFromInputStream(
-                                new FileInputStream(fileName));
+                        .unmarshalFromInputStream(new FileInputStream(fileName));
             } else {
                 statusHandler.info("No Files available to Process...");
             }
@@ -153,7 +157,8 @@ public class PDAMetaDataHandler extends MetaDataHandler {
 
         if (briefRecords != null) {
             // Make a parser
-            PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory.getParser(lastDate);
+            PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory
+                    .getParser(lastDate);
             // extract brief record(s) and send to parser
             List<JAXBElement<? extends AbstractRecordType>> briefs = briefRecords
                     .getSearchResults().getAbstractRecord();
@@ -196,7 +201,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
             }
         }
     }
-    
+
     /**
      * Process PDA transaction based messages
      * 
@@ -216,9 +221,10 @@ public class PDAMetaDataHandler extends MetaDataHandler {
             IServiceFactory<BriefRecordType, PDAMetaDataParser, Time, Coverage> serviceFactory = ServiceTypeFactory
                     .retrieveServiceFactory(config.getProvider());
             Date lastDate = TimeUtil.newGmtCalendar().getTime();
-            
+
             // Make a parser
-            PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory.getParser(lastDate);
+            PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory
+                    .getParser(lastDate);
 
             try {
                 briefRecord = (BriefRecordType) getJaxbManager()
@@ -250,7 +256,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                                 e);
             }
         }
-        
+
         return jaxbManager;
     }
 

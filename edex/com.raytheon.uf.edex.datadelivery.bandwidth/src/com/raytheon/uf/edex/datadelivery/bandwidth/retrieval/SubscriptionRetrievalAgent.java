@@ -1,7 +1,22 @@
-
 /**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
  * 
- */
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.util.ArrayList;
@@ -15,7 +30,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -61,7 +76,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Feb 10, 2014 2678       dhladky      Prevent duplicate allocations.
  * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
  * Feb 19, 2015 3998       dhladky      Fixed wrong date on notification center retrieval message.
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * May 27, 2015 4531       dhladky      Remove excessive Calendar references.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -79,12 +95,13 @@ public class SubscriptionRetrievalAgent extends
 
     private final IRetrievalDao retrievalDao;
 
-    private final IProviderHandler providerHandler;
+    private final ProviderHandler providerHandler;
 
     public SubscriptionRetrievalAgent(Network network, String destinationUri,
             final Object notifier, int defaultPriority,
-            RetrievalManager retrievalManager, IBandwidthDao<?, ?> bandwidthDao,
-            IRetrievalDao retrievalDao, IProviderHandler providerHandler) {
+            RetrievalManager retrievalManager,
+            IBandwidthDao<?, ?> bandwidthDao, IRetrievalDao retrievalDao,
+            ProviderHandler providerHandler) {
         super(network, destinationUri, notifier, retrievalManager);
         this.defaultPriority = defaultPriority;
         this.bandwidthDao = bandwidthDao;
@@ -112,16 +129,20 @@ public class SubscriptionRetrievalAgent extends
                         "Unable to deserialize the subscription.", e);
             }
 
-            // We only allow one subscription retrieval per DSM update.
-            // Remove any duplicate subscription allocations/retrievals, cancel them.
+            /*
+             * We only allow one subscription retrieval per DSM update. Remove
+             * any duplicate subscription allocations/retrievals, cancel them.
+             */
             if (!retrievalsMap.containsKey(sub)) {
                 retrievalsMap.put(sub, subRetrieval);
             } else {
-                // Check for most recent startTime, that's the one we want for
-                // retrieval.
+                /*
+                 * Check for most recent startTime, that's the one we want for
+                 * retrieval.
+                 */
                 SubscriptionRetrieval currentRetrieval = retrievalsMap.get(sub);
-                if (subRetrieval.getStartTime()
-                        .after(currentRetrieval.getStartTime())) {
+                if (subRetrieval.getStartTime().after(
+                        currentRetrieval.getStartTime())) {
                     // Replace it in the map, set previous to canceled.
                     currentRetrieval.setStatus(RetrievalStatus.CANCELLED);
                     bandwidthDao.update(currentRetrieval);
@@ -135,15 +156,15 @@ public class SubscriptionRetrievalAgent extends
                     // Not more recent, cancel
                     subRetrieval.setStatus(RetrievalStatus.CANCELLED);
                     bandwidthDao.update(subRetrieval);
-                    statusHandler
-                            .info("Older, setting to Cancelled ["
-                                    + currentRetrieval.getIdentifier() + "] "
-                                    + sub.getName());
+                    statusHandler.info("Older, setting to Cancelled ["
+                            + currentRetrieval.getIdentifier() + "] "
+                            + sub.getName());
                 }
             }
         }
 
-        for (Entry<Subscription<?, ?>, SubscriptionRetrieval> entry: retrievalsMap.entrySet()) {
+        for (Entry<Subscription<?, ?>, SubscriptionRetrieval> entry : retrievalsMap
+                .entrySet()) {
 
             SubscriptionRetrieval retrieval = entry.getValue();
             Subscription<?, ?> sub = entry.getKey();
@@ -168,10 +189,11 @@ public class SubscriptionRetrievalAgent extends
             // update database
             bandwidthDao.update(retrieval);
 
-            // generateRetrieval will pipeline the RetrievalRecord Objects
-            // created to the DB.
-            // The PK objects returned are sent to the RetrievalQueue for
-            // processing.
+            /*
+             * generateRetrieval will pipeline the RetrievalRecord Objects
+             * created to the DB. The PK objects returned are sent to the
+             * RetrievalQueue for processing.
+             */
             List<RetrievalRequestRecordPK> retrievals = generateRetrieval(
                     bundle, retrieval.getIdentifier());
 
@@ -187,9 +209,10 @@ public class SubscriptionRetrievalAgent extends
                 statusHandler.info("Sent " + retrievals.size()
                         + " retrievals to queue. " + network.toString());
             } else {
-                // Normally this is the job of the SubscriptionNotifyTask, but
-                // if no
-                // retrievals were generated we have to send it manually
+                /*
+                 * Normally this is the job of the SubscriptionNotifyTask, but
+                 * if no retrievals were generated we have to send it manually
+                 */
                 RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
                 retrievalManagerNotifyEvent.setId(Long.toString(retrieval
                         .getId()));
@@ -197,7 +220,7 @@ public class SubscriptionRetrievalAgent extends
             }
         }
     }
-    
+
     @Override
     protected String getAgentType() {
         return SUBSCRIPTION_AGENT;
@@ -220,8 +243,8 @@ public class SubscriptionRetrievalAgent extends
      *            the subscription retrieval key
      * @return true if retrievals were generated (and waiting to be processed)
      */
-    private List<RetrievalRequestRecordPK> generateRetrieval(SubscriptionBundle bundle,
-            Long subRetrievalKey) {
+    private List<RetrievalRequestRecordPK> generateRetrieval(
+            SubscriptionBundle bundle, Long subRetrievalKey) {
 
         // process the bundle into a retrieval
         RetrievalGenerator rg = ServiceTypeFactory.retrieveServiceFactory(
@@ -235,12 +258,14 @@ public class SubscriptionRetrievalAgent extends
         List<RetrievalRequestRecord> requestRecords = null;
         List<RetrievalRequestRecordPK> requestRecordPKs = null;
         boolean retrievalsGenerated = !CollectionUtil.isNullOrEmpty(retrievals);
-        
-        Long requestRetrievalTimeLong = Long.valueOf( System.currentTimeMillis() ); //Default to "now"
+
+        Long requestRetrievalTimeLong = Long
+                .valueOf(System.currentTimeMillis()); // Default to "now"
         Subscription<?, ?> bundleSub = bundle.getSubscription();
-        com.raytheon.uf.common.datadelivery.registry.Time requestRetrievalTimeT =  bundleSub.getTime();
+        com.raytheon.uf.common.datadelivery.registry.Time requestRetrievalTimeT = bundleSub
+                .getTime();
         Date requestRetrievalDate = null;
-        
+
         if (requestRetrievalTimeT != null) {
             // cases of starting date set
             if (requestRetrievalTimeT.getRequestStart() != null) {
@@ -251,17 +276,19 @@ public class SubscriptionRetrievalAgent extends
             // cases of ending date set
             if (requestRetrievalDate == null) {
                 if (requestRetrievalTimeT.getRequestEnd() != null) {
-                    requestRetrievalDate = requestRetrievalTimeT.getRequestEnd();
+                    requestRetrievalDate = requestRetrievalTimeT
+                            .getRequestEnd();
                 } else {
                     requestRetrievalDate = requestRetrievalTimeT.getEnd();
                 }
             }
             // set the date of retrieved data
             if (requestRetrievalDate != null) {
-                requestRetrievalTimeLong = Long.valueOf( requestRetrievalDate.getTime() );
-            } 
+                requestRetrievalTimeLong = Long.valueOf(requestRetrievalDate
+                        .getTime());
+            }
         }
-        
+
         if (retrievalsGenerated) {
             String owner = bundle.getSubscription().getOwner();
             String provider = bundle.getSubscription().getProvider();
@@ -285,7 +312,11 @@ public class SubscriptionRetrievalAgent extends
                 Retrieval retrieval = retrievals.get(i);
                 RetrievalRequestRecord rec = new RetrievalRequestRecord(
                         subscriptionName, i, subRetrievalKey);
-                retrieval.setRequestRetrievalTime(requestRetrievalTimeLong); //Stored ONLY as Retrieval (Thrift) data; not part of the record proper
+                /*
+                 * Stored ONLY as Retrieval (Thrift) data; not part of the
+                 * record proper
+                 */
+                retrieval.setRequestRetrievalTime(requestRetrievalTimeLong);
 
                 rec.setOwner(owner);
                 rec.setPriority(priority);
@@ -294,9 +325,10 @@ public class SubscriptionRetrievalAgent extends
                 rec.setProvider(provider);
                 rec.setPlugin(plugin);
                 rec.setSubscriptionType(retrieval.getSubscriptionType());
-                
+
                 try {
-                    rec.setRetrieval(SerializationUtil.transformToThrift(retrieval));
+                    rec.setRetrieval(SerializationUtil
+                            .transformToThrift(retrieval));
                     rec.setState(RetrievalRequestRecord.State.PENDING);
                     requestRecords.add(rec);
                     requestRecordPKs.add(rec.getId());

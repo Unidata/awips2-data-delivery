@@ -65,6 +65,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
  * Sep 17, 2014 2749       ccody        Renamed SystemStatusEvent to DataDeliverySystemStatusEvent
  * Nov 17, 2014 3840       ccody        Only publish System State Events when the state changes
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 

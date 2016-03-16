@@ -31,7 +31,7 @@ import com.google.common.cache.LoadingCache;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
@@ -48,9 +48,10 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * ------------ ---------- ----------- --------------------------
  * Nov 9, 2012  1286       djohnson     Add SW history.
  * Jan 06, 2014 2636       mpduff       Changed how offset is determined.
- * May 15, 2014   3113     mpduff      Calculate availability offset for gridded data sets without cycles.
- * 8/29/2014    3446       bphillip     Changed cache timeout
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * May 15, 2014 3113       mpduff       Calculate availability offset for gridded data sets without cycles.
+ * Aug 29, 2014 3446       bphillip     Changed cache timeout
+ * May 27, 2015 4531       dhladky      Remove excessive Calendar references.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -70,7 +71,7 @@ public class AveragingAvailablityCalculator {
                 }
             });
 
-    private final IDataSetMetaDataHandler handler;
+    private final DataSetMetaDataHandler handler;
 
     /**
      * Constructor.
@@ -78,7 +79,7 @@ public class AveragingAvailablityCalculator {
      * @param handler
      *            The DataSetMetaDataHandler
      */
-    public AveragingAvailablityCalculator(IDataSetMetaDataHandler handler) {
+    public AveragingAvailablityCalculator(DataSetMetaDataHandler handler) {
         this.handler = handler;
     }
 
@@ -128,8 +129,9 @@ public class AveragingAvailablityCalculator {
      */
     private int getOffsetForGrid(List<DataSetMetaData> records,
             Date referenceTime) {
-        
-        int cycle = TimeUtil.newGmtCalendar(referenceTime).get(Calendar.HOUR_OF_DAY);
+
+        int cycle = TimeUtil.newGmtCalendar(referenceTime).get(
+                Calendar.HOUR_OF_DAY);
         int count = 0;
         int total = 0;
         for (DataSetMetaData md : records) {

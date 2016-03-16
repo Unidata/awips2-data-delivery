@@ -20,14 +20,13 @@ package com.raytheon.uf.common.datadelivery.service.subscription;
  * further licensing information.
  **/
 
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * Configuration for the {@link ISubscriptionOverlapService}.
+ * Configuration for the {@link SubscriptionOverlapService}.
  * 
  * <pre>
  * 
@@ -70,8 +69,7 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
      * @param matchStrategy
      */
     public PDASubscriptionOverlapConfig(int maxAllowedParameterDuplication,
-            int maxAllowedTimeDuplication,
-            int maxAllowedSpatialDuplication,
+            int maxAllowedTimeDuplication, int maxAllowedSpatialDuplication,
             SubscriptionOverlapMatchStrategy matchStrategy) {
 
         this.maxAllowedParameterDuplication = maxAllowedParameterDuplication;
@@ -91,8 +89,7 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
      * @param maxAllowedForecastHourDuplication
      *            the maxAllowedForecastHourDuplication to set
      */
-    public void setMaxAllowedTimeDuplication(
-            int maxAllowedTimeDuplication) {
+    public void setMaxAllowedTimeDuplication(int maxAllowedTimeDuplication) {
         this.maxAllowedTimeDuplication = maxAllowedTimeDuplication;
     }
 

@@ -36,6 +36,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * ------------ ---------- ----------- --------------------------
  * Oct 03, 2012 1241       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Now composes a registryHandler.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -44,13 +45,17 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  */
 
 public class ProviderHandler extends
-        BaseRegistryObjectHandler<Provider, ProviderQuery> implements
-        IProviderHandler {
+        BaseRegistryObjectHandler<Provider, ProviderQuery> {
 
     /**
-     * {@inheritDoc}
+     * Retrieve a {@link Provider} by its name.
+     * 
+     * @param providerName
+     *            the name of the provider
+     * @return the provider, or null if the provider can't be found
+     * @throws RegistryHandlerException
+     *             on error
      */
-    @Override
     public Provider getByName(String providerName)
             throws RegistryHandlerException {
         ProviderQuery gQuery = getQuery();

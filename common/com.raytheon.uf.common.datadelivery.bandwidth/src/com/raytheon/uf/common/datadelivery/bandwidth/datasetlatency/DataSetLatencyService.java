@@ -25,7 +25,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
- * Implementation of {@link IDataSetLatencyService}.
+ * Service for interacting with the bandwidth manager.
  * 
  * <pre>
  * 
@@ -34,6 +34,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial creation
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -41,8 +42,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * @version 1.0
  */
 public class DataSetLatencyService extends
-        BasePrivilegedServerService<DataSetLatencyRequest> implements
-        IDataSetLatencyService {
+        BasePrivilegedServerService<DataSetLatencyRequest> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataSetLatencyService.class);
@@ -56,10 +56,6 @@ public class DataSetLatencyService extends
         super(serviceKey);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public final boolean deleteByDataSetNameAndProvider(String dataSetName,
             String providerName) {
         boolean successful = true;

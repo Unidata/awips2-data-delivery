@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.util.ArrayList;
@@ -7,7 +26,6 @@ import java.util.regex.Pattern;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.harvester.interfaces.IStoreLink;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 
@@ -22,7 +40,8 @@ import edu.uci.ics.crawler4j.url.WebURL;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011    218      dhladky     Initial creation
+ * Feb 20, 2011 218        dhladky     Initial creation
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -30,7 +49,7 @@ import edu.uci.ics.crawler4j.url.WebURL;
  * @version 1.0
  */
 
-public class MainSequenceHarvester extends WebCrawler implements IStoreLink {
+public class MainSequenceHarvester extends WebCrawler {
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MainSequenceHarvester.class);
@@ -105,7 +124,6 @@ public class MainSequenceHarvester extends WebCrawler implements IStoreLink {
         return href.startsWith(topurl);
     }
 
-    @Override
     public void storeLink(WebURL url) {
         Link link = new Link(name, url.getURL());
         links.addLink(url.getURL(), link);

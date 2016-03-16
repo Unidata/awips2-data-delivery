@@ -40,16 +40,15 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * ------------ ---------- ----------- --------------------------
  * Oct 03, 2012 1241      djohnson     Initial creation
  * Jun 24, 2013 2106      djohnson     Now composes a registryHandler.
+ * Mar 16, 2016 3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public class GriddedDataSetMetaDataHandler
-        extends
-        BaseDataSetMetaDataHandler<DataSetMetaData, DataSetMetaDataQuery>
-        implements IGriddedDataSetMetaDataHandler {
+public class GriddedDataSetMetaDataHandler extends
+        BaseDataSetMetaDataHandler<DataSetMetaData, DataSetMetaDataQuery> {
 
     /**
      * {@inheritDoc}
@@ -68,9 +67,21 @@ public class GriddedDataSetMetaDataHandler
     }
 
     /**
-     * {@inheritDoc}
+     * Return the {@link DataSetMetaData} for the dataset, the specified
+     * date/time and cycle.
+     * 
+     * @param dataSetName
+     *            the data set name
+     * @param providerName
+     *            the provider name
+     * @param cycle
+     *            the cycle
+     * @param date
+     *            the date
+     * @return the object, or null if none found
+     * @throws RegistryHandlerException
+     *             on error
      */
-    @Override
     public GriddedDataSetMetaData getByDataSetDateAndCycle(String dataSetName,
             String providerName, int cycle, Date date)
             throws RegistryHandlerException {

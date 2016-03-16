@@ -8,52 +8,52 @@
     
 
     <bean id="registerSubscriptionHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler" />
         <constructor-arg ref="SubscriptionHandler" />
     </bean>
     
     <bean id="registerPendingSubscriptionHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IPendingSubscriptionHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.PendingSubscriptionHandler" />
         <constructor-arg ref="PendingSubscriptionHandler" />
     </bean>
     
     <bean id="registerGroupDefinitionHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IGroupDefinitionHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.GroupDefinitionHandler" />
         <constructor-arg ref="GroupDefinitionHandler" />
     </bean>
     
     <bean id="registerProviderHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler" />
         <constructor-arg ref="ProviderHandler" />
     </bean>
     
     <bean id="registerDataSetNameHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetNameHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.DataSetNameHandler" />
         <constructor-arg ref="DataSetNameHandler" />
     </bean>
 
     <bean id="registerParameterHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IParameterHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.ParameterHandler" />
         <constructor-arg ref="ParameterHandler" />
     </bean>
 
     <bean id="registerParameterLevelHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IParameterLevelHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.ParameterLevelHandler" />
         <constructor-arg ref="ParameterLevelHandler" />
     </bean>
 
     <bean id="registerDataSetMetaDataHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler" />
         <constructor-arg ref="DataSetMetaDataHandler" />
     </bean>
     
     <bean id="registerGriddedDataSetMetaDataHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IGriddedDataSetMetaDataHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.GriddedDataSetMetaDataHandler" />
         <constructor-arg ref="GriddedDataSetMetaDataHandler" />
     </bean>
 
     <bean id="registerDataSetHandler" factory-bean="registryObjectHandlerRegistry" factory-method="registerHandler">
-        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetHandler" />
+        <constructor-arg value="com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler" />
         <constructor-arg ref="DataSetHandler" />
     </bean>
 

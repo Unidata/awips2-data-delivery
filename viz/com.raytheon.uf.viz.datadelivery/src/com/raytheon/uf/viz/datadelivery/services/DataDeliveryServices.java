@@ -20,10 +20,10 @@
 package com.raytheon.uf.viz.datadelivery.services;
 
 import com.raytheon.uf.common.auth.req.IPermissionsService;
-import com.raytheon.uf.common.datadelivery.bandwidth.IBandwidthService;
-import com.raytheon.uf.common.datadelivery.service.IGroupDefinitionService;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
-import com.raytheon.uf.common.datadelivery.service.subscription.ISubscriptionOverlapService;
+import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
+import com.raytheon.uf.common.datadelivery.service.GroupDefinitionService;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapService;
 import com.raytheon.uf.viz.datadelivery.subscription.ISubscriptionService;
 
 /**
@@ -39,8 +39,9 @@ import com.raytheon.uf.viz.datadelivery.subscription.ISubscriptionService;
  * ------------ ---------- ----------- --------------------------
  * Nov 09, 2012 1286       djohnson     Initial creation
  * May 20, 2013 2000       djohnson     Add subscription overlap service.
- * Jul 26, 2031   2232     mpduff       Moved IPermissionsService to common.
- * Oct 21, 2013   2292     mpduff       Added generics.
+ * Jul 26, 2031 2232       mpduff       Moved IPermissionsService to common.
+ * Oct 21, 2013 2292       mpduff       Added generics.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -50,27 +51,28 @@ import com.raytheon.uf.viz.datadelivery.subscription.ISubscriptionService;
 
 public final class DataDeliveryServices {
 
-    private static IBandwidthService<?, ?> bandwidthService;
+    private static BandwidthService<?, ?> bandwidthService;
 
     private static ISubscriptionService subscriptionService;
 
-    private static ISubscriptionNotificationService subscriptionNotificationService;
+    private static SendToServerSubscriptionNotificationService subscriptionNotificationService;
 
     private static IPermissionsService permissionsService;
 
-    private static IGroupDefinitionService groupDefinitionService;
+    private static GroupDefinitionService groupDefinitionService;
 
-    private static ISubscriptionOverlapService<?, ?> subscriptionOverlapService;
+    private static SubscriptionOverlapService<?, ?> subscriptionOverlapService;
 
     /**
      * Spring only constructor. All access should be through static methods.
      */
-    private DataDeliveryServices(IBandwidthService<?, ?> bandwidthService,
+    private DataDeliveryServices(
+            BandwidthService<?, ?> bandwidthService,
             ISubscriptionService subscriptionService,
-            ISubscriptionNotificationService subscriptionNotificationService,
+            SendToServerSubscriptionNotificationService subscriptionNotificationService,
             IPermissionsService permissionsService,
-            IGroupDefinitionService groupDefinitionService,
-            ISubscriptionOverlapService<?, ?> subscriptionOverlapService) {
+            GroupDefinitionService groupDefinitionService,
+            SubscriptionOverlapService<?, ?> subscriptionOverlapService) {
         DataDeliveryServices.bandwidthService = bandwidthService;
         DataDeliveryServices.subscriptionService = subscriptionService;
         DataDeliveryServices.subscriptionNotificationService = subscriptionNotificationService;
@@ -93,7 +95,7 @@ public final class DataDeliveryServices {
      * 
      * @return the bandwidthService
      */
-    public static IBandwidthService<?, ?> getBandwidthService() {
+    public static BandwidthService<?, ?> getBandwidthService() {
         return DataDeliveryServices.bandwidthService;
     }
 
@@ -102,7 +104,7 @@ public final class DataDeliveryServices {
      * 
      * @return the subscription notification service
      */
-    public static ISubscriptionNotificationService getSubscriptionNotificationService() {
+    public static SendToServerSubscriptionNotificationService getSubscriptionNotificationService() {
         return DataDeliveryServices.subscriptionNotificationService;
     }
 
@@ -120,7 +122,7 @@ public final class DataDeliveryServices {
      * 
      * @return the groupDefinitionService
      */
-    public static IGroupDefinitionService getGroupDefinitionService() {
+    public static GroupDefinitionService getGroupDefinitionService() {
         return DataDeliveryServices.groupDefinitionService;
     }
 
@@ -129,7 +131,7 @@ public final class DataDeliveryServices {
      * 
      * @return the subscriptionOverlapService
      */
-    public static ISubscriptionOverlapService<?, ?> getSubscriptionOverlapService() {
+    public static SubscriptionOverlapService<?, ?> getSubscriptionOverlapService() {
         return DataDeliveryServices.subscriptionOverlapService;
     }
 }

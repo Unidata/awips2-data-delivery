@@ -1,5 +1,3 @@
-package com.raytheon.uf.common.datadelivery.retrieval.util;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,6 +17,7 @@ package com.raytheon.uf.common.datadelivery.retrieval.util;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.common.datadelivery.retrieval.util;
 
 import java.io.File;
 import java.io.InputStream;
@@ -67,6 +66,7 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  * Nov 07, 2013   2361     njensen     Use JAXBManager for XML
  * Jan 14, 2014            dhladky     AvailabilityOffset calculations
  * Jan 20, 2016   5244     njensen     Replaced calls to deprecated LocalizationFile methods
+ * Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -79,10 +79,15 @@ public class LookupManager {
     /**
      * Implementation of the xml writers that writes to localization files.
      */
-    private class LocalizationXmlWriter implements LevelXmlWriter,
-            ParameterXmlWriter, DataSetInformationXmlWriter {
+    private class LocalizationXmlWriter {
 
-        @Override
+        /**
+         * Writes the level lookup to XML
+         * 
+         * @param ll
+         * @param modelName
+         * @throws Exception
+         */
         public void writeLevelXml(LevelLookup ll, String modelName)
                 throws Exception {
             IPathManager pm = PathManagerFactory.getPathManager();
@@ -96,7 +101,13 @@ public class LookupManager {
             }
         }
 
-        @Override
+        /**
+         * Writes the parameter lookup to XML
+         * 
+         * @param pl
+         * @param modelName
+         * @throws Exception
+         */
         public void writeParameterXml(ParameterLookup pl, String modelName)
                 throws Exception {
             IPathManager pm = PathManagerFactory.getPathManager();
@@ -110,7 +121,13 @@ public class LookupManager {
             }
         }
 
-        @Override
+        /**
+         * Writes the DataSetInformation lookup to XML
+         * 
+         * @param aol
+         * @param modelName
+         * @throws Exception
+         */
         public void writeDataSetInformationXml(DataSetInformationLookup dsi)
                 throws Exception {
             IPathManager pm = PathManagerFactory.getPathManager();
@@ -161,16 +178,8 @@ public class LookupManager {
 
     private UnitLookup unitLookup = null;
 
-    private final LevelXmlWriter levelXmlWriter = ServiceLoaderUtil.load(
-            LookupManager.class, LevelXmlWriter.class,
-            new LocalizationXmlWriter());
-
-    private final ParameterXmlWriter parameterXmlWriter = ServiceLoaderUtil
-            .load(LookupManager.class, ParameterXmlWriter.class,
-                    new LocalizationXmlWriter());
-
-    private final DataSetInformationXmlWriter dataSetInformationXmlWriter = ServiceLoaderUtil
-            .load(LookupManager.class, DataSetInformationXmlWriter.class,
+    private final LocalizationXmlWriter localizationXmlWriter = ServiceLoaderUtil
+            .load(LookupManager.class, LocalizationXmlWriter.class,
                     new LocalizationXmlWriter());
 
     private static JAXBManager jaxb;
@@ -438,7 +447,7 @@ public class LookupManager {
             }
 
             if (dataSetInformationLookup != null) {
-                dataSetInformationXmlWriter
+                localizationXmlWriter
                         .writeDataSetInformationXml(dataSetInformationLookup);
 
                 statusHandler
@@ -620,7 +629,7 @@ public class LookupManager {
             }
         }
 
-        levelXmlWriter.writeLevelXml(ll, modelName);
+        localizationXmlWriter.writeLevelXml(ll, modelName);
 
         levels.put(modelName, ll);
         statusHandler.info("Updated/Created level lookup! " + modelName);
@@ -659,7 +668,7 @@ public class LookupManager {
                 params.add(pc);
             }
             // write out file
-            parameterXmlWriter.writeParameterXml(pl, modelName);
+            localizationXmlWriter.writeParameterXml(pl, modelName);
 
             parameters.put(modelName, pl);
             statusHandler

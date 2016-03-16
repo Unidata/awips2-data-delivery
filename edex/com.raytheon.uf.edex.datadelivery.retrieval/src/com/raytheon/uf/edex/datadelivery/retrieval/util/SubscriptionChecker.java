@@ -30,7 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
@@ -51,7 +51,8 @@ import com.raytheon.uf.edex.datadelivery.event.notification.NotificationDao;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 29, 2013    2450    mpduff      Initial creation
+ * Oct 29, 2013 2450       mpduff      Initial creation
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -91,7 +92,7 @@ public class SubscriptionChecker {
      */
     public void expirationCheck() {
         statusHandler.info("Starting expiration check...");
-        ISubscriptionHandler handler = DataDeliveryHandlers
+        SubscriptionHandler handler = DataDeliveryHandlers
                 .getSubscriptionHandler();
         List<Subscription> subList = null;
         try {
@@ -129,7 +130,7 @@ public class SubscriptionChecker {
      */
     public void activePeriodEndCheck() {
         statusHandler.info("Starting active period check...");
-        ISubscriptionHandler handler = DataDeliveryHandlers
+        SubscriptionHandler handler = DataDeliveryHandlers
                 .getSubscriptionHandler();
         List<Subscription> subList = null;
         try {

@@ -50,6 +50,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
  * Mar 07, 2013 1647       djohnson     Write out as hidden file, then rename.
  * Aug 09, 2013 1822       bgonzale     Added parameters to IWmoHeaderApplier.applyWmoHeader().
  * Oct 28, 2013 2506       bgonzale     Removed request parameters.  Constructor inject IRetrievalDao.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -109,8 +110,8 @@ public class SerializeRetrievedDataToDirectory implements
                     .marshalToXml(new SbnRetrievalResponseXml(request,
                             retrievalPluginDataObjects));
             final Date date = request.getInsertTime();
-            final String textForFile = wmoHeaderWrapper
-                    .applyWmoHeader(request.getProvider(), request.getPlugin(),
+            final String textForFile = wmoHeaderWrapper.applyWmoHeader(
+                    request.getProvider(), request.getPlugin(),
                     getSourceType(request), date, xml);
 
             // Write as hidden file, this is OS specific, but there is no

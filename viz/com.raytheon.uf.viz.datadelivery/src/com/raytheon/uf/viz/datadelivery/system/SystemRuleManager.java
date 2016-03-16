@@ -31,7 +31,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-import com.raytheon.uf.common.datadelivery.bandwidth.IBandwidthService;
+import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -80,10 +80,11 @@ import com.raytheon.uf.viz.datadelivery.utils.TypeOperationItems;
  * Jul 11, 2013   2106      djohnson   setAvailableBandwidth service now returns names of subscriptions.
  * Oct 03, 2013   2386      mpduff     Add overlap rules.
  * Nov 19, 2013   2387      skorolev   Add system status refresh listeners.
- * Sept 04, 2014  2131      dhladky    PDA data type added.
+ * Sep 04, 2014   2131      dhladky    PDA data type added.
  * Nov 20, 2014   2749      ccody      Put Set Avail Bandwidth Save into async, non-UI thread
  * Nov 12, 2015   4644      dhladky    Added actual rules file for PDA.
  * Nov 30, 2015   4834      njensen    ChangedLocalizationOpFailedException to LocalizationException
+ * Mar 16, 2016   3919      tjensen    Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -137,7 +138,7 @@ public class SystemRuleManager {
     private Unmarshaller unmarshaller;
 
     /** Bandwidth service */
-    private IBandwidthService bandwidthService;
+    private BandwidthService bandwidthService;
 
     /** Latency Rules XML object */
     private LatencyRulesXML latencyRules;
@@ -718,12 +719,12 @@ public class SystemRuleManager {
     }
 
     /**
-     * Set the {@link IBandwidthService}.
+     * Set the {@link BandwidthService}.
      * 
      * @param bandwidthService
      *            the bandwidthService to set
      */
-    public void setBandwidthService(IBandwidthService bandwidthService) {
+    public void setBandwidthService(BandwidthService bandwidthService) {
         this.bandwidthService = bandwidthService;
     }
 

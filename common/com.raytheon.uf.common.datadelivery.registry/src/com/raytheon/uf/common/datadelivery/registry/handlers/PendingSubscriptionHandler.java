@@ -52,23 +52,26 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * ------------ ---------- ----------- --------------------------
  * Sep 18, 2012 1169       djohnson     Initial creation
  * Sep 24, 2012 1157       mpduff       Changed to use InitialPendingSubscription.
- * 4/9/2013     1802      bphillip   Using constant values from constants package instead of RegistryUtil
+ * Apr 09, 2013 1802       bphillip     Using constant values from constants package instead of RegistryUtil
  * May 28, 2013 1650       djohnson     Add getByNames.
  * May 29, 2013 1650       djohnson     Fix ability to delete multiple types of subscriptions at once.
  * Sep 11, 2013 2352       mpduff       Add siteId to getSubscribedToDataSetNames method.
  * Jan 29, 2014 2636       mpduff       Scheduling refactor.
- * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
+@SuppressWarnings("rawtypes")
+public class PendingSubscriptionHandler implements
+        IBaseSubscriptionHandler<InitialPendingSubscription> {
 
-    private final IPendingSiteSubscriptionHandler siteSubscriptionHandler;
+    private final PendingSiteSubscriptionHandler siteSubscriptionHandler;
 
-    private final IPendingSharedSubscriptionHandler sharedSubscriptionHandler;
+    private final PendingSharedSubscriptionHandler sharedSubscriptionHandler;
 
     /**
      * Constructor.
@@ -79,8 +82,8 @@ public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
      *            the shared subscription handler
      */
     public PendingSubscriptionHandler(
-            IPendingSiteSubscriptionHandler siteSubscriptionHandler,
-            IPendingSharedSubscriptionHandler sharedSubscriptionHandler) {
+            PendingSiteSubscriptionHandler siteSubscriptionHandler,
+            PendingSharedSubscriptionHandler sharedSubscriptionHandler) {
         this.siteSubscriptionHandler = siteSubscriptionHandler;
         this.sharedSubscriptionHandler = sharedSubscriptionHandler;
     }
@@ -254,10 +257,11 @@ public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
     public void store(String username, InitialPendingSubscription obj)
             throws RegistryHandlerException {
         if (obj instanceof InitialPendingSiteSubscription) {
-            siteSubscriptionHandler.store(username, (InitialPendingSiteSubscription) obj);
+            siteSubscriptionHandler.store(username,
+                    (InitialPendingSiteSubscription) obj);
         } else {
-            sharedSubscriptionHandler
-                    .store(username, (InitialPendingSharedSubscription) obj);
+            sharedSubscriptionHandler.store(username,
+                    (InitialPendingSharedSubscription) obj);
         }
     }
 
@@ -268,11 +272,11 @@ public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
     public void update(String username, InitialPendingSubscription obj)
             throws RegistryHandlerException {
         if (obj instanceof InitialPendingSiteSubscription) {
-            siteSubscriptionHandler
-                    .update(username, (InitialPendingSiteSubscription) obj);
+            siteSubscriptionHandler.update(username,
+                    (InitialPendingSiteSubscription) obj);
         } else {
-            sharedSubscriptionHandler
-                    .update(username, (InitialPendingSharedSubscription) obj);
+            sharedSubscriptionHandler.update(username,
+                    (InitialPendingSharedSubscription) obj);
         }
     }
 
@@ -404,9 +408,15 @@ public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the {@link InitialPendingSubscription} associated with a
+     * {@link Subscription}.
+     * 
+     * @param subscription
+     *            the subscription
+     * @return the pending subscription
+     * @throws RegistryHandlerException
+     *             if an unsuccessful response is received from the registry
      */
-    @Override
     public InitialPendingSubscription getBySubscription(
             Subscription subscription) throws RegistryHandlerException {
         if (subscription instanceof SiteSubscription) {
@@ -417,9 +427,15 @@ public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the {@link InitialPendingSubscription} associated with a
+     * {@link Subscription} by the subscription id.
+     * 
+     * @param id
+     *            the subscription's id
+     * @return the pending subscription
+     * @throws RegistryHandlerException
+     *             if an unsuccessful response is received from the registry
      */
-    @Override
     public InitialPendingSubscription getBySubscriptionId(String id)
             throws RegistryHandlerException {
         InitialPendingSubscription value = siteSubscriptionHandler.getById(id);
@@ -430,10 +446,15 @@ public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the {@link InitialPendingSubscription}s associated with a collection
+     * of {@link Subscription}s.
+     * 
+     * @param subscriptions
+     *            the subscriptions
+     * @return the pending subscriptions
+     * @throws RegistryHandlerException
+     *             if an unsuccessful response is received from the registry
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    @Override
     public List<InitialPendingSubscription> getBySubscriptions(
             Collection<Subscription> subscriptions)
             throws RegistryHandlerException {
@@ -451,9 +472,15 @@ public class PendingSubscriptionHandler implements IPendingSubscriptionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the {@link InitialPendingSubscription}s associated with a collection
+     * of {@link Subscription} ids.
+     * 
+     * @param ids
+     *            the ids
+     * @return the pending subscriptions
+     * @throws RegistryHandlerException
+     *             if an unsuccessful response is received from the registry
      */
-    @Override
     public List<InitialPendingSubscription> getBySubscriptionIds(
             List<String> ids) throws RegistryHandlerException {
         List<InitialPendingSubscription> subs = Lists.newArrayList();

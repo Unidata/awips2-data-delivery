@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.io.File;
@@ -9,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import opendap.dap.DAS;
+
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
@@ -16,7 +37,7 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Utils;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
@@ -38,8 +59,6 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
-
-import opendap.dap.DAS;
 
 /**
  * Harvest MetaData
@@ -63,6 +82,7 @@ import opendap.dap.DAS;
  * Mar 31, 2014 2889       dhladky     Added username for notification center tracking.
  * Jul 08, 2014 3120       dhladky     More generics
  * Apr 12, 2015 4400       dhladky     Upgrade to DAP2 for harvesting.
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -73,7 +93,7 @@ import opendap.dap.DAS;
 public class CrawlMetaDataHandler extends MetaDataHandler {
 
     public static final String DASH = "-";
-    
+
     /** Path to crawler links directory. */
     private static final String PROCESSED_DIR = StringUtil.join(new String[] {
             "datadelivery", "harvester", "processed" }, File.separatorChar);
@@ -81,9 +101,9 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
     private final CommunicationStrategy communicationStrategy;
 
     private final File timesDir;
-   
+
     public CrawlMetaDataHandler(CommunicationStrategy communicationStrategy,
-            IProviderHandler providerHandler) {
+            ProviderHandler providerHandler) {
         this.communicationStrategy = communicationStrategy;
         this.providerHandler = providerHandler;
 
@@ -169,7 +189,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                 if (store != null && collection != null) {
 
                     Provider provider = hc.getProvider();
-                    IServiceFactory<String, DAS, GriddedTime, GriddedCoverage> serviceFactory =  ServiceTypeFactory
+                    IServiceFactory<String, DAS, GriddedTime, GriddedCoverage> serviceFactory = ServiceTypeFactory
                             .retrieveServiceFactory(provider);
 
                     IExtractMetaData<String, DAS> mde = serviceFactory

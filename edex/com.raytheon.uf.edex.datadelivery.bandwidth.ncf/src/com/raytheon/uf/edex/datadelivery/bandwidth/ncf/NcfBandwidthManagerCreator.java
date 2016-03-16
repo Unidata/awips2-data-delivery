@@ -26,15 +26,14 @@ import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthContextFactory.IEdexBandwidthManagerCreator;
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager;
-import com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
@@ -64,7 +63,8 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Dec 04, 2013 2566       bgonzale     use bandwidthmanager method to retrieve spring files.
  * Jan 14, 2014 2692       dhladky      AdhocSubscription handler
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
- * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
+ * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class * 
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -82,7 +82,8 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
 
         private static final String MODE_NAME = "centralRegistry";
 
-        private static final String[] NCF_BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
+        private static final String[] NCF_BANDWIDTH_MANAGER_FILES = BandwidthUtil
+                .getSpringFileNamesForMode(MODE_NAME);
 
         /**
          * Constructor.
@@ -98,13 +99,13 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
                 RetrievalManager retrievalManager,
                 BandwidthDaoUtil<T, C> bandwidthDaoUtil,
                 RegistryIdUtil idUtil,
-                IDataSetMetaDataHandler dataSetMetaDataHandler,
-                ISubscriptionHandler subscriptionHandler,
+                DataSetMetaDataHandler dataSetMetaDataHandler,
+                SubscriptionHandler subscriptionHandler,
                 IAdhocSubscriptionHandler adhocSubscriptionHandler,
-                ISubscriptionNotificationService subscriptionNotificationService,
+                SendToServerSubscriptionNotificationService subscriptionNotificationService,
                 ISubscriptionFinder findSubscriptionsStrategy) {
-            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
-                    dataSetMetaDataHandler, subscriptionHandler,
+            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
+                    idUtil, dataSetMetaDataHandler, subscriptionHandler,
                     adhocSubscriptionHandler, subscriptionNotificationService,
                     findSubscriptionsStrategy);
         }
@@ -139,19 +140,21 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
      * {@inheritDoc}
      */
     @Override
-    public IBandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
-            IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
+    public BandwidthManager<T, C> getBandwidthManager(
+            IBandwidthDbInit dbInit,
+            IBandwidthDao bandwidthDao,
+            RetrievalManager retrievalManager,
             BandwidthDaoUtil bandwidthDaoUtil,
             RegistryIdUtil idUtil,
-            IDataSetMetaDataHandler dataSetMetaDataHandler,
-            ISubscriptionHandler subscriptionHandler,
+            DataSetMetaDataHandler dataSetMetaDataHandler,
+            SubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
-            ISubscriptionNotificationService subscriptionNotificationService,
+            SendToServerSubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
         return new NcfBandwidthManager(dbInit, bandwidthDao, retrievalManager,
-                bandwidthDaoUtil, idUtil, dataSetMetaDataHandler, subscriptionHandler,
-                adhocSubscriptionHandler, subscriptionNotificationService,
-                findSubscriptionsStrategy);
+                bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
+                subscriptionHandler, adhocSubscriptionHandler,
+                subscriptionNotificationService, findSubscriptionsStrategy);
     }
 
 }

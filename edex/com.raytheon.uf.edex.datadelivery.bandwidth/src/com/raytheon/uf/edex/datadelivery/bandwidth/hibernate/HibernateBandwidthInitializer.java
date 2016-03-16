@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
 import java.util.List;
@@ -9,7 +28,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.StringUtil;
-import com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager;
+import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
@@ -40,6 +59,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
  * Feb 14, 2014 2636       mpduff       Clean up logging
  * Apr 09, 2014 3012       dhladky      Adhoc firing prevention.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * </pre>
  * 
  * @author djohnson
@@ -54,7 +74,7 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
 
     private final String site;
 
-    private IBandwidthManager instance;
+    private BandwidthManager instance;
 
     /**
      * @param strategy
@@ -69,14 +89,13 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
      * @param strategy
      */
     HibernateBandwidthInitializer(
-            ISubscriptionFinder findSubscriptionsStrategy,
-            String site) {
+            ISubscriptionFinder findSubscriptionsStrategy, String site) {
         this.findSubscriptionsStrategy = findSubscriptionsStrategy;
         this.site = site;
     }
 
     @Override
-    public boolean init(IBandwidthManager instance, IBandwidthDbInit dbInit,
+    public boolean init(BandwidthManager instance, IBandwidthDbInit dbInit,
             RetrievalManager retrievalManager) {
 
         this.instance = instance;
@@ -129,7 +148,7 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
      * Get a map of the active subs by route.
      * 
      * @return Map<Network, List<Subscription>>
-     * @throws Exception 
+     * @throws Exception
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Map<Network, List<Subscription>> getSubMapByRoute() throws Exception {

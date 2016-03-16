@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Network;
@@ -33,7 +32,6 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
@@ -44,7 +42,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
- * An in-memory {@link IBandwidthManager} that does not communicate with an
+ * An in-memory {@link BandwidthManager} that does not communicate with an
  * actual database. Intentionally package-private.
  * 
  * <pre>
@@ -67,6 +65,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * May 22, 2014 2808       dhladky      Scheduling unscheduled
  * Nov 03, 2014 2414       dhladky      refactoring some methods in BWM.
  * Jan 15, 2014 3884       dhladky      Removed useless shutdown and shutdown internal methods.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -84,7 +83,8 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
     // NOTE: NEVER add the bandwidth-datadelivery-eventbus.xml file to this
     // array, in-memory versions should not coordinate with the event bus in any
     // fashion
-    public static final String[] IN_MEMORY_BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
+    public static final String[] IN_MEMORY_BANDWIDTH_MANAGER_FILES = BandwidthUtil
+            .getSpringFileNamesForMode(MODE_NAME);
 
     /**
      * {@link IBandwidthInitializer} which will make a copy of the current
@@ -97,8 +97,8 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
          * {@inheritDoc}
          */
         @Override
-        public boolean init(IBandwidthManager instance,
-                IBandwidthDbInit dbInit, RetrievalManager retrievalManager) {
+        public boolean init(BandwidthManager instance, IBandwidthDbInit dbInit,
+                RetrievalManager retrievalManager) {
             BandwidthManager edexBandwidthManager = EdexBandwidthContextFactory
                     .getInstance();
             if (instance instanceof InMemoryBandwidthManager) {
@@ -125,7 +125,7 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
         @Override
         public Map<Network, List<Subscription>> getSubMapByRoute()
                 throws Exception {
-         // This method is not implemented by the in-memory bandwidth manager
+            // This method is not implemented by the in-memory bandwidth manager
             return null;
         }
     }
@@ -141,7 +141,8 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
      */
     public InMemoryBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao<T, C> bandwidthDao,
-            RetrievalManager retrievalManager, BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil) {
+            RetrievalManager retrievalManager,
+            BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil) {
         super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil);
     }
 
@@ -189,14 +190,16 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage> extends
     }
 
     @Override
-    protected List<Subscription<T, C>> getSubscriptionsToSchedule(Network network) {
+    protected List<Subscription<T, C>> getSubscriptionsToSchedule(
+            Network network) {
         // Nothing to do for in-memory version
-        return new ArrayList<Subscription<T,C>>(0);
+        return new ArrayList<Subscription<T, C>>(0);
     }
 
     @Override
     public void scheduleUnscheduledSubscriptions(String subUnscheduledName) {
-        // The in-memory bandwidth manager will never schedule unscheduled subscriptions
+        // The in-memory bandwidth manager will never schedule unscheduled
+        // subscriptions
     }
 
     @Override

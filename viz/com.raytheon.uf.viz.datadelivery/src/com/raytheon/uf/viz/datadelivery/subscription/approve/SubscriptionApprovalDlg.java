@@ -45,11 +45,11 @@ import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IPendingSubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.PendingSubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.registry.handler.RegistryObjectHandlers;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -105,6 +105,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Apr 18, 2014  3012      dhladky      Null check.
  * Aug 18, 2014 2746       ccody       Non-local Subscription changes not updating dialogs
  * Jan 05, 2015 3898       ccody       Delete existing Site subscription if it is updated to a Shared Subscription
+ * Mar 16, 2016  3919      tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -152,7 +153,7 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
     private final ISubscriptionService subscriptionService = DataDeliveryServices
             .getSubscriptionService();
 
-    private final ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+    private final SendToServerSubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
             .getSubscriptionNotificationService();
 
     private final IPermissionsService permissionsService = DataDeliveryServices
@@ -489,8 +490,8 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
                     for (SubscriptionApprovalRowData rd : deleteList) {
                         InitialPendingSubscription sub = rd.getSubscription();
 
-                        IPendingSubscriptionHandler handler = RegistryObjectHandlers
-                                .get(IPendingSubscriptionHandler.class);
+                        PendingSubscriptionHandler handler = RegistryObjectHandlers
+                                .get(PendingSubscriptionHandler.class);
 
                         try {
                             handler.delete(username, sub);
@@ -539,8 +540,8 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
 
             Subscription s = ps.subscription();
 
-            IPendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
-                    .get(IPendingSubscriptionHandler.class);
+            PendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
+                    .get(PendingSubscriptionHandler.class);
 
             Subscription cachedSiteSubscription = null;
             boolean isPromotedToShared = checkForSubscriptionPromotion(ps, s);
@@ -693,8 +694,8 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
 
         try {
             resetSubscriptionDataSetLatency(subscription);
-            ISubscriptionHandler handler = RegistryObjectHandlers
-                    .get(ISubscriptionHandler.class);
+            SubscriptionHandler handler = RegistryObjectHandlers
+                    .get(SubscriptionHandler.class);
             handler.delete(username, subscription);
         } catch (RegistryHandlerException e) {
             statusHandler.error(

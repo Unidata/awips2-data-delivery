@@ -57,7 +57,7 @@ import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
@@ -156,6 +156,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * May 17, 2015   4047     dhladky      verified non-blocking.
  * Jul 01, 2015   4047     dhladky      Use callback YES NO dialog for closing.
  * Oct 15, 2015   4657     rferrel      Make data the return value to allow cleanup in the callback.
+ * Mar 16, 2016   3919     tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -539,7 +540,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         if (valid) {
             // Check for existing subscription
             VizSubscriptionHandler handler = (VizSubscriptionHandler) RegistryObjectHandlers
-                    .get(ISubscriptionHandler.class);
+                    .get(SubscriptionHandler.class);
             String name = nameText.getText();
 
             try {

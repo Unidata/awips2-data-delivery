@@ -23,7 +23,6 @@ import java.io.File;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
-import com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.HibernateBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
@@ -32,8 +31,8 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
  * Factory used to produce contextual differences in the
- * {@link IBandwidthManager}. For instance, currently the
- * {@link IBandwidthManager} can be run in three locations with slightly
+ * {@link BandwidthManager}. For instance, currently the
+ * {@link BandwidthManager} can be run in three locations with slightly
  * different behavioral semantics, EDEX, In-Memory for proposed changes, and
  * integration testing.
  * 
@@ -46,7 +45,8 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 24, 2012 1286       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Add {@link #getBandwidthBucketDao()}.
  * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
- * May 22, 2014 2808       dhladky     Scheduling unscheduled
+ * May 22, 2014 2808       dhladky      Scheduling unscheduled
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -101,10 +101,11 @@ public interface BandwidthContextFactory {
      *            the retrieval manager
      * @param bandwidthDaoUtil
      *            the dao util instance
-     * @param RegistryIdUtil finds DD server nodes            
+     * @param RegistryIdUtil
+     *            finds DD server nodes
      * @return the {@link BandwidthManager} reference
      */
-    IBandwidthManager getBandwidthManager(IBandwidthDbInit dbInit,
+    BandwidthManager getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
             BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil);
 }

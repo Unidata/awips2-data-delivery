@@ -36,8 +36,8 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -52,7 +52,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 
 /**
@@ -70,8 +70,10 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial creation
- * Mar 09, 2015 4242       dhladky     Data integrity exception caused by dupe key ~ caused gaps in scheduling
- * May 27, 2015  4531      dhladky     Remove excessive Calendar references.
+ * Mar 09, 2015 4242       dhladky     Data integrity exception caused by dupe key 
+ *                                     ~ caused gaps in scheduling
+ * May 27, 2015 4531       dhladky     Remove excessive Calendar references.
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -97,13 +99,13 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
     protected IBandwidthDao<T, C> bandwidthDao;
 
     /** Subscription Handler Object */
-    protected ISubscriptionHandler subscriptionHandler;
+    protected SubscriptionHandler subscriptionHandler;
 
     /** Data Set Handler object */
-    protected IDataSetHandler dataSetHandler;
+    protected DataSetHandler dataSetHandler;
 
     /** Data Set Latency Handler Object */
-    protected IDataSetLatencyDao dataSetLatencyDao;
+    protected DataSetLatencyDao dataSetLatencyDao;
 
     private List<SubscriptionLatencyCheckProcessor> internalProcessorList = null;
 
@@ -167,8 +169,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
      */
     public SubscriptionLatencyCheck(IBandwidthBucketDao bucketsDao,
             IBandwidthDao<T, C> bandwidthDao,
-            ISubscriptionHandler subscriptionHandler,
-            IDataSetHandler dataSetHandler, IDataSetLatencyDao dataSetLatencyDao) {
+            SubscriptionHandler subscriptionHandler,
+            DataSetHandler dataSetHandler, DataSetLatencyDao dataSetLatencyDao) {
 
         this.bucketsDao = bucketsDao;
         this.bandwidthDao = bandwidthDao;

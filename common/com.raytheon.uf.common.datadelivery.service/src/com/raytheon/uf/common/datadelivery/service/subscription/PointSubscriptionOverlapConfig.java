@@ -5,9 +5,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-
 /**
- * Configuration for the {@link ISubscriptionOverlapService}.
+ * Configuration for the {@link SubscriptionOverlapService}.
  * 
  * <pre>
  * 

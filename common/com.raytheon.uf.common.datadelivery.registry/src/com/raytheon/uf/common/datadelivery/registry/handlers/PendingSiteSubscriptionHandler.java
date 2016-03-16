@@ -36,15 +36,16 @@ import com.raytheon.uf.common.registry.handler.IRegistryObjectHandler;
  * Sep 18, 2012 1169       djohnson     Initial creation
  * Sep 24, 2012 1157       mpduff       Changed to use InitialPendingUserSubscription.
  * Apr 04, 2013 1841       djohnson     Extracted most methods to base class.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public class PendingSiteSubscriptionHandler extends
-        BasePendingSubscriptionHandler<InitialPendingSiteSubscription, PendingSiteSubscriptionQuery>
-        implements IPendingSiteSubscriptionHandler {
+public class PendingSiteSubscriptionHandler
+        extends
+        BasePendingSubscriptionHandler<InitialPendingSiteSubscription, PendingSiteSubscriptionQuery> {
 
     /**
      * {@inheritDoc}

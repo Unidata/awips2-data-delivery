@@ -129,19 +129,16 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
  *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check   
  *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null 
- *  Jun 09, 2015   4047     dhladky     BUG graph blocked CAVE on initial startup, fixed.       
- *
- *                                     
+ *  Jun 09, 2015   4047     dhladky     BUG graph blocked CAVE on initial startup, fixed.
+ *  Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces
+ * 
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
-public class BandwidthCanvasComp extends Composite
-        implements
-            IDialogClosed,
-            INotificationObserver,
-            IDataUpdated {
+public class BandwidthCanvasComp extends Composite implements IDialogClosed,
+        INotificationObserver {
 
     /** UFStatus handler. */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -229,7 +226,7 @@ public class BandwidthCanvasComp extends Composite
 
     /** Last graph update time */
     Timer activeUpdateTimer = null;
-    
+
     /** the query job **/
     private GraphDataUtil graphDataUtil;
 
@@ -280,10 +277,10 @@ public class BandwidthCanvasComp extends Composite
 
     /** Last NotificationRecord Message */
     private NotificationRecord lastNotificationRecord = null;
-  
+
     /** The current instance (Used to remove this as an event listener) */
     BandwidthCanvasComp bandwidthCanvasComp = null;
-    
+
     /** Universal toolTip for canvas images **/
     private ToolTip toolTip = null;
 
@@ -540,11 +537,14 @@ public class BandwidthCanvasComp extends Composite
                                     .contains(DataDeliveryUtils.CREATED)
                             || notificationMessage
                                     .contains(DataDeliveryUtils.DELETED)) {
-                            
+
                         isUpdateable = true;
                     } else if (notificationMessage
                             .contains(DataDeliveryUtils.UPDATED)) {
-                        // special case of updated, prevent from spamming the BWM
+                        /*
+                         * special case of updated, prevent from spamming the
+                         * BWM
+                         */
                         if ((System.currentTimeMillis() - lastUpdateTime) > updateIntervalMils) {
                             isUpdateable = true;
                         }
@@ -555,13 +555,7 @@ public class BandwidthCanvasComp extends Composite
 
         return (isUpdateable);
     }
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.common.jms.notification.INotificationObserver#
-     * notificationArrived
-     * (com.raytheon.uf.common.jms.notification.NotificationMessage[])
-     */
+
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
 
@@ -780,7 +774,7 @@ public class BandwidthCanvasComp extends Composite
                 mouseMarker = MISSING;
                 canvasMap.get(CanvasImages.GRAPH).redraw();
                 canvasMap.get(CanvasImages.UTILIZATION_GRAPH).redraw();
-                
+
                 if (toolTip != null) {
                     toolTip.dispose();
                 }
@@ -1324,7 +1318,7 @@ public class BandwidthCanvasComp extends Composite
      *            The canvas image.
      */
     private void displayToolTipText(MouseEvent me, CanvasImages ci) {
-        
+
         Point mouseCoord = new Point(0, 0);
         mouseCoord.x = Math.abs(cornerPointOffset.x) + me.x;
         mouseCoord.y = Math.abs(cornerPointOffset.y) + me.y;
@@ -1728,7 +1722,6 @@ public class BandwidthCanvasComp extends Composite
      * 
      * This method runs asynchronously.
      */
-    @Override
     public synchronized void dataUpdated() {
         VizApp.runAsync(new Runnable() {
             @Override
@@ -1737,7 +1730,8 @@ public class BandwidthCanvasComp extends Composite
                     return;
                 }
 
-                statusHandler.info("Time elapsed from last BUG update: "+(System.currentTimeMillis()-lastUpdateTime)+" ms");
+                statusHandler.info("Time elapsed from last BUG update: "
+                        + (System.currentTimeMillis() - lastUpdateTime) + " ms");
                 lastUpdateTime = System.currentTimeMillis();
                 imageMgr.setCurrentTimeMillis(lastUpdateTime);
 

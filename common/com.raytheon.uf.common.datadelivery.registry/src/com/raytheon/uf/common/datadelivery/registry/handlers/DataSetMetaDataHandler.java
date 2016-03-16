@@ -33,6 +33,7 @@ import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetMetaDataQuery;
  * ------------ ---------- ----------- --------------------------
  * Oct 03, 2012 1241      djohnson     Initial creation
  * Oct 17, 2012 0726      djohnson     Move getByDataSet to superclass.
+ * Mar 16, 2016 3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -41,8 +42,7 @@ import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetMetaDataQuery;
  */
 
 public class DataSetMetaDataHandler extends
-        BaseDataSetMetaDataHandler<DataSetMetaData, DataSetMetaDataQuery>
-        implements IDataSetMetaDataHandler {
+        BaseDataSetMetaDataHandler<DataSetMetaData, DataSetMetaDataQuery> {
 
     /**
      * {@inheritDoc}

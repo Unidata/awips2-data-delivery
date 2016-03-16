@@ -43,7 +43,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
  * @author dhladky
  * @version 1.0
  */
-public abstract class MetaDataExtractor<O extends Object, D extends Object> implements IExtractMetaData<O, D> {
+public abstract class MetaDataExtractor<O extends Object, D extends Object>
+        implements IExtractMetaData<O, D> {
 
     protected Connection conn = null;
 
@@ -58,7 +59,7 @@ public abstract class MetaDataExtractor<O extends Object, D extends Object> impl
     public void setConn(Connection conn) {
         this.conn = conn;
     }
-    
+
     public Connection getConn() {
         return conn;
     }
@@ -67,7 +68,7 @@ public abstract class MetaDataExtractor<O extends Object, D extends Object> impl
     public Date getDataDate() {
         return dataDate;
     }
- 
+
     public void setDataDate(Date dataDate) {
         this.dataDate = dataDate;
     }

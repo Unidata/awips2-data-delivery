@@ -55,16 +55,14 @@ import com.raytheon.uf.common.util.FileUtil;
  * ------------ ---------- ----------- --------------------------
  * May 07, 2013  2000      djohnson     Initial creation
  * Jun 04, 2013  223       mpduff       Get base file if site doesn't exist.
- * Sept 23, 2013 2283      dhladky      Updated for multiple configs
+ * Sep 23, 2013  2283      dhladky      Updated for multiple configs
  * Oct 03, 2013  2386      mpduff       Moved the subscription overlap rules files into the rules directory.
  * Oct 25, 2013  2292      mpduff       Move overlap checks to edex.
  * Nov 12, 2013  2361      njensen      Made JAXBManager static and initialized on first use
  * Nov 10, 2015  4644      dhladky      Added PDA overlap strategies
- * Jan 18, 2016 5260       dhladky      Updated with better values.
+ * Jan 18, 2016  5260      dhladky      Updated with better values.
  * Jan 20, 2016  5244      njensen      Replaced calls to deprecated LocalizationFile methods
- *
- *
- * 
+ * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -72,8 +70,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * @version 1.0
  */
 
-public class SubscriptionOverlapService<T extends Time, C extends Coverage>
-        implements ISubscriptionOverlapService<T, C> {
+public class SubscriptionOverlapService<T extends Time, C extends Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubscriptionOverlapService.class);
@@ -111,7 +108,14 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
 
     }
 
-    @Override
+    /**
+     * Writes a new configuration file.
+     * 
+     * @param config
+     *            the configuration
+     * @throws LocalizationException
+     *             on error saving the configuration
+     */
     public void writeConfig(SubscriptionOverlapConfig config)
             throws LocalizationException {
         final IPathManager pathManager = PathManagerFactory.getPathManager();
@@ -150,12 +154,12 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
     }
 
     /**
-     * Gets the overlap config file by type
+     * Get the overlap config file for this data type.
      * 
      * @param type
-     * @return
+     *            The data type
+     * @return the config file for the data type
      */
-    @Override
     public SubscriptionOverlapConfig getConfigFile(DataType type) {
         final IPathManager pathManager = PathManagerFactory.getPathManager();
         SubscriptionOverlapConfig config = null;

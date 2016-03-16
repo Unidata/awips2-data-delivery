@@ -20,7 +20,7 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao;
 
 /**
  * Returns a constant value for the subscription latency.
@@ -32,6 +32,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 05, 2012 0726       djohnson     Initial creation
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -52,7 +53,7 @@ public class ConstantSubscriptionLatencyCalculator implements
      * {@inheritDoc}
      */
     @Override
-    public void setDataSetLatencyDao(IDataSetLatencyDao dataSetLatencyDao) {
+    public void setDataSetLatencyDao(DataSetLatencyDao dataSetLatencyDao) {
         // Do nothing.
     }
 

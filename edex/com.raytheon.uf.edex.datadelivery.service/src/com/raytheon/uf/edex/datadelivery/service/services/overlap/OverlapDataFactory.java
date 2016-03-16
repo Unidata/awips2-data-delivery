@@ -26,7 +26,6 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.service.subscription.ISubscriptionOverlapService;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapConfig;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapService;
 
@@ -42,6 +41,7 @@ import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOver
  * Oct 22, 2013    2292    mpduff      Initial creation
  * Nov 12, 2015    4644    dhladky     Added PDA types.
  * Jan 18, 2016    5261    dhladky     Testing related updates.
+ * Mar 16, 2016    3919    tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -68,7 +68,7 @@ public class OverlapDataFactory<T extends Time, C extends Coverage> {
             throw new IllegalArgumentException(
                     "Subscriptions must be of the same data type.");
         }
-        ISubscriptionOverlapService<?, ?> overlapService = new SubscriptionOverlapService();
+        SubscriptionOverlapService<?, ?> overlapService = new SubscriptionOverlapService();
         DataType dt = sub1.getDataSetType();
         config = overlapService.getConfigFile(dt);
         if (dt == DataType.GRID) {

@@ -48,8 +48,9 @@ import com.raytheon.uf.common.status.UFStatus;
  * ------------ ---------- ----------- --------------------------
  * Oct 03, 2012 1241       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Now composes a registryHandler.
- * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
- * Jan 20, 2016  5280      dhladky     Increase efficiency of replication.
+ * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ * Jan 20, 2016 5280       dhladky      Increase efficiency of replication.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -58,8 +59,7 @@ import com.raytheon.uf.common.status.UFStatus;
  */
 
 public class ParameterHandler extends
-        BaseRegistryObjectHandler<Parameter, ParameterQuery> implements
-        IParameterHandler {
+        BaseRegistryObjectHandler<Parameter, ParameterQuery> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(ParameterHandler.class);
@@ -77,7 +77,8 @@ public class ParameterHandler extends
      * ParameterLevel Objects needed to successfully store the Parameter Object.
      */
     @Override
-    public void store(String username, Parameter obj) throws RegistryHandlerException {
+    public void store(String username, Parameter obj)
+            throws RegistryHandlerException {
         final String parameterName = obj.getName();
         try {
             super.store(username, obj);
@@ -111,7 +112,8 @@ public class ParameterHandler extends
      * ParameterLevel Objects needed to successfully store the Parameter Object.
      */
     @Override
-    public void update(String username, Parameter obj) throws RegistryHandlerException {
+    public void update(String username, Parameter obj)
+            throws RegistryHandlerException {
         final String parameterName = obj.getName();
         try {
             super.update(username, obj);
@@ -140,9 +142,14 @@ public class ParameterHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve the DataLevelType descriptions.
+     * 
+     * @param dataTypes
+     *            the data types
+     * @return the descriptions
+     * @throws RegistryHandlerException
+     *             on error
      */
-    @Override
     public List<String> getDataLevelTypeDescriptions(List<String> dataTypes)
             throws RegistryHandlerException {
         DataLevelTypeDescriptionQuery query = new DataLevelTypeDescriptionQuery();
@@ -177,8 +184,8 @@ public class ParameterHandler extends
                     pl.setLevelId(Integer.parseInt(parts[0]));
                     pl.setLevelValue(Double.parseDouble(parts[1]));
                     try {
-                        DataDeliveryHandlers.getParameterLevelHandler().update(username, 
-                                pl);
+                        DataDeliveryHandlers.getParameterLevelHandler().update(
+                                username, pl);
                         statusHandler
                                 .info("Successfully stored ParameterLevel "
                                         + id);
@@ -215,9 +222,14 @@ public class ParameterHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Get a list of parameter names by the specified data types.
+     * 
+     * @param dataTypes
+     *            the data types
+     * @return the list of parameter names
+     * @throws RegistryHandlerException
+     *             on error
      */
-    @Override
     public Set<String> getNamesByDataTypes(List<String> dataTypes)
             throws RegistryHandlerException {
 
@@ -233,9 +245,12 @@ public class ParameterHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Get a parameter by name
+     * 
+     * @param parameterName
+     * @return
+     * @throws RegistryHandlerException
      */
-    @Override
     public Parameter getByName(String parameterName)
             throws RegistryHandlerException {
         ParameterQuery pQuery = getQuery();
@@ -248,5 +263,5 @@ public class ParameterHandler extends
 
         return response.getSingleResult();
     }
-   
+
 }

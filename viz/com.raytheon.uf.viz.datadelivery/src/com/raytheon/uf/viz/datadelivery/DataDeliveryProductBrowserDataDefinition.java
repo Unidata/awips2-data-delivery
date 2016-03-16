@@ -42,7 +42,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.dataplugin.grid.GridConstants;
 import com.raytheon.uf.common.dataplugin.grid.derivparam.CommonGridInventory;
 import com.raytheon.uf.common.dataplugin.level.Level;
@@ -110,6 +110,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Jun 11, 2015  4042      dhladky     Refactored using bsteffen's interface to make it thread safe, cleaner.
  * Jun 16, 2015  4566      dhladky     Fixed error in map for Plugin names.
  * Mar 08, 2016  4621      tjensen     Added support for Derived Parameters for Grid products
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -571,8 +572,8 @@ public class DataDeliveryProductBrowserDataDefinition implements
     @SuppressWarnings("rawtypes")
     private List<Subscription> getSubscriptions() {
         List<Subscription> subList = new ArrayList<Subscription>();
-        final ISubscriptionHandler handler = RegistryObjectHandlers
-                .get(ISubscriptionHandler.class);
+        final SubscriptionHandler handler = RegistryObjectHandlers
+                .get(SubscriptionHandler.class);
         try {
             subList = handler.getByFilters(null,
                     DataDeliveryUtils.getDataDeliveryId());

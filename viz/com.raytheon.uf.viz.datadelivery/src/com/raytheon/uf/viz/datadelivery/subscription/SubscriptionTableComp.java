@@ -53,7 +53,7 @@ import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.service.BaseSubscriptionNotificationResponse;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -125,7 +125,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Jan 05, 2015  3950   ccody/dhladky   Change Subscription Manager table update logic for pertinent 
  *                                      notification events (Create,Update,Delete,Activate,Deactivate,Expire)
  * Jan 30, 2015  2746      dhladky      Special handling for shared sub updates/deletes
- * Feb 04, 2015  4047      dhladky      Fixed deleting tableData before job has retrieved replacement.                                    
+ * Feb 04, 2015  4047      dhladky      Fixed deleting tableData before job has retrieved replacement.
+ * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * @version 1.0
  */
 
@@ -407,8 +408,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     @SuppressWarnings("rawtypes")
     public void populateData() {
 
-        final ISubscriptionHandler handler = RegistryObjectHandlers
-                .get(ISubscriptionHandler.class);
+        final SubscriptionHandler handler = RegistryObjectHandlers
+                .get(SubscriptionHandler.class);
         final List<Subscription> subList = new ArrayList<Subscription>();
         final Shell jobShell = getShell();
 
@@ -1014,7 +1015,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                     NotificationRecord notificationRecord = (NotificationRecord) obj;
                     String category = notificationRecord.getCategory();
                     if (category != null
-                            && !category.equalsIgnoreCase(DataDeliveryUtils.RETRIEVAL)) {
+                            && !category
+                                    .equalsIgnoreCase(DataDeliveryUtils.RETRIEVAL)) {
                         isRetrieval = false;
                         break;
                     }

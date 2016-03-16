@@ -22,7 +22,7 @@ package com.raytheon.uf.viz.datadelivery.subscription;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 
 /**
@@ -36,6 +36,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 23, 2013 1650       djohnson     Initial creation
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -53,6 +54,6 @@ public interface ISubscriptionManagerFilter {
      * @return the list of subscriptions
      * @throws RegistryHandlerException
      */
-    List<Subscription> getSubscriptions(ISubscriptionHandler subscriptionHandler)
+    List<Subscription> getSubscriptions(SubscriptionHandler subscriptionHandler)
             throws RegistryHandlerException;
 }

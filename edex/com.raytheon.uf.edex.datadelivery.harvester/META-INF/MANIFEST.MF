@@ -4,7 +4,7 @@ Class-Path: com.raytheon.uf.common.serialization.jar com.raytheon.uf.common.stat
 Bundle-ManifestVersion: 2
 Bundle-Name: Harvester
 Bundle-SymbolicName: com.raytheon.uf.edex.datadelivery.harvester
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.16.0.qualifier
 Bundle-Vendor: RAYTHEON
 Require-Bundle: org.apache.http;bundle-version="4.1.2",
  edu.uci.ics.crawler4j;bundle-version="1.0.0",
@@ -37,11 +37,10 @@ Require-Bundle: org.apache.http;bundle-version="4.1.2",
  com.raytheon.uf.edex.ogc.common;bundle-version="1.0.0",
  org.apache.commons.io;bundle-version="2.4.0",
  net.dods;bundle-version="1.1.7"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.edex.datadelivery.harvester.crawler,
  com.raytheon.uf.edex.datadelivery.harvester.cron,
- com.raytheon.uf.edex.datadelivery.harvester.interfaces,
  com.raytheon.uf.edex.datadelivery.harvester.purge,
  com.raytheon.uf.edex.datadelivery.harvester.util
 Import-Package: oasis.names.tc.ebxml.regrep.wsdl.registry.services.v4

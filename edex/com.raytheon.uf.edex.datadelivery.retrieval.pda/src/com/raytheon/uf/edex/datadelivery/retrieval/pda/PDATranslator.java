@@ -1,4 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -18,6 +17,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.pda;
+
 import java.io.File;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse.FILE;
+import com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata.PDAMetaDataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 
@@ -44,8 +46,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sept 12, 2014 3121        dhladky      created.
- * Jan 28, 2016  #5299       dhladky      Generic PDO type change.
+ * Sep 12, 2014 3121        dhladky      created.
+ * Jan 28, 2016 5299        dhladky      Generic PDO type change.
+ * Mar 16, 2016 3919        tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -53,12 +56,13 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * @version 1.0
  */
 
-public class PDATranslator extends RetrievalTranslator<Time, Coverage, PluginDataObject> {
+public class PDATranslator extends
+        RetrievalTranslator<Time, Coverage, PluginDataObject> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDATranslator.class);
-                
-    public PDATranslator(RetrievalAttribute<Time,Coverage> attXML)
+
+    public PDATranslator(RetrievalAttribute<Time, Coverage> attXML)
             throws InstantiationException {
         super(attXML);
     }
@@ -80,27 +84,30 @@ public class PDATranslator extends RetrievalTranslator<Time, Coverage, PluginDat
         // TODO Since we can't subset in PDA, all of this is meaningless
         return null;
     }
-    
+
     /**
-     * Map containing fileName and file bytes (compressed) of the file delivered via retrieval.
-     * calls out to MetaDataAdapter, which decodes,
-     * then returns PDOs.
+     * Map containing fileName and file bytes (compressed) of the file delivered
+     * via retrieval. calls out to MetaDataAdapter, which decodes, then returns
+     * PDOs.
+     * 
      * @param payload
      * @return
      */
 
-    public PluginDataObject[] asPluginDataObjects(Map<PDARetrievalResponse.FILE, Object> payload) {
+    public PluginDataObject[] asPluginDataObjects(
+            Map<PDARetrievalResponse.FILE, Object> payload) {
 
         PluginDataObject[] pdos = null;
-        IPDAMetaDataAdapter pdaAdapter = (IPDAMetaDataAdapter) metadataAdapter;
+        PDAMetaDataAdapter pdaAdapter = (PDAMetaDataAdapter) metadataAdapter;
         String fileName = null;
 
         try {
             /*
              * No reason to write it if it already exists! In the case of the
-             * local registry this is un-necessary. Only in the case of SBN delivery 
-             * does the file have to be written. This is because it has been 
-             * "delivered" from the central registry and doesn't exist locally.
+             * local registry this is un-necessary. Only in the case of SBN
+             * delivery does the file have to be written. This is because it has
+             * been "delivered" from the central registry and doesn't exist
+             * locally.
              */
 
             fileName = (String) payload.get(FILE.FILE_NAME);
@@ -116,7 +123,7 @@ public class PDATranslator extends RetrievalTranslator<Time, Coverage, PluginDat
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to decode PDA file objects!", e);
         }
-        
+
         return pdos;
     }
 

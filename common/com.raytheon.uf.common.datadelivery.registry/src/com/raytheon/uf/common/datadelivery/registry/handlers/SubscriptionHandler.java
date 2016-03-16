@@ -56,7 +56,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Sep 24, 2012 1157       mpduff       Change to use InitialPendingSubscription.
  * Oct 17, 2012 0726       djohnson     Add {@link #getActiveByDataSetAndProvider}.
  * Apr 05, 2013 1841       djohnson     Add support for shared subscriptions.
- * 4/9/2013     1802      bphillip     Using constant values from constants package instead of RegistryUtil
+ * Apr 09, 2013 1802       bphillip     Using constant values from constants package instead of RegistryUtil
  * May 21, 2013 2020       mpduff       Rename UserSubscription to SiteSubscription.
  * May 28, 2013 1650       djohnson     Add getByNames.
  * May 29, 2013 1650       djohnson     Fix ability to delete multiple types of subscriptions at once.
@@ -64,15 +64,18 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Sep 11, 2013 2352       mpduff       Add siteId to getSubscribedToDataSetNames method.
  * Jan 20, 2014 2538       mpduff       Added AdhocSubscriptionHandler.
  * Jan 29, 2014 2636       mpduff       Scheduling refactor.
- * Mar 31, 2014 2889      dhladky       Added username for notification center tracking.
- * May 22, 2014 2808      dhladky       Added sorting by priority as default.
+ * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ * May 22, 2014 2808       dhladky      Added sorting by priority as default.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public class SubscriptionHandler implements ISubscriptionHandler {
+@SuppressWarnings("rawtypes")
+public class SubscriptionHandler implements
+        IBaseSubscriptionHandler<Subscription> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubscriptionHandler.class);
@@ -101,9 +104,14 @@ public class SubscriptionHandler implements ISubscriptionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve a subscription that a {@link PendingSubscription} is associated
+     * to.
+     * 
+     * @param pending
+     *            the pending subscription
+     * @return the subscription, or null if not found
+     * @throws RegistryHandlerException
      */
-    @Override
     public Subscription getByPendingSubscription(PendingSubscription pending)
             throws RegistryHandlerException {
         if (pending instanceof PendingSiteSubscription) {
@@ -114,9 +122,14 @@ public class SubscriptionHandler implements ISubscriptionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve a subscription that a {@link PendingSubscription} is associated
+     * to by the pending subscription's id.
+     * 
+     * @param id
+     *            the pending subscription id
+     * @return the subscription, or null if not found
+     * @throws RegistryHandlerException
      */
-    @Override
     public Subscription getByPendingSubscriptionId(final String id)
             throws RegistryHandlerException {
         Subscription value = siteSubscriptionHandler.getById(id);
@@ -137,9 +150,13 @@ public class SubscriptionHandler implements ISubscriptionHandler {
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve active subscriptions for the dataset name and provider.
+     * 
+     * @param dataSetName
+     *            the dataset name
+     * @param providerName
+     *            the provider name
      */
-    @Override
     public List<Subscription> getActiveByDataSetAndProvider(String dataSetName,
             String providerName) throws RegistryHandlerException {
         List<Subscription> subs = Lists.newArrayList();
@@ -238,7 +255,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         subs.addAll(siteSubscriptionHandler.getActive());
         subs.addAll(sharedSubscriptionHandler.getActive());
         Collections.sort(subs);
-        
+
         return subs;
     }
 
@@ -252,7 +269,7 @@ public class SubscriptionHandler implements ISubscriptionHandler {
         subs.addAll(siteSubscriptionHandler.getActiveForRoute(route));
         subs.addAll(sharedSubscriptionHandler.getActiveForRoute(route));
         Collections.sort(subs);
-        
+
         return subs;
     }
 
@@ -328,7 +345,8 @@ public class SubscriptionHandler implements ISubscriptionHandler {
      * {@inheritDoc}
      */
     @Override
-    public void store(String username, Subscription obj) throws RegistryHandlerException {
+    public void store(String username, Subscription obj)
+            throws RegistryHandlerException {
         if (obj instanceof SiteSubscription) {
             siteSubscriptionHandler.store(username, (SiteSubscription) obj);
         } else {
@@ -340,11 +358,13 @@ public class SubscriptionHandler implements ISubscriptionHandler {
      * {@inheritDoc}
      */
     @Override
-    public void update(String username, Subscription obj) throws RegistryHandlerException {
+    public void update(String username, Subscription obj)
+            throws RegistryHandlerException {
         if (obj instanceof SiteSubscription) {
             siteSubscriptionHandler.update(username, (SiteSubscription) obj);
         } else {
-            sharedSubscriptionHandler.update(username, (SharedSubscription) obj);
+            sharedSubscriptionHandler
+                    .update(username, (SharedSubscription) obj);
         }
     }
 

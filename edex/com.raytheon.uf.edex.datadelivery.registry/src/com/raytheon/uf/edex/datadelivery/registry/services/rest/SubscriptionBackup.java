@@ -47,7 +47,6 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.raytheon.uf.common.datadelivery.registry.services.rest.ISubscriptionBackup;
 import com.raytheon.uf.common.registry.RegistryException;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.serialization.JAXBManager;
@@ -67,7 +66,8 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  * 
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
- * 5/11/2015    4448        bphillip    Initial Creation
+ * May 11, 2015 4448        bphillip    Initial Creation
+ * Mar 16, 2016 3919        tjensen     Cleanup unneeded interfaces
  * </pre>
  * 
  * @author bphillip
@@ -75,8 +75,8 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  **/
 @Path("/")
 @Transactional
-public class SubscriptionBackup implements ISubscriptionBackup {
-    
+public class SubscriptionBackup {
+
     private static final File SUBSCRIPTION_BACKUP_DIR = new File(
             System.getProperty("edex.home")
                     + "/data/registrySubscriptionBackup");
@@ -95,19 +95,21 @@ public class SubscriptionBackup implements ISubscriptionBackup {
             .getHandler(SubscriptionBackup.class);
 
     private static final JAXBManager subscriptionJaxbManager = initJaxbManager();
-    
+
     /** Lifecyclemanager */
     private LifecycleManager lcm;
-    
+
     /** Data access object for registry objects */
     private RegistryObjectDao registryObjectDao;
 
     /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .removeSubscriptionsForSite(String)
+     * Removes any subscriptions for the given site
+     * 
+     * @param siteId
+     *            The site to remove the subscriptions for
+     * @throws RegistryException
+     *             If errors occur while removing the subscriptions
      */
-    @Override
     @GET
     @Path("removeSubscriptionsFor/{siteId}")
     public void removeSubscriptionsForSite(@PathParam("siteId")
@@ -141,11 +143,11 @@ public class SubscriptionBackup implements ISubscriptionBackup {
     }
 
     /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .getSubscriptions()
+     * Gets the subscriptions that are currently in the registry and formats
+     * them in HTML for viewing in a web browser
+     * 
+     * @return The page containing the subscriptions
      */
-    @Override
     @GET
     @Path("getSubscriptions")
     public String getSubscriptions() {
@@ -181,11 +183,13 @@ public class SubscriptionBackup implements ISubscriptionBackup {
     }
 
     /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .backupSubscription(String)
+     * 
+     * Backs up the specified subscription to be restored at a later time
+     * 
+     * @param subscriptionName
+     *            The subscription to be backed up
+     * @return Status message about whether the backup was successful
      */
-    @Override
     @GET
     @Path("backupSubscription/{subscriptionName}")
     public String backupSubscription(@PathParam("subscriptionName")
@@ -225,11 +229,10 @@ public class SubscriptionBackup implements ISubscriptionBackup {
     }
 
     /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .backupAllSubscriptions()
+     * Backs up all subscriptions currently in the registry
+     * 
+     * @return Status message about whether the backup was successful
      */
-    @Override
     @GET
     @Path("backupAllSubscriptions/")
     public String backupAllSubscriptions() {
@@ -247,11 +250,12 @@ public class SubscriptionBackup implements ISubscriptionBackup {
     }
 
     /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .restoreSubscription(String)
+     * Restores the specified subscription
+     * 
+     * @param subscriptionName
+     *            The name of the subscription to restore
+     * @return Status message about whether the backup was successful
      */
-    @Override
     @GET
     @Path("restoreSubscription/{subscriptionName}")
     public String restoreSubscription(@PathParam("subscriptionName")
@@ -304,11 +308,10 @@ public class SubscriptionBackup implements ISubscriptionBackup {
     }
 
     /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .restoreSubscriptions()
+     * Restores any subscriptions that were previously backed up
+     * 
+     * @return Status messages relating to the success or failure of the restore
      */
-    @Override
     @GET
     @Path("restoreSubscriptions/")
     public String restoreSubscriptions() {
@@ -329,9 +332,9 @@ public class SubscriptionBackup implements ISubscriptionBackup {
     }
 
     /**
-     * @see 
-     *      com.raytheon.uf.common.registry.services.rest.IRegistryDataAccessService
-     *      .clearSubscriptionBackupFiles()
+     * Clears the backup file directory
+     * 
+     * @return Status message
      */
     @GET
     @Path("clearSubscriptionBackupFiles/")
@@ -380,19 +383,19 @@ public class SubscriptionBackup implements ISubscriptionBackup {
     }
 
     /**
-     * @param lcm the lcm to set
+     * @param lcm
+     *            the lcm to set
      */
     public void setLcm(LifecycleManager lcm) {
         this.lcm = lcm;
     }
 
     /**
-     * @param registryObjectDao the registryObjectDao to set
+     * @param registryObjectDao
+     *            the registryObjectDao to set
      */
     public void setRegistryObjectDao(RegistryObjectDao registryObjectDao) {
         this.registryObjectDao = registryObjectDao;
     }
-    
-    
 
 }

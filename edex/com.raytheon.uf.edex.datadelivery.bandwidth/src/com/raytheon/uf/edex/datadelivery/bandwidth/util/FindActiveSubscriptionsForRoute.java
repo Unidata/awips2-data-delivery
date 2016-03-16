@@ -24,7 +24,7 @@ import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 
@@ -40,6 +40,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder
  * Feb 18, 2013 1543       djohnson     Initial creation
  * Jul 09, 2013 2106       djohnson     Dependency inject registry handlers.
  * Jan 29, 2014 2636       mpduff       Scheduling refactor.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -47,10 +48,9 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder
  * @version 1.0
  */
 
-public class FindActiveSubscriptionsForRoute implements
-        ISubscriptionFinder {
+public class FindActiveSubscriptionsForRoute implements ISubscriptionFinder {
 
-    private final ISubscriptionHandler subscriptionHandler;
+    private final SubscriptionHandler subscriptionHandler;
 
     private final Network[] routes;
 
@@ -63,7 +63,7 @@ public class FindActiveSubscriptionsForRoute implements
      *            the route
      */
     public FindActiveSubscriptionsForRoute(
-            ISubscriptionHandler subscriptionHandler, Network route) {
+            SubscriptionHandler subscriptionHandler, Network route) {
         this(subscriptionHandler, new Network[] { route });
     }
 
@@ -76,7 +76,7 @@ public class FindActiveSubscriptionsForRoute implements
      *            the routes
      */
     public FindActiveSubscriptionsForRoute(
-            ISubscriptionHandler subscriptionHandler, Network... routes) {
+            SubscriptionHandler subscriptionHandler, Network... routes) {
         this.subscriptionHandler = subscriptionHandler;
         this.routes = routes;
     }

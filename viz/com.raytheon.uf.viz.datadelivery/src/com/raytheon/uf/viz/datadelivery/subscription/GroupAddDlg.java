@@ -36,7 +36,7 @@ import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -73,6 +73,7 @@ import com.raytheon.viz.ui.presenter.components.WidgetConf;
  * Mar 31, 2014  2889      dhladky     Added username for notification center tracking.
  * Jan 05, 2015  3881      dhladky     Changed from store to update for existing(and new) subscriptions.
  * May 17, 2015  4047      dhladky     verified non-blocking.
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -97,7 +98,7 @@ public class GroupAddDlg extends CaveSWTDialog {
     /** IGroupAction callback */
     private final IGroupAction callback;
 
-    private final ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+    private final SendToServerSubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
             .getSubscriptionNotificationService();
 
     /**
@@ -112,7 +113,8 @@ public class GroupAddDlg extends CaveSWTDialog {
      */
     public GroupAddDlg(Shell parent, Subscription subscription,
             IGroupAction callback) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
+        super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL
+                | CAVE.DO_NOT_BLOCK);
         setText("Add To Group");
         this.subscription = subscription;
         this.callback = callback;
@@ -263,7 +265,7 @@ public class GroupAddDlg extends CaveSWTDialog {
                 subscription.setActivePeriodEnd(null);
             }
         }
-        
+
         final String username = UserController.getUserObject().uniqueId()
                 .toString();
 
@@ -280,7 +282,8 @@ public class GroupAddDlg extends CaveSWTDialog {
 
         try {
             // create subscription if it doesn't exist, update if it does.
-            DataDeliveryHandlers.getSubscriptionHandler().update(username, subscription);
+            DataDeliveryHandlers.getSubscriptionHandler().update(username,
+                    subscription);
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error saving subscription data to the registry.", e);

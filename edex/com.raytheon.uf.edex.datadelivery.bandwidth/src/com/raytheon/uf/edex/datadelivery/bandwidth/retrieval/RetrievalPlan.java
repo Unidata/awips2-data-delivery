@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.util.ArrayList;
@@ -43,7 +62,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Oct 23, 2012 1286       djohnson     Add ability to get/set the default bandwidth.
  * Nov 20, 2012 1286       djohnson     Handle null bucketIds being returned.
  * Jun 25, 2013 2106       djohnson     Separate state into other classes, promote BandwidthBucket to a class proper.
- * Oct 30, 2013  2448      dhladky      Moved methods to TimeUtil.
+ * Oct 30, 2013 2448       dhladky      Moved methods to TimeUtil.
  * Nov 16, 2013 1736       dhladky      Alter size of available bandwidth by subtracting that used by registry.
  * Dec 05, 2013 2545       mpduff       BandwidthReservation now stored in bytes.
  * Dec 13, 2013 2545       mpduff       Prevent negative values in bandwidth bucket sizes.
@@ -51,9 +70,10 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  *                                      BandwidthReservations. Add constrained bucket addition method.
  *                                      Added debug logging.
  * Jan 08, 2014 2615       bgonzale     Log registry bandwidth calculation errors.
- * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
- * Mar 10, 2015  3950      dhladky      Log bandwidth value in init.
- * May 27, 2015  4531      dhladky      GMT standard all Calendar refs.
+ * Feb 10, 2014 2678       dhladky      Prevent duplicate allocations.
+ * Mar 10, 2015 3950       dhladky      Log bandwidth value in init.
+ * May 27, 2015 4531       dhladky      GMT standard all Calendar refs.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -75,14 +95,16 @@ public class RetrievalPlan {
     private BandwidthMap map;
 
     // The scheduler used to insert retrievals into the plan
-    private IRetrievalScheduler scheduler;
+    private PriorityRetrievalScheduler scheduler;
 
     // How many days of retrievals should the plan hold
     private int planDays;
 
-    // NOTE: If you must read or make changes to the buckets and requestMap, you
-    // must acquire the locks in the following order: buckets first, then
-    // requestMap
+    /*
+     * NOTE: If you must read or make changes to the buckets and requestMap, you
+     * must acquire the locks in the following order: buckets first, then
+     * requestMap
+     */
 
     private IBandwidthBucketDao bucketsDao;
 
@@ -168,8 +190,9 @@ public class RetrievalPlan {
                 bucket.setBucketSize(bucket.getBucketSize()
                         - (registryBytesPerSecond * TimeUtil.SECONDS_PER_MINUTE * bucketMinutes));
             }
-            
-            statusHandler.info("Retrieval Plan: available bandwidth: "+getDefaultBandwidth());
+
+            statusHandler.info("Retrieval Plan: available bandwidth: "
+                    + getDefaultBandwidth());
 
         } else {
             // Can't proceed, throw an Exception
@@ -221,10 +244,10 @@ public class RetrievalPlan {
     }
 
     public void resize() {
-        // The end of the plan should always be planDays from
-        // now...
+        // The end of the plan should always be planDays from now...
         Calendar currentBucket = BandwidthUtil.now();
-        Calendar newEndOfPlan = TimeUtil.newGmtCalendar(currentBucket.getTime());
+        Calendar newEndOfPlan = TimeUtil
+                .newGmtCalendar(currentBucket.getTime());
         newEndOfPlan.add(Calendar.DAY_OF_YEAR, planDays);
 
         resize(currentBucket, newEndOfPlan);
@@ -243,15 +266,18 @@ public class RetrievalPlan {
     @VisibleForTesting
     void resize(Calendar newStartOfPlan, Calendar newEndOfPlan) {
 
-        // If the calculated end of plan is after the current end of plan,
-        // we have to add buckets to the plan to account for the difference
-        // to make sure that the plan maintains "planDays" of schedule..
+        /*
+         * If the calculated end of plan is after the current end of plan, we
+         * have to add buckets to the plan to account for the difference to make
+         * sure that the plan maintains "planDays" of schedule.
+         */
         if (newEndOfPlan.after(planEnd)) {
 
             synchronized (bucketsLock) {
-                // Get the last bucket and add buckets to make up the
-                // difference..
-                // Make the buckets...
+                /*
+                 * Get the last bucket and add buckets to make up the
+                 * difference. Make the buckets...
+                 */
                 long bucketMillis = bucketMinutes * TimeUtil.MILLIS_PER_MINUTE;
                 long newPlanEndMillis = newEndOfPlan.getTimeInMillis();
                 BandwidthBucket bucket = bucketsDao.getLastBucket(network);
@@ -304,7 +330,7 @@ public class RetrievalPlan {
         this.planEnd = newEndOfPlan;
     }
 
-    public void setScheduler(IRetrievalScheduler scheduler) {
+    public void setScheduler(PriorityRetrievalScheduler scheduler) {
         this.scheduler = scheduler;
     }
 
@@ -386,7 +412,7 @@ public class RetrievalPlan {
             for (BandwidthBucket bucket : buckets) {
                 reservation = associator.getNextReservation(bucket, agentType);
                 if (reservation != null) {
-                    //TODO: do validity check for expired allocations
+                    // TODO: do validity check for expired allocations
                     break;
                 }
             }
@@ -394,7 +420,7 @@ public class RetrievalPlan {
 
         return reservation;
     }
-    
+
     /**
      * Get the scheduled allocations from recent buckets
      * 
@@ -413,10 +439,11 @@ public class RetrievalPlan {
                     .getWhereStartTimeIsLessThanOrEqualTo(
                             TimeUtil.currentTimeMillis(), network);
 
-            // Iterate over the buckets and find all 
+            // Iterate over the buckets and find all
             // BandwidthAllocation that are in the READY state
             for (BandwidthBucket bucket : buckets) {
-                BandwidthAllocation allocationReservation = associator.getNextReservation(bucket, agentType);
+                BandwidthAllocation allocationReservation = associator
+                        .getNextReservation(bucket, agentType);
                 if (allocationReservation != null) {
                     if (reservations == null) {
                         reservations = new ArrayList<BandwidthAllocation>();
@@ -618,8 +645,7 @@ public class RetrievalPlan {
                     + allocation.getEstimatedSizeInBytes();
             // constrain size by size of bucket. Reservations will have filled
             // out the rest of the allocation in subsequent buckets.
-            totalSize = totalSize > bucketSize ? bucketSize
-                    : totalSize;
+            totalSize = totalSize > bucketSize ? bucketSize : totalSize;
             actualBucket.setCurrentSize(totalSize);
             associator.addToBucket(actualBucket, allocation);
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {

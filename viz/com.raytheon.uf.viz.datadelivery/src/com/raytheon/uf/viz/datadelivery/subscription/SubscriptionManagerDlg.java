@@ -59,9 +59,9 @@ import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -165,6 +165,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
  * Jul 01, 2015  4047      dhladky    RefreshTask was configured to not run often enough.
  * Feb 10, 2016  5144      dhladky    Remove set of originatingSite on update.  This caused many problems with Shared Subscriptions.
+ * Mar 16, 2016  3919      tjensen    Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -248,7 +249,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             .getSubscriptionService();
 
     /** The subscription notification service */
-    private final ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+    private final SendToServerSubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
             .getSubscriptionNotificationService();
 
     private ISubscriptionManagerFilter filter;
@@ -313,12 +314,12 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             ISubscriptionManagerFilter filter) {
         super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE,
                 CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT
-                       | CAVE.DO_NOT_BLOCK);
+                        | CAVE.DO_NOT_BLOCK);
 
         this.filter = filter;
         scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(new RefreshTask(), 2, 2,
-                TimeUnit.MINUTES);
+        scheduler
+                .scheduleAtFixedRate(new RefreshTask(), 2, 2, TimeUnit.MINUTES);
         setText("Data Delivery Subscription Manager");
     }
 
@@ -964,7 +965,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
         // Get the subscription data
         final Subscription sub = tableComp.getSelectedSubscription();
-       
+
         ICloseCallback callback = new ICloseCallback() {
 
             @Override
@@ -984,9 +985,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                 }
             }
         };
-        
-        FileNameDlg fnd = new FileNameDlg(getShell(),
-                sub.getName());
+
+        FileNameDlg fnd = new FileNameDlg(getShell(), sub.getName());
         fnd.setCloseCallback(callback);
 
         fnd.open();
@@ -1037,10 +1037,10 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         deleteList.add(removedItem);
                     }
                 }
-                
+
                 final ArrayList<SubscriptionManagerRowData> deleted = deleteList;
                 String message = getMessage(subsToDelete, subsToUpdate);
-                                                
+
                 ICloseCallback callback = new ICloseCallback() {
 
                     @Override
@@ -1048,32 +1048,39 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         if (returnValue != null) {
 
                             int choice = (int) returnValue;
-                            
+
                             if (choice == SWT.YES) {
                                 // remove the rows from the table
-                                tableComp.getSubscriptionData().removeAll(deleted);
+                                tableComp.getSubscriptionData().removeAll(
+                                        deleted);
 
-                                final String username = LocalizationManager.getInstance()
-                                        .getCurrentUser();
+                                final String username = LocalizationManager
+                                        .getInstance().getCurrentUser();
 
                                 Job job = new Job("Deleting Subscriptions...") {
                                     @Override
-                                    protected IStatus run(IProgressMonitor monitor) {
-                                        DataDeliveryGUIUtils.markBusyInUIThread(shell);
+                                    protected IStatus run(
+                                            IProgressMonitor monitor) {
+                                        DataDeliveryGUIUtils
+                                                .markBusyInUIThread(shell);
                                         List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>(
                                                 0);
                                         if (!subsToDelete.isEmpty()) {
-                                            exceptions = deleteSubscriptions(username,
-                                                    subsToDelete);
+                                            exceptions = deleteSubscriptions(
+                                                    username, subsToDelete);
                                         }
                                         if (!subsToUpdate.isEmpty()) {
-                                            exceptions.addAll(updateSubscriptions(username,
-                                                    subsToUpdate));
+                                            exceptions
+                                                    .addAll(updateSubscriptions(
+                                                            username,
+                                                            subsToUpdate));
                                         }
                                         for (RegistryHandlerException t : exceptions) {
-                                            statusHandler.handle(Priority.ERROR,
-                                                    "Failed to delete some subscriptions: "
-                                                            + t.getLocalizedMessage(), t);
+                                            statusHandler
+                                                    .handle(Priority.ERROR,
+                                                            "Failed to delete some subscriptions: "
+                                                                    + t.getLocalizedMessage(),
+                                                            t);
                                         }
 
                                         return Status.OK_STATUS;
@@ -1092,7 +1099,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                                             }
                                         });
 
-                                        DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
+                                        DataDeliveryGUIUtils
+                                                .markNotBusyInUIThread(shell);
                                     }
                                 });
                                 job.schedule();
@@ -1103,8 +1111,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         }
                     }
                 };
-                
-                DataDeliveryUtils.showCallbackMessageBox(shell, SWT.YES | SWT.NO, "Delete Confirmation", message, callback);
+
+                DataDeliveryUtils.showCallbackMessageBox(shell, SWT.YES
+                        | SWT.NO, "Delete Confirmation", message, callback);
             }
         } catch (AuthException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
@@ -1153,7 +1162,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         tableComp.setSubscriptionFilter(new ISubscriptionManagerFilter() {
             @Override
             public List<Subscription> getSubscriptions(
-                    ISubscriptionHandler subscriptionHandler)
+                    SubscriptionHandler subscriptionHandler)
                     throws RegistryHandlerException {
 
                 if (!office.equals(ALL)) {
@@ -1191,7 +1200,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     @SuppressWarnings("rawtypes")
     private void handleActivateDeactivate(boolean activate) {
-                        
+
         // Check for activate premissions
         final String permission = DataDeliveryPermission.SUBSCRIPTION_ACTIVATE
                 .toString();
@@ -1242,15 +1251,17 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                             protected IStatus run(IProgressMonitor monitor) {
                                 DataDeliveryGUIUtils.markBusyInUIThread(shell);
                                 SubscriptionServiceResult response = null;
-                                
+
                                 try {
-                                    response = subscriptionService
-                                        .update(username, sub,
-                                                forceApplyPromptDisplayText);
+                                    response = subscriptionService.update(
+                                            username, sub,
+                                            forceApplyPromptDisplayText);
                                 } catch (RegistryHandlerException re) {
-                                    statusHandler.error("Can't activate/deactivate subscription: "+sub.getName(), re);
+                                    statusHandler.error(
+                                            "Can't activate/deactivate subscription: "
+                                                    + sub.getName(), re);
                                 }
-                                
+
                                 final SubscriptionServiceResult fresponse = response;
 
                                 if (!response.isAllowFurtherEditing()) {
@@ -1264,8 +1275,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                                                         sub, username);
                                     }
                                 }
-                                
-                
+
                                 if (response.hasMessageToDisplay()) {
                                     VizApp.runAsync(new Runnable() {
                                         @Override
@@ -1274,7 +1284,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                                                     shell, SWT.OK,
                                                     sub.getName()
                                                             + " Activated",
-                                                            fresponse.getMessage());
+                                                    fresponse.getMessage());
                                             handleRefresh();
                                         }
                                     });
@@ -1507,8 +1517,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             List<Subscription> subscriptions) {
         List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>();
 
-        ISubscriptionHandler handler = RegistryObjectHandlers
-                .get(ISubscriptionHandler.class);
+        SubscriptionHandler handler = RegistryObjectHandlers
+                .get(SubscriptionHandler.class);
         try {
             handler.delete(username, subscriptions);
         } catch (RegistryHandlerException e) {
@@ -1531,8 +1541,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             List<Subscription> subscriptions) {
         List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>();
 
-        ISubscriptionHandler handler = RegistryObjectHandlers
-                .get(ISubscriptionHandler.class);
+        SubscriptionHandler handler = RegistryObjectHandlers
+                .get(SubscriptionHandler.class);
         for (Subscription sub : subscriptions) {
             try {
                 handler.update(username, sub);
@@ -1628,7 +1638,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         @Override
         public void run() {
             if (TimeUtil.currentTimeMillis() - tableComp.getLastUpdateTime() >= TimeUtil.MILLIS_PER_MINUTE * 2) {
-                statusHandler.info("Running SubscriptionManager refresh task,lastUpdate: "+new Date(tableComp.getLastUpdateTime()));
+                statusHandler
+                        .info("Running SubscriptionManager refresh task,lastUpdate: "
+                                + new Date(tableComp.getLastUpdateTime()));
                 VizApp.runAsync(new Runnable() {
                     @Override
                     public void run() {

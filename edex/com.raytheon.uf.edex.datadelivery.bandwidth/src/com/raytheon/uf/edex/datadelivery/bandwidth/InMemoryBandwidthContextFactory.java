@@ -48,8 +48,9 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * ------------ ---------- ----------- --------------------------
  * Oct 24, 2012 1286       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Add {@link #getBandwidthBucketDao()}.
- * Apr 22, 2014 2992       dhladky     Added IdUtil for siteList
- * May 22, 2014 2808       dhladky     Scheduling unscheduled
+ * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
+ * May 22, 2014 2808       dhladky      Scheduling unscheduled
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -71,7 +72,6 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
     private final IBandwidthDbInit dbInit = new InMemoryBandwidthDbInit();
 
     private final IBandwidthInitializer initializer = new InMemoryBandwidthInitializer();
-
 
     /**
      * {@inheritDoc}
@@ -112,8 +112,9 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
         }
 
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler.debug("Returning file reference ["
-                    + file.getAbsolutePath()
+            statusHandler
+                    .debug("Returning file reference ["
+                            + file.getAbsolutePath()
                             + "] for in-memory bandwidth manager bandwidth map configuration.");
         }
 
@@ -124,7 +125,7 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
      * {@inheritDoc}
      */
     @Override
-    public IBandwidthManager getBandwidthManager(IBandwidthDbInit dbInit,
+    public BandwidthManager getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
             BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil) {
         return new InMemoryBandwidthManager(dbInit, bandwidthDao,

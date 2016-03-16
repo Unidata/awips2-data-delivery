@@ -54,13 +54,14 @@ import com.raytheon.uf.viz.core.RGBColors;
  * Dec 17, 2013   2633     mpduff      Keep data used to regenerate images.
  * Sep 22, 2014   3607     ccody       Prevent NullPointerException on image regeneration for populateCanvasMap
  * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
 
-public class BandwidthImageMgr implements IGraphOptions {
+public class BandwidthImageMgr {
     /**
      * Image type enumeration.
      */
@@ -394,33 +395,37 @@ public class BandwidthImageMgr implements IGraphOptions {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the color by priority flag.
+     * 
+     * @return true if coloring by priority
      */
-    @Override
     public boolean isColorByPriority() {
         return colorByPriority;
     }
 
     /**
-     * {@inheritDoc}
+     * Set the color by priority flag.
+     * 
+     * @param colorByPriority
      */
-    @Override
     public void setColorByPriority(boolean colorByPriority) {
         this.colorByPriority = colorByPriority;
     }
 
     /**
-     * {@inheritDoc}
+     * Set the show subscription lines flag.
+     * 
+     * @param showSubLines
      */
-    @Override
     public void setShowSubscriptionLines(boolean showSubLines) {
         this.showSubscriptionLines = showSubLines;
     }
 
     /**
-     * {@inheritDoc}
+     * Get the show subscription lines flag.
+     * 
+     * @return true if subscription lines should be drawn
      */
-    @Override
     public boolean isShowSubscriptionLines() {
         return this.showSubscriptionLines;
     }
@@ -445,9 +450,10 @@ public class BandwidthImageMgr implements IGraphOptions {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the current time in millis
+     * 
+     * @return the current time
      */
-    @Override
     public long getCurrentTimeMillis() {
         return currentTimeMillis;
     }
@@ -510,26 +516,24 @@ public class BandwidthImageMgr implements IGraphOptions {
     }
 
     /**
-     * Get the RGB color associated with the provided priority.
+     * Get the RGB color associated with the specified priority.
      * 
      * @param priority
      *            Priority.
-     * @return The RGB color.
+     * @return RGB color.
      */
-    @Override
     public RGB getPriorityColor(SubscriptionPriority priority) {
         return priorityColorMap.get(priority);
     }
 
     /**
-     * Set the RGB color to the associated priority.
+     * Set the color associated with the specified priority.
      * 
      * @param priority
      *            Priority.
      * @param rgb
-     *            The RGB color.
+     *            RGB color.
      */
-    @Override
     public void setPriorityColor(SubscriptionPriority priority, RGB rgb) {
         priorityColorMap.put(priority, rgb);
 
@@ -564,17 +568,25 @@ public class BandwidthImageMgr implements IGraphOptions {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the RGB color associated with the specified percentage.
+     * 
+     * @param percentString
+     *            The percent string
+     * @return RGB color.
      */
-    @Override
     public RGB getPercentColor(GraphSection section) {
         return this.percentageColorMap.get(section);
     }
 
     /**
-     * {@inheritDoc}
+     * Set the color associated with the specified percentage.
+     * 
+     * @param section
+     *            The GraphSection
+     * 
+     * @param rgb
+     *            RGB color.
      */
-    @Override
     public void setPercentColor(GraphSection percentString, RGB rgb) {
         this.percentageColorMap.put(percentString, rgb);
     }

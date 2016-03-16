@@ -65,6 +65,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 17, 2014 2459       mpduff       Persist the state of the expired subs.
  * Jan 29, 2014 2636       mpduff       Scheduling refactor.
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -239,8 +240,8 @@ public abstract class BaseSubscriptionHandler<T extends Subscription, QUERY exte
                 @Override
                 public void run() {
                     synchronized (updateList) {
-                        ISubscriptionHandler sh = RegistryObjectHandlers
-                                .get(ISubscriptionHandler.class);
+                        SubscriptionHandler sh = RegistryObjectHandlers
+                                .get(SubscriptionHandler.class);
                         for (T s : updateList) {
                             try {
                                 sh.update(RegistryUtil.registryUser, s);

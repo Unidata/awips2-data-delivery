@@ -40,7 +40,7 @@ import com.google.common.collect.Sets;
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.req.IPermissionsService;
 import com.raytheon.uf.common.auth.user.IUser;
-import com.raytheon.uf.common.datadelivery.bandwidth.IBandwidthService;
+import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
 import com.raytheon.uf.common.datadelivery.bandwidth.IProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
@@ -52,10 +52,10 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionState;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IPendingSubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.PendingSubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapRequest;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapResponse;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -103,6 +103,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
  * Oct 15, 2014  3664      ccody        Added notification for scheduling status of subscriptions changes
  * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
+ * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -173,9 +174,9 @@ public class SubscriptionService implements ISubscriptionService {
     @VisibleForTesting
     final String TITLE = "Subscription";
 
-    private final ISubscriptionNotificationService notificationService;
+    private final SendToServerSubscriptionNotificationService notificationService;
 
-    private final IBandwidthService bandwidthService;
+    private final BandwidthService bandwidthService;
 
     private final IPermissionsService permissionsService;
 
@@ -276,16 +277,19 @@ public class SubscriptionService implements ISubscriptionService {
 
     /**
      * Private constructor. Use
-     * {@link #newInstance(ISubscriptionNotificationService)} instead.
+     * {@link #newInstance(SendToServerSubscriptionNotificationService)}
+     * instead.
      * 
      * @param notificationService
      *            the subscription notification service
      * @param bandwidthService
      *            the bandwidth service
      */
+    @SuppressWarnings("rawtypes")
     @VisibleForTesting
-    SubscriptionService(ISubscriptionNotificationService notificationService,
-            IBandwidthService bandwidthService,
+    SubscriptionService(
+            SendToServerSubscriptionNotificationService notificationService,
+            BandwidthService bandwidthService,
             IPermissionsService permissionsService,
             IDisplayForceApplyPrompt displayForceApplyPrompt) {
         this.notificationService = notificationService;
@@ -306,8 +310,8 @@ public class SubscriptionService implements ISubscriptionService {
      * @return the subscription service
      */
     public static ISubscriptionService newInstance(
-            ISubscriptionNotificationService notificationService,
-            IBandwidthService bandwidthService,
+            SendToServerSubscriptionNotificationService notificationService,
+            BandwidthService bandwidthService,
             IPermissionsService permissionsService) {
         return new SubscriptionService(notificationService, bandwidthService,
                 permissionsService, new DisplayForceApplyPrompt());
@@ -415,7 +419,7 @@ public class SubscriptionService implements ISubscriptionService {
                 final StringBuilder successMessage = new StringBuilder(
                         "The subscriptions have been updated.");
 
-                final IPendingSubscriptionHandler pendingSubscriptionHandler = DataDeliveryHandlers
+                final PendingSubscriptionHandler pendingSubscriptionHandler = DataDeliveryHandlers
                         .getPendingSubscriptionHandler();
 
                 for (Subscription subscription : subscriptions) {
@@ -628,7 +632,7 @@ public class SubscriptionService implements ISubscriptionService {
                             .sendSubscriptionUnscheduledNotification(
                                     subscription, notificationSB.toString(),
                                     username);
-                
+
                 case FORCE_APPLY_DEACTIVATED:
                     // Have to make sure we set them to NOT BE UNSCHEDULED, let
                     // the bandwidth manager decide they can't be scheduled
@@ -638,7 +642,8 @@ public class SubscriptionService implements ISubscriptionService {
                     }
                     String successMessageDeactivate = action.call();
 
-                    return getForceApplyMessage(subscriptions, successMessageDeactivate, username);
+                    return getForceApplyMessage(subscriptions,
+                            successMessageDeactivate, username);
                 case FORCE_APPLY_UNSCHEDULED:
                     // Have to make sure we set them to BE UNSCHEDULED. We don't
                     // want the bandwidth manager scheduling it.... YET.
@@ -812,7 +817,7 @@ public class SubscriptionService implements ISubscriptionService {
     private void updateSubscriptionsByNameToUnscheduled(String username,
             java.util.Collection<String> subscriptionNames)
             throws RegistryHandlerException {
-        ISubscriptionHandler subscriptionHandler = DataDeliveryHandlers
+        SubscriptionHandler subscriptionHandler = DataDeliveryHandlers
                 .getSubscriptionHandler();
         for (String subName : subscriptionNames) {
             Subscription unscheduledSub = subscriptionHandler
@@ -854,36 +859,37 @@ public class SubscriptionService implements ISubscriptionService {
             throw new IllegalArgumentException(subTime.getClass()
                     + " Not yet implemented!");
     }
-    
+
     /**
-     * Handle the FORCE case for subscription proposal.
-     * We create the part of the Result message for the Proposal of the forcing.
-     * In particular the part describing whether everything can or can't be scheduled.
-     * This is handed back to the dialog and displayed to the user.
+     * Handle the FORCE case for subscription proposal. We create the part of
+     * the Result message for the Proposal of the forcing. In particular the
+     * part describing whether everything can or can't be scheduled. This is
+     * handed back to the dialog and displayed to the user.
      * 
      * @param subscriptions
      * @param successMessage
      * @param username
      * @return
      */
-    private SubscriptionServiceResult getForceApplyMessage(List<Subscription> subscriptions, String successMessage, String username) {
-
+    private SubscriptionServiceResult getForceApplyMessage(
+            List<Subscription> subscriptions, String successMessage,
+            String username) {
 
         final Set<String> unscheduled = bandwidthService
                 .schedule(subscriptions);
 
         try {
-            updateSubscriptionsByNameToUnscheduled(username,
-                    unscheduled);
+            updateSubscriptionsByNameToUnscheduled(username, unscheduled);
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.ERROR, "Can't update Subscription To set UNSCHEDULED! "+unscheduled, e);
+            statusHandler.handle(Priority.ERROR,
+                    "Can't update Subscription To set UNSCHEDULED! "
+                            + unscheduled, e);
         }
 
         StringBuilder sb = new StringBuilder(successMessage);
         getUnscheduledSubscriptionsPortion(sb, unscheduled);
 
-        if ((unscheduled != null)
-                && (unscheduled.isEmpty() == false)) {
+        if ((unscheduled != null) && (unscheduled.isEmpty() == false)) {
 
             Map<String, Subscription> allSubscriptionMap = new HashMap<String, Subscription>();
             String name = null;
@@ -897,9 +903,8 @@ public class SubscriptionService implements ISubscriptionService {
             for (String unSchedSubName : unscheduled) {
                 Subscription unSchedSub = allSubscriptionMap
                         .get(unSchedSubName);
-                notificationService
-                        .sendSubscriptionUnscheduledNotification(
-                                unSchedSub, msg, username);
+                notificationService.sendSubscriptionUnscheduledNotification(
+                        unSchedSub, msg, username);
             }
         }
 

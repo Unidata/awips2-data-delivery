@@ -28,7 +28,6 @@ import com.raytheon.uf.common.datadelivery.registry.SubscriptionDeleteRequest;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISharedSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISiteSubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -51,6 +50,7 @@ import com.raytheon.uf.common.serialization.comm.RequestRouter;
  * Apr 05, 2013 1841       djohnson     Add shared subscription support.
  * May 21, 2013 2020       mpduff       Rename UserSubscription to SiteSubscription.
  * Jan 20, 2014 2538       mpduff       Added the doesNameExist method.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -81,7 +81,7 @@ public class VizSubscriptionHandler extends SubscriptionHandler {
             throws RegistryHandlerException {
 
         SubscriptionDeleteRequest request = new SubscriptionDeleteRequest(ids,
-                ISubscriptionHandler.class, username);
+                SubscriptionHandler.class, username);
 
         try {
             RequestRouter.route(request,

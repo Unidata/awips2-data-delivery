@@ -40,7 +40,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
- * Implementation of {@link IBandwidthService}.
+ * Service for interacting with the bandwidth manager.
  * 
  * <pre>
  * 
@@ -60,6 +60,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Apr 22, 2014 2992       dhladky      renamed BandwidthRequest
  * Nov 20, 2014 2749       ccody        Added "propose only" for  Set Avail Bandwidth
  * Jun 09, 2015 4047       dhladky      cleanup.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -67,8 +68,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * @version 1.0
  */
 public abstract class BandwidthService<T extends Time, C extends Coverage>
-        extends BasePrivilegedServerService<BandwidthRequest<T, C>> implements
-        IBandwidthService<T, C> {
+        extends BasePrivilegedServerService<BandwidthRequest<T, C>> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BandwidthService.class);
@@ -83,9 +83,12 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve the available bandwidth for a {@link Network}.
+     * 
+     * @param network
+     *            the network
+     * @return the bandwidth, in kilobytes (KB)
      */
-    @Override
     public final int getBandwidthForNetworkInKilobytes(Network network) {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
         request.setRequestType(RequestType.GET_BANDWIDTH);
@@ -102,9 +105,15 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Proposes changing the available bandwidth for a {@link Network}.
+     * 
+     * @param network
+     *            the network
+     * @param bandwidth
+     *            the bandwidth
+     * @return the set of current subscription names which would be unable to
+     *         fit into the retrieval plan with the new bandwidth amount
      */
-    @Override
     @SuppressWarnings("unchecked")
     public Set<String> proposeBandwidthForNetworkInKilobytes(Network network,
             int bandwidth) {
@@ -124,9 +133,16 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Propose ONLY making changes. Do NOT make any scheduling changes for the
+     * available bandwidth for a {@link Network}.
+     * 
+     * @param network
+     *            the network
+     * @param bandwidth
+     *            the bandwidth
+     * @return the set of current subscription names which would be unable to
+     *         fit into the retrieval plan with the new bandwidth amount
      */
-    @Override
     @SuppressWarnings("unchecked")
     public Set<String> proposeOnlyBandwidthForNetworkInKilobytes(
             Network network, int bandwidth) {
@@ -146,9 +162,14 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Set the available bandwidth for a {@link Network}.
+     * 
+     * @param network
+     *            the network
+     * @param bandwidth
+     *            the bandwidth
+     * @return true if successfully changed
      */
-    @Override
     public final boolean setBandwidthForNetworkInKilobytes(Network network,
             int bandwidth) {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
@@ -167,23 +188,25 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Schedules a subscription for bandwidth management.
      * 
-     * @return
+     * @param subscriptions
+     *            the subscription
+     * @return the set of subscription names that have had some cycles
+     *         unscheduled
      */
-    @Override
     public Set<String> schedule(Subscription<T, C> subscription) {
         return schedule(Arrays.asList(subscription));
     }
 
     /**
-     * Schedule the subscriptions for bandwidth management.
+     * Schedules a list of subscriptions for bandwidth management.
      * 
      * @param subscriptions
-     *            the subscriptions
-     * @return the set of unscheduled subscriptions
+     *            the subscription
+     * @return the set of subscription names that have had some cycles
+     *         unscheduled
      */
-    @Override
     public Set<String> schedule(List<Subscription<T, C>> subscriptions) {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
         request.setRequestType(RequestType.SCHEDULE_SUBSCRIPTION);
@@ -204,18 +227,24 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Proposes scheduling a subscription for bandwidth management
+     * 
+     * @param subscription
+     *            the subscription
+     * @return the response object
      */
-    @Override
     public IProposeScheduleResponse proposeSchedule(
             Subscription<T, C> subscription) {
         return proposeSchedule(Arrays.asList(subscription));
     }
 
     /**
-     * {@inheritDoc}
+     * Proposes scheduling the subscriptions with bandwidth management.
+     * 
+     * @param subscriptions
+     *            the subscriptions
+     * @return the response object
      */
-    @Override
     public IProposeScheduleResponse proposeSchedule(
             List<Subscription<T, C>> subscriptions) {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
@@ -236,9 +265,10 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Reinitializes the state of bandwidth management using the persistent
+     * store. Should only be called when the in-memory objects may be corrupted,
+     * e.g. a change was scheduled however the store of the actual object fails.
      */
-    @Override
     public void reinitialize() {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
         request.setRequestType(RequestType.REINITIALIZE);
@@ -252,9 +282,12 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve the estimated completion time for an adhoc subscription.
+     * 
+     * @param sub
+     *            the subscription
+     * @return the estimated completion time as a date
      */
-    @Override
     public Date getEstimatedCompletionTime(AdhocSubscription<T, C> sub) {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
         request.setSubscriptions(Arrays.<Subscription<T, C>> asList(sub));
@@ -271,9 +304,10 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve bandwidth graph data.
+     * 
+     * @return bandwidth graph data
      */
-    @Override
     public BandwidthGraphData getBandwidthGraphData() {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
         request.setRequestType(RequestType.GET_BANDWIDTH_GRAPH_DATA);
@@ -286,7 +320,14 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
         }
     }
 
-    @Override
+    /**
+     * Get the Subscription status summary.
+     * 
+     * @param subscription
+     *            The subscription
+     * 
+     * @return The summary
+     */
     public SubscriptionStatusSummary getSubscriptionStatusSummary(
             Subscription<T, C> subscription) {
         BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();

@@ -41,6 +41,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * Oct 3, 2012  1241       djohnson     Initial creation
  * Jan 02, 2013 1441       djohnson     Add deleteByName() and getGroupNames().
  * Jun 24, 2013 2106       djohnson     Now composes a registryHandler.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -49,13 +50,17 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  */
 
 public class GroupDefinitionHandler extends
-        BaseRegistryObjectHandler<GroupDefinition, GroupQuery> implements
-        IGroupDefinitionHandler {
+        BaseRegistryObjectHandler<GroupDefinition, GroupQuery> {
 
     /**
-     * {@inheritDoc}
+     * Retrieve a {@link GroupDefinition} by its name.
+     * 
+     * @param groupName
+     *            the name of the group
+     * @return the group, or null if the group can't be found
+     * @throws RegistryHandlerException
+     *             on error
      */
-    @Override
     public GroupDefinition getByName(String groupName)
             throws RegistryHandlerException {
         GroupQuery gQuery = getQuery();
@@ -70,9 +75,12 @@ public class GroupDefinitionHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Delete a {@link GroupDefinition} by its name.
+     * 
+     * @param groupName
+     *            the name
+     * @throws RegistryHandlerException
      */
-    @Override
     public void deleteByName(String groupName) throws RegistryHandlerException {
         GroupQuery gQuery = getQuery();
         gQuery.setGroupName(groupName);
@@ -84,9 +92,11 @@ public class GroupDefinitionHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Return the list of group names.
+     * 
+     * @return the list of group names
+     * @throws RegistryHandlerException
      */
-    @Override
     public List<String> getGroupNames() throws RegistryHandlerException {
         GroupNameQuery groupNameQuery = new GroupNameQuery();
 

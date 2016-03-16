@@ -41,6 +41,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * ------------ ---------- ----------- --------------------------
  * Oct 03, 2012 1241       djohnson     Initial creation
  * Jun 24, 2013 2106       djohnson     Now composes a registryHandler.
+ * Mar 16, 2016 3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -49,8 +50,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  */
 
 public class DataSetNameHandler extends
-        BaseRegistryObjectHandler<DataSetName, DataSetNameObjectQuery>
-        implements IDataSetNameHandler {
+        BaseRegistryObjectHandler<DataSetName, DataSetNameObjectQuery> {
 
     /**
      * {@inheritDoc}
@@ -69,9 +69,14 @@ public class DataSetNameHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Get a list of data set names by the specified data types.
+     * 
+     * @param dataTypes
+     *            the data types
+     * @return the list of data set names
+     * @throws RegistryHandlerException
+     *             on error
      */
-    @Override
     public Set<String> getByDataTypes(List<String> dataTypes)
             throws RegistryHandlerException {
         DataSetNameQuery query = new DataSetNameQuery();

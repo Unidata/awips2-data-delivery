@@ -32,7 +32,7 @@ import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapRequest;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapResponse;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Feb 11, 2014    2771    bgonzale    Use Data Delivery ID instead of Site.
  * Dec 08, 2014    3891    dhladky     Allow for promotion of site subscriptions to shared.
  * Nov 23, 2015    5145    dhladky     Prevent false positive matches for subscriptions.
+ * Mar 16, 2016    3919    tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -75,7 +76,7 @@ public class SubscriptionOverlapHandler implements
 
         for (Subscription subscription : subscriptions) {
             if (!(subscription instanceof AdhocSubscription)) {
-                final ISubscriptionHandler subscriptionHandler = DataDeliveryHandlers
+                final SubscriptionHandler subscriptionHandler = DataDeliveryHandlers
                         .getSubscriptionHandler();
                 final List<Subscription> potentialDuplicates = subscriptionHandler
                         .getActiveByDataSetAndProvider(
@@ -85,11 +86,14 @@ public class SubscriptionOverlapHandler implements
                 Set<String> overlappingSubscriptions = new HashSet<String>();
                 for (Subscription potentialDuplicate : potentialDuplicates) {
                     /*
-                     * Check to see if the names/ids are the same. 
-                     * If they are this can be one of two cases. 
-                     * Case 1 : Promotion of a Site Subscription to a SharedSubscription (Name match) 
-                     * Case 2 : Any RecurringSubscription being updated.  (ID match)
-                     * Ignore either one.
+                     * Check to see if the names/ids are the same. If they are
+                     * this can be one of two cases.
+                     * 
+                     * Case 1 : Promotion of a Site Subscription to a
+                     * SharedSubscription (Name match)
+                     * 
+                     * Case 2 : Any RecurringSubscription being updated. (ID
+                     * match) Ignore either one.
                      */
                     if (potentialDuplicate.getName().equals(
                             subscription.getName())) {

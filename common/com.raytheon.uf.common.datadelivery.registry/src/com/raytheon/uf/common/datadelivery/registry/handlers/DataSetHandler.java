@@ -29,9 +29,9 @@ import oasis.names.tc.ebxml.regrep.wsdl.registry.services.v4.MsgRegistryExceptio
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
+import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetQuery;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetWithFiltersQuery;
 import com.raytheon.uf.common.registry.RegistryQueryResponse;
@@ -59,6 +59,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Jun 24, 2013 2106      djohnson     Now composes a registryHandler.
  * Oct 09, 2013 2267      bgonzale     Fix Collection cast to List error.
  * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Mar 16, 2016 3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -66,9 +67,9 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * @version 1.0
  */
 
+@SuppressWarnings("rawtypes")
 public class DataSetHandler extends
-        BaseRegistryObjectHandler<DataSet, DataSetQuery> implements
-        IDataSetHandler {
+        BaseRegistryObjectHandler<DataSet, DataSetQuery> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataSetHandler.class);
@@ -77,7 +78,8 @@ public class DataSetHandler extends
      * {@inheritDoc}
      */
     @Override
-    public void store(String username, DataSet obj) throws RegistryHandlerException {
+    public void store(String username, DataSet obj)
+            throws RegistryHandlerException {
         try {
             super.store(username, obj);
         } catch (RegistryHandlerException e) {
@@ -99,7 +101,8 @@ public class DataSetHandler extends
      * {@inheritDoc}
      */
     @Override
-    public void update(String username, DataSet obj) throws RegistryHandlerException {
+    public void update(String username, DataSet obj)
+            throws RegistryHandlerException {
         try {
             super.update(username, obj);
         } catch (RegistryHandlerException e) {
@@ -126,6 +129,7 @@ public class DataSetHandler extends
      *            the exception that occurred
      * @return true if another attempt should be made
      */
+    @SuppressWarnings("unchecked")
     private boolean handleUnresolvedReferences(DataSet obj,
             RegistryHandlerException e) {
         boolean restore = false;
@@ -169,8 +173,8 @@ public class DataSetHandler extends
                         // TODO: This has to be revisited for
                         // non-gridded data...
                         try {
-                            DataDeliveryHandlers.getParameterHandler()
-                                    .update(RegistryUtil.registryUser, p);
+                            DataDeliveryHandlers.getParameterHandler().update(
+                                    RegistryUtil.registryUser, p);
                         } catch (RegistryHandlerException e1) {
                             return false;
                         }
@@ -206,9 +210,15 @@ public class DataSetHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Get by name.
+     * 
+     * @param name
+     *            the name
+     * @param providerName
+     *            the provider name
+     * @throws RegistryHandlerException
+     *             on unsuccessful response
      */
-    @Override
     public DataSet getByNameAndProvider(String name, String providerName)
             throws RegistryHandlerException {
         DataSetQuery query = new DataSetQuery();
@@ -224,9 +234,24 @@ public class DataSetHandler extends
     }
 
     /**
-     * {@inheritDoc}
+     * Retrieve datasets that match the specified filter criteria. Any of the
+     * parameters may be null.
+     * 
+     * @param providers
+     *            the provider names
+     * @param dataSetNames
+     *            the data set names
+     * @param levels
+     *            the levels
+     * @param parameterNames
+     *            the parameter names
+     * @param dataSetTypes
+     *            List of data set types
+     * @param envelope
+     *            the ReferencedEnvelope
+     * @return
+     * @throws RegistryHandlerException
      */
-    @Override
     public List<DataSet> getByFilters(List<String> providers,
             List<String> dataSetNames, Set<LevelType> levels,
             List<String> parameterNames, List<String> dataTypes,

@@ -35,6 +35,7 @@ import com.raytheon.uf.common.registry.handler.RegistryObjectHandlers;
  * Oct 3, 2012  1241      djohnson     Initial creation
  * Dec 11, 2012 1403      djohnson     Adhoc subscriptions no longer go to the registry.
  * Oct 12, 2013 2046      dhladky      Restored Adhoc's at WFO level
+ * Mar 16, 2016 3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -50,95 +51,95 @@ public final class DataDeliveryHandlers {
     }
 
     /**
-     * Retrieve the {@link ISubscriptionHandler}.
+     * Retrieve the {@link SubscriptionHandler}.
      * 
      * @return the handler
      */
-    public static ISubscriptionHandler getSubscriptionHandler() {
-        return RegistryObjectHandlers.get(ISubscriptionHandler.class);
+    public static SubscriptionHandler getSubscriptionHandler() {
+        return RegistryObjectHandlers.get(SubscriptionHandler.class);
     }
 
     /**
-     * Retrieve the {@link IPendingSubscriptionHandler}.
+     * Retrieve the {@link PendingSubscriptionHandler}.
      * 
      * @return the handler
      */
-    public static IPendingSubscriptionHandler getPendingSubscriptionHandler() {
-        return RegistryObjectHandlers.get(IPendingSubscriptionHandler.class);
+    public static PendingSubscriptionHandler getPendingSubscriptionHandler() {
+        return RegistryObjectHandlers.get(PendingSubscriptionHandler.class);
     }
 
     /**
-     * Retrieve the {@link IGroupDefinitionHandler}.
+     * Retrieve the {@link GroupDefinitionHandler}.
      * 
      * @return the handler
      */
-    public static IGroupDefinitionHandler getGroupDefinitionHandler() {
-        return RegistryObjectHandlers.get(IGroupDefinitionHandler.class);
+    public static GroupDefinitionHandler getGroupDefinitionHandler() {
+        return RegistryObjectHandlers.get(GroupDefinitionHandler.class);
     }
 
     /**
-     * Retrieve the {@link IProviderHandler}.
+     * Retrieve the {@link ProviderHandler}.
      * 
      * @return the handler
      */
-    public static IProviderHandler getProviderHandler() {
-        return RegistryObjectHandlers.get(IProviderHandler.class);
+    public static ProviderHandler getProviderHandler() {
+        return RegistryObjectHandlers.get(ProviderHandler.class);
     }
 
     /**
-     * Retrieve the {@link IDataSetNameHandler}.
+     * Retrieve the {@link DataSetNameHandler}.
      * 
      * @return the handler
      */
-    public static IDataSetNameHandler getDataSetNameHandler() {
-        return RegistryObjectHandlers.get(IDataSetNameHandler.class);
+    public static DataSetNameHandler getDataSetNameHandler() {
+        return RegistryObjectHandlers.get(DataSetNameHandler.class);
     }
 
     /**
-     * Retrieve the {@link IParameterHandler}.
+     * Retrieve the {@link ParameterHandler}.
      * 
      * @return the handler
      */
-    public static IParameterHandler getParameterHandler() {
-        return RegistryObjectHandlers.get(IParameterHandler.class);
+    public static ParameterHandler getParameterHandler() {
+        return RegistryObjectHandlers.get(ParameterHandler.class);
     }
 
     /**
-     * Retrieve the {@link IParameterLevelHandler}.
+     * Retrieve the {@link ParameterLevelHandler}.
      * 
      * @return the handler
      */
-    public static IParameterLevelHandler getParameterLevelHandler() {
-        return RegistryObjectHandlers.get(IParameterLevelHandler.class);
+    public static ParameterLevelHandler getParameterLevelHandler() {
+        return RegistryObjectHandlers.get(ParameterLevelHandler.class);
     }
 
     /**
-     * Retrieve the {@link IDataSetMetaDataHandler}.
+     * Retrieve the {@link DataSetMetaDataHandler}.
      * 
      * @return the handler
      */
-    public static IDataSetMetaDataHandler getDataSetMetaDataHandler() {
-        return RegistryObjectHandlers.get(IDataSetMetaDataHandler.class);
+    public static DataSetMetaDataHandler getDataSetMetaDataHandler() {
+        return RegistryObjectHandlers.get(DataSetMetaDataHandler.class);
     }
 
     /**
-     * Retrieve the {@link IGriddedDataSetMetaDataHandler}.
+     * Retrieve the {@link GriddedDataSetMetaDataHandler}.
      * 
      * @return the handler
      */
-    public static IGriddedDataSetMetaDataHandler getGriddedDataSetMetaDataHandler() {
-        return RegistryObjectHandlers.get(IGriddedDataSetMetaDataHandler.class);
+    public static GriddedDataSetMetaDataHandler getGriddedDataSetMetaDataHandler() {
+        return RegistryObjectHandlers.get(GriddedDataSetMetaDataHandler.class);
     }
 
     /**
-     * Retrieve the {@link IDataSetHandler}.
+     * Retrieve the {@link DataSetHandler}.
      * 
      * @return the handler
      */
-    public static IDataSetHandler getDataSetHandler() {
-        return RegistryObjectHandlers.get(IDataSetHandler.class);
+    public static DataSetHandler getDataSetHandler() {
+        return RegistryObjectHandlers.get(DataSetHandler.class);
     }
-    
+
     /**
      * Retrieve the {@link IAdhocSubscriptionHandler}.
      * 

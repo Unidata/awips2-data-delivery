@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 
 /**
@@ -37,6 +37,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * ------------ ---------- ----------- --------------------------
  * May 23, 2013 1650       djohnson     Initial creation
  * Sep 04, 2013 2330       bgonzale     Added get by site id.
+ * Mar 16, 2016  3919      tjensen    Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -49,7 +50,7 @@ public final class SubscriptionManagerFilters {
     private static final ISubscriptionManagerFilter RETRIEVE_ALL = new ISubscriptionManagerFilter() {
         @Override
         public List<Subscription> getSubscriptions(
-                ISubscriptionHandler subscriptionHandler)
+                SubscriptionHandler subscriptionHandler)
                 throws RegistryHandlerException {
             return subscriptionHandler.getAll();
         }
@@ -77,7 +78,7 @@ public final class SubscriptionManagerFilters {
         return new ISubscriptionManagerFilter() {
             @Override
             public List<Subscription> getSubscriptions(
-                    ISubscriptionHandler subscriptionHandler)
+                    SubscriptionHandler subscriptionHandler)
                     throws RegistryHandlerException {
                 return subscriptionHandler.getByNames(names);
             }
@@ -94,7 +95,7 @@ public final class SubscriptionManagerFilters {
         return new ISubscriptionManagerFilter() {
             @Override
             public List<Subscription> getSubscriptions(
-                    ISubscriptionHandler subscriptionHandler)
+                    SubscriptionHandler subscriptionHandler)
                     throws RegistryHandlerException {
                 return subscriptionHandler.getActiveByDataSetAndProvider(
                         datasetName, providerName);
@@ -106,7 +107,7 @@ public final class SubscriptionManagerFilters {
         return new ISubscriptionManagerFilter() {
             @Override
             public List<Subscription> getSubscriptions(
-                    ISubscriptionHandler subscriptionHandler)
+                    SubscriptionHandler subscriptionHandler)
                     throws RegistryHandlerException {
                 return subscriptionHandler.getByFilters(null, siteId);
             }

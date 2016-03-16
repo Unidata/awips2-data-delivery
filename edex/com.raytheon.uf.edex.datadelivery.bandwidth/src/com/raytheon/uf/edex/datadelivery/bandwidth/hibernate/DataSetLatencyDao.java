@@ -27,7 +27,7 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
 
 /**
- * Hibernate {@link IDataSetLatencyDao}.
+ * DAO that manages {@link DataSetLatency} instances.
  * 
  * <pre>
  * 
@@ -36,14 +36,14 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial version
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
  * @author ccody
  * @version 1.0
  */
-public class DataSetLatencyDao extends SessionManagedDao<Long, DataSetLatency>
-        implements IDataSetLatencyDao {
+public class DataSetLatencyDao extends SessionManagedDao<Long, DataSetLatency> {
 
     private static final String DELETE_UP_TO_BASE_REF_TIME = "delete from DataSetLatency sl where sl.createdTimestamp = :createdTimestamp";
 
@@ -52,9 +52,13 @@ public class DataSetLatencyDao extends SessionManagedDao<Long, DataSetLatency>
     private static final String GET_FOR_DATA_SET_AND_PROVIDER_NAME = "from DataSetLatency  sl where sl.dataSetName = :dataSetName AND sl.providerName = :providerName";
 
     /**
-     * {@inheritDoc}
+     * Get {@link BandwidthDataSet} instances by the DataSetLatency object's
+     * DataSet Name and DataSet Provider.
+     * 
+     * @param dataSetName
+     * @param providerName
+     * @return
      */
-    @Override
     @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     public DataSetLatency getByDataSetNameAndProvider(String dataSetName,
             String providerName) {
@@ -63,9 +67,11 @@ public class DataSetLatencyDao extends SessionManagedDao<Long, DataSetLatency>
     }
 
     /**
-     * {@inheritDoc}
+     * Delete all DataSetLatency objects up to and including the specified time.
+     * 
+     * @param timeToDeleteUpTo
+     * @throws DataAccessLayerException
      */
-    @Override
     @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     public void deleteUpToBaseRefTime(long timeToDeleteUpTo)
             throws DataAccessLayerException {
@@ -74,9 +80,14 @@ public class DataSetLatencyDao extends SessionManagedDao<Long, DataSetLatency>
     }
 
     /**
-     * {@inheritDoc}
+     * Delete DataSetLatency objects up to and including the specified time.
+     * 
+     * @param dataSetName
+     *            Data Set Name column value
+     * @param providerName
+     *            Data Set Provider Name column value
+     * @throws DataAccessLayerException
      */
-    @Override
     @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
     public void deleteByDataSetNameAndProvider(String dataSetName,
             String providerName) throws DataAccessLayerException {
@@ -129,10 +140,11 @@ public class DataSetLatencyDao extends SessionManagedDao<Long, DataSetLatency>
     }
 
     /**
-     * {@inheritDoc}
+     * Copy the state from another DataSetLatency dao.
+     * 
+     * @param dataSetLatencyDao
      */
-    @Override
-    public void copyState(IDataSetLatencyDao dataSetLatencyDao) {
+    public void copyState(DataSetLatencyDao dataSetLatencyDao) {
         deleteAll(getAll());
         for (DataSetLatency dataSetLatency : dataSetLatencyDao.getAll()) {
             create(dataSetLatency.copy());

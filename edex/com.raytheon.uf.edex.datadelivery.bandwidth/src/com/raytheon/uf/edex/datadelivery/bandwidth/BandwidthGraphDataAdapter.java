@@ -40,9 +40,9 @@ import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -79,6 +79,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Nov 03, 2014 2414       dhladky      Better error handling.
  * Feb 02, 2015 4041       dhladky      Changed to set adhoc subs actual baseRefTime
  * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -87,30 +88,32 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  */
 
 public class BandwidthGraphDataAdapter {
-    
+
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BandwidthGraphDataAdapter.class);
 
     private final RetrievalManager retrievalManager;
-    
+
     /** handler for DataSetMetaData objects from the registry **/
-    private final IDataSetMetaDataHandler dataSetMetaDataHandler;
+    private final DataSetMetaDataHandler dataSetMetaDataHandler;
 
     /** handler for Subscription objects from the registry **/
-    private final ISubscriptionHandler subscriptionHandler;
-    
+    private final SubscriptionHandler subscriptionHandler;
+
     /** handler for DataSet objects from the registry **/
-    private final IDataSetHandler dataSetHandler;
+    private final DataSetHandler dataSetHandler;
 
     /**
      * Get graph Data
+     * 
      * @param retrievalManager
      */
     public BandwidthGraphDataAdapter(RetrievalManager retrievalManager) {
         this.retrievalManager = retrievalManager;
         this.dataSetMetaDataHandler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
-        this.subscriptionHandler = DataDeliveryHandlers.getSubscriptionHandler();
+        this.subscriptionHandler = DataDeliveryHandlers
+                .getSubscriptionHandler();
         this.dataSetHandler = DataDeliveryHandlers.getDataSetHandler();
     }
 
@@ -145,16 +148,16 @@ public class BandwidthGraphDataAdapter {
             // % utilized graph data
             SortedSet<BandwidthBucketDescription> buckets = toDescriptions(bandwidthBuckets);
             bandwidthGraphData.addBucketDescriptions(network, buckets);
-            
+
             List<BandwidthAllocation> allocationList = null;
             try {
-            // Latency window data
-                allocationList = EdexBandwidthContextFactory
-                    .getInstance().bandwidthDao
-                    .getBandwidthAllocations(network);
+                // Latency window data
+                allocationList = EdexBandwidthContextFactory.getInstance().bandwidthDao
+                        .getBandwidthAllocations(network);
             } catch (Exception e) {
                 allocationList = new ArrayList<BandwidthAllocation>(0);
-                statusHandler.error("Unable to retrieve BandwidthAlloactions!", e);
+                statusHandler.error("Unable to retrieve BandwidthAlloactions!",
+                        e);
             }
 
             for (BandwidthAllocation allocation : allocationList) {
@@ -257,12 +260,11 @@ public class BandwidthGraphDataAdapter {
 
                     }
 
-                    final long startMillis = sr.getStartTime()
-                            .getTime();
+                    final long startMillis = sr.getStartTime().getTime();
                     final long endMillis = sr.getEndTime().getTime();
                     TimeWindowData window = new TimeWindowData(startMillis,
                             endMillis);
-                   
+
                     window.setBaseTime(baseRefTime.getTime());
                     window.setOffset(offset);
                     windowData.addTimeWindow(window);

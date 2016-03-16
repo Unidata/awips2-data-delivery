@@ -75,11 +75,11 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetQuery;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IPendingSubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.PendingSubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.registry.handler.RegistryObjectHandlers;
@@ -139,7 +139,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Aug 21, 2013   1848     mpduff      Check subscription.create and shared.subscription.create.
  * Aug 30, 2013   2288     bgonzale    Added display of priority and latency rules.
  * Sep 04, 2013   2314     mpduff      Pass in the office to Shared Subscription Dialog.
- * Sept 30, 2013  1797     dhladky     separated Time from GriddedTime
+ * Sep 30, 2013   1797     dhladky     separated Time from GriddedTime
  * Oct 11, 2013   2386     mpduff      Refactor DD Front end.
  * Oct 15, 2013   2477     mpduff      Fix bug in group settings.
  * Oct 23, 2013   2484     dhladky     Unique ID for subscriptions updated.
@@ -151,7 +151,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Mar 31, 2014   2889     dhladky     Added username for notification center tracking.
  * May 15, 2014   3113     mpduff      Don't display the gridded cycle composite if no cycles.
  * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
- * Sept 05, 2014  2131     dhladky     Added PDA data type subscriptions
+ * Sep 05, 2014   2131     dhladky     Added PDA data type subscriptions
  * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
  * Dec 01, 2014   3550     ccody       Added extended Latency Processing
  * Jan 05, 2015   3898     ccody       Delete existing Site subscription if it is updated to a Shared Subscription
@@ -159,7 +159,8 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * May 17, 2015   4047     dhladky     Verified non-blocking.
  * Oct 15, 2015   4657     rferrel     Make blocking so parent dialog stays busy.
  * Mar 15, 2016   5482     randerso    Fix GUI sizing issues
- * 
+ * Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces.
+ *
  * </pre>
  * 
  * @author mpduff
@@ -179,7 +180,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             .getSubscriptionService();
 
     /** Subscription notification service */
-    private final ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+    private final SendToServerSubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
             .getSubscriptionNotificationService();
 
     /** Constant */
@@ -1140,7 +1141,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
         IUser user = UserController.getUserObject();
 
-        IPendingSubscriptionHandler handler = DataDeliveryHandlers
+        PendingSubscriptionHandler handler = DataDeliveryHandlers
                 .getPendingSubscriptionHandler();
 
         String currentUser = LocalizationManager.getInstance().getCurrentUser();
@@ -1269,8 +1270,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             // Create the registry ids
             setSubscriptionId(subscription);
 
-            IPendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
-                    .get(IPendingSubscriptionHandler.class);
+            PendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
+                    .get(PendingSubscriptionHandler.class);
             try {
                 InitialPendingSubscription result = pendingSubHandler
                         .getBySubscription(subscription);
@@ -1408,8 +1409,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             }
 
             // Check for existing subscription
-            ISubscriptionHandler handler = RegistryObjectHandlers
-                    .get(ISubscriptionHandler.class);
+            SubscriptionHandler handler = RegistryObjectHandlers
+                    .get(SubscriptionHandler.class);
             try {
                 if (handler.getByName(subscriptionName) != null) {
                     String message = "A subscription with this name already exists.\n\nPlease enter a different subscription name.";
@@ -1836,8 +1837,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
         try {
             resetSubscriptionDataSetLatency(subscription);
-            ISubscriptionHandler handler = RegistryObjectHandlers
-                    .get(ISubscriptionHandler.class);
+            SubscriptionHandler handler = RegistryObjectHandlers
+                    .get(SubscriptionHandler.class);
             handler.delete(username, subscription);
         } catch (RegistryHandlerException e) {
             statusHandler.error(

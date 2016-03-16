@@ -37,8 +37,8 @@ import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
@@ -52,7 +52,8 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleDimension;
 import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
 
 /**
- * Collector Used to gather data with DPA, used for AWIPS registry data feeds from providers.
+ * Collector Used to gather data with DPA, used for AWIPS registry data feeds
+ * from providers.
  * 
  * <pre>
  * 
@@ -62,10 +63,11 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
  * ------------ ---------- ----------- --------------------------
  * Jul 23, 2013            bclement     Initial creation
  * Aug 08, 2013            dhladky      Made operational
- * Jan 13, 2014  #2679     dhladky      multiple layers
- * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ * Jan 13, 2014  2679      dhladky      multiple layers
+ * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
  * Apr 14, 2014  3012      dhladky      Cleaned up.
  * Jun 08, 2014  3141      dhladky      DPA SOAP to central registry comm
+ * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -83,11 +85,11 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     protected OGCAgent agent = null;
 
     protected Map<String, Parameter> parameters = null;
-    
+
     protected String[] packageNames = null;
-    
+
     protected static final String pathSeparator = ":";
-    
+
     /**
      * public (Spring loaded) constructor
      */
@@ -97,13 +99,14 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
          * JAXB path for registry objects, collector won't work without it.
          */
         String paths = System.getProperty("registry.ogc.jaxb.path");
-        
+
         if (paths != null) {
             try {
                 this.packageNames = paths.split(pathSeparator);
             } catch (Exception e) {
                 statusHandler.error(
-                        "Couldn't parse Registry Collector JAXB path list: "+paths, e);
+                        "Couldn't parse Registry Collector JAXB path list: "
+                                + paths, e);
             }
 
             if (packageNames != null) {
@@ -150,12 +153,12 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
      */
     public void storeMetaData(final DataSetMetaData<?> metaData) {
 
-        IDataSetMetaDataHandler handler = DataDeliveryHandlers
+        DataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
 
         final String description = metaData.getDataSetDescription();
         statusHandler.info("Attempting store of DataSetMetaData[" + description
-                + "] " + "Date: "+metaData.getDate());
+                + "] " + "Date: " + metaData.getDate());
 
         try {
             handler.update(RegistryUtil.registryUser, metaData);
@@ -186,7 +189,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         dsn.setParameters(dataSetToStore.getParameters());
 
         try {
-            DataDeliveryHandlers.getDataSetNameHandler().update(RegistryUtil.registryUser, dsn);
+            DataDeliveryHandlers.getDataSetNameHandler().update(
+                    RegistryUtil.registryUser, dsn);
             statusHandler.info("DataSetName object store complete, dataset ["
                     + dsn.getDataSetName() + "]");
         } catch (RegistryHandlerException e) {
@@ -202,7 +206,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
         DataSet<?, ?> dataSetToStore = getDataSetToStore(dataSet);
         final String dataSetName = dataSetToStore.getDataSetName();
-        IDataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
+        DataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
 
         try {
             handler.update(RegistryUtil.registryUser, dataSetToStore);
@@ -224,7 +228,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     protected void storeProvider(final Provider provider) {
 
         try {
-            DataDeliveryHandlers.getProviderHandler().update(RegistryUtil.registryUser, provider);
+            DataDeliveryHandlers.getProviderHandler().update(
+                    RegistryUtil.registryUser, provider);
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Provider [" + provider.getName()
@@ -244,7 +249,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     @SuppressWarnings({ "rawtypes", "unchecked" })
     protected DataSet getDataSetToStore(DataSet dataSet) {
         try {
-            DataSet<Time, Coverage> result = DataDeliveryHandlers.getDataSetHandler()
+            DataSet<Time, Coverage> result = DataDeliveryHandlers
+                    .getDataSetHandler()
                     .getByNameAndProvider(dataSet.getDataSetName(),
                             dataSet.getProviderName());
             if (result != null) {
@@ -267,7 +273,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     protected void storeParameter(Parameter parameter) {
 
         try {
-            DataDeliveryHandlers.getParameterHandler().update(RegistryUtil.registryUser, parameter);
+            DataDeliveryHandlers.getParameterHandler().update(
+                    RegistryUtil.registryUser, parameter);
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Failed to store parameter [" + parameter.getName() + "]");
@@ -325,9 +332,9 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     public void setAgent(OGCAgent agent) {
         this.agent = agent;
     }
-    
+
     public abstract String isWithinLayer(R record);
-    
+
     public abstract ISpatialObject getSpatial(R record);
 
 }

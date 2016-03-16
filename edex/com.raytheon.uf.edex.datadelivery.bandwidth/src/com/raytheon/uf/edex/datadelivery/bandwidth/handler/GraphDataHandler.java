@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.handler;
 
-import com.raytheon.uf.common.datadelivery.bandwidth.IBandwidthService;
+import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
 import com.raytheon.uf.common.datadelivery.bandwidth.request.GraphDataRequest;
 import com.raytheon.uf.common.datadelivery.bandwidth.response.GraphDataResponse;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
@@ -35,6 +35,7 @@ import com.raytheon.uf.common.serialization.comm.IRequestHandler;
  * ------------ ---------- ----------- --------------------------
  * Nov 25, 2012   2369     mpduff      Initial creation.
  * Dec 06, 2012   1397     djohnson    Delegate to the bandwidth service.
+ * Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -44,9 +45,9 @@ import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 
 public class GraphDataHandler implements IRequestHandler<GraphDataRequest> {
 
-    private final IBandwidthService bandwidthService;
+    private final BandwidthService bandwidthService;
 
-    public GraphDataHandler(IBandwidthService bandwidthService) {
+    public GraphDataHandler(BandwidthService bandwidthService) {
         this.bandwidthService = bandwidthService;
     }
 
@@ -60,7 +61,7 @@ public class GraphDataHandler implements IRequestHandler<GraphDataRequest> {
 
     /**
      * Get the response object.
-     *
+     * 
      * @return GraphDataResponse
      */
     private GraphDataResponse getResponse() {

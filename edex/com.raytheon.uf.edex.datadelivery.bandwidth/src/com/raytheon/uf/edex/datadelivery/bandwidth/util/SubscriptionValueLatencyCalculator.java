@@ -22,7 +22,7 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao;
 
 /**
  * Computes current latency for the subscription.
@@ -35,6 +35,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
  * ------------ ---------- ----------- --------------------------
  * Oct 31, 2012 1286       djohnson    Initial creation
  * Dec 01, 2014 3550       ccody       Added extended Latency Processing
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -45,13 +46,13 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
 public class SubscriptionValueLatencyCalculator implements
         ISubscriptionLatencyCalculator {
 
-    protected IDataSetLatencyDao dataSetLatencyDao = null;
+    protected DataSetLatencyDao dataSetLatencyDao = null;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void setDataSetLatencyDao(IDataSetLatencyDao dataSetLatencyDao) {
+    public void setDataSetLatencyDao(DataSetLatencyDao dataSetLatencyDao) {
         this.dataSetLatencyDao = dataSetLatencyDao;
     }
 

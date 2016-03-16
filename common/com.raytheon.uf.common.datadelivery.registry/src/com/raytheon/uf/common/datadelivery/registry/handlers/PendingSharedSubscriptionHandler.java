@@ -34,15 +34,16 @@ import com.raytheon.uf.common.registry.handler.IRegistryObjectHandler;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 04, 2013 1841       djohnson     Initial creation
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public class PendingSharedSubscriptionHandler extends
-        BasePendingSubscriptionHandler<InitialPendingSharedSubscription, PendingSharedSubscriptionQuery>
-        implements IPendingSharedSubscriptionHandler {
+public class PendingSharedSubscriptionHandler
+        extends
+        BasePendingSubscriptionHandler<InitialPendingSharedSubscription, PendingSharedSubscriptionQuery> {
 
     /**
      * {@inheritDoc}

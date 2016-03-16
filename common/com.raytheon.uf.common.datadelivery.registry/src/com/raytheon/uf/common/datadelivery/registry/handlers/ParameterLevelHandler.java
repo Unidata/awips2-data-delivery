@@ -33,6 +33,7 @@ import com.raytheon.uf.common.registry.handler.BaseRegistryObjectHandler;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 3, 2012  1241      djohnson     Initial creation
+ * Mar 16, 2016 3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -41,9 +42,7 @@ import com.raytheon.uf.common.registry.handler.BaseRegistryObjectHandler;
  */
 
 public class ParameterLevelHandler extends
-        BaseRegistryObjectHandler<ParameterLevel, ParameterLevelQuery>
-        implements
-        IParameterLevelHandler {
+        BaseRegistryObjectHandler<ParameterLevel, ParameterLevelQuery> {
 
     /**
      * {@inheritDoc}

@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.harvester.pda;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,6 +17,7 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.harvester.pda;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -53,7 +52,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.datadelivery.harvester.interfaces.IPDACatalogServiceResponseHandler;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 
@@ -68,9 +66,10 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Jun 16, 2014 3120       dhladky     Initial creation
  * Nov 10, 2014 3826       dhladky     Added more logging.
  * Apr 21, 2015 4435       dhladky     Connecting to PDA transactions
- * Sept 11, 2015 4881      dhladky     Updates to PDA processing, better tracking.
- * Jan 18, 2016  5260      dhladky     FQDN usage to lessen OGC class collisions.
- * Jan 20, 2016  5280      dhladky     Logging improvement.
+ * Sep 11, 2015 4881       dhladky     Updates to PDA processing, better tracking.
+ * Jan 18, 2016 5260       dhladky     FQDN usage to lessen OGC class collisions.
+ * Jan 20, 2016 5280       dhladky     Logging improvement.
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -82,9 +81,8 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @XmlSeeAlso({ net.opengis.cat.csw.v_2_0_2.ObjectFactory.class,
         net.opengis.gml.v_3_1_1.ObjectFactory.class,
-        net.opengis.filter.v_1_1_0.ObjectFactory.class})
-public class PDACatalogServiceResponseHandler implements
-        IPDACatalogServiceResponseHandler {
+        net.opengis.filter.v_1_1_0.ObjectFactory.class })
+public class PDACatalogServiceResponseHandler {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDACatalogServiceResponseHandler.class);
@@ -160,11 +158,17 @@ public class PDACatalogServiceResponseHandler implements
         this.transactionUri = transactionUri;
     }
 
-    @Override
+    /**
+     * 
+     * @param handleGetRecordsResponse
+     * @return returns void
+     * @throws ServiceExceptionReport
+     */
     @WebMethod
     public void handleGetRecordsResponse(
             @WebParam(name = "GetRecordsResponse", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType response) throws ServiceExceptionReport {
+            net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType response)
+            throws ServiceExceptionReport {
 
         statusHandler
                 .info("-------Incoming GetRecords() response from PDA -----------");
@@ -197,11 +201,16 @@ public class PDACatalogServiceResponseHandler implements
         }
     }
 
-    @Override
+    /**
+     * 
+     * @param transaction
+     * @throws ServiceExceptionReport
+     */
     @WebMethod
     public void handleTransaction(
             @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            net.opengis.cat.csw.v_2_0_2.TransactionType transactions) throws ServiceExceptionReport {
+            net.opengis.cat.csw.v_2_0_2.TransactionType transactions)
+            throws ServiceExceptionReport {
 
         statusHandler.info("-------Incoming Transaction from PDA -----------");
         List<Object> records = transactions.getInsertOrUpdateOrDelete();
@@ -326,7 +335,7 @@ public class PDACatalogServiceResponseHandler implements
 
             for (int i = 0; i < trans.getAny().size(); i++) {
 
- Element element = trans.getAny().get(i);
+                Element element = trans.getAny().get(i);
 
                 if (element.getLocalName().equals(ID)) {
                     identifier = element.getFirstChild().getNodeValue();

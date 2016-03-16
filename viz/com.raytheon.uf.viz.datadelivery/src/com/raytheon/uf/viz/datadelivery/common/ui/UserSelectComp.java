@@ -47,10 +47,10 @@ import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.retrieval.util.DataSizeUtils;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -103,18 +103,19 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Oct 28, 2013  2292      mpduff       Change overlap services.
  * Feb 11, 2014  2771      bgonzale     Use Data Delivery ID instead of Site.
  * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
- * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
- * Oct 28, 2014   2748     ccody        Remove Live update. Updates are event driven.
+ * Aug 18, 2014  2746      ccody        Non-local Subscription changes not updating dialogs
+ * Oct 28, 2014  2748      ccody        Remove Live update. Updates are event driven.
  * Nov 19, 2014  3850      dhladky      Bad cast from Subscription to InitialPendingSubscription.
  * Nov 19, 2014  3851      dhladky      Fixed userName subscription selection bounce back on change of user.
  * Nov 19, 2014  3852      dhladky      Resurrected the unscheduled state.
+ * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * </pre>
  * 
  * @author jpiatt
  * @version 1.0
  */
-public class UserSelectComp<T extends Time, C extends Coverage> extends Composite implements IUpdate, IDisplay,
-        IForceApplyPromptDisplayText {
+public class UserSelectComp<T extends Time, C extends Coverage> extends
+        Composite implements IUpdate, IDisplay, IForceApplyPromptDisplayText {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -149,14 +150,14 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
     private final Map<String, Map<String, Subscription<T, C>>> userMap = new HashMap<String, Map<String, Subscription<T, C>>>();
 
     private final Set<String> initiallySelectedSubscriptions = new HashSet<String>();
-    
+
     /** Keeps track of UserName in selection combo **/
     private String previousUserNameComboSelection = "";
 
     /**
      * Registry handler for subscriptions.
      */
-    private final ISubscriptionHandler subHandler = DataDeliveryHandlers
+    private final SubscriptionHandler subHandler = DataDeliveryHandlers
             .getSubscriptionHandler();
 
     /**
@@ -240,12 +241,12 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
      * Handle a different user selected from the combo box.
      */
     private void handleUserSelect() {
-        
+
         // Must handle "First Time" selected
         if (previousUserNameComboSelection.equals("")) {
             previousUserNameComboSelection = userNameCombo.getText();
         }
-        
+
         if (!userNameCombo.getText().equals(previousUserNameComboSelection)) {
             populateUserSubscriptions(userNameCombo.getText());
             previousUserNameComboSelection = userNameCombo.getText();
@@ -311,7 +312,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
         Set<Subscription<T, C>> removedFromGroup = new HashSet<Subscription<T, C>>();
 
         for (String subscriptionName : differences) {
-            final Subscription<T, C> subscription = ownerSubs.get(subscriptionName);
+            final Subscription<T, C> subscription = ownerSubs
+                    .get(subscriptionName);
             if (selectedSubscriptionNames.contains(subscriptionName)) {
                 addedToGroup.add(subscription);
             } else {
@@ -333,7 +335,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
      */
     @SuppressWarnings("unchecked")
     private void updateGroupDefinition(String groupName,
-            Set<Subscription<T, C>> addedToGroup, Set<Subscription<T, C>> removedFromGroup) {
+            Set<Subscription<T, C>> addedToGroup,
+            Set<Subscription<T, C>> removedFromGroup) {
 
         ITimer timer = TimeUtil.getPriorityEnabledTimer(statusHandler,
                 Priority.DEBUG);
@@ -347,11 +350,12 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
             subscription.setGroupName(groupName);
         }
 
-        Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections.emptySet();
+        Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections
+                .emptySet();
         try {
             groupSubscriptionsForUpdate = new HashSet<Subscription<T, C>>(
-                    (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers.getSubscriptionHandler()
-                            .getByGroupName(groupName));
+                    (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers
+                            .getSubscriptionHandler().getByGroupName(groupName));
 
             // Remove any that are set to be removed from the group
             groupSubscriptionsForUpdate.removeAll(removedFromGroup);
@@ -453,12 +457,14 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
                     .getSubscriptionService().updateWithPendingCheck(
                             currentUser, pendingSubscriptionList, this);
 
-            ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+            SendToServerSubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
                     .getSubscriptionNotificationService();
             for (Subscription<T, C> pendingSubscription : pendingSubscriptionList) {
-                InitialPendingSubscription<T,C> pendingSub = pendingSubscription.initialPending(currentUser);
+                InitialPendingSubscription<T, C> pendingSub = pendingSubscription
+                        .initialPending(currentUser);
                 subscriptionNotificationService
-                        .sendUpdatedPendingSubscriptionNotification(pendingSub, currentUser);
+                        .sendUpdatedPendingSubscriptionNotification(pendingSub,
+                                currentUser);
             }
 
             if (result.hasMessageToDisplay()) {
@@ -512,7 +518,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
         dualList.clearAvailableList(true);
 
         initiallySelectedSubscriptions.clear();
-        Map<String, Subscription<T, C>> sMap = userMap.get(userNameCombo.getText());
+        Map<String, Subscription<T, C>> sMap = userMap.get(userNameCombo
+                .getText());
 
         for (String subscriptionName : sMap.keySet()) {
 

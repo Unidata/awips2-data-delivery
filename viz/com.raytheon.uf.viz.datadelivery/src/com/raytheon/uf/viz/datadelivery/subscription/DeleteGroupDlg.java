@@ -29,7 +29,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.service.IGroupDefinitionService;
+import com.raytheon.uf.common.datadelivery.service.GroupDefinitionService;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -52,6 +52,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Jan 18, 2013 1441       djohnson     Use group definition service.
  * Feb 26, 2013 1643       djohnson     Catch any exception.
  * Oct 19, 2015 4996       dhladky      Removed "are you sure" un-needed double auth message.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -72,7 +73,7 @@ public class DeleteGroupDlg extends CaveSWTDialog {
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DeleteGroupDlg.class);
 
-    private final IGroupDefinitionService groupService = DataDeliveryServices
+    private final GroupDefinitionService groupService = DataDeliveryServices
             .getGroupDefinitionService();
 
     /**

@@ -44,7 +44,7 @@ import com.raytheon.uf.common.datadelivery.registry.ProviderKeyRequest;
 import com.raytheon.uf.common.datadelivery.registry.ProviderKeyRequest.RequestType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderKeyRequest.Status;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.registry.RegistryConstants;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.comm.RequestRouter;
@@ -65,7 +65,8 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 07, 2013   2180     mpduff      Initial creation.
- * 7/10/2014    1717       bphillip    Changed imports due to moved AESEncryptor class
+ * Jul 10, 2014   1717     bphillip    Changed imports due to moved AESEncryptor class
+ * Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -258,7 +259,7 @@ public class DataProviderPasswordComposite extends Composite implements
      * Load the settings info.
      */
     public void load() {
-        IProviderHandler handler = DataDeliveryHandlers.getProviderHandler();
+        ProviderHandler handler = DataDeliveryHandlers.getProviderHandler();
 
         try {
             providerList = handler.getAll();

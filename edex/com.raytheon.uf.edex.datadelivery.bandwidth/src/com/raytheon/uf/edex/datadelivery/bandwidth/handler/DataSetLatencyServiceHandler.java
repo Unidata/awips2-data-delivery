@@ -23,7 +23,7 @@ import com.raytheon.uf.common.auth.exception.AuthorizationException;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyRequest;
 import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyResponse;
-import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.IDataSetLatencyService;
+import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -31,10 +31,10 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
-import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
+import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao;
 
 /**
- * Handles request from the {@link IDataSetLatencyService}.
+ * Handles request from the {@link DataSetLatencyService}.
  * 
  * <pre>
  * 
@@ -43,6 +43,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.IDataSetLatencyDao;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial creation
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -57,7 +58,7 @@ public class DataSetLatencyServiceHandler extends
             .getHandler(DataSetLatencyServiceHandler.class);
 
     /** Persistence DAO for DataSetLatency **/
-    private IDataSetLatencyDao dataSetLatencyDao;
+    private DataSetLatencyDao dataSetLatencyDao;
 
     /**
      * Constructor.
@@ -72,7 +73,7 @@ public class DataSetLatencyServiceHandler extends
      * @param dataSetLatencyDao
      *            the DataSetLatency DAO
      */
-    public void setDataSetLatencyDao(IDataSetLatencyDao dataSetLatencyDao) {
+    public void setDataSetLatencyDao(DataSetLatencyDao dataSetLatencyDao) {
         this.dataSetLatencyDao = dataSetLatencyDao;
     }
 
@@ -81,7 +82,7 @@ public class DataSetLatencyServiceHandler extends
      * 
      * @return dataSetLatencyDao the DataSetLatency DAO
      */
-    public IDataSetLatencyDao getDataSetLatencyDao() {
+    public DataSetLatencyDao getDataSetLatencyDao() {
         return (this.dataSetLatencyDao);
     }
 

@@ -21,13 +21,12 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.ncf;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
-import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthContextFactory.IEdexBandwidthManagerCreator;
-import com.raytheon.uf.edex.datadelivery.bandwidth.IBandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
@@ -56,6 +55,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Jan 14, 2014 2692       dhladky     AdhocSubscription handler
  * Jan 30, 2014 2636       mpduff      Scheduling refactor.
  * Apr 22, 2014 2992       dhladky     Added IdUtil for siteList
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -73,7 +73,8 @@ public class MonolithicBandwidthManagerCreator<T extends Time, C extends Coverag
 
         public static final String MODE_NAME = "devRegistry";
 
-        private static final String[] BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
+        private static final String[] BANDWIDTH_MANAGER_FILES = BandwidthUtil
+                .getSpringFileNamesForMode(MODE_NAME);
 
         /**
          * Constructor.
@@ -89,13 +90,13 @@ public class MonolithicBandwidthManagerCreator<T extends Time, C extends Coverag
                 RetrievalManager retrievalManager,
                 BandwidthDaoUtil<T, C> bandwidthDaoUtil,
                 RegistryIdUtil idUtil,
-                IDataSetMetaDataHandler dataSetMetaDataHandler,
-                ISubscriptionHandler subscriptionHandler,
+                DataSetMetaDataHandler dataSetMetaDataHandler,
+                SubscriptionHandler subscriptionHandler,
                 IAdhocSubscriptionHandler adhocSubscriptionHandler,
-                ISubscriptionNotificationService subscriptionNotificationService,
+                SendToServerSubscriptionNotificationService subscriptionNotificationService,
                 ISubscriptionFinder findSubscriptionsStrategy) {
-            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
-                    dataSetMetaDataHandler, subscriptionHandler,
+            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
+                    idUtil, dataSetMetaDataHandler, subscriptionHandler,
                     adhocSubscriptionHandler, subscriptionNotificationService,
                     findSubscriptionsStrategy);
         }
@@ -111,19 +112,22 @@ public class MonolithicBandwidthManagerCreator<T extends Time, C extends Coverag
      * {@inheritDoc}
      */
     @Override
-    public IBandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
-            IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
+    public BandwidthManager<T, C> getBandwidthManager(
+            IBandwidthDbInit dbInit,
+            IBandwidthDao bandwidthDao,
+            RetrievalManager retrievalManager,
             BandwidthDaoUtil bandwidthDaoUtil,
             RegistryIdUtil idUtil,
-            IDataSetMetaDataHandler dataSetMetaDataHandler,
-            ISubscriptionHandler subscriptionHandler,
+            DataSetMetaDataHandler dataSetMetaDataHandler,
+            SubscriptionHandler subscriptionHandler,
             IAdhocSubscriptionHandler adhocSubscriptionHandler,
-            ISubscriptionNotificationService subscriptionNotificationService,
+            SendToServerSubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
         return new MonolithicBandwidthManager(dbInit, bandwidthDao,
-                retrievalManager, bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
-                subscriptionHandler, adhocSubscriptionHandler,
-                subscriptionNotificationService, findSubscriptionsStrategy);
+                retrievalManager, bandwidthDaoUtil, idUtil,
+                dataSetMetaDataHandler, subscriptionHandler,
+                adhocSubscriptionHandler, subscriptionNotificationService,
+                findSubscriptionsStrategy);
     }
 
 }

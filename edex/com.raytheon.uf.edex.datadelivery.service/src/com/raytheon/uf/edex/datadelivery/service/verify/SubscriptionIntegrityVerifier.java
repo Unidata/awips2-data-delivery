@@ -28,8 +28,8 @@ import com.raytheon.uf.common.datadelivery.registry.DataDeliveryRegistryObjectTy
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
+import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.event.InsertRegistryEvent;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -54,6 +54,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * May 20, 2013 2000      djohnson     Shortcut out if no subscription handler is available.
  * Jun 20, 2013 1802      djohnson     Check several times for the dataset for now.
  * Jun 25, 2013 2106      djohnson     Remove checking several times for the dataset now that transactions propagate correctly.
+ * Mar 16, 2016 3919      tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -173,7 +174,7 @@ public class SubscriptionIntegrityVerifier {
      */
     public void dataSetUpdated(DataSet dataSet) {
         try {
-            final ISubscriptionHandler subscriptionHandler = DataDeliveryHandlers
+            final SubscriptionHandler subscriptionHandler = DataDeliveryHandlers
                     .getSubscriptionHandler();
             if (subscriptionHandler == null) {
                 return;
@@ -221,7 +222,7 @@ public class SubscriptionIntegrityVerifier {
 
         if (DataDeliveryRegistryObjectTypes.DATASET.equals(objectType)) {
             try {
-                final IDataSetHandler dataSetHandler = DataDeliveryHandlers
+                final DataSetHandler dataSetHandler = DataDeliveryHandlers
                         .getDataSetHandler();
 
                 DataSet dataSet = dataSetHandler.getById(event.getId());

@@ -26,7 +26,7 @@ import com.raytheon.uf.common.datadelivery.registry.GroupDefinitionServiceReques
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinitionServiceRequest.Type;
 
 /**
- * Base implementation of {@link IGroupDefinitionService}.
+ * Defines the service to interact with {@link GroupDefinition} objects.
  * 
  * <pre>
  * 
@@ -36,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.registry.GroupDefinitionServiceReques
  * ------------ ---------- ----------- --------------------------
  * Jan 18, 2013 1441       djohnson     Initial creation
  * Feb 26, 2013 1643       djohnson     Extend server request class.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -44,15 +45,15 @@ import com.raytheon.uf.common.datadelivery.registry.GroupDefinitionServiceReques
  */
 
 public class GroupDefinitionService extends
-        BasePrivilegedDataDeliveryService<GroupDefinitionServiceRequest>
-        implements IGroupDefinitionService {
+        BasePrivilegedDataDeliveryService<GroupDefinitionServiceRequest> {
 
     /**
-     * {@inheritDoc}
+     * Delete the group definition.
      * 
-     * @throws Exception
+     * @param group
+     *            the group
+     * @throws RemoteException
      */
-    @Override
     public void deleteGroupDefinition(GroupDefinition group)
             throws RemoteException {
         GroupDefinitionServiceRequest request = new GroupDefinitionServiceRequest();

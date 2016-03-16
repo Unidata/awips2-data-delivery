@@ -45,6 +45,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * ------------ ---------- ----------- --------------------------
  * Apr 05, 2013 1841       djohnson     Extracted and genericized from siteSubscriptionHandler.
  * Jun 24, 2013 2106       djohnson     Now composes a registryHandler.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -107,8 +108,8 @@ public abstract class SubscriptionTypeHandler<T extends Subscription, QUERY exte
     @Override
     public void deleteByIds(String username, List<String> ids)
             throws RegistryHandlerException {
-        IPendingSubscriptionHandler handler = RegistryObjectHandlers
-                .get(IPendingSubscriptionHandler.class);
+        PendingSubscriptionHandler handler = RegistryObjectHandlers
+                .get(PendingSubscriptionHandler.class);
 
         List<InitialPendingSubscription> pending = handler
                 .getBySubscriptionIds(ids);

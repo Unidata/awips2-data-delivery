@@ -28,8 +28,8 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
- * Implementation of {@link ISubscriptionNotificationService} that sends the
- * notification to the server for processing.
+ * Sends the notification to the server for processing about subscription
+ * events.
  * 
  * <pre>
  * 
@@ -41,8 +41,9 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 17, 2013 1501       djohnson     Route to datadelivery.
  * Jan 21, 2013 1501       djohnson     Include subscription on all requests.
  * Oct 15, 2014 3664       ccody        Add Subscription unscheduled notification method
- * Oct 28, 2014 2748       ccody       Remove incorrect update notification for completion of Async operations
- * Nov 03, 2014 2414       dhladky     Brought back update.  turns out we still need it.
+ * Oct 28, 2014 2748       ccody        Remove incorrect update notification for completion of Async operations
+ * Nov 03, 2014 2414       dhladky      Brought back update.  turns out we still need it.
+ * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * 
  * </pre>
  * 
@@ -50,21 +51,19 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * @version 1.0
  */
 
-public class SendToServerSubscriptionNotificationService implements
-        ISubscriptionNotificationService {
+public class SendToServerSubscriptionNotificationService {
 
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SendToServerSubscriptionNotificationService.class);
 
     /**
-     * Send a notification that a subscription has been created.
+     * Send a notification that a subscription was created.
      * 
      * @param subscription
      *            the subscription
      * @param username
      *            the username
      */
-    @Override
     public void sendCreatedSubscriptionNotification(Subscription subscription,
             String username) {
         BaseSubscriptionNotificationRequest<Subscription> req = new SubscriptionNotificationRequest();
@@ -79,9 +78,13 @@ public class SendToServerSubscriptionNotificationService implements
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that pending subscription was created.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
      */
-    @Override
     public void sendCreatedPendingSubscriptionNotification(
             InitialPendingSubscription subscription, String username) {
 
@@ -98,9 +101,13 @@ public class SendToServerSubscriptionNotificationService implements
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that a pending subscription was updated.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
      */
-    @Override
     public void sendUpdatedPendingSubscriptionNotification(
             InitialPendingSubscription subscription, String username) {
 
@@ -116,9 +123,13 @@ public class SendToServerSubscriptionNotificationService implements
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that a subscription update is pending.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
      */
-    @Override
     public void sendCreatedPendingSubscriptionForSubscriptionNotification(
             InitialPendingSubscription subscription, String username) {
         BaseSubscriptionNotificationRequest<InitialPendingSubscription> req = new PendingSubscriptionNotificationRequest();
@@ -133,9 +144,13 @@ public class SendToServerSubscriptionNotificationService implements
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that a pending subscription was approved.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
      */
-    @Override
     public void sendApprovedPendingSubscriptionNotification(
             InitialPendingSubscription subscription, String username) {
         ApprovedPendingSubscriptionNotificationRequest req = new ApprovedPendingSubscriptionNotificationRequest();
@@ -149,9 +164,15 @@ public class SendToServerSubscriptionNotificationService implements
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that a pending subscription was denied.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
+     * @param denyMessage
+     *            the reason for denying
      */
-    @Override
     public void sendDeniedPendingSubscriptionNotification(
             InitialPendingSubscription subscription, String username,
             String denyMessage) {
@@ -167,9 +188,13 @@ public class SendToServerSubscriptionNotificationService implements
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that the subscription was deleted.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
      */
-    @Override
     public void sendDeletedSubscriptionNotification(Subscription subscription,
             String username) {
         SubscriptionNotificationRequest req = new SubscriptionNotificationRequest();
@@ -182,9 +207,15 @@ public class SendToServerSubscriptionNotificationService implements
 
         sendRequest(req);
     }
-    
 
-    @Override
+    /**
+     * Send a notification that the subscription was updated.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
+     */
     public void sendUpdatedSubscriptionNotification(Subscription subscription,
             String username) {
         SubscriptionNotificationRequest req = new SubscriptionNotificationRequest();
@@ -196,13 +227,17 @@ public class SendToServerSubscriptionNotificationService implements
         req.setSubscription(subscription);
 
         sendRequest(req);
-        
+
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that the subscription was activated.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
      */
-    @Override
     public void sendSubscriptionActivatedNotification(
             Subscription subscription, String username) {
         SubscriptionNotificationRequest req = new SubscriptionNotificationRequest();
@@ -216,9 +251,13 @@ public class SendToServerSubscriptionNotificationService implements
     }
 
     /**
-     * {@inheritDoc}
+     * Send a notification that the subscription was deactivated.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
      */
-    @Override
     public void sendSubscriptionDeactivatedNotification(
             Subscription subscription, String username) {
         SubscriptionNotificationRequest req = new SubscriptionNotificationRequest();
@@ -231,6 +270,15 @@ public class SendToServerSubscriptionNotificationService implements
         sendRequest(req);
     }
 
+    /**
+     * Send a notification that the Subscription Bandwidth latency and
+     * scheduling have been changed.
+     * 
+     * @param subscription
+     *            the subscription
+     * @param username
+     *            the username
+     */
     public void sendSubscriptionUnscheduledNotification(
             Subscription subscription, String message, String username) {
 
