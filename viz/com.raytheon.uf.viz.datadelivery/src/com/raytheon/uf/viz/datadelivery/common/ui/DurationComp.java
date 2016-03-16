@@ -28,6 +28,7 @@ import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -56,6 +57,7 @@ import com.raytheon.viz.ui.dialogs.AwipsCalendar;
  * Jun 27, 2012   702      jpiatt      Initial creation.
  * May 15, 2013  1040      mpduff      Fixed button width.
  * Jan 15, 2016  5259      randerso    Changed to use viz.ui AwipsCalendar
+ * Mar 15, 2016  5482      randerso    Fix GUI sizing issues
  * 
  * </pre>
  * 
@@ -150,9 +152,6 @@ public class DurationComp extends Composite {
             }
         });
 
-        int textWidth = 100;
-        GridData textData = new GridData(textWidth, SWT.DEFAULT);
-
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         Composite periodComp = new Composite(durationGrp, SWT.NONE);
         periodComp.setLayout(new GridLayout(3, false));
@@ -165,6 +164,11 @@ public class DurationComp extends Composite {
         startLbl.setText("Start Date: ");
 
         startText = new Text(periodComp, SWT.BORDER);
+        GC gc = new GC(startText);
+        int textWidth = gc.textExtent("00/00/0000 00Z").x;
+        gc.dispose();
+        GridData textData = new GridData(textWidth, SWT.DEFAULT);
+
         startText.setLayoutData(textData);
         startText.setEnabled(false);
         startText.addFocusListener(new FocusAdapter() {
@@ -183,7 +187,7 @@ public class DurationComp extends Composite {
         });
 
         startDateBtn = new Button(periodComp, SWT.PUSH);
-        startDateBtn.setText(" Select Date ");
+        startDateBtn.setText("Select Date");
         startDateBtn.setEnabled(false);
         startDateBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -217,7 +221,7 @@ public class DurationComp extends Composite {
         });
 
         endDateBtn = new Button(periodComp, SWT.PUSH);
-        endDateBtn.setText(" Select Date ");
+        endDateBtn.setText("Select Date");
         endDateBtn.setEnabled(false);
         endDateBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -279,7 +283,7 @@ public class DurationComp extends Composite {
         AwipsCalendar ac = new AwipsCalendar(getShell(), date, showHour ? 1 : 0);
         Object obj = ac.open();
 
-        if (obj != null && obj instanceof Date) {
+        if ((obj != null) && (obj instanceof Date)) {
             return (Date) obj;
         }
 
