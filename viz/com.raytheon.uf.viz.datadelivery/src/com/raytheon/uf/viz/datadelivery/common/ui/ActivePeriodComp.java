@@ -28,6 +28,7 @@ import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -59,6 +60,7 @@ import com.raytheon.viz.ui.dialogs.CalendarDialog;
  * Sep 06, 2012   687      mpduff      Make dates relative when validating.
  * Jan 15, 2016  5259      randerso    Changed to use viz.ui AwipsCalendar
  * Mar 01, 2016  3989      tgurney     Rename AwipsCalendar to CalendarDialog
+ * Mar 15, 2016  5482      randerso    Fix GUI sizing issues
  * 
  * </pre>
  * 
@@ -157,11 +159,6 @@ public class ActivePeriodComp extends Composite {
         windowComp.setLayout(new GridLayout(3, false));
         windowComp.setLayoutData(gd);
 
-        int textWidth = 100;
-        GridData textData = new GridData(textWidth, SWT.DEFAULT);
-        int buttonWidth = 85;
-        GridData btnData = new GridData(buttonWidth, SWT.DEFAULT);
-
         gd = new GridData(SWT.LEFT, SWT.CENTER, false, false);
 
         Label winStartLbl = new Label(windowComp, SWT.LEFT);
@@ -169,6 +166,11 @@ public class ActivePeriodComp extends Composite {
         winStartLbl.setText("Active Period Start: ");
 
         activeStartText = new Text(windowComp, SWT.BORDER);
+        GC gc = new GC(activeStartText);
+        int textWidth = gc.textExtent("00/00").x;
+        gc.dispose();
+
+        GridData textData = new GridData(textWidth, SWT.DEFAULT);
         activeStartText.setLayoutData(textData);
         activeStartText.setEnabled(false);
         activeStartText.addFocusListener(new FocusAdapter() {
@@ -188,6 +190,7 @@ public class ActivePeriodComp extends Composite {
 
         activeStartDateBtn = new Button(windowComp, SWT.PUSH);
         activeStartDateBtn.setText("Select Date");
+        GridData btnData = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         activeStartDateBtn.setLayoutData(btnData);
         activeStartDateBtn.setEnabled(false);
         activeStartDateBtn.addSelectionListener(new SelectionAdapter() {
@@ -222,7 +225,7 @@ public class ActivePeriodComp extends Composite {
             }
         });
 
-        btnData = new GridData(buttonWidth, SWT.DEFAULT);
+        btnData = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         activeEndDateBtn = new Button(windowComp, SWT.PUSH);
         activeEndDateBtn.setText("Select Date");
         activeEndDateBtn.setLayoutData(btnData);
@@ -285,7 +288,7 @@ public class ActivePeriodComp extends Composite {
                 : 0));
         Object obj = ac.open();
 
-        if (obj != null && obj instanceof Date) {
+        if ((obj != null) && (obj instanceof Date)) {
             return (Date) obj;
         }
 
