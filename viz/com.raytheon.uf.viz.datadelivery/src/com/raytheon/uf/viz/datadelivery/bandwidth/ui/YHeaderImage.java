@@ -28,17 +28,18 @@ import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 
 /**
  * TODO Add Description
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 28, 2012            lvenable    Initial creation
- *
+ * Mar 28, 2016 5482       randerso    Compute label width based on actual text
+ * 
  * </pre>
- *
+ * 
  * @author lvenable
  * @version 1.0
  */
@@ -48,7 +49,7 @@ public class YHeaderImage extends AbstractCanvasImage {
 
     /**
      * Constructor.
-     *
+     * 
      * @param parentComp
      *            Parent composite
      * @param cs
@@ -83,10 +84,9 @@ public class YHeaderImage extends AbstractCanvasImage {
         gc.fillRectangle(0, 0, cs.getImageWidth(), cs.getImageHeight());
 
         // Rotate the Y header text.
-        int labelInPixels = gc.getFontMetrics().getAverageCharWidth()
-                * yHeaderStr.length();
+        int labelInPixels = gc.textExtent(yHeaderStr).x;
 
-        int yCoord = (cs.getCanvasHeight() / 2) + (labelInPixels / 2);
+        int yCoord = (cs.getCanvasHeight() + labelInPixels) / 2;
 
         Transform t = new Transform(gc.getDevice());
         t.translate(10, yCoord); // new origin

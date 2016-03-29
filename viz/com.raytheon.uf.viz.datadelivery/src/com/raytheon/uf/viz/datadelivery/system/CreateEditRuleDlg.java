@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -69,7 +70,8 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  *                                     rules are only for future subscriptions.
  * Jan 14, 2013  1286       djohnson   Rule operators are now used as objects.
  * Jan 17, 2013  1357       mpduff     Moved DataSizeUnit.
- * Jan 25, 2013   1528     djohnson     Subscription priority is now an enum.
+ * Jan 25, 2013  1528       djohnson   Subscription priority is now an enum.
+ * Mar 28, 2016  5482       randerso   Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -311,10 +313,10 @@ public class CreateEditRuleDlg extends CaveSWTDialog {
             textComp.setLayoutData(gd);
             textComp.setLayout(gl);
 
-            gd = new GridData(115, SWT.DEFAULT);
+            gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
             Label ruleLbl = new Label(textComp, SWT.NONE);
             ruleLbl.setLayoutData(gd);
-            ruleLbl.setText("Enter Rule Name: ");
+            ruleLbl.setText("Enter Rule Name:");
 
             gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
             ruleNameText = new Text(textComp, SWT.BORDER);
@@ -333,46 +335,17 @@ public class CreateEditRuleDlg extends CaveSWTDialog {
      */
     private void updateLayout() {
 
-        GridData gd = new GridData(315, SWT.DEFAULT, true, false);
-        GridLayout gl = new GridLayout(4, false);
+        GridData gd = (GridData) unitsCombo.getLayoutData();
+        gd.exclude = !(sizeFlag || frequencyFlag);
 
-        if (sizeFlag || frequencyFlag) {
-            gd = new GridData(315, SWT.DEFAULT, true, false);
-            gl = new GridLayout(4, false);
-        } else {
-            gd = new GridData(315, SWT.DEFAULT, true, false);
-            gl = new GridLayout(3, false);
+        unitsCombo.removeAll();
+        if (sizeFlag) {
+            createSizeUnitItems();
+
+        } else if (frequencyFlag) {
+            createFreqUnitItems();
         }
-
-        ruleDefinitionComp.setLayoutData(gd);
-        ruleDefinitionComp.setLayout(gl);
-
-        if ((typeFlag || nameFlag) && unitsCombo != null) {
-            unitsCombo.dispose();
-        }
-
-        if (sizeFlag || frequencyFlag) {
-            if (unitsCombo == null || unitsCombo.isDisposed()) {
-                gd = new GridData(65, SWT.DEFAULT);
-                unitsCombo = new Combo(ruleDefinitionComp, SWT.READ_ONLY);
-                unitsCombo.setLayoutData(gd);
-                unitsCombo.setLayout(gl);
-                unitsCombo.setToolTipText("Select the units of size");
-            }
-
-        }
-
-        if (unitsCombo != null && !unitsCombo.isDisposed()) {
-
-            unitsCombo.removeAll();
-            if (sizeFlag) {
-                createSizeUnitItems();
-
-            } else {
-                createFreqUnitItems();
-            }
-            unitsCombo.select(0);
-        }
+        unitsCombo.select(0);
 
         shell.layout();
         shell.pack();
@@ -392,21 +365,16 @@ public class CreateEditRuleDlg extends CaveSWTDialog {
         ruleDefinitionGroup.setLayoutData(gd);
         ruleDefinitionGroup.setText("Rule Definition");
 
-        if (frequencyFlag || sizeFlag) {
-            gd = new GridData(315, SWT.DEFAULT, true, false);
-            gl = new GridLayout(4, false);
-        } else {
-            gd = new GridData(315, SWT.DEFAULT, true, false);
-            gl = new GridLayout(3, false);
-        }
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gl = new GridLayout(4, false);
 
         ruleDefinitionComp = new Composite(ruleDefinitionGroup, SWT.NONE);
         ruleDefinitionComp.setLayoutData(gd);
         ruleDefinitionComp.setLayout(gl);
 
         // Field combo
-        gd = new GridData(160, SWT.DEFAULT);
-        fieldCombo = new Combo(ruleDefinitionComp, SWT.NONE);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        fieldCombo = new Combo(ruleDefinitionComp, SWT.READ_ONLY);
         fieldCombo.setLayoutData(gd);
         fieldCombo.setToolTipText("Select a field");
 
@@ -425,8 +393,8 @@ public class CreateEditRuleDlg extends CaveSWTDialog {
         }
 
         // Operation combo
-        gd = new GridData(100, SWT.DEFAULT);
-        operationCombo = new Combo(ruleDefinitionComp, SWT.NONE);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        operationCombo = new Combo(ruleDefinitionComp, SWT.READ_ONLY);
         operationCombo.setLayoutData(gd);
         operationCombo.setLayout(gl);
         operationCombo.setToolTipText("Select an operation");
@@ -437,25 +405,28 @@ public class CreateEditRuleDlg extends CaveSWTDialog {
             operationCombo.select(0);
         }
 
-        gd = new GridData(100, SWT.DEFAULT);
         ruleValue = new Text(ruleDefinitionComp, SWT.BORDER);
+        GC gc = new GC(ruleValue);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 20;
+        gc.dispose();
+        gd = new GridData(textWidth, SWT.DEFAULT);
         ruleValue.setTextLimit(20);
         ruleValue.setLayoutData(gd);
         ruleValue.setToolTipText("Enter rule text");
 
-        if (sizeFlag || frequencyFlag) {
-            gd = new GridData(65, SWT.DEFAULT);
-            unitsCombo = new Combo(ruleDefinitionComp, SWT.READ_ONLY);
-            unitsCombo.setLayoutData(gd);
-            unitsCombo.setLayout(gl);
-            unitsCombo.setToolTipText("Select the units of size");
-            if (sizeFlag) {
-                createSizeUnitItems();
-            } else {
-                createFreqUnitItems();
-            }
-            unitsCombo.select(0);
+        unitsCombo = new Combo(ruleDefinitionComp, SWT.READ_ONLY);
+        unitsCombo.setLayout(gl);
+        unitsCombo.setToolTipText("Select the units of size");
+        if (sizeFlag) {
+            createSizeUnitItems();
+        } else {
+            createFreqUnitItems();
         }
+        unitsCombo.select(0);
+
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        gd.exclude = !(sizeFlag || frequencyFlag);
+        unitsCombo.setLayoutData(gd);
 
         if (PRIORITY_TYPE.equals(ruleType)) {
             gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
@@ -470,7 +441,7 @@ public class CreateEditRuleDlg extends CaveSWTDialog {
             Label operation = new Label(prioritySelectionComp, SWT.NONE);
             operation.setText("Priority:");
 
-            gd = new GridData(80, SWT.DEFAULT);
+            gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
             priorityCombo = new Combo(prioritySelectionComp, SWT.READ_ONLY);
             priorityCombo.setLayoutData(gd);
             priorityCombo.setLayout(gl);
@@ -495,18 +466,21 @@ public class CreateEditRuleDlg extends CaveSWTDialog {
             latencySelectionComp.setLayout(gl);
 
             // Latency combo
-            gd = new GridData(120, SWT.DEFAULT);
+            gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
             Label latencyLbl = new Label(latencySelectionComp, SWT.NONE);
             latencyLbl.setLayoutData(gd);
             latencyLbl.setText("Maximum Latency: ");
 
-            gd = new GridData(45, SWT.DEFAULT);
             latencyMax = new Text(latencySelectionComp, SWT.BORDER);
+            gc = new GC(latencyMax);
+            textWidth = gc.getFontMetrics().getAverageCharWidth() * 5;
+            gc.dispose();
+            gd = new GridData(textWidth, SWT.DEFAULT);
             latencyMax.setTextLimit(5);
             latencyMax.setLayoutData(gd);
             latencyMax.setToolTipText("Enter latency in minutes");
 
-            gd = new GridData(75, SWT.DEFAULT);
+            gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
             Label minutesLbl = new Label(latencySelectionComp, SWT.NONE);
             minutesLbl.setLayoutData(gd);
             minutesLbl.setText("Minutes");

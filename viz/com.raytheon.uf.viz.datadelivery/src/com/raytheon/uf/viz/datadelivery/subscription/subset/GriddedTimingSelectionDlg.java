@@ -63,6 +63,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Jan 19, 2016  5054      randerso    Fixed dialog to display with title bar  
  *                                     and in correct location.
  * Feb 09, 2016  5324      randerso    Remove CAVE.DO_NOT_BLOCK until DR #5327 is worked
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -154,10 +155,10 @@ public class GriddedTimingSelectionDlg extends CaveSWTDialog {
             }
         });
 
-        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        gd.heightHint = 150;
         this.dateCycleList = new List(dateComp, SWT.SINGLE | SWT.BORDER
                 | SWT.V_SCROLL);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.heightHint = dateCycleList.getItemHeight() * 8;
         dateCycleList.setLayoutData(gd);
         dateCycleList.setEnabled(false);
 
@@ -175,8 +176,9 @@ public class GriddedTimingSelectionDlg extends CaveSWTDialog {
         buttonComp.setLayout(gl);
         buttonComp.setLayoutData(gd);
 
-        int btnWidth = 70;
-        gd = new GridData(btnWidth, SWT.DEFAULT);
+        int btnWidth = buttonComp.getDisplay().getDPI().x;
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = btnWidth;
         okBtn = new Button(buttonComp, SWT.PUSH);
         okBtn.setLayoutData(gd);
         okBtn.setText("OK");
@@ -188,7 +190,8 @@ public class GriddedTimingSelectionDlg extends CaveSWTDialog {
             }
         });
 
-        gd = new GridData(btnWidth, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = btnWidth;
         cancelBtn = new Button(buttonComp, SWT.PUSH);
         cancelBtn.setLayoutData(gd);
         cancelBtn.setText("Cancel");

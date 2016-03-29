@@ -27,6 +27,7 @@ import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -65,7 +66,8 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 07, 2013   2180     mpduff      Initial creation.
- * 7/10/2014    1717       bphillip    Changed imports due to moved AESEncryptor class
+ * Jul 10, 2014    1717    bphillip    Changed imports due to moved AESEncryptor class
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -126,9 +128,7 @@ public class DataProviderPasswordComposite extends Composite implements
         this.setLayoutData(gd);
 
         gl = new GridLayout(3, false);
-        gd = new GridData(SWT.VERTICAL, SWT.DEFAULT, true, false);
-        gl.marginTop = 15;
-        gl.marginLeft = 15;
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         Composite comp = new Composite(this, SWT.NONE);
         comp.setLayout(gl);
         comp.setLayoutData(gd);
@@ -137,6 +137,8 @@ public class DataProviderPasswordComposite extends Composite implements
         providerLabel.setText("Provider:");
 
         providerCombo = new Combo(comp, SWT.READ_ONLY);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        providerCombo.setLayoutData(gd);
         providerCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -152,7 +154,12 @@ public class DataProviderPasswordComposite extends Composite implements
         userLabel.setText("User Name:");
 
         userTxt = new Text(comp, SWT.BORDER);
-        userTxt.setLayoutData(new GridData(150, SWT.DEFAULT));
+        GC gc = new GC(userTxt);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 25;
+        gc.dispose();
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.widthHint = textWidth;
+        userTxt.setLayoutData(gd);
         userTxt.addKeyListener(new KeyListener() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -172,7 +179,9 @@ public class DataProviderPasswordComposite extends Composite implements
         passLabel.setText("Password:");
 
         passTxt = new Text(comp, SWT.BORDER);
-        passTxt.setLayoutData(new GridData(150, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.widthHint = textWidth;
+        passTxt.setLayoutData(gd);
         passTxt.setEchoChar('*');
         passTxt.addKeyListener(new KeyListener() {
             @Override
@@ -204,7 +213,9 @@ public class DataProviderPasswordComposite extends Composite implements
         keyLabel.setText("AESEncryptor Key:");
 
         keyTxt = new Text(comp, SWT.BORDER);
-        keyTxt.setLayoutData(new GridData(150, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.widthHint = textWidth;
+        keyTxt.setLayoutData(new GridData(textWidth, SWT.DEFAULT));
         keyTxt.setEchoChar('*');
         keyTxt.addKeyListener(new KeyListener() {
             @Override
@@ -280,8 +291,9 @@ public class DataProviderPasswordComposite extends Composite implements
      * Check the text fields to determine of buttons should be enabled or not
      */
     private boolean validation() {
-        if ((!userTxt.getText().isEmpty() && !keyTxt.getText().isEmpty() && !passTxt
-                .getText().isEmpty()) && providerCombo.getSelectionIndex() > -1) {
+        if (!userTxt.getText().isEmpty() && !keyTxt.getText().isEmpty()
+                && !passTxt.getText().isEmpty()
+                && providerCombo.getSelectionIndex() > -1) {
             return true;
         }
 

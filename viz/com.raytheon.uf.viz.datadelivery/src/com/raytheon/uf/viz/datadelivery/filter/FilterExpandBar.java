@@ -31,6 +31,8 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -72,21 +74,22 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 20, 2012            lvenable     Initial creation
- * Jun 21, 2012    736     djohnson     Add setter for coordinates.
- * Dec 12, 2012   1391     bgonzale     Added a job for the dataset query.
- * Dec 10, 2012   1259     bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Dec 18, 2012   1436     bgonzale     When creating the filter dialogs, use the loaded
- *                                      configuration when populating the filters. Fixed selection
- *                                      icon update when loading from a file.
- * Feb 24, 2013   1620     mpduff       Fixed set clean issue when loading configurations.  Set clean 
- *                                      needs to be called after the data load job is complete.
- * May 15, 2013   1040     mpduff       Called markNotBusyInUIThread.
- * Jul 05, 2013   2137     mpduff       Only a single data type can be selected.
- * Jul 05, 2013   2138     mpduff       Fixed to not use filter if filter is disabled.
- * Sep 26, 2013   2412     mpduff       Don't create expand items if no data type is selected.
- * Apr 10, 2014   2892     mpduff       Clear selected items when changing data types.
- *  
+ * Feb 20, 2012            lvenable    Initial creation
+ * Jun 21, 2012    736     djohnson    Add setter for coordinates.
+ * Dec 12, 2012   1391     bgonzale    Added a job for the dataset query.
+ * Dec 10, 2012   1259     bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * Dec 18, 2012   1436     bgonzale    When creating the filter dialogs, use the loaded
+ *                                     configuration when populating the filters. Fixed selection
+ *                                     icon update when loading from a file.
+ * Feb 24, 2013   1620     mpduff      Fixed set clean issue when loading configurations.  Set clean 
+ *                                     needs to be called after the data load job is complete.
+ * May 15, 2013   1040     mpduff      Called markNotBusyInUIThread.
+ * Jul 05, 2013   2137     mpduff      Only a single data type can be selected.
+ * Jul 05, 2013   2138     mpduff      Fixed to not use filter if filter is disabled.
+ * Sep 26, 2013   2412     mpduff      Don't create expand items if no data type is selected.
+ * Apr 10, 2014   2892     mpduff      Clear selected items when changing data types.
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
+ * 
  * </pre>
  * 
  * @author lvenable
@@ -161,10 +164,20 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
         createFilterControls();
 
+        GC gc = new GC(this);
+        int charWidth = gc.getFontMetrics().getAverageCharWidth();
+        int charHeight = gc.getFontMetrics().getHeight();
+        gc.dispose();
+
+        Rectangle monitorBounds = this.getMonitor().getBounds();
+
         expandBar = new ExpandBar(this, SWT.V_SCROLL);
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        gd.heightHint = 250;
-        gd.widthHint = 600;
+        gd.heightHint = charHeight * 18;
+        // limit width to half of the width of an equivalent 5:4 aspect ratio
+        // monitor
+        gd.widthHint = Math.min(charWidth * 100,
+                monitorBounds.height * 5 / 4 / 2);
         expandBar.setLayoutData(gd);
 
         FilterDefinitionManager filterMan = FilterDefinitionManager
@@ -464,8 +477,8 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
         ArrayList<Integer> enabledIndexes = new ArrayList<Integer>();
 
         for (int i = 0; i < expandBar.getItems().length; i++) {
-            AbstractFilterComp afc = (AbstractFilterComp) (expandBar.getItem(i)
-                    .getControl());
+            AbstractFilterComp afc = (AbstractFilterComp) expandBar.getItem(i)
+                    .getControl();
             if (afc.isEnabled()) {
                 enabledIndexes.add(i);
             }
@@ -486,7 +499,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
         }
 
         for (int idx : indexes) {
-            ((AbstractFilterComp) (expandBar.getItem(idx).getControl()))
+            ((AbstractFilterComp) expandBar.getItem(idx).getControl())
                     .setEnabled(true);
         }
     }

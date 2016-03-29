@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.datadelivery.subscription;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -43,8 +44,9 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- -------------------------
- * Jan 08, 2013 1453       djohnson     Split creation and edit dialogs.
- * Mar 31, 2014 2889      dhladky      Added username for notification center tracking.
+ * Jan 08, 2013  1453      djohnson    Split creation and edit dialogs.
+ * Mar 31, 2014  2889      dhladky     Added username for notification center tracking.
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -65,8 +67,7 @@ public class CreateGroupDefinitionDlg extends BaseGroupDefinitionDlg {
      * @param callback
      *            callback to subscription manager
      */
-    public CreateGroupDefinitionDlg(Shell parent,
-            IGroupAction callback) {
+    public CreateGroupDefinitionDlg(Shell parent, IGroupAction callback) {
         super(parent, callback);
     }
 
@@ -86,7 +87,7 @@ public class CreateGroupDefinitionDlg extends BaseGroupDefinitionDlg {
         Group groupNameInfo = new Group(mainComp, SWT.NONE);
         groupNameInfo.setLayout(gl);
         groupNameInfo.setLayoutData(gd);
-        groupNameInfo.setText("  Group Information  ");
+        groupNameInfo.setText(" Group Information ");
 
         Label groupName = new Label(groupNameInfo, SWT.NONE);
         groupName.setText("Group Name: ");
@@ -97,7 +98,10 @@ public class CreateGroupDefinitionDlg extends BaseGroupDefinitionDlg {
         groupComp.setLayout(gl);
 
         groupNameTxt = new Text(groupComp, SWT.BORDER);
-        groupNameTxt.setLayoutData(new GridData(285, SWT.DEFAULT));
+        GC gc = new GC(groupNameTxt);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 48;
+        gc.dispose();
+        groupNameTxt.setLayoutData(new GridData(textWidth, SWT.DEFAULT));
         groupName.setToolTipText("Enter Group name");
     }
 
@@ -113,9 +117,10 @@ public class CreateGroupDefinitionDlg extends BaseGroupDefinitionDlg {
      * {@inheritDoc}
      */
     @Override
-    protected void saveGroupDefinition(String username, GroupDefinition groupDefinition)
-            throws RegistryHandlerException {
-        DataDeliveryHandlers.getGroupDefinitionHandler().store(username, groupDefinition);
+    protected void saveGroupDefinition(String username,
+            GroupDefinition groupDefinition) throws RegistryHandlerException {
+        DataDeliveryHandlers.getGroupDefinitionHandler().store(username,
+                groupDefinition);
     }
 
     /**
