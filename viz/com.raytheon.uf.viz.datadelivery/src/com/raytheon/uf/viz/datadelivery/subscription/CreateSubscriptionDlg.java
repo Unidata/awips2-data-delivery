@@ -40,6 +40,7 @@ import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
@@ -208,9 +209,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /** Subscription Name text field */
     private Text subNameTxt;
-
-    /** Subscription Name label */
-    private Label editSubNameTxt;
 
     /** Create/edit flag */
     private final boolean create;
@@ -395,19 +393,26 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         subName.setText("Name: ");
 
         // If in Edit mode do not allow Subscription Name to be changed
-        if (create) {
-            subNameTxt = new Text(subInfoGroup, SWT.BORDER);
-            subNameTxt.setLayoutData(new GridData(250, SWT.DEFAULT));
-        } else {
-            editSubNameTxt = new Label(subInfoGroup, SWT.BORDER);
-            editSubNameTxt.setLayoutData(new GridData(250, SWT.DEFAULT));
+        subNameTxt = new Text(subInfoGroup, SWT.BORDER
+                | (create ? SWT.None : SWT.READ_ONLY));
+        if (!create) {
+            subNameTxt.setBackground(subInfoGroup.getBackground());
         }
+
+        GC gc = new GC(subNameTxt);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 40;
+        gc.dispose();
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.widthHint = textWidth;
+        subNameTxt.setLayoutData(gd);
 
         Label descName = new Label(subInfoGroup, SWT.NONE);
         descName.setText("Description: ");
 
         descNameTxt = new Text(subInfoGroup, SWT.BORDER);
-        descNameTxt.setLayoutData(new GridData(250, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.widthHint = textWidth;
+        descNameTxt.setLayoutData(gd);
     }
 
     private void createChangeText() {
@@ -423,7 +428,10 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         descName.setText("Reason for Requesting Change: ");
 
         changeReasonTxt = new Text(reasonGroup, SWT.BORDER);
-        changeReasonTxt.setLayoutData(new GridData(375, SWT.DEFAULT));
+        GC gc = new GC(changeReasonTxt);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 60;
+        gc.dispose();
+        changeReasonTxt.setLayoutData(new GridData(textWidth, SWT.DEFAULT));
     }
 
     /**
@@ -515,8 +523,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 false));
 
         if (!create) {
-            if ((subscription != null)
-                    && (subscription.getOfficeIDs().size() > 0)) {
+            if (subscription != null && subscription.getOfficeIDs().size() > 0) {
                 String[] siteArr = subscription.getOfficeIDs().toArray(
                         new String[subscription.getOfficeIDs().size()]);
                 processSites(siteArr);
@@ -535,8 +542,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         btnComp.setLayout(gl);
         btnComp.setLayoutData(gd);
 
+        int buttonWidth = btnComp.getDisplay().getDPI().x;
         okBtn = new Button(btnComp, SWT.PUSH);
-        okBtn.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        okBtn.setLayoutData(gd);
         okBtn.setText("OK");
         okBtn.setEnabled(true);
         okBtn.addSelectionListener(new SelectionAdapter() {
@@ -559,8 +569,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
         Button cancelBtn = new Button(btnComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
-        cancelBtn
-                .setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        cancelBtn.setLayoutData(gd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -678,7 +689,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     @Override
     protected void disposed() {
         super.disposed();
-        if ((font != null) && !font.isDisposed()) {
+        if (font != null && !font.isDisposed()) {
             font.dispose();
         }
     }
@@ -689,11 +700,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      * @return
      */
     private String getSubscriptionName() {
-        if (create) {
-            return this.subNameTxt.getText().trim();
-        } else {
-            return this.editSubNameTxt.getText();
-        }
+        return this.subNameTxt.getText().trim();
     }
 
     /**
@@ -704,11 +711,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      */
     public void setSubscriptionName(String subscriptionName) {
         if (subscriptionName != null) {
-            if (create) {
-                this.subNameTxt.setText(subscriptionName);
-            } else {
-                this.editSubNameTxt.setText(subscriptionName);
-            }
+            this.subNameTxt.setText(subscriptionName);
         }
     }
 
@@ -1042,7 +1045,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         Subscription cachedSiteSubscription = null;
-        if ((sharedSites != null) && (sharedSites.length > 1)) {
+        if (sharedSites != null && sharedSites.length > 1) {
             SharedSubscription sharedSub = new SharedSubscription(subscription);
             sharedSub.setRoute(Network.SBN);
             Set<String> officeList = Sets.newHashSet(sharedSites);
@@ -1317,9 +1320,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
                     if (cachedSiteSubscription != null) {
                         String responseMessage = response.getMessage();
-                        if ((responseMessage != null)
-                                && (responseMessage
-                                        .indexOf(" has been updated") > 0)) {
+                        if (responseMessage != null
+                                && responseMessage.indexOf(" has been updated") > 0) {
                         }
                     }
                 } catch (RegistryHandlerException e) {
@@ -1393,7 +1395,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         if (this.create) {
 
             // Is Subset Name entered
-            if ((subscriptionName == null) || (subscriptionName.isEmpty())) {
+            if (subscriptionName == null || subscriptionName.isEmpty()) {
                 displayErrorPopup(DataDeliveryGUIUtils.NAME_REQUIRED_TITLE,
                         DataDeliveryGUIUtils.NAME_REQUIRED_MESSAGE);
                 return false;
@@ -1444,20 +1446,20 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             Date formDurStart = null;
             Date formDurEnd = null;
 
-            if ((formDurStartStr != null) && (formDurEndStr != null)) {
+            if (formDurStartStr != null && formDurEndStr != null) {
                 formDurStart = DataDeliveryGUIUtils
                         .getSelectedSubDate(formDurStartStr);
                 formDurEnd = DataDeliveryGUIUtils
                         .getSelectedSubDate(formDurEndStr);
             }
 
-            if ((durStart != null) && (durEnd != null)
-                    && (formDurStart != null) && (formDurEnd != null)) {
+            if (durStart != null && durEnd != null && formDurStart != null
+                    && formDurEnd != null) {
                 if (durStart.equals(formDurStart) && durEnd.equals(formDurEnd)) {
                     groupDurValid = true;
                 }
-            } else if ((durStart == null) && (durEnd == null)
-                    && (formDurStart == null) && (formDurEnd == null)) {
+            } else if (durStart == null && durEnd == null
+                    && formDurStart == null && formDurEnd == null) {
                 groupDurValid = true;
             }
 
@@ -1477,13 +1479,13 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                         activeEnd);
             }
 
-            if ((activeStartStr != null) && (activeEndStr != null)
+            if (activeStartStr != null && activeEndStr != null
                     && !formActiveStart.isEmpty() && !formActiveEnd.isEmpty()) {
                 if (activeStartStr.equals(formActiveStart)
                         && activeEndStr.equals(formActiveEnd)) {
                     groupActiveValid = true;
                 }
-            } else if ((activeStartStr == null) && (activeEndStr == null)
+            } else if (activeStartStr == null && activeEndStr == null
                     && formActiveStart.isEmpty() && formActiveEnd.isEmpty()) {
                 groupActiveValid = true;
             }
@@ -1646,7 +1648,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             setSubscriptionDescription(subscription.getDescription());
         }
 
-        if ((subscription.getGroupName() != null)
+        if (subscription.getGroupName() != null
                 && !subscription.getGroupName().equals("None")) {
             setGroupName(subscription.getGroupName());
         }
@@ -1665,7 +1667,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         Date activePeriodStartDate = subscription.getActivePeriodStart();
         Date activePeriodEndDate = subscription.getActivePeriodEnd();
 
-        if ((activePeriodStartDate != null) && (activePeriodEndDate != null)) {
+        if (activePeriodStartDate != null && activePeriodEndDate != null) {
             final Calendar now = TimeUtil.newGmtCalendar();
             int calendarYearToUse = now.get(Calendar.YEAR);
 
@@ -1737,7 +1739,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         Date durStart = groupDefinition.getSubscriptionStart();
         Date durEnd = groupDefinition.getSubscriptionEnd();
 
-        if ((durStart != null) || (durEnd != null)) {
+        if (durStart != null || durEnd != null) {
             setStartDate(durStart);
             setExpirationDate(durEnd);
             setNoExpiration(false);
@@ -1753,7 +1755,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         Date activePeriodStartDate = groupDefinition.getActivePeriodStart();
         Date activePeriodEndDate = groupDefinition.getActivePeriodEnd();
 
-        if ((activePeriodStartDate != null) || (activePeriodEndDate != null)) {
+        if (activePeriodStartDate != null || activePeriodEndDate != null) {
             final Calendar now = TimeUtil.newGmtCalendar();
 
             activePeriodStartDate = calculateNextOccurenceOfMonthAndDay(

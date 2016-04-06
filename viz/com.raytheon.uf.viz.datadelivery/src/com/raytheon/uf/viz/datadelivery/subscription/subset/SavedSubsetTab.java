@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.datadelivery.subscription.subset;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -43,12 +44,13 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 30, 2012            mpduff     Initial creation.
- * Jun  4, 2012    645     jpiatt     Added tooltips.
- * Nov  1, 2012   1278     mpduff     Formatted to meet coding standard.
- * Apr 10, 2014   2864     mpduff     Changed how saved subset files are stored.
- * Oct 19, 2015   4996     dhladky    Fixed message dialog call for subsets.
- * Oct 20, 2015   4992     dhladky    Added OK button message at tester request.
+ * Mar 30, 2012            mpduff      Initial creation.
+ * Jun  4, 2012    645     jpiatt      Added tooltips.
+ * Nov  1, 2012   1278     mpduff      Formatted to meet coding standard.
+ * Apr 10, 2014   2864     mpduff      Changed how saved subset files are stored.
+ * Oct 19, 2015   4996     dhladky     Fixed message dialog call for subsets.
+ * Oct 20, 2015   4992     dhladky     Added OK button message at tester request.
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -101,30 +103,31 @@ public class SavedSubsetTab extends SubsetTab {
      * Initialize components
      */
     private void init() {
-        subsetList = new List(comp, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL);
-
-        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         GridLayout gl = new GridLayout(1, false);
         comp.setLayout(gl);
+        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         comp.setLayoutData(gd);
 
-        GridData listData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        listData.widthHint = 275;
-        subsetList.setLayoutData(listData);
-
-        gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
-        gl = new GridLayout(3, false);
-
-        int buttonWidth = 75;
-        GridData btnData = new GridData(buttonWidth, SWT.DEFAULT);
+        subsetList = new List(comp, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL);
+        GC gc = new GC(subsetList);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 45;
+        gc.dispose();
+        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
+        gd.widthHint = textWidth;
+        subsetList.setLayoutData(gd);
 
         Composite btnComp = new Composite(comp, SWT.NONE);
+        gl = new GridLayout(3, true);
         btnComp.setLayout(gl);
+        gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
         btnComp.setLayoutData(gd);
 
+        int buttonWidth = btnComp.getDisplay().getDPI().x;
         loadBtn = new Button(btnComp, SWT.PUSH);
         loadBtn.setText("Load");
-        loadBtn.setLayoutData(btnData);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        loadBtn.setLayoutData(gd);
         loadBtn.setToolTipText("Highlight subset and click to load");
         loadBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -135,7 +138,9 @@ public class SavedSubsetTab extends SubsetTab {
 
         Button saveBtn = new Button(btnComp, SWT.PUSH);
         saveBtn.setText("Save");
-        saveBtn.setLayoutData(btnData);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        saveBtn.setLayoutData(gd);
         saveBtn.setToolTipText("Highlight subset and click to save");
         saveBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -146,7 +151,9 @@ public class SavedSubsetTab extends SubsetTab {
 
         deleteBtn = new Button(btnComp, SWT.PUSH);
         deleteBtn.setText("Delete");
-        deleteBtn.setLayoutData(btnData);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        deleteBtn.setLayoutData(gd);
         deleteBtn.setToolTipText("Highlight subset and click to delete");
         deleteBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -173,8 +180,8 @@ public class SavedSubsetTab extends SubsetTab {
 
     private void handleDeleteSubset() {
         if (subsetList.getSelectionCount() > 0) {
-            int response = DataDeliveryUtils.showMessageNonCallback(comp.getShell(),
-                    SWT.YES | SWT.NO, "Delete Subset?",
+            int response = DataDeliveryUtils.showMessageNonCallback(
+                    comp.getShell(), SWT.YES | SWT.NO, "Delete Subset?",
                     "Are you sure you want to delete this subset?");
             String subsetName = subsetList.getItem(subsetList
                     .getSelectionIndex());

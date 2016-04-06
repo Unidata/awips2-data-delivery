@@ -40,6 +40,7 @@ import org.eclipse.swt.widgets.Spinner;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 30, 2013   2386     mpduff      Initial creation
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -159,19 +160,6 @@ public class CommonAttributeComposite extends Composite {
                 callback.applyChange();
             }
         });
-
-        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, false, false);
-        gl = new GridLayout(2, false);
-        gl.marginRight = 10;
-        Composite matchComp = new Composite(commonGrp, SWT.NONE);
-        matchComp.setLayout(gl);
-        matchComp.setLayoutData(gd);
-
-        gd = new GridData(100, SWT.DEFAULT);
-        Label matchLabel = new Label(matchComp, SWT.NONE);
-        matchLabel.setLayoutData(gd);
-        matchLabel.setText("Match:");
-
     }
 
     /**

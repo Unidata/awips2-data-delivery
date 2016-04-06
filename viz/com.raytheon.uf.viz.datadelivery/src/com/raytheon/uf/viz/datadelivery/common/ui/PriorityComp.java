@@ -48,6 +48,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
  * Jan 25, 2013 1528       djohnson    Use priority enum instead of raw integers.
  * Jun 04, 2013     223    mpduff      Changes for Point Data.
  * Aug 30, 2013    2288    bgonzale    Added display of priority and latency rules.
+ * Mar 28, 2016  5482      randerso     Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -159,7 +160,7 @@ public class PriorityComp extends Composite {
         Group subPriorityGroup = new Group(this, SWT.NONE);
         subPriorityGroup.setLayout(gl);
         subPriorityGroup.setLayoutData(gd);
-        subPriorityGroup.setText("   Priority/Latency  ");
+        subPriorityGroup.setText("Priority/Latency");
 
         Composite priorityComp = new Composite(subPriorityGroup, SWT.NONE);
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
@@ -168,7 +169,7 @@ public class PriorityComp extends Composite {
         priorityComp.setLayout(gl);
 
         Label priorityLbl = new Label(priorityComp, SWT.NONE);
-        StringBuilder sb = new StringBuilder(" Priority");
+        StringBuilder sb = new StringBuilder("Priority");
         if (hasRules) {
             sb.append(" (Rule: ");
             sb.append(priorityRule.getPriorityName());
@@ -182,7 +183,6 @@ public class PriorityComp extends Composite {
         for (int i = 0; i < prioritiesArr.length; i++) {
             priorities[i] = prioritiesArr[i].getPriorityName();
         }
-        gd = new GridData(285, SWT.DEFAULT);
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         priorityCombo = new Combo(priorityComp, SWT.READ_ONLY);
         priorityCombo.setItems(priorities);
@@ -204,7 +204,7 @@ public class PriorityComp extends Composite {
         latencyComp.setLayoutData(gd);
 
         Label latencyLbl = new Label(latencyComp, SWT.NONE);
-        sb = new StringBuilder("Latency in Minutes");
+        sb = new StringBuilder("Latency in minutes");
         if (hasRules) {
             sb.append(" (Rule: ");
             sb.append(latencyRule);

@@ -4,6 +4,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -22,7 +23,8 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 7, 2013             skorolev    Initial creation
- * Jan 20, 2013 #2291      lvenable    Fixed resizing of components.
+ * Jan 20, 2013   2291     lvenable    Fixed resizing of components.
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -48,16 +50,20 @@ public class TextMessageDlg extends CaveSWTDialog {
         mainComp.setLayout(gl);
         mainComp.setLayoutData(gd);
 
-        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        gd.widthHint = 400;
-        gd.heightHint = 350;
         StyledText text = new StyledText(mainComp, SWT.MULTI | SWT.WRAP
                 | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
+        GC gc = new GC(text);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 65;
+        gc.dispose();
+
+        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
+        gd.widthHint = textWidth;
+        gd.heightHint = text.getLineHeight() * 25;
         text.setLayoutData(gd);
         text.setText(messageText);
 
         gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
-        gd.widthHint = 60;
+        gd.minimumWidth = mainComp.getDisplay().getDPI().x;
         Button okBtn = new Button(mainComp, SWT.PUSH);
         okBtn.setText("OK");
         okBtn.setLayoutData(gd);

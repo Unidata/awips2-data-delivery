@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.datadelivery.subscription;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -33,7 +34,6 @@ import org.eclipse.swt.widgets.Text;
 
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
-import com.raytheon.viz.ui.dialogs.ICloseCallback;
 
 /**
  * Create a copy of a subscription dialog.
@@ -48,6 +48,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Dec 17, 2012   1434     mpduff      Don't allow underscores in name.
  * Nov 14, 2013   2538     mpduff      Check for same name entered.
  * May 17, 2015   4047     dhladky     verified non-blocking, restored functionality (copy was broken)
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -71,7 +72,8 @@ public class FileNameDlg extends CaveSWTDialog {
      *            The original subscription name
      */
     public FileNameDlg(Shell parent, String origName) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK | CAVE.INDEPENDENT_SHELL);
+        super(parent, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK
+                | CAVE.INDEPENDENT_SHELL);
         this.setText("Copy Subscription");
         this.origName = origName;
     }
@@ -100,16 +102,12 @@ public class FileNameDlg extends CaveSWTDialog {
      */
     @Override
     protected void initializeComponents(Shell shell) {
-        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        gd.widthHint = 275;
-        GridLayout gl = new GridLayout(1, false);
-        gl.verticalSpacing = 8;
-        gl.horizontalSpacing = 8;
-        gl.marginTop = 8;
-        gl.marginBottom = 8;
-
         Composite mainComp = new Composite(shell, SWT.NONE);
+        GridLayout gl = new GridLayout(1, false);
         mainComp.setLayout(gl);
+        gl.marginHeight = 0;
+        gl.marginWidth = 0;
+        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         mainComp.setLayoutData(gd);
 
         // New Subscription Name text box
@@ -118,24 +116,31 @@ public class FileNameDlg extends CaveSWTDialog {
         lbl.setText("New Subscription Name:");
         lbl.setLayoutData(gd);
 
-        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         nameTxt = new Text(mainComp, SWT.BORDER);
-        nameTxt.setText(origName);
-        nameTxt.selectAll();
+        GC gc = new GC(nameTxt);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 45;
+        gc.dispose();
+
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.widthHint = textWidth;
         nameTxt.setLayoutData(gd);
 
-        gl = new GridLayout(2, false);
-        gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
+        nameTxt.setText(origName);
+        nameTxt.selectAll();
+
         Composite btnComp = new Composite(shell, SWT.NONE);
+        gl = new GridLayout(2, true);
         btnComp.setLayout(gl);
+        gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
         btnComp.setLayoutData(gd);
 
         // OK button
-        int btnWidth = 75;
-        GridData btnData = new GridData(btnWidth, SWT.DEFAULT);
+        int btnWidth = btnComp.getDisplay().getDPI().x;
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = btnWidth;
         Button okBtn = new Button(btnComp, SWT.PUSH);
         okBtn.setText("OK");
-        okBtn.setLayoutData(btnData);
+        okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -146,10 +151,11 @@ public class FileNameDlg extends CaveSWTDialog {
         });
 
         // Cancel button
-        btnData = new GridData(btnWidth, SWT.DEFAULT);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = btnWidth;
         Button cancelBtn = new Button(btnComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
-        cancelBtn.setLayoutData(btnData);
+        cancelBtn.setLayoutData(gd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {

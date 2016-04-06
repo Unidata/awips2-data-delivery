@@ -50,6 +50,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.PointTimeXML;
  * Jun 06, 2013   2038     djohnson    Place refresh intervals into PointTime so BandwidthManager has access.
  * Jun 13, 2013   2108     mpduff      Update data set size on change.
  * Oct 11, 2013   2386     mpduff      Refactor DD Front end.
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -103,9 +104,9 @@ public class PointTimeSubsetTab extends DataTimingSubsetTab {
         Label intervalLabel = new Label(intervalGroup, SWT.NONE);
         intervalLabel.setText("Retrieval Interval (minutes): ");
 
-        GridData comboData = new GridData(85, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         intervalCombo = new Combo(intervalGroup, SWT.READ_ONLY);
-        intervalCombo.setLayoutData(comboData);
+        intervalCombo.setLayoutData(gd);
         intervalCombo.setItems(INTERVALS);
         intervalCombo.select(0);
         intervalCombo.addSelectionListener(new SelectionAdapter() {

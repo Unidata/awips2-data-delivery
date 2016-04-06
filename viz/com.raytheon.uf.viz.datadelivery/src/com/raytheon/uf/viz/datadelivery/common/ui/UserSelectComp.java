@@ -108,13 +108,15 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Nov 19, 2014  3850      dhladky      Bad cast from Subscription to InitialPendingSubscription.
  * Nov 19, 2014  3851      dhladky      Fixed userName subscription selection bounce back on change of user.
  * Nov 19, 2014  3852      dhladky      Resurrected the unscheduled state.
+ * Mar 28, 2016  5482      randerso     Fixed GUI sizing issues
+ * 
  * </pre>
  * 
  * @author jpiatt
  * @version 1.0
  */
-public class UserSelectComp<T extends Time, C extends Coverage> extends Composite implements IUpdate, IDisplay,
-        IForceApplyPromptDisplayText {
+public class UserSelectComp<T extends Time, C extends Coverage> extends
+        Composite implements IUpdate, IDisplay, IForceApplyPromptDisplayText {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -149,7 +151,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
     private final Map<String, Map<String, Subscription<T, C>>> userMap = new HashMap<String, Map<String, Subscription<T, C>>>();
 
     private final Set<String> initiallySelectedSubscriptions = new HashSet<String>();
-    
+
     /** Keeps track of UserName in selection combo **/
     private String previousUserNameComboSelection = "";
 
@@ -213,7 +215,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
         Label userName = new Label(userComp, SWT.NONE);
         userName.setText("User: ");
 
-        gd = new GridData(150, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         userNameCombo = new Combo(userComp, SWT.READ_ONLY);
         userNameCombo.setLayoutData(gd);
         userNameCombo.setToolTipText("Select a user name");
@@ -240,12 +242,12 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
      * Handle a different user selected from the combo box.
      */
     private void handleUserSelect() {
-        
+
         // Must handle "First Time" selected
         if (previousUserNameComboSelection.equals("")) {
             previousUserNameComboSelection = userNameCombo.getText();
         }
-        
+
         if (!userNameCombo.getText().equals(previousUserNameComboSelection)) {
             populateUserSubscriptions(userNameCombo.getText());
             previousUserNameComboSelection = userNameCombo.getText();
@@ -257,7 +259,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
      */
     private void populateUserSubscriptions(String owner) {
 
-        final String ownerToUse = (owner == null) ? currentUser : owner;
+        final String ownerToUse = owner == null ? currentUser : owner;
 
         @SuppressWarnings("rawtypes")
         List<Subscription> results = Collections.emptyList();
@@ -311,7 +313,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
         Set<Subscription<T, C>> removedFromGroup = new HashSet<Subscription<T, C>>();
 
         for (String subscriptionName : differences) {
-            final Subscription<T, C> subscription = ownerSubs.get(subscriptionName);
+            final Subscription<T, C> subscription = ownerSubs
+                    .get(subscriptionName);
             if (selectedSubscriptionNames.contains(subscriptionName)) {
                 addedToGroup.add(subscription);
             } else {
@@ -333,7 +336,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
      */
     @SuppressWarnings("unchecked")
     private void updateGroupDefinition(String groupName,
-            Set<Subscription<T, C>> addedToGroup, Set<Subscription<T, C>> removedFromGroup) {
+            Set<Subscription<T, C>> addedToGroup,
+            Set<Subscription<T, C>> removedFromGroup) {
 
         ITimer timer = TimeUtil.getPriorityEnabledTimer(statusHandler,
                 Priority.DEBUG);
@@ -347,11 +351,12 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
             subscription.setGroupName(groupName);
         }
 
-        Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections.emptySet();
+        Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections
+                .emptySet();
         try {
             groupSubscriptionsForUpdate = new HashSet<Subscription<T, C>>(
-                    (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers.getSubscriptionHandler()
-                            .getByGroupName(groupName));
+                    (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers
+                            .getSubscriptionHandler().getByGroupName(groupName));
 
             // Remove any that are set to be removed from the group
             groupSubscriptionsForUpdate.removeAll(removedFromGroup);
@@ -456,9 +461,11 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
             ISubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
                     .getSubscriptionNotificationService();
             for (Subscription<T, C> pendingSubscription : pendingSubscriptionList) {
-                InitialPendingSubscription<T,C> pendingSub = pendingSubscription.initialPending(currentUser);
+                InitialPendingSubscription<T, C> pendingSub = pendingSubscription
+                        .initialPending(currentUser);
                 subscriptionNotificationService
-                        .sendUpdatedPendingSubscriptionNotification(pendingSub, currentUser);
+                        .sendUpdatedPendingSubscriptionNotification(pendingSub,
+                                currentUser);
             }
 
             if (result.hasMessageToDisplay()) {
@@ -512,7 +519,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
         dualList.clearAvailableList(true);
 
         initiallySelectedSubscriptions.clear();
-        Map<String, Subscription<T, C>> sMap = userMap.get(userNameCombo.getText());
+        Map<String, Subscription<T, C>> sMap = userMap.get(userNameCombo
+                .getText());
 
         for (String subscriptionName : sMap.keySet()) {
 
@@ -563,7 +571,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends Composit
             return "Update the group definition and unschedule the subscriptions";
         case EDIT_SUBSCRIPTIONS:
             return "Edit the "
-                    + ((singleSubscription) ? "subscription" : "subscriptions");
+                    + (singleSubscription ? "subscription" : "subscriptions");
         case INCREASE_LATENCY:
             // Signifies it should not be an option
             return null;

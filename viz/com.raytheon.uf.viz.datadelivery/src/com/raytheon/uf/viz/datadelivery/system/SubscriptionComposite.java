@@ -27,6 +27,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
 
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapConfig;
@@ -47,9 +48,10 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 07, 2013    2180    mpduff      Initial creation.
+ * Aug 07, 2013   2180     mpduff      Initial creation.
  * Sept 24, 2013  2386     dhladky     Started work on Multiple Type Configs
  * Oct 03, 2013   2386     mpduff      Implemented multiple type configs
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -128,7 +130,20 @@ public abstract class SubscriptionComposite extends Composite implements
         initTypeSpecific(grp);
 
         // Match Strategy
-        matchStrategyCombo = new Combo(this, SWT.READ_ONLY);
+        Composite matchComp = new Composite(this, SWT.NONE);
+        matchComp.setLayout(gl);
+        gl = new GridLayout(2, false);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, false, false);
+        matchComp.setLayoutData(gd);
+
+        Label matchLabel = new Label(matchComp, SWT.NONE);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        matchLabel.setLayoutData(gd);
+        matchLabel.setText("Match:");
+
+        matchStrategyCombo = new Combo(matchComp, SWT.READ_ONLY);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        matchStrategyCombo.setLayoutData(gd);
         matchStrategyCombo
                 .setToolTipText("Select the manner in which the rules should consider two subscriptions to overlap");
         matchStrategyCombo.addSelectionListener(new SelectionAdapter() {

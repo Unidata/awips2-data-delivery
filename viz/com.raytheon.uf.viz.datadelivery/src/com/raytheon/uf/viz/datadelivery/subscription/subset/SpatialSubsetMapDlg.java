@@ -26,6 +26,8 @@ import java.text.NumberFormat;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -86,6 +88,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jun 18, 2015 4401       bkowal      Use {@link BundleLoader} directly due to inability of
  *                                     this dialog to support scheduled bundle loading.
  * Jan 18, 2016  5054      randerso    Changed to extend CaveSWTDialog
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -176,7 +179,6 @@ public class SpatialSubsetMapDlg extends CaveSWTDialog implements
      */
     @Override
     protected Object constructShellLayoutData() {
-        // return new GridData(500, SWT.DEFAULT);
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
     }
 
@@ -229,8 +231,11 @@ public class SpatialSubsetMapDlg extends CaveSWTDialog implements
         group.setLayout(gl);
         group.setLayoutData(gd);
 
-        gd = new GridData(750, 575);
-        // gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        Rectangle monitorBounds = shell.getMonitor().getBounds();
+
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        gd.heightHint = monitorBounds.height / 2;
+        gd.widthHint = gd.heightHint * 3 / 2;
         gl = new GridLayout(1, false);
         mapComp = new Composite(group, SWT.BORDER);
         mapComp.setLayout(gl);
@@ -284,14 +289,18 @@ public class SpatialSubsetMapDlg extends CaveSWTDialog implements
 
         // TODO Need to update the box when the text fields change
         ulValueTxt = new Text(actionComp, SWT.BORDER);
-        ulValueTxt.setLayoutData(new GridData(150, SWT.DEFAULT));
+        GC gc = new GC(ulValueTxt);
+        int textWidth = gc.textExtent(formatter.format(-180.0) + ", "
+                + formatter.format(-90.0)).x;
+        gc.dispose();
+        ulValueTxt.setLayoutData(new GridData(textWidth, SWT.DEFAULT));
 
         Label lrLabel = new Label(actionComp, SWT.NONE);
         lrLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
         lrLabel.setText("     Lower Right:");
 
         lrValueTxt = new Text(actionComp, SWT.BORDER);
-        lrValueTxt.setLayoutData(new GridData(150, SWT.DEFAULT));
+        lrValueTxt.setLayoutData(new GridData(textWidth, SWT.DEFAULT));
 
     }
 
@@ -307,10 +316,12 @@ public class SpatialSubsetMapDlg extends CaveSWTDialog implements
         btnComp.setLayout(gl);
         btnComp.setLayoutData(gd);
 
-        GridData btnData = new GridData(70, SWT.DEFAULT);
+        int buttonWidth = btnComp.getDisplay().getDPI().x;
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button okBtn = new Button(btnComp, SWT.PUSH);
         okBtn.setText("OK");
-        okBtn.setLayoutData(btnData);
+        okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -320,10 +331,11 @@ public class SpatialSubsetMapDlg extends CaveSWTDialog implements
             }
         });
 
-        btnData = new GridData(70, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button cancelBtn = new Button(btnComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
-        cancelBtn.setLayoutData(btnData);
+        cancelBtn.setLayoutData(gd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -713,9 +725,8 @@ public class SpatialSubsetMapDlg extends CaveSWTDialog implements
      */
     private GridGeometry2D getGridGeometry() {
         double aspect = fullEnvelope.getWidth() / fullEnvelope.getHeight();
-        int mapWidth = (aspect > 1.0 ? (int) Math.round(aspect * 10000) : 10000);
-        int mapHeight = (aspect > 1.0 ? 10000 : (int) Math
-                .round(10000 / aspect));
+        int mapWidth = aspect > 1.0 ? (int) Math.round(aspect * 10000) : 10000;
+        int mapHeight = aspect > 1.0 ? 10000 : (int) Math.round(10000 / aspect);
 
         return new GridGeometry2D(new GeneralGridEnvelope(new int[] { 0, 0 },
                 new int[] { mapWidth, mapHeight }, false), fullEnvelope);
