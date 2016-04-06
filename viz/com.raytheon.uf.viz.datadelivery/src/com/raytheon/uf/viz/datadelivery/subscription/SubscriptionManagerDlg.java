@@ -105,67 +105,68 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 9, 2012             mpduff     Initial creation.
- * Mar 9, 2012    418      jpiatt     Added load, save & set default xml.
- * Mar 13, 2012   420      jpiatt     Added retrieval of subscriptions.
- * May 22, 2012   645      jpiatt     Added help dialog.
- * Jun 07, 2012   687      lvenable   Table data refactor.
- * Jul 16, 2012   702      jpiatt     Modified for group name.
- * Aug 21, 2012   712      mpduff     Send a notification for each deleted subscription.
- * Aug 20, 2012 0743       djohnson   Finish making registry type-safe.
- * Aug 29, 2012   223      mpduff     Cleanup.
- * Aug 31, 2012  1128      mpduff     Notification fixes, add wait cursor.
- * Sep 06, 2012 1142       djohnson   Delete pending subscription(s) on subscription deletion.
- * Sep 06, 2012   687      mpduff     Add subscription object into the SubscriptionNotificationRequest object.
- * Sep 14, 2012  1169      djohnson   Use storeOrReplaceRegistryObject.
- * Sep 24, 2012  1157      mpduff     Fixed null pointer problem with auth request checking.
- * Oct 02, 2012  1103      jpiatt     Updated enum naming convention.
- * Oct 03, 2012 1241       djohnson   Use {@link DataDeliveryPermission} and registry handlers.
- * Nov 06, 2012 1306       djohnson   Use authorization/authentication API plugin.
- * Nov 09, 2012 1286       djohnson   Consolidate duplicate subscription handling.
- * Nov 20, 2012 1286       djohnson   Implement IDisplay to display yes/no prompt.
- * Nov 28, 2012 1286       djohnson   Use subscription service.
- * Dec 03, 2012 1285       bgonzale   Added implementation of the tableLock method.
- * Dec 12, 2012 1391       bgonzale   Added job for subscription deletion.
- * Dec 12, 2012 1433       bgonzale   Refresh after subscription copy.
- * Dec 18, 2012 1440       mpduff     Only open edit group dialog if there are group(s) to edit.
- * Jan 02, 2013 1441       djohnson   Add ability to delete groups.
- * Jan 03, 2013 1437       bgonzale   Moved configuration file management code to SubscriptionManagerConfigDlg
- *                                    and SubscriptionConfigurationManager.
- * Jan 21, 2013 1501       djohnson   Only send notification if subscription was actually activated/deactivated,
- *                                    remove race condition of GUI thread updating the table after notification.
- * Jan 22, 2013 1520       mpduff     Removed menu accelerators.
- * Mar 29, 2013 1841       djohnson   Subscription implementations now provide a copy method.
- * May 09, 2013 2000       djohnson   Copy subscription now requires editing first to prevent duplicates, and remove duplicate code.
- * May 17, 2013 1040       mpduff     Change office id to list for shared subscription.
- * May 28, 2013 1650       djohnson   Allow specifying filters for what subscriptions to show.
- * Jun 05, 2013 2064       mpduff     Fix for filtering combo boxes.
- * Jun 06, 2013 2030       mpduff     Refactored help.
- * Jun 14, 2013 2064       mpduff     Check for null/disposed sort column.
- * Jul 26, 2013   2232     mpduff     Refactored Data Delivery permissions.
- * Sep 25. 2013   2409     mpduff     Add check for widget disposed after calling configuration.
- * Oct 25, 2013   2292     mpduff     Move overlap checks to edex.
- * Nov 06, 2013   2358     mpduff     Resurrected file management code.
- * Nov 08, 2013   2506     bgonzale   Removed send notification when a subscription is deleted.
- * Dec 05, 2013   2570     skorolev   Show All subscriptions.
- * Jan 08, 2014   2642     mpduff     Update dialog for permissions, adding site to shared
- * Jan 14, 2014   2459     mpduff     Change Subscription status code
- * Feb 04, 2014   2722     mpduff     Add auto-refresh task.
- * Feb 14, 2014   2806     mpduff     Disable activate/deactivate buttons when viewing other site's subscriptions
- * Feb 11, 2014   2771     bgonzale   Use Data Delivery ID instead of Site.
- * Mar 24, 2014  #2951     lvenable   Added dispose checks for SWT widgets.
- * Mar 31, 2014 2889       dhladky    Added username for notification center tracking.
- * Apr 2,  2014 2974       dhladky    DD ID added to list for dropdowns in DD.
- * Apr 18, 2014  3012      dhladky    Null check.
- * Dec 03, 2014  3840      ccody      Correct sorting "contract violation" issue.
- * Jan 26, 2015  2894      dhladky    Default configuration restored for consistency.
- * Jan 30, 2015  2746      dhladky    Special shared sub delete handling.
- * Mar 20, 2015  2894      dhladky    Revisisted consistency in appliying default config.
- * May 17, 2015  4047      dhladky    verified non-blocking.
- * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
- * Jul 01, 2015  4047      dhladky    RefreshTask was configured to not run often enough.
+ * Jan 9, 2012             mpduff      Initial creation.
+ * Mar 9, 2012    418      jpiatt      Added load, save & set default xml.
+ * Mar 13, 2012   420      jpiatt      Added retrieval of subscriptions.
+ * May 22, 2012   645      jpiatt      Added help dialog.
+ * Jun 07, 2012   687      lvenable    Table data refactor.
+ * Jul 16, 2012   702      jpiatt      Modified for group name.
+ * Aug 21, 2012   712      mpduff      Send a notification for each deleted subscription.
+ * Aug 20, 2012  0743      djohnson    Finish making registry type-safe.
+ * Aug 29, 2012   223      mpduff      Cleanup.
+ * Aug 31, 2012  1128      mpduff      Notification fixes, add wait cursor.
+ * Sep 06, 2012  1142      djohnson    Delete pending subscription(s) on subscription deletion.
+ * Sep 06, 2012   687      mpduff      Add subscription object into the SubscriptionNotificationRequest object.
+ * Sep 14, 2012  1169      djohnson    Use storeOrReplaceRegistryObject.
+ * Sep 24, 2012  1157      mpduff      Fixed null pointer problem with auth request checking.
+ * Oct 02, 2012  1103      jpiatt      Updated enum naming convention.
+ * Oct 03, 2012  1241      djohnson    Use {@link DataDeliveryPermission} and registry handlers.
+ * Nov 06, 2012  1306      djohnson    Use authorization/authentication API plugin.
+ * Nov 09, 2012  1286      djohnson    Consolidate duplicate subscription handling.
+ * Nov 20, 2012  1286      djohnson    Implement IDisplay to display yes/no prompt.
+ * Nov 28, 2012  1286      djohnson    Use subscription service.
+ * Dec 03, 2012  1285      bgonzale    Added implementation of the tableLock method.
+ * Dec 12, 2012  1391      bgonzale    Added job for subscription deletion.
+ * Dec 12, 2012  1433      bgonzale    Refresh after subscription copy.
+ * Dec 18, 2012  1440      mpduff      Only open edit group dialog if there are group(s) to edit.
+ * Jan 02, 2013  1441      djohnson    Add ability to delete groups.
+ * Jan 03, 2013  1437      bgonzale    Moved configuration file management code to SubscriptionManagerConfigDlg
+ *                                     and SubscriptionConfigurationManager.
+ * Jan 21, 2013  1501      djohnson    Only send notification if subscription was actually activated/deactivated,
+ *                                     remove race condition of GUI thread updating the table after notification.
+ * Jan 22, 2013  1520      mpduff      Removed menu accelerators.
+ * Mar 29, 2013  1841      djohnson    Subscription implementations now provide a copy method.
+ * May 09, 2013  2000      djohnson    Copy subscription now requires editing first to prevent duplicates, and remove duplicate code.
+ * May 17, 2013  1040      mpduff      Change office id to list for shared subscription.
+ * May 28, 2013  1650      djohnson    Allow specifying filters for what subscriptions to show.
+ * Jun 05, 2013  2064      mpduff      Fix for filtering combo boxes.
+ * Jun 06, 2013  2030      mpduff      Refactored help.
+ * Jun 14, 2013  2064      mpduff      Check for null/disposed sort column.
+ * Jul 26, 2013  2232      mpduff      Refactored Data Delivery permissions.
+ * Sep 25. 2013  2409      mpduff      Add check for widget disposed after calling configuration.
+ * Oct 25, 2013  2292      mpduff      Move overlap checks to edex.
+ * Nov 06, 2013  2358      mpduff      Resurrected file management code.
+ * Nov 08, 2013  2506      bgonzale    Removed send notification when a subscription is deleted.
+ * Dec 05, 2013  2570      skorolev    Show All subscriptions.
+ * Jan 08, 2014  2642      mpduff      Update dialog for permissions, adding site to shared
+ * Jan 14, 2014  2459      mpduff      Change Subscription status code
+ * Feb 04, 2014  2722      mpduff      Add auto-refresh task.
+ * Feb 14, 2014  2806      mpduff      Disable activate/deactivate buttons when viewing other site's subscriptions
+ * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
+ * Mar 24, 2014  2951      lvenable    Added dispose checks for SWT widgets.
+ * Mar 31, 2014  2889      dhladky     Added username for notification center tracking.
+ * Apr 2,  2014  2974      dhladky     DD ID added to list for dropdowns in DD.
+ * Apr 18, 2014  3012      dhladky     Null check.
+ * Dec 03, 2014  3840      ccody       Correct sorting "contract violation" issue.
+ * Jan 26, 2015  2894      dhladky     Default configuration restored for consistency.
+ * Jan 30, 2015  2746      dhladky     Special shared sub delete handling.
+ * Mar 20, 2015  2894      dhladky     Revisisted consistency in appliying default config.
+ * May 17, 2015  4047      dhladky     verified non-blocking.
+ * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
+ * Jul 01, 2015  4047      dhladky     RefreshTask was configured to not run often enough.
  * Feb 10, 2016  5144      dhladky    Remove set of originatingSite on update.  This caused many problems with Shared Subscriptions.
  * Mar 16, 2016  3919      tjensen    Cleanup unneeded interfaces
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -662,9 +663,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         officeLbl.setText("Office: ");
 
         // Office Selection Combo Box
-        GridData comboData = new GridData(85, SWT.DEFAULT);
         officeCbo = new Combo(officeComp, SWT.READ_ONLY | SWT.BORDER);
-        officeCbo.setLayoutData(comboData);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        officeCbo.setLayoutData(gd);
         officeCbo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -678,8 +679,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         groupLbl.setText("        Group: ");
 
         // Group Selection Combo Box
-        comboData = new GridData(150, SWT.DEFAULT);
         groupCbo = new Combo(officeComp, SWT.READ_ONLY);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        groupCbo.setLayoutData(gd);
         groupCbo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -1208,7 +1210,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         final IUser user = UserController.getUserObject();
         final String username = user.uniqueId().toString();
         final String msg = username + " is not authorized to "
-                + ((activate) ? "Activate" : "Deactivate")
+                + (activate ? "Activate" : "Deactivate")
                 + " Subscriptions\nPermission: " + permission;
         final boolean factivate = activate;
 
@@ -1226,7 +1228,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         return;
                     }
 
-                    final String actionText = (factivate) ? "activate"
+                    final String actionText = factivate ? "activate"
                             : "deactivate";
                     final IForceApplyPromptDisplayText forceApplyPromptDisplayText = new CancelForceApplyAndIncreaseLatencyDisplayText(
                             actionText, getShell());
@@ -1323,7 +1325,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * Display the table configuration dialog.
      */
     private void handleTableConfiguration() {
-        if ((configDlg == null) || configDlg.isDisposed()) {
+        if (configDlg == null || configDlg.isDisposed()) {
             configDlg = new SubscriptionManagerConfigDlg(shell, this);
             configDlg.open();
         } else {

@@ -109,6 +109,8 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Nov 19, 2014  3851      dhladky      Fixed userName subscription selection bounce back on change of user.
  * Nov 19, 2014  3852      dhladky      Resurrected the unscheduled state.
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
+ * Mar 28, 2016  5482      randerso     Fixed GUI sizing issues
+ * 
  * </pre>
  * 
  * @author jpiatt
@@ -214,7 +216,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         Label userName = new Label(userComp, SWT.NONE);
         userName.setText("User: ");
 
-        gd = new GridData(150, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         userNameCombo = new Combo(userComp, SWT.READ_ONLY);
         userNameCombo.setLayoutData(gd);
         userNameCombo.setToolTipText("Select a user name");
@@ -258,7 +260,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
      */
     private void populateUserSubscriptions(String owner) {
 
-        final String ownerToUse = (owner == null) ? currentUser : owner;
+        final String ownerToUse = owner == null ? currentUser : owner;
 
         @SuppressWarnings("rawtypes")
         List<Subscription> results = Collections.emptyList();
@@ -570,7 +572,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
             return "Update the group definition and unschedule the subscriptions";
         case EDIT_SUBSCRIPTIONS:
             return "Edit the "
-                    + ((singleSubscription) ? "subscription" : "subscriptions");
+                    + (singleSubscription ? "subscription" : "subscriptions");
         case INCREASE_LATENCY:
             // Signifies it should not be an option
             return null;

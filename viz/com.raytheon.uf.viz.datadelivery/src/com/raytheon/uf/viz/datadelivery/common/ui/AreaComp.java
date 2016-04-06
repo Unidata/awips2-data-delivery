@@ -73,32 +73,33 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 28, 2012            lvenable     Initial creation.
- * Jun  1, 2012   645      jpiatt       Added tooltips & code cleanup.
- * Jun  8, 2012   684      jpiatt       Radio selection corrections.
- * Aug 10, 2012  1002      mpduff       Implementing dataset size estimation.
- * Aug 21, 2012   837      jpiatt       Corrected region coordinate conversion.
- * Aug 21, 2012  1113      jpiatt       Corrected longitude validation.
- * Oct 22, 2012   684      mpduff       Added showMyRegion method.
- * Oct 31, 2012  1278      mpduff       Integrated SpatialUtils class.
- * Nov 19, 2012  1289      bgonzale     added methods to determine if editing predefined
- *                                      user region. fixed regionMap clear.
- * Dec 07, 2012  1278      bgonzale     Added Coordinate[] to ctors. Use value of coords
- *                                      to determine if starting in manual entry mode.
- * Dec 10, 2012  1259      bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Dec 11, 2012  1264      mpduff       Fix validaiton of lat/lon text fields.
- * Mar 21, 2013  1638      mschenke     Changed map scales not tied to d2d
- * Jun 14, 2013  2064      mpduff       Reset controls on load.
- * Jun 21, 2013  2132      mpduff       Swap target and source envelopes.
- * Jul 12, 2013  2141      mpduff       Valid envelope test happens as needed instead of when changes are made.
- * Oct 10, 2013  2104      mschenke     Switched to use MapScalesManager
- * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
- * Jan 10, 2014  2452      mpduff       Add label stating all lat/lons will be converted to easting.
- * Jan 25, 2014  2452      mpduff       Changed label based on feedback.
+ * Feb 28, 2012            lvenable    Initial creation.
+ * Jun  1, 2012   645      jpiatt      Added tooltips & code cleanup.
+ * Jun  8, 2012   684      jpiatt      Radio selection corrections.
+ * Aug 10, 2012  1002      mpduff      Implementing dataset size estimation.
+ * Aug 21, 2012   837      jpiatt      Corrected region coordinate conversion.
+ * Aug 21, 2012  1113      jpiatt      Corrected longitude validation.
+ * Oct 22, 2012   684      mpduff      Added showMyRegion method.
+ * Oct 31, 2012  1278      mpduff      Integrated SpatialUtils class.
+ * Nov 19, 2012  1289      bgonzale    added methods to determine if editing predefined
+ *                                     user region. fixed regionMap clear.
+ * Dec 07, 2012  1278      bgonzale    Added Coordinate[] to ctors. Use value of coords
+ *                                     to determine if starting in manual entry mode.
+ * Dec 10, 2012  1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * Dec 11, 2012  1264      mpduff      Fix validaiton of lat/lon text fields.
+ * Mar 21, 2013  1638      mschenke    Changed map scales not tied to d2d
+ * Jun 14, 2013  2064      mpduff      Reset controls on load.
+ * Jun 21, 2013  2132      mpduff      Swap target and source envelopes.
+ * Jul 12, 2013  2141      mpduff      Valid envelope test happens as needed instead of when changes are made.
+ * Oct 10, 2013  2104      mschenke    Switched to use MapScalesManager
+ * Oct 11, 2013  2386      mpduff      Refactor DD Front end.
+ * Jan 10, 2014  2452      mpduff      Add label stating all lat/lons will be converted to easting.
+ * Jan 25, 2014  2452      mpduff      Changed label based on feedback.
  * Nov 10, 2015  5024      dhladky      Can toggle full data set and regions with previous selection preserved.
  * Feb 25, 2016  5413      tjensen      Changed default Region to be the first match instead of the last and
  *                                       fixed validaiton of lat/lon text fields.
  * Mar 01, 2016  5413      tjensen      Fixed validaiton of lat/lon text fields.
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -384,12 +385,12 @@ public class AreaComp extends Composite implements ISubset {
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         regionComp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
                 false));
-        boolean startInManualEntryMode = (subEnvelope != null);
+        boolean startInManualEntryMode = subEnvelope != null;
 
         /*
          * Custom controls.
          */
-        gd = new GridData(18, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         manualRdo = new Button(regionComp, SWT.RADIO);
         manualRdo.setSelection(startInManualEntryMode);
         manualRdo.setLayoutData(gd);
@@ -420,7 +421,7 @@ public class AreaComp extends Composite implements ISubset {
         /*
          * Predefined controls.
          */
-        gd = new GridData(18, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         regionRdo = new Button(regionComp, SWT.RADIO);
         regionRdo.setSelection(!startInManualEntryMode);
         regionRdo.setLayoutData(gd);
@@ -457,7 +458,7 @@ public class AreaComp extends Composite implements ISubset {
             }
         });
 
-        gd = new GridData(250, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         regionCombo = new Combo(regionComp, SWT.READ_ONLY);
         regionCombo.setItems(predefinedRegions);
         regionCombo.setLayoutData(gd);
@@ -473,7 +474,7 @@ public class AreaComp extends Composite implements ISubset {
         /*
          * Bounding box controls.
          */
-        gd = new GridData(18, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         boundingBoxRdo = new Button(regionComp, SWT.RADIO);
         boundingBoxRdo.setLayoutData(gd);
         boundingBoxRdo.setToolTipText("Select to draw a bounding box");
@@ -651,9 +652,9 @@ public class AreaComp extends Composite implements ISubset {
     }
 
     public boolean isUserDefinedRegion() {
-        return (selectCombo.getEnabled() && selectCombo.getItem(
-                selectCombo.getSelectionIndex()).equals(
-                REGION_GROUPS.MY_REGIONS.getRegionGroup()));
+        return selectCombo.getEnabled()
+                && selectCombo.getItem(selectCombo.getSelectionIndex()).equals(
+                        REGION_GROUPS.MY_REGIONS.getRegionGroup());
     }
 
     public boolean isPredefinedRegion() {
@@ -743,7 +744,7 @@ public class AreaComp extends Composite implements ISubset {
     }
 
     public boolean isRegionChanged() {
-        return (regionRdo != null && regionRdo.getSelection());
+        return regionRdo != null && regionRdo.getSelection();
     }
 
     /**
