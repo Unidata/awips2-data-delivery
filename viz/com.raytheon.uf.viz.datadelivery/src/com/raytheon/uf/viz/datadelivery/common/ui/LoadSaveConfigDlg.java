@@ -36,6 +36,7 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -80,14 +81,15 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 23, 2012            jpiatt     Added file save action.
- * Jun  1, 2012    645     jpiatt     Added tooltips.
- * Jun 19, 2012    717     jpiatt     Save action update.
- * Aug 22, 2012   0743     djohnson   Add new TimeXML sub-classes.
- * Apr 25, 2013   1820     mpduff     Implement deletion of config file.
- * Jun 04, 2013    223     mpduff     Refactor method rename and add new class to JaxB context.
- * Sep 04, 2013   2314     mpduff     Made non-blocking.
+ * Feb 23, 2012            jpiatt      Added file save action.
+ * Jun  1, 2012    645     jpiatt      Added tooltips.
+ * Jun 19, 2012    717     jpiatt      Save action update.
+ * Aug 22, 2012   0743     djohnson    Add new TimeXML sub-classes.
+ * Apr 25, 2013   1820     mpduff      Implement deletion of config file.
+ * Jun 04, 2013    223     mpduff      Refactor method rename and add new class to JaxB context.
+ * Sep 04, 2013   2314     mpduff      Made non-blocking.
  * Feb 01, 2016   5289     tgurney    Add missing close button in trim
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -324,11 +326,15 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
         Label listLbl = new Label(controlComp, SWT.NONE);
         listLbl.setText("Available Configuration Files:");
 
-        gd = new GridData();
-        gd.widthHint = 350;
-        gd.heightHint = 350;
         cfgFileList = new List(controlComp, SWT.BORDER | SWT.SINGLE
                 | SWT.V_SCROLL);
+        GC gc = new GC(cfgFileList);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 50;
+        gc.dispose();
+
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        gd.widthHint = textWidth;
+        gd.heightHint = cfgFileList.getItemHeight() * 15;
         cfgFileList.setLayoutData(gd);
         cfgFileList.setFont(controlFont);
         cfgFileList.addSelectionListener(new SelectionAdapter() {
@@ -365,7 +371,7 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
         cfgFileList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseDoubleClick(MouseEvent e) {
-                if ((e.button == 1) && (dialogType == DialogType.OPEN)) {
+                if (e.button == 1 && dialogType == DialogType.OPEN) {
                     if (cfgFileList.getSelectionIndex() >= 0) {
                         loadAction();
                     }
@@ -421,11 +427,16 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
         Label previewLbl = new Label(previewComp, SWT.NONE);
         previewLbl.setText("Preview:");
 
-        gd = new GridData();
-        gd.widthHint = 350;
-        gd.heightHint = 350;
         previewTxt = new StyledText(previewComp, SWT.BORDER | SWT.H_SCROLL
                 | SWT.V_SCROLL);
+
+        GC gc = new GC(previewTxt);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 50;
+        gc.dispose();
+
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        gd.widthHint = textWidth;
+        gd.heightHint = previewTxt.getLineHeight() * 20;
         previewTxt.setLayoutData(gd);
 
         previewComp.setVisible(false);
@@ -447,7 +458,6 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
         previewBtnComp.setLayoutData(gd);
 
         gd = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false);
-        gd.widthHint = 120;
         previewBtn = new Button(previewBtnComp, SWT.PUSH);
         previewBtn.setText("Preview >>");
         previewBtn.setLayoutData(gd);
@@ -473,7 +483,10 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
         buttonComp.setLayout(new GridLayout(2, false));
         buttonComp.setLayoutData(gd);
 
-        gd = new GridData(100, SWT.DEFAULT);
+        int minimumWidth = buttonComp.getDisplay().getDPI().x;
+        
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = minimumWidth;
         actionBtn = new Button(buttonComp, SWT.PUSH);
         actionBtn.setLayoutData(gd);
         shell.setDefaultButton(actionBtn);
@@ -520,7 +533,8 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
             });
         }
 
-        gd = new GridData(100, SWT.DEFAULT);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = minimumWidth;
         Button cancelBtn = new Button(buttonComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
         cancelBtn.setLayoutData(gd);

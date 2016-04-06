@@ -56,18 +56,19 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 2, 2012            mpduff     Initial creation
- * Feb 23, 2012           jpiatt     Remove save in handleOK method.
- * Apr 16, 2012   452     jpiatt     Added row configuration.
- * Jun  1, 2012   645     jpiatt     Added tooltips.
- * Jun 07, 2012   687     lvenable   Table data refactor.
- * Aug 08, 2012   863     jpiatt     Added new interface method.
- * Aug 13, 2012   430     jpiatt     Modifications for sort asc & desc.
- * Oct 22, 2012  1284     mpduff     Code Cleanup.
- * Aug 30, 2013  2314     mpduff     Fixed sorting ambiguity.
- * Sep 16, 2013  2375     mpduff     Add apply button.
- * May 17, 2015  4047     dhladky    verified non-blocking.
+ * Feb 2, 2012             mpduff      Initial creation
+ * Feb 23, 2012            jpiatt      Remove save in handleOK method.
+ * Apr 16, 2012   452      jpiatt      Added row configuration.
+ * Jun  1, 2012   645      jpiatt      Added tooltips.
+ * Jun 07, 2012   687      lvenable    Table data refactor.
+ * Aug 08, 2012   863      jpiatt      Added new interface method.
+ * Aug 13, 2012   430      jpiatt      Modifications for sort asc & desc.
+ * Oct 22, 2012  1284      mpduff      Code Cleanup.
+ * Aug 30, 2013  2314      mpduff      Fixed sorting ambiguity.
+ * Sep 16, 2013  2375      mpduff      Add apply button.
+ * May 17, 2015  4047      dhladky     verified non-blocking.
  * Feb 01, 2016  5289     tgurney    Add missing minimize button in trim
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -222,7 +223,6 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         loadLbl.setLayoutData(gd);
 
         // Message/Hour Number spinner
-        gd = new GridData(25, SWT.DEFAULT);
         spinner = new Spinner(msgComp, SWT.BORDER);
         spinner.setMinimum(0);
         spinner.setMaximum(9999);
@@ -277,7 +277,7 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         label.setText("Sort Column:");
 
         sortColumnCbo = new Combo(sortComp, SWT.READ_ONLY);
-        sortColumnCbo.setLayoutData(new GridData(150, SWT.DEFAULT));
+        sortColumnCbo.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT));
         sortColumnCbo
                 .setToolTipText("Select column to sort upon initial table load");
 
@@ -317,7 +317,7 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         // Select rows per page combo box
         pageSet = xml.getPaginationSetting();
         rowNumCbo = new Combo(rowComp, SWT.READ_ONLY);
-        rowNumCbo.setLayoutData(new GridData(150, SWT.DEFAULT));
+        rowNumCbo.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT));
         rowNumCbo.setItems(rows);
         rowNumCbo
                 .setToolTipText("Select number of table rows to display per page");

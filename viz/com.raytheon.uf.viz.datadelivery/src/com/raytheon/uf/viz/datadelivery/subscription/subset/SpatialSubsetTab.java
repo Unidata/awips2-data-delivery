@@ -47,22 +47,23 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 30, 2012            mpduff     Initial creation.
- * Jun  4, 2012    645     jpiatt     Added tooltips.
- * Jun  8, 2012    684     jpiatt     Added clean & dirty checks.
- * Aug 10, 2012   1002     mpduff     Implementing dataset size estimation.
- * Sep 24, 2012   1209     djohnson   isValid() no longer needs @Override.
- * Oct  4, 2012   1245     jpiatt     Modify to reference util class & code clean up.
- * Oct 22, 2012    684     mpduff     Fix for saving pre-defined regions as a user region.
- * Oct 31, 2012   1278     mpduff     Allow dataset to be passed in on a load.
- * Nov 19, 2012   1289     bgonzale   Added delete button and controls.
- * Dec 07, 2012 1278       bgonzale   additional param to AreaComp ctor.
- * Dec 18, 2012 1439       mpduff     Redo subset name validation.
- * Dec 10, 2012   1259     bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
- * Feb 20, 2013   1589     mpduff     Fix to allow saving custom areas.
- * Jun 14, 2013   2064     mpudff     Force an update of region controls.
- * Oct 11, 2013   2386     mpduff     Refactor DD Front end.
- * Aug 25, 2015   4747     dhladky    Button on message box returns.
+ * Mar 30, 2012            mpduff      Initial creation.
+ * Jun  4, 2012    645     jpiatt      Added tooltips.
+ * Jun  8, 2012    684     jpiatt      Added clean & dirty checks.
+ * Aug 10, 2012   1002     mpduff      Implementing dataset size estimation.
+ * Sep 24, 2012   1209     djohnson    isValid() no longer needs @Override.
+ * Oct  4, 2012   1245     jpiatt      Modify to reference util class & code clean up.
+ * Oct 22, 2012    684     mpduff      Fix for saving pre-defined regions as a user region.
+ * Oct 31, 2012   1278     mpduff      Allow dataset to be passed in on a load.
+ * Nov 19, 2012   1289     bgonzale    Added delete button and controls.
+ * Dec 07, 2012   1278     bgonzale    additional param to AreaComp ctor.
+ * Dec 18, 2012   1439     mpduff      Redo subset name validation.
+ * Dec 10, 2012   1259     bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * Feb 20, 2013   1589     mpduff      Fix to allow saving custom areas.
+ * Jun 14, 2013   2064     mpudff      Force an update of region controls.
+ * Oct 11, 2013   2386     mpduff      Refactor DD Front end.
+ * Aug 25, 2015   4747     dhladky     Button on message box returns.
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -176,9 +177,11 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
         buttonComp.setLayoutData(new GridData(SWT.CENTER, SWT.DEFAULT, true,
                 false, 2, 1));
 
+        int buttonWidth = buttonComp.getDisplay().getDPI().x;
         Button saveBtn = new Button(buttonComp, SWT.PUSH);
         saveBtn.setText("Save");
-        gd = new GridData(75, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         saveBtn.setLayoutData(gd);
         saveBtn.setToolTipText("Click to save boundary as named region");
         saveBtn.addSelectionListener(new SelectionAdapter() {
@@ -188,7 +191,8 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
             }
         });
         deleteBtn = new Button(buttonComp, SWT.PUSH);
-        gd = new GridData(75, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         deleteBtn.setText("Delete");
         deleteBtn.setLayoutData(gd);
         deleteBtn

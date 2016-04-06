@@ -43,9 +43,10 @@ import com.raytheon.viz.ui.widgets.TwoValueSliderCanvas;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 27, 2013    2430    mpduff      Initial creation
+ * Sep 27, 2013  2430      mpduff      Initial creation
  * Jan 15, 2016  5054      randerso    Changed to extend CaveSWTDialog
  * Jan 29, 2016  5289      tgurney     Added missing minimize button in trim
+ * Mar 28, 2016  5482      randerso
  * 
  * </pre>
  * 
@@ -131,8 +132,9 @@ public class BandwidthUsedConfigDlg extends CaveSWTDialog {
         buttonComp.setLayoutData(gd);
         buttonComp.setLayout(gl);
 
-        gd = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false);
-        gd.widthHint = 70;
+        int buttonWidth = buttonComp.getDisplay().getDPI().x;
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button okBtn = new Button(buttonComp, SWT.PUSH);
         okBtn.setText("OK");
         okBtn.setLayoutData(gd);
@@ -147,8 +149,8 @@ public class BandwidthUsedConfigDlg extends CaveSWTDialog {
             }
         });
 
-        gd = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
-        gd.widthHint = 70;
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button cancelBtn = new Button(buttonComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
         cancelBtn.setLayoutData(gd);

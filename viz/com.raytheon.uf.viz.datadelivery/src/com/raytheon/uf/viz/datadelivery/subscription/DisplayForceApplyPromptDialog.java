@@ -23,6 +23,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -49,9 +50,10 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 29, 2012            djohnson     Initial creation
- * May 22, 2013 1650       djohnson     Add more bandwidth information.
- * Jun 12, 2013 2038       djohnson     Maximum allowed size is returned in kilobytes.
+ * Nov 29, 2012            djohnson    Initial creation
+ * May 22, 2013  1650      djohnson    Add more bandwidth information.
+ * Jun 12, 2013  2038      djohnson    Maximum allowed size is returned in kilobytes.
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -89,10 +91,13 @@ public class DisplayForceApplyPromptDialog extends CaveSWTDialog {
         setText(configuration.title);
 
         // Initialize layout
-        GridData gd = new GridData(SWT.FILL, SWT.FILL, false, true);
-        gd.widthHint = 400;
 
         Label textLabel = new Label(shell, SWT.WRAP);
+        GridData gd = new GridData(SWT.FILL, SWT.FILL, false, true);
+        GC gc = new GC(textLabel);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 65;
+        gc.dispose();
+        gd.widthHint = textWidth;
         textLabel.setLayoutData(gd);
         textLabel.setText(configuration.message);
 
@@ -163,6 +168,8 @@ public class DisplayForceApplyPromptDialog extends CaveSWTDialog {
 
         Button okBtn = new Button(centeredComp, SWT.NONE);
         okBtn.setText("OK");
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = centeredComp.getDisplay().getDPI().x;
         okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
