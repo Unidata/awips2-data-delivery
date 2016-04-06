@@ -50,16 +50,17 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * May 01, 2012    452      jpiatt     Initial creation.
- * Jun  1, 2012    645      jpiatt     Added tooltips.
- * Jun 07, 2012    687      lvenable   Table data refactor.
- * Dec 12. 2012   1418      mpduff     Change label.
- * Aug 30, 2013   2314      mpduff     Fixed find, filter, and various other bugs.
- * Sep 26, 2013   2417      mpduff     Reset the highlight all indices on close.
- * Feb 07, 2014   2453      mpduff     Refactored dialog.
- * Mar 18, 2014   2433      mpduff     Update javadoc.
- * Jun 01, 2015   2805      dhladky    Made highlighted selections work properly through updates.
- * Jul 08, 2015   2805      dhladky    Added boolean check for whether to allow find highlighting, no longer find on update.
+ * May 01, 2012    452     jpiatt      Initial creation.
+ * Jun  1, 2012    645     jpiatt      Added tooltips.
+ * Jun 07, 2012    687     lvenable    Table data refactor.
+ * Dec 12. 2012   1418     mpduff      Change label.
+ * Aug 30, 2013   2314     mpduff      Fixed find, filter, and various other bugs.
+ * Sep 26, 2013   2417     mpduff      Reset the highlight all indices on close.
+ * Feb 07, 2014   2453     mpduff      Refactored dialog.
+ * Mar 18, 2014   2433     mpduff      Update javadoc.
+ * Jun 01, 2015   2805     dhladky     Made highlighted selections work properly through updates.
+ * Jul 08, 2015   2805     dhladky     Added boolean check for whether to allow find highlighting, no longer find on update.
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -110,7 +111,7 @@ public class FindDlg extends CaveSWTDialog {
 
     /** Exclude search flag */
     private boolean excludeFlag = false;
-    
+
     /**
      * Constructor.
      * 
@@ -166,13 +167,11 @@ public class FindDlg extends CaveSWTDialog {
      * Create the Find Dialog pop up.
      */
     private void createFindLayout() {
-        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        gd.widthHint = 275;
-        GridLayout gl = new GridLayout(2, false);
-
         // Main Composite
         Composite mainComp = new Composite(shell, SWT.NONE);
+        GridLayout gl = new GridLayout(2, false);
         mainComp.setLayout(gl);
+        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         mainComp.setLayoutData(gd);
 
         // Find label & text box
@@ -250,7 +249,7 @@ public class FindDlg extends CaveSWTDialog {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 // allow highlight and selection in table by find dialog
-                ((NotificationTableComp)callback).setFindable(true);
+                ((NotificationTableComp) callback).setFindable(true);
                 handleFindBtn();
             }
         });
@@ -412,13 +411,13 @@ public class FindDlg extends CaveSWTDialog {
         }
 
         if (excludeFlag) {
-            if ((!msg.contains(matchText) && msgFlag)
-                    || (!sub.contains(matchText) && categoryFlag)) {
+            if (!msg.contains(matchText) && msgFlag || !sub.contains(matchText)
+                    && categoryFlag) {
                 matchFound = true;
             }
         } else {
-            if ((msg.contains(matchText) && msgFlag)
-                    || (sub.contains(matchText) && categoryFlag)) {
+            if (msg.contains(matchText) && msgFlag || sub.contains(matchText)
+                    && categoryFlag) {
                 matchFound = true;
             }
         }

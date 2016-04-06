@@ -65,6 +65,7 @@ import com.raytheon.uf.viz.core.image.StatusImages.StatusImage;
  * Aug 07, 2013    2180    mpduff      Initial creation
  * Nov 18, 2013    2387    skorolev    Add status refreshing
  * Oct 03, 2014    2749    ccody       Correct minor logic error
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -223,8 +224,9 @@ public class StatusComposite extends Composite implements ISystemStatusListener 
         periodSelectionCbo.setItems(periodsText);
         // Set default period
         periodSelectionCbo.select(0);
-        GridData typeComboData = new GridData(GridData.FILL);
-        typeComboData.widthHint = 70;
+        GridData typeComboData = new GridData(SWT.FILL, SWT.DEFAULT, true,
+                false);
+        typeComboData.minimumWidth = 70;
         periodSelectionCbo.setLayoutData(typeComboData);
 
         Button nextRefreshBtn = new Button(refreshGrp, SWT.NONE);
@@ -252,6 +254,7 @@ public class StatusComposite extends Composite implements ISystemStatusListener 
 
         periodSelectionCbo.addSelectionListener(new SelectionAdapter() {
 
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 setRefreshPeriod(periodSelectionCbo.indexOf(periodSelectionCbo
                         .getText()) + 1);
@@ -445,7 +448,7 @@ public class StatusComposite extends Composite implements ISystemStatusListener 
             if (secCount < 120) {
                 timeLbl.setText(secCount + " sec.");
             } else {
-                timeLbl.setText((int) (secCount / 60) + 1 + " min.");
+                timeLbl.setText(secCount / 60 + 1 + " min.");
             }
             timeLbl.pack();
         }

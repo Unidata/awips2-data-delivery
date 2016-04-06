@@ -48,8 +48,9 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * ------------ ---------- ----------- --------------------------
  * Apr 29, 2013   1040     mpduff      Initial creation
  * Feb 11, 2014   2771     bgonzale    Show all SiteDataTypes in site list.
- * Apr 2,  2014   2974     dhladky      DD ID added to list for dropdowns in DD.
- * May 17, 2015    4047    dhladky      verified non-blocking.
+ * Apr 2,  2014   2974     dhladky     DD ID added to list for dropdowns in DD.
+ * May 17, 2015   4047     dhladky     verified non-blocking.
+ * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -117,9 +118,13 @@ public class SiteSelectionDlg extends CaveSWTDialog {
         buttonComp.setLayout(gl);
         buttonComp.setLayoutData(gd);
 
+        int buttonWidth = buttonComp.getDisplay().getDPI().x;
+        
         Button okBtn = new Button(buttonComp, SWT.NONE);
         okBtn.setText("OK");
-        okBtn.setLayoutData(new GridData(75, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -129,7 +134,9 @@ public class SiteSelectionDlg extends CaveSWTDialog {
 
         Button cancelBtn = new Button(buttonComp, SWT.NONE);
         cancelBtn.setText("Cancel");
-        cancelBtn.setLayoutData(new GridData(75, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        cancelBtn.setLayoutData(gd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -144,7 +151,7 @@ public class SiteSelectionDlg extends CaveSWTDialog {
      * @return list of site ids
      */
     private List<String> getSiteList() {
-    
+
         List<String> siteList = DataDeliveryUtils.getDataDeliverySiteList();
 
         // Remove the current site

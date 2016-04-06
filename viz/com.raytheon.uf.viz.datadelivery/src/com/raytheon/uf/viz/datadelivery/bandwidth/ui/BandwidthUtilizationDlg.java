@@ -55,6 +55,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Nov 19, 2013   1531     mpduff      Made resizable.
  * Jan 29, 2014   2722     mpduff      GraphDataUtil not in this class.
  * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven. Added 'Refresh' option
+ * Mar 28, 2016   5482     randerso    Fixed fixed size button
  * 
  * </pre>
  * 
@@ -137,7 +138,9 @@ public class BandwidthUtilizationDlg extends CaveSWTDialog {
 
         Button closeBtn = new Button(btnComp, SWT.PUSH);
         closeBtn.setText("Close");
-        closeBtn.setLayoutData(new GridData(75, SWT.DEFAULT));
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = btnComp.getDisplay().getDPI().x;
+        closeBtn.setLayoutData(gd);
         closeBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {

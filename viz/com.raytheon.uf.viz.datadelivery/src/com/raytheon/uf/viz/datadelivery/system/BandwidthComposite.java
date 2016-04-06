@@ -57,9 +57,10 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug  6, 2013    2180     mpduff      Initial creation
- * Oct 17, 2013    2455     skorolev    Fixed a problem with Changes Applied window.
- * Nov 19, 2014    2749     ccody       Put Set Avail Bandwidth Save into async, non-UI thread
+ * Aug  6, 2013    2180    mpduff      Initial creation
+ * Oct 17, 2013    2455    skorolev    Fixed a problem with Changes Applied window.
+ * Nov 19, 2014    2749    ccody       Put Set Avail Bandwidth Save into async, non-UI thread
+ * Mar 28, 2016    5482    randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -110,8 +111,8 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
      */
     private void init() {
         GridLayout gl = new GridLayout(1, true);
-        GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         this.setLayout(gl);
+        GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         this.setLayoutData(gd);
 
         gl = new GridLayout(1, false);
@@ -127,15 +128,16 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
         directionsLabel
                 .setText("Please enter the available bandwidth for the OPSNET network.");
 
-        gl = new GridLayout(2, false);
-        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-
         Composite outerComp = new Composite(configurationComposite, SWT.NONE);
-        outerComp.setLayoutData(gd);
+        gl = new GridLayout(2, false);
+        gl.marginWidth = 0;
         outerComp.setLayout(gl);
 
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        outerComp.setLayoutData(gd);
+
         // Bandwidth spinner
-        gd = new GridData(165, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
         Label availBandwith = new Label(outerComp, SWT.NONE);
         availBandwith.setLayoutData(gd);
         availBandwith.setText("OPSNET Bandwidth (kB/s):");
@@ -181,8 +183,8 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
 
         Set<String> unscheduledSubscriptions = SystemRuleManager
                 .proposeToSetAvailableBandwidth(Network.OPSNET, bandwidth);
-        if ((unscheduledSubscriptions == null)
-                || (unscheduledSubscriptions.isEmpty())) {
+        if (unscheduledSubscriptions == null
+                || unscheduledSubscriptions.isEmpty()) {
             applyChanges = true;
         } else {
             Set<String> subscriptionNames = new TreeSet<String>(
@@ -263,8 +265,8 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                         try {
                             if (saveSuccessful == true) {
                                 Shell currentShell = null;
-                                if ((parentShell != null)
-                                        && (parentShell.isDisposed() == false)) {
+                                if (parentShell != null
+                                        && parentShell.isDisposed() == false) {
 
                                     currentShell = parentShell;
                                     currentShell.forceFocus();
@@ -285,8 +287,8 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                                                         + Network.OPSNET
                                                         + ".  Please check the server for details.");
                                 Shell currentShell = null;
-                                if ((parentShell != null)
-                                        && (parentShell.isDisposed() == false)) {
+                                if (parentShell != null
+                                        && parentShell.isDisposed() == false) {
                                     currentShell = parentShell;
                                     currentShell.forceFocus();
                                     currentShell.forceActive();
@@ -299,8 +301,8 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                                 }
                             }
                         } finally {
-                            if ((parentShell != null)
-                                    && (parentShell.isDisposed() == false)) {
+                            if (parentShell != null
+                                    && parentShell.isDisposed() == false) {
                                 DataDeliveryGUIUtils
                                         .markNotBusyInUIThread(parentShell);
                             }
@@ -320,7 +322,7 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
      */
     @Override
     public boolean apply() {
-        return (saveConfiguration());
+        return saveConfiguration();
     }
 
     /**

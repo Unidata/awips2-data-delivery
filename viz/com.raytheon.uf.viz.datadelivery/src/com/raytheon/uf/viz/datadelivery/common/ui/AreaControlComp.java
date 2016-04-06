@@ -49,9 +49,10 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 27, 2012     702    jpiatt     Initial creation.
- * Dec 07, 2012 1278       bgonzale   pass coords to ArealSelectionDlg.
- * Dec 10, 2012   1259     bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
+ * Jun 27, 2012   702      jpiatt      Initial creation.
+ * Dec 07, 2012  1278      bgonzale    pass coords to ArealSelectionDlg.
+ * Dec 10, 2012  1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -143,7 +144,7 @@ public class AreaControlComp extends Composite {
                     areaBtn.setEnabled(false);
                 }
 
-            } 
+            }
         });
 
         Composite areaComp = new Composite(areaGrp, SWT.NONE);
@@ -152,15 +153,26 @@ public class AreaControlComp extends Composite {
 
         Label areaLabel = new Label(areaComp, SWT.NONE);
         areaLabel.setText("Area:");
-        areaLabel.setLayoutData(new GridData(SWT.DEFAULT, SWT.CENTER, false, false));
+        areaLabel.setLayoutData(new GridData(SWT.DEFAULT, SWT.CENTER, false,
+                false));
 
         areaSelectedLbl = new Label(areaComp, SWT.BORDER);
-        areaSelectedLbl.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
+        areaSelectedLbl.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
+                true));
 
-        clearBtn = new Button(areaComp, SWT.PUSH);
+        Composite buttonComp = new Composite(areaComp, SWT.NONE);
+        GridLayout gl = new GridLayout(2, true);
+        gl.marginHeight = 0;
+        gl.marginWidth = 0;
+        buttonComp.setLayout(gl);
+        GridData gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        buttonComp.setLayoutData(gd);
+
+        clearBtn = new Button(buttonComp, SWT.PUSH);
         clearBtn.setText("Clear");
         clearBtn.setEnabled(false);
-        clearBtn.setLayoutData(new GridData(90, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        clearBtn.setLayoutData(gd);
         clearBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -168,10 +180,11 @@ public class AreaControlComp extends Composite {
             }
         });
 
-        areaBtn = new Button(areaComp, SWT.PUSH);
+        areaBtn = new Button(buttonComp, SWT.PUSH);
         areaBtn.setText("Set Area...");
         areaBtn.setEnabled(false);
-        areaBtn.setLayoutData(new GridData(90, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        areaBtn.setLayoutData(gd);
         areaBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -191,7 +204,8 @@ public class AreaControlComp extends Composite {
             arealDlg.bringToTop();
         }
 
-        if (arealDlg.getReturnValue() == null || (Boolean) arealDlg.getReturnValue() == false) {
+        if (arealDlg.getReturnValue() == null
+                || (Boolean) arealDlg.getReturnValue() == false) {
             return;
         }
 
@@ -291,12 +305,12 @@ public class AreaControlComp extends Composite {
      */
     public void setAreaButton(boolean flag) {
         areaBtn.setEnabled(flag);
-    }  
-    
+    }
+
     /**
      * Enable or disable text boxes.
      * 
-     * @param flag 
+     * @param flag
      */
     public void resetTextBoxes(boolean flag) {
         areaSelectedLbl.setText("");

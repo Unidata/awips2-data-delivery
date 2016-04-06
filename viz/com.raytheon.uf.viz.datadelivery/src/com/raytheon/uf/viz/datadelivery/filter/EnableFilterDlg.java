@@ -46,7 +46,8 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 16, 2012            lvenable     Initial creation
+ * Feb 16, 2012            lvenable    Initial creation
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -75,7 +76,8 @@ public class EnableFilterDlg extends CaveSWTDialog {
      */
     ArrayList<Integer> selectedIndexes;
 
-    public EnableFilterDlg(Shell parentShell, ArrayList<String> names, ArrayList<Integer> enabledIndexes) {
+    public EnableFilterDlg(Shell parentShell, ArrayList<String> names,
+            ArrayList<Integer> enabledIndexes) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.RESIZE, CAVE.NONE);
 
         setText("Enable Filters");
@@ -139,8 +141,10 @@ public class EnableFilterDlg extends CaveSWTDialog {
         btnComp.setLayout(new GridLayout(2, false));
         btnComp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
-        GridData gd = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false);
-        gd.widthHint = 70;
+        int buttonWidth = btnComp.getDisplay().getDPI().x;
+
+        GridData gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button okBtn = new Button(btnComp, SWT.PUSH);
         okBtn.setText("OK");
         okBtn.setLayoutData(gd);
@@ -153,8 +157,8 @@ public class EnableFilterDlg extends CaveSWTDialog {
             }
         });
 
-        gd = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
-        gd.widthHint = 70;
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button cancelBtn = new Button(btnComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
         cancelBtn.setLayoutData(gd);
@@ -168,7 +172,7 @@ public class EnableFilterDlg extends CaveSWTDialog {
     }
 
     private void addSeparator(Composite parentComp) {
-        GridLayout gl = (GridLayout)parentComp.getLayout();
+        GridLayout gl = (GridLayout) parentComp.getLayout();
 
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         gd.horizontalSpan = gl.numColumns;

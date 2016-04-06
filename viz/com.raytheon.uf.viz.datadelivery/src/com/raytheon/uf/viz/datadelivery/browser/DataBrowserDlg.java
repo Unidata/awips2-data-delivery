@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -54,6 +52,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.progress.UIJob;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.auth.AuthException;
@@ -66,6 +65,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
@@ -100,35 +100,36 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 10, 2012            lvenable     Initial creation.
- * Apr 3,  2012            jpiatt       Correct Exit-Save Changes dlg.
- * May 22, 2012    645     jpiatt       Added help dialog & tooltips.
- * Jun 21, 2012    736     djohnson     Change OPERATION_STATUS to OperationStatus.
- * Jul 24, 2012    955     djohnson     Matching datasets are returned in a {@link Set}.
- * Aug  7, 2012    863     jpiatt       Corrected Save Changes message functionality.
- * Aug 10, 2012   1022     djohnson     Use GriddedDataSet.
- * Aug 22, 2012   0743     djohnson     Convert back to DataSet.
- * Oct 03, 2012 1241       djohnson     Use {@link DataDeliveryPermission}.
- * Dec 07, 2012 1278       bgonzale     fixed issue with clear where cursor could always
+ * Feb 10, 2012            lvenable    Initial creation.
+ * Apr 3,  2012            jpiatt      Correct Exit-Save Changes dlg.
+ * May 22, 2012   645      jpiatt      Added help dialog & tooltips.
+ * Jun 21, 2012   736      djohnson    Change OPERATION_STATUS to OperationStatus.
+ * Jul 24, 2012   955      djohnson    Matching datasets are returned in a {@link Set}.
+ * Aug  7, 2012   863      jpiatt      Corrected Save Changes message functionality.
+ * Aug 10, 2012  1022      djohnson    Use GriddedDataSet.
+ * Aug 22, 2012  0743      djohnson    Convert back to DataSet.
+ * Oct 03, 2012  1241      djohnson    Use {@link DataDeliveryPermission}.
+ * Dec 07, 2012  1278      bgonzale    Fixed issue with clear where cursor could always
  *                                      show busy.
- * Dec 11, 2012 1405       mpduff       Move close confirmation dialog after event.doit = false.
- * Dec 10, 2012   1259     bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Dec 12, 2012 1391       bgonzale     Added job for dataset retrieval.
- * Jan 08, 2012 1436       bgonzale     Fixed area text box display update check.
- * Jan 14, 2012 1437       bgonzale     Clear filters when creating a new configuration.
- * May 15, 2013 1040       mpduff       Put DataDeliveryGUIUtils.markNotBusyInUIThread in finally block.
- * Jun 04, 2013  223       mpduff       Add data type to filters.
- * Jun 05, 2013 1800       mpduff       Move the area filter below the data type selection.
- * Jun 06, 2013 2030       mpduff       Updates to help.
- * Jul 05, 2013 2137       mpduff       Changed data type to a single select list, changed layout.
- * Jul 26, 2031   2232     mpduff       Refactored Data Delivery permissions.
- * Sep 04, 2013   2314     mpduff       Load/save config dialog now non-blocking.
- * Sep 26, 2013   2412     mpduff       Handle auto selecting data type.
- * Sep 26, 2013   2413     mpduff       Added isDirty check to New Configuration menu selection.
- * Oct 11, 2013   2386     mpduff       Refactor DD Front end.
- * Apr 10, 2014   2892     mpduff       Fix problems with loading of saved configs.
- * Oct 15, 2015   4657     rferrel      Limit the number of Subset Manager dialogs.
+ * Dec 11, 2012  1405      mpduff      Move close confirmation dialog after event.doit = false.
+ * Dec 10, 2012  1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * Dec 12, 2012  1391      bgonzale    Added job for dataset retrieval.
+ * Jan 08, 2012  1436      bgonzale    Fixed area text box display update check.
+ * Jan 14, 2012  1437      bgonzale    Clear filters when creating a new configuration.
+ * May 15, 2013  1040      mpduff      Put DataDeliveryGUIUtils.markNotBusyInUIThread in finally block.
+ * Jun 04, 2013   223      mpduff      Add data type to filters.
+ * Jun 05, 2013  1800      mpduff      Move the area filter below the data type selection.
+ * Jun 06, 2013  2030      mpduff      Updates to help.
+ * Jul 05, 2013  2137      mpduff      Changed data type to a single select list, changed layout.
+ * Jul 26, 2031  2232      mpduff      Refactored Data Delivery permissions.
+ * Sep 04, 2013  2314      mpduff      Load/save config dialog now non-blocking.
+ * Sep 26, 2013  2412      mpduff      Handle auto selecting data type.
+ * Sep 26, 2013  2413      mpduff      Added isDirty check to New Configuration menu selection.
+ * Oct 11, 2013  2386      mpduff      Refactor DD Front end.
+ * Apr 10, 2014  2892      mpduff      Fix problems with loading of saved configs.
+ * Oct 15, 2015  4657      rferrel     Limit the number of Subset Manager dialogs.
  * Nov 30, 2015   4834     njensen      Changed LocalizationOpFailedException to LocalizationException
+ * Mar 24, 2016  5482      randerso    Fixed GUI sizing issue. Cleaned up timer code.
  * 
  * </pre>
  * 
@@ -177,8 +178,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     /** Table entries label prefix. */
     private final String tableEntriesPrefix = "Datasets Listed: ";
 
-    /** Update minutes. */
-    private int updateMinutes = 0;
+    /** Time of last update */
+    private long lastUpdate = 0;
 
     /** ArealSelectionDlg object. */
     private ArealSelectionDlg arealDlg;
@@ -225,11 +226,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     /** Time label. */
     private Label updateTimeLabel = null;
 
-    /** Timer object. */
-    private Timer timer;
-
-    /** TimerTask object. */
-    private TimerTask timerTask;
+    /** Timer job. */
+    private UIJob timerJob;
 
     /** Area group. */
     private Group areaGrp = null;
@@ -530,7 +528,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         clearBtn = new Button(comp2, SWT.PUSH);
         clearBtn.setText("Clear");
         clearBtn.setEnabled(false);
-        clearBtn.setLayoutData(new GridData(90, SWT.DEFAULT));
+        clearBtn.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
         clearBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -540,7 +538,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
         areaBtn = new Button(comp2, SWT.PUSH);
         areaBtn.setText("Set Area...");
-        areaBtn.setLayoutData(new GridData(90, SWT.DEFAULT));
+        areaBtn.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
         areaBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -603,12 +601,15 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         mainTableComp = new Composite(sashForm, SWT.NONE);
         GridLayout gl = new GridLayout(1, false);
+        gl.marginWidth = 0;
         mainTableComp.setLayout(gl);
         mainTableComp.setLayoutData(gd);
 
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         Composite buttonComp = new Composite(mainTableComp, SWT.NONE);
         gl = new GridLayout(3, false);
+        gl.marginWidth = 0;
+        gl.marginHeight = 0;
         buttonComp.setLayout(gl);
         buttonComp.setLayoutData(gd);
 
@@ -626,7 +627,6 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
         // Update time label
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
-        gd.widthHint = 175;
         updateTimeLabel = new Label(buttonComp, SWT.LEFT);
         updateTimeLabel.setText("");
         updateTimeLabel.setLayoutData(gd);
@@ -692,7 +692,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                     return;
                 }
                 SubsetManagerDlg dlg = smDialogs.get(data);
-                if ((dlg != null) && !dlg.isDisposed()) {
+                if (dlg != null && !dlg.isDisposed()) {
                     dlg.bringToTop();
                 } else {
 
@@ -821,51 +821,50 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
      * Start the update timer.
      */
     private void startUpdateTimer() {
-        if (timer != null) {
+        if (timerJob != null) {
             stopUpdateTimer();
+        } else {
+            timerJob = new UIJob("Update Timer") {
+
+                @Override
+                public IStatus runInUIThread(IProgressMonitor monitor) {
+                    if (lastUpdate != 0) {
+                        long updateMinutes = (System.currentTimeMillis() - lastUpdate)
+                                / TimeUtil.MILLIS_PER_MINUTE;
+                        StringBuilder sb = new StringBuilder("Last Update: ");
+                        sb.append(updateMinutes);
+
+                        if (updateMinutes == 1) {
+                            sb.append(" min");
+                        } else {
+                            sb.append(" mins");
+                        }
+                        if (!updateTimeLabel.isDisposed()) {
+                            updateTimeLabel.setText(sb.toString());
+                        }
+
+                        schedule(TimeUtil.MILLIS_PER_MINUTE);
+                    } else {
+                        updateTimeLabel.setText("");
+                    }
+                    return Status.OK_STATUS;
+                }
+            };
+            timerJob.setSystem(true);
         }
 
-        timer = new Timer();
-        updateMinutes = 0;
-
-        timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                StringBuilder sb = new StringBuilder("Last Update: ");
-                sb.append(updateMinutes);
-
-                if (updateMinutes == 1) {
-                    sb.append(" min");
-                } else {
-                    sb.append(" mins");
-                }
-                final String updateString = sb.toString();
-
-                VizApp.runAsync(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!updateTimeLabel.isDisposed()) {
-                            updateTimeLabel.setText(updateString);
-                            ++updateMinutes;
-                        }
-                    }
-                });
-            }
-        };
-
-        timer.schedule(timerTask, 0, 60000);
+        lastUpdate = System.currentTimeMillis();
+        timerJob.schedule();
     }
 
     /**
      * Stop the update timer.
      */
     private void stopUpdateTimer() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
+        if (timerJob != null) {
+            timerJob.cancel();
+            lastUpdate = 0;
         }
-
-        timerTask = null;
 
         if (updateTimeLabel != null && updateTimeLabel.isDisposed() == false) {
             updateTimeLabel.setText("");

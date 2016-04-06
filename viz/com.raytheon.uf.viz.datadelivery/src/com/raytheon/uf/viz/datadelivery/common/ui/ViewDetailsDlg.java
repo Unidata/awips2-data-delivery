@@ -40,7 +40,8 @@ import org.eclipse.swt.widgets.Shell;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 16, 2012                 Initial creation
+ * Feb 16, 2012                        Initial creation
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -78,7 +79,8 @@ public class ViewDetailsDlg extends AbstractViewDlg {
      * @param id
      *            ID string to give this dialog a unique ID.
      */
-    public ViewDetailsDlg(Shell parentShell, String detailsStr, String titleStr, IDialogClosed callback, String id) {
+    public ViewDetailsDlg(Shell parentShell, String detailsStr,
+            String titleStr, IDialogClosed callback, String id) {
         // Call other constructor with a default size of 600x350
         this(parentShell, detailsStr, titleStr, 600, 350, callback, id);
     }
@@ -101,8 +103,9 @@ public class ViewDetailsDlg extends AbstractViewDlg {
      * @param id
      *            ID string to give this dialog a unique ID.
      */
-    public ViewDetailsDlg(Shell parentShell, String detailsStr, String titleStr, int width, int height,
-            IDialogClosed callback, String id) {
+    public ViewDetailsDlg(Shell parentShell, String detailsStr,
+            String titleStr, int width, int height, IDialogClosed callback,
+            String id) {
         super(parentShell, callback, null, id);
 
         this.detailsStr = detailsStr;
@@ -173,7 +176,8 @@ public class ViewDetailsDlg extends AbstractViewDlg {
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         gd.heightHint = dialogHeight;
         gd.widthHint = dialogWidth;
-        stText = new StyledText(shell, SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
+        stText = new StyledText(shell, SWT.BORDER | SWT.MULTI | SWT.H_SCROLL
+                | SWT.V_SCROLL);
         stText.setFont(textFont);
         stText.setLayoutData(gd);
         stText.setEditable(false);
@@ -191,7 +195,8 @@ public class ViewDetailsDlg extends AbstractViewDlg {
         buttonComp.setLayout(gl);
         buttonComp.setLayoutData(gd);
 
-        gd = new GridData(75, SWT.DEFAULT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonComp.getDisplay().getDPI().x;
         Button closeBtn = new Button(buttonComp, SWT.PUSH);
         closeBtn.setText("Close");
         closeBtn.setLayoutData(gd);
