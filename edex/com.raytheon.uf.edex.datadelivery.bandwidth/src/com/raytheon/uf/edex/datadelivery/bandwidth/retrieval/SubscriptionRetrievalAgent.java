@@ -12,11 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.SerializationException;
@@ -62,6 +64,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
  * Feb 19, 2015 3998       dhladky      Fixed wrong date on notification center retrieval message.
  * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * Apr 06, 2016 5424       dhladky      Allow for ASYNC processing of retrievals.
  * 
  * </pre>
  * 
@@ -161,6 +164,7 @@ public class SubscriptionRetrievalAgent extends
             bundle.setProvider(provider);
             bundle.setConnection(provider.getConnection());
             bundle.setSubscription(sub);
+            ServiceType type = provider.getServiceType();
 
             retrieval.setActualStart(TimeUtil.newDate());
             retrieval.setStatus(RetrievalStatus.RETRIEVAL);
@@ -176,16 +180,24 @@ public class SubscriptionRetrievalAgent extends
                     bundle, retrieval.getIdentifier());
 
             if (!CollectionUtil.isNullOrEmpty(retrievals)) {
-                try {
-                    Object[] payload = retrievals.toArray();
-                    RetrievalGeneratorUtilities.sendToRetrieval(destinationUri,
-                            network, payload);
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Couldn't send RetrievalRecords to Queue!", e);
+                
+                if (getRetrievalMode(type) == RETRIEVAL_MODE.SYNC) {
+                    try {
+                        Object[] payload = retrievals.toArray();
+                        RetrievalGeneratorUtilities.sendToRetrieval(
+                                destinationUri, network, payload);
+                    } catch (Exception e) {
+                        statusHandler.handle(Priority.PROBLEM,
+                                "Couldn't send RetrievalRecords to Queue!", e);
+                    }
+                    statusHandler.info("Sent " + retrievals.size()
+                            + " retrieval(s) to queue. " + network.toString());
+                } else {
+                    statusHandler.info("Processed " + retrievals.size()
+                            + " retrieval(s), awaiting provider trigger."
+                            + network.toString());
                 }
-                statusHandler.info("Sent " + retrievals.size()
-                        + " retrievals to queue. " + network.toString());
+
             } else {
                 // Normally this is the job of the SubscriptionNotifyTask, but
                 // if no
@@ -220,6 +232,7 @@ public class SubscriptionRetrievalAgent extends
      *            the subscription retrieval key
      * @return true if retrievals were generated (and waiting to be processed)
      */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private List<RetrievalRequestRecordPK> generateRetrieval(SubscriptionBundle bundle,
             Long subRetrievalKey) {
 

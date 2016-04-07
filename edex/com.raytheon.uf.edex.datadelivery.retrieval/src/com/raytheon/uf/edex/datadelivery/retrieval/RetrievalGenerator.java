@@ -22,18 +22,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval;
 
 import java.util.List;
 
-import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
@@ -53,6 +54,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Nov 26, 2012 1340       dhladky      Recognize type of subscriptions for statistics.
  * Sept 30, 2013 1797      dhladky      Made some of the retrieval process flow generic.
  * Jan 18, 2016 5260       dhladky      Exposed access to serviceConfig.
+ * Apr 06, 2016 5424       dhladky      Added Retrieval Mode constant, subRetrievalKey
  * 
  * </pre>
  * 
@@ -61,6 +63,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  */
 public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
 
+       
+    /** retrieval mode constant from config **/
+    public final static String RETRIEVAL_MODE_CONSTANT = "RETRIEVAL_MODE";
+    
     private final ServiceType serviceType;
 
     private static final IUFStatusHandler statusHandler = UFStatus
@@ -71,7 +77,7 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
     public RetrievalGenerator(ServiceType serviceType) {
         this.serviceType = serviceType;
     }
-
+ 
     /**
      * Gets the service adapter.
      * 
@@ -159,6 +165,26 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
         }
 
         return serviceConfig;
+    }
+
+    /**
+     * Returns the Retrieval Mode for the retrievals generated here. This can be
+     * configured specific to each provider. Defaults to SYNC
+     * 
+     * @return RETRIEVAL_MODE
+     */
+    protected RETRIEVAL_MODE getRetrievalMode() {
+
+        RETRIEVAL_MODE mode = RETRIEVAL_MODE.SYNC;
+
+        ServiceConfig sc = getServiceConfig();
+
+        if (sc.getConstantValue(RETRIEVAL_MODE_CONSTANT) != null) {
+            String mode_constant = sc.getConstantValue(RETRIEVAL_MODE_CONSTANT);
+            mode = RETRIEVAL_MODE.valueOf(mode_constant);
+        }
+
+        return mode;
     }
 
 }
