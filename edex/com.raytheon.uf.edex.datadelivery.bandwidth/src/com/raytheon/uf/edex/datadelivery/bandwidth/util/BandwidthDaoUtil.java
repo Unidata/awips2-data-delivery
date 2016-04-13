@@ -27,7 +27,6 @@ import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -79,6 +78,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Jul 28, 2014 2752       dhladky      Greatly streamlined scheduling.
  * Sept 14, 2014 2131      dhladky      PDA additions
  * Feb 19, 2015 3998       dhladky      Simplified the adhoc subscription process.
+ * Apr 13, 2016 5573       dhladky      Recurring subscriptions fail do to null time object.
  * </pre>
  * 
  * @author djohnson
@@ -152,7 +152,7 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
      * @return the adhoc subscription, or null if no matching metadata could be
      *         found
      */
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public AdhocSubscription<T, C> setAdhocMostRecentUrlAndTime(
             AdhocSubscription<T, C> adhoc) {
 
@@ -160,11 +160,12 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
         DataSetMetaData dataSetMetaData = null;
 
         try {
+
             dataSetMetaData = DataDeliveryHandlers.getDataSetMetaDataHandler()
                     .getMostRecentDataSetMetaData(adhoc.getDataSetName(),
                             adhoc.getProvider());
 
-        } catch (RegistryHandlerException e) {
+        } catch (Exception e) {
             statusHandler.handle(
                     Priority.PROBLEM,
                     "No DataSetMetaData matching query! DataSetName: "
@@ -189,7 +190,21 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
             }
 
             adhoc.setUrl(dataSetMetaData.getUrl());
-            adhoc.getTime().setStart(dataSetMetaData.getDate());
+            
+            // Safety, create a placeholder object populating both time fields.
+            if (adhoc.getTime() == null) {
+                T time = (T)(new Time());
+                time.setStart(dataSetMetaData.getDate());
+                time.setEnd(dataSetMetaData.getDate());
+                adhoc.setTime(time);
+            } else {
+                adhoc.getTime().setStart(dataSetMetaData.getDate());
+                // Safety, ensure end time is set to a default as well.
+                if (adhoc.getTime().getEnd() == null) {
+                    adhoc.getTime().setEnd(dataSetMetaData.getDate());
+                }
+            }
+            
             retVal = adhoc;
         }
 
