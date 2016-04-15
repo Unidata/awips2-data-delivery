@@ -71,6 +71,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
  * Jun 21, 2014 3120       dhladky      Added more helper methods
  * Jan 20, 2016 5280       dhladky      Increase efficiency of object replication.
  * Feb 16, 2016 5365       dhladky      Refined interface for transaction, getRecords() exclusions.
+ * Apr 05, 2016 5424       dhladky      Fixed initial condition for dataset which prevented storage.
  * 
  * </pre>
  * 
@@ -109,6 +110,9 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
                 if (!currentDataSet.equals(dataSet)) {
                     dataSet.combine(currentDataSet);
                 }
+            } else {
+                // If no current exists, return null and store the original.
+                return null;
             }
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
@@ -127,22 +131,26 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
         
         try {
      
-            DataSet dataSetToStore = getDataSetToStore(dataSet);
-            dataSetName = dataSetToStore.getDataSetName();
-            IDataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
             boolean store = false;
+            // This returns null if no previous dataSet exists.
+            DataSet dataSetToStore = getDataSetToStore(dataSet);
             
-            if (dataSetToStore != null) {
+            if (dataSetToStore == null) {
+                store = true;
+                dataSetToStore = dataSet;
+            } else {
                 if (!dataSetToStore.equals(dataSet)) {
                     store = true;
                 }
-            } 
+            }
             
             if (store) {
+                dataSetName = dataSetToStore.getDataSetName();
+                IDataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
                 handler.update(RegistryUtil.registryUser, dataSetToStore);
                 statusHandler.info("Dataset [" + dataSetName
                         + "] successfully stored in Registry");
-                storeDataSetName(dataSet);
+                storeDataSetName(dataSetToStore);
             }
             
         } catch (RegistryHandlerException e) {

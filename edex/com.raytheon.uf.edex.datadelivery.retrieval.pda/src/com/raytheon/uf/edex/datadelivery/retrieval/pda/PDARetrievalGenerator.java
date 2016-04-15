@@ -36,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -82,6 +83,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
     @Override
     public List<Retrieval> buildRetrieval(SubscriptionBundle bundle) {
         
+                
         List<Retrieval> retrievals = new ArrayList<Retrieval>();
         @SuppressWarnings("unchecked")
         Subscription<Time, Coverage> sub = bundle.getSubscription();
@@ -93,8 +95,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
                             + " that is unfulfillable with the current metadata (null URL.)");
             return Collections.emptyList();
         }
-        
-        
+                
         //TODO since we have no switches this is all meaningless right now
         Time subTime = sub.getTime();
         // Gets the most recent time, which is kept as the end time.
@@ -104,16 +105,21 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         Date requestStartDate = new Date(endDate.getTime());
         subTime.setRequestStart(requestStartDate);
 
-        // with PDA it's one param at a time
+        // With PDA it's one param at a time. so always 0.
         Parameter param = null;
         
         if (sub.getParameter() != null) {
             param = (Parameter) sub.getParameter().get(0);
         }
-        
-        Retrieval retrieval = getRetrieval(sub, bundle, param, subTime);
-        retrievals.add(retrieval);
-        
+
+        try {
+            Retrieval retrieval = getRetrieval(sub, bundle, param, subTime);
+            retrievals.add(retrieval);
+        } catch (Exception e) {
+            statusHandler.error("PDA Retrieval building has failed." +e);
+            return Collections.emptyList();
+        }
+
         return retrievals;
     }
     
@@ -128,7 +134,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
      * @return
      */
     private Retrieval getRetrieval(Subscription<Time, Coverage> sub, SubscriptionBundle bundle,
-            Parameter param, Time time) {
+            Parameter param, Time time) throws Exception {
 
         Retrieval retrieval = new Retrieval();
         retrieval.setSubscriptionName(sub.getName());
@@ -143,7 +149,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             retrieval.setDataType(DataType.PDA);
         } else {
             throw new UnsupportedOperationException(
-                    "PDA retrieval does not support coverages/types of type:  "+cov.getClass().getName());
+                    "PDA retrieval does not support coverages of type:  "+cov.getClass().getName());
         }
 
         final ProviderType providerType = bundle.getProvider().getProviderType(
@@ -153,22 +159,35 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         // Attribute processing
         RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<Time, Coverage>();
         att.setCoverage(cov);
- 
-        /*
-         * Coverage and type processing.
-         * 
-         * PDA retrievals are a unique 2 step process. 1.) Request the
-         * URL/filePath based on the metaDataID. 2.) Then FTPS the URL/filePath
-         * from PDA.
+
+        /**
+         * Build RetrievalRecordPK key, PDA processes one at a time. So the
+         * index will always be just zero.
          */
-        // This is essentially the request!
-        String filePath = getCoverageUrl(sub, time.getRequestStart(), att);
-        
-        if (filePath != null) {
-            statusHandler.handle(Priority.INFO, "Dataset file path: " + filePath);
-            retrieval.getConnection().setUrl(filePath);
-        } else {
-            throw new IllegalArgumentException("PDA dataset filePath query failed!");
+        int index = 0;
+        String retrievalID = sub.getName() + "/" + index;
+        String coverageReturn = null;
+
+        try {
+            coverageReturn = getCoverageUrl(sub, time.getRequestStart(), att,
+                    retrievalID);
+        } catch (Exception e) {
+            throw new Exception(
+                    "PDA dataset coverage query failed! Subscription: "
+                            + sub.getName() + "DataSet: "
+                            + sub.getDataSetName() + " RetrievalID: "
+                            + retrievalID, e);
+        }
+
+        if (coverageReturn != null) {
+            statusHandler.handle(Priority.INFO, "Coverage response: "
+                    + coverageReturn);
+            /**
+             * Sets for async as well as sync, just a placeholder for async. It
+             * will be over written with the real value when the async response
+             * is returned.
+             */
+            retrieval.getConnection().setUrl(coverageReturn);
         }
 
         retrieval.setSubscriptionType(getSubscriptionType(sub));
@@ -201,54 +220,51 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
     }
     
     /**
-     * Retrieve the Coverage URL for this Retrieval Attribute
+     * Retrieve the Coverage for this Retrieval Attribute
      * 
      * @param sub
      * @param dataSetTime
      * @param ra
-     * @return String (Filepath on PDA)
+     * @param retrievalID
+     * @return String (Filepath or Message)
+     * @throws Exception
      */
     private String getCoverageUrl(Subscription<Time, Coverage> sub,
-            Date dataSetTime, RetrievalAttribute<Time, Coverage> ra) {
+            Date dataSetTime, RetrievalAttribute<Time, Coverage> ra,
+            String retrievalID) throws Exception {
 
-        String filePath = null;
+        String retVal = null;
         String metaDataKey = null;
-        PDASubsetRequest request = null;
+        PDAAbstractRequestBuilder request = null;
 
-        try {
-                    
+        statusHandler.handle(Priority.INFO, "Time of Subset request: "
+                + dataSetTime.toString());
+        PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
+                .getDataSetMetaDataHandler().getMostRecentDataSetMetaData(
+                        sub.getDataSetName(), sub.getProvider());
+
+        if (pdadsmd != null) {
             statusHandler.handle(Priority.INFO,
-                    "Time of Subset request: " + dataSetTime.toString());
-
-            /** This query is broken temporarily in 16.2.1.  REMOVE FOR 16.2.2
-            PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
-                    .getDataSetMetaDataHandler().getByDataSetDate(
-                            sub.getDataSetName(), sub.getProvider(),
-                            dataSetTime);
-            */
-            PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
-                   .getDataSetMetaDataHandler().getMostRecentDataSetMetaData(sub.getDataSetName(), sub.getProvider());
-            
-            if (pdadsmd != null) {
-                statusHandler.handle(Priority.INFO, "DataSetMetaData: " + pdadsmd.getDataSetDescription());
-                statusHandler.handle(Priority.INFO, "MetaDataID: " + pdadsmd.getMetaDataID()); 
-            } else {
-                throw new IllegalArgumentException("No DataSetMetaData matches query criteria!");
-            }
-            
-            metaDataKey = pdadsmd.getMetaDataID();
-            request = new PDASubsetRequest(ra, metaDataKey);
-          
-            // make the request
-            filePath = request.performRequest();
-
-        } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR,
-                    "Could not perform dataset request: " + metaDataKey + " : "
-                            + sub.getName(), e);
+                    "DataSetMetaData: " + pdadsmd.getDataSetDescription());
+            statusHandler.handle(Priority.INFO,
+                    "MetaDataID: " + pdadsmd.getMetaDataID());
+        } else {
+            throw new IllegalArgumentException(
+                    "No DataSetMetaData matches query criteria!");
         }
 
-        return filePath;
+        metaDataKey = pdadsmd.getMetaDataID();
+
+        if (this.getRetrievalMode() == RETRIEVAL_MODE.SYNC) {
+            request = new PDASyncRequest(ra, metaDataKey);
+        } else {
+            request = new PDAAsyncRequest(ra, metaDataKey, retrievalID);
+        }
+
+        // Make the request then process the response.
+        retVal = request.performRequest();
+
+        return retVal;
     }
 
 }

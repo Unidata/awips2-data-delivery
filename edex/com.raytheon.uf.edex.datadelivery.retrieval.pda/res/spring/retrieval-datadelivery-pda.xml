@@ -1,38 +1,31 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
-	<bean factory-bean="serviceFactoryRegistry" factory-method="register">
-		<constructor-arg value="PDA" />
-		<constructor-arg
-			value="com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAServiceFactory"
-			type="java.lang.Class" />
-	</bean>
+    <bean factory-bean="serviceFactoryRegistry" factory-method="register">
+        <constructor-arg value="PDA" />
+        <constructor-arg value="com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAServiceFactory" type="java.lang.Class" />
+    </bean>
 
-	<bean factory-bean="metadataAdapterRegistry" factory-method="register">
-		<!-- We can supply any plugin data object here listed in the Provider object 
-			as a type. PDA really doesn't care. It outputs a generic PluginDataObject 
-			and is not specific like other providers. -->
-		<constructor-arg
-			value="com.raytheon.uf.common.dataplugin.goessounding.GOESSounding" />
-		<constructor-arg value="com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata.PDAMetaDataAdapter" type="java.lang.Class" />
-	</bean>
+    <bean factory-bean="metadataAdapterRegistry" factory-method="register">
+    <!-- We can supply any plugin data object here listed in the Provider object 
+         as a type. PDA really doesn't care. It outputs a generic PluginDataObject 
+         and is not specific like other providers. -->
+        <constructor-arg value="com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord" />
+        <constructor-arg value="com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata.PDAMetaDataAdapter" type="java.lang.Class" />
+    </bean>
 
-	<bean id="satelliteDecoder"
-		class="com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder" />
+    <bean id="satelliteDecoder" class="com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder" />
 
-	<bean id="goessoundingDecoder" depends-on="goessoundingRegistered"
-		class="com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder" />
+    <bean id="goessoundingDecoder" depends-on="goessoundingRegistered" class="com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder" />
 
-	<bean id="goesrPathManager" class="com.raytheon.uf.common.localization.PathManagerFactory"
-		factory-method="getPathManager" />
+    <bean id="goesrPathManager" class="com.raytheon.uf.common.localization.PathManagerFactory" factory-method="getPathManager" />
 
-	<bean id="goesrProjectionFactory"
-		class="com.raytheon.uf.edex.plugin.goesr.geospatial.GoesrProjectionFactory" />
+    <bean id="goesrProjectionFactory" class="com.raytheon.uf.edex.plugin.goesr.geospatial.GoesrProjectionFactory" />
 
-	<bean id="goesrDecoder" class="com.raytheon.uf.edex.plugin.goesr.GoesrDecoder">
-		<property name="projectionFactory" ref="goesrProjectionFactory" />
-		<property name="pathManager" ref="goesrPathManager" />
-	</bean>
+    <bean id="goesrDecoder" class="com.raytheon.uf.edex.plugin.goesr.GoesrDecoder">
+        <property name="projectionFactory" ref="goesrProjectionFactory" />
+        <property name="pathManager" ref="goesrPathManager" />
+    </bean>
 
 </beans>

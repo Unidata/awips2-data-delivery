@@ -19,8 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.harvester.purge;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -41,6 +39,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.ClusterIdUtil;
 import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
 import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
 
@@ -63,6 +62,7 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  * Apr 12,2014   3012     dhladky      Purge never worked, fixed to make work.
  * Jan 18, 2016  5261     dhladky      Enabled purging for PDA.
  * Feb 18, 2016  5280     dhladky      Metadata not purging enough for PDA.
+ * Apr 04, 2016  5424     dhladky      Metadata purge not efficient enough for PDA.
  * 
  * </pre>
  * 
@@ -78,23 +78,18 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
     /** Data access object for registry objects */
     private RegistryObjectDao rdo;
     
+    /** Purge 100 items at a time so we don't run hibernate out of shared memory **/
+    private static int PURGE_BATCH_SIZE = 100;
+    
     /**
-     * Purges a {@link DataSetMetaData} instance.
-     * 
-     * @param metaData
-     *            the metadata
-     * @throws NullPointerException
-     *             if the metadata passed in is null
+     * Delete list of provider registry object Ids.
+     * @param deleteIds
+     * @param username
      */
-    @VisibleForTesting
-    static void purgeMetaData(DataSetMetaData<?> metaData) {
+    static void purgeMetaData(List<String> deleteIds, String username) {
 
-        checkNotNull(metaData, "metaData must not be null!");
-
-        statusHandler.info(String.format(
-                "Purging DataSetMetaData for url [%s]", metaData.getUrl()));
         try {
-            DataDeliveryHandlers.getDataSetMetaDataHandler().delete(metaData);
+            DataDeliveryHandlers.getDataSetMetaDataHandler().deleteByIds(username, deleteIds);
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to delete a DataSetMetaData instance!", e);
@@ -185,13 +180,12 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
         timer.start();
 
         List<String> idList = getDataSetMetaDataIds();
+        Map<String, List<String>> deleteMap = new HashMap<String, List<String>>();
         Map<String, String> configMap = getHarvesterConfigs();
         int deletes = 0;
         
         for (String id : idList) {
-
             try {
-
                 DataSetMetaData<?> metaData = DataDeliveryHandlers
                         .getDataSetMetaDataHandler().getById(id);
                 Number retention = Double.valueOf(configMap.get(metaData.getProviderName()));
@@ -205,8 +199,8 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
                         /* 
                          * Retention is calculated in hours.
                          * We consider the whole day to be 24 hours.
-                         * So, a value of .25 would be considered 6 hours or, -24 * .25 = 6.0.
-                         * Or with more than one day it could be, -24 * 7 = 168.
+                         * So, a value of .25 would be considered 6 hours or, -24 * .25 = -6.0.
+                         * Or with more than one day it could be, -24 * 7 = -168.
                          * We let Number int conversion round to nearest whole hour.
                          */
                         retention = retention.doubleValue() * (-1) * TimeUtil.HOURS_PER_DAY;
@@ -217,11 +211,15 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
 
                         if (thresholdTime.getTimeInMillis() >= metaData
                                 .getDate().getTime()) {
-                            purgeMetaData(metaData);
-                            deletes++;
+                            if (deleteMap.containsKey(metaData.getProviderName())) {
+                                deleteMap.get(metaData.getProviderName()).add(id);
+                            } else {
+                                List<String> deleteList = new ArrayList<String>(1);
+                                deleteList.add(id);
+                                deleteMap.put(metaData.getProviderName(), deleteList);
+                            }
                         }
                     } 
-
                 } else {
                     statusHandler
                             .warn("Retention time unreadable for this DataSetMetaData provider! "
@@ -231,7 +229,50 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
                 }
 
             } catch (Exception e) {
-                statusHandler.error("DataSetMetaData purge failed! " + id, e);
+                statusHandler.error("DataSetMetaData purge gather failed! " + id, e);
+            }
+        }
+        
+        if (!deleteMap.isEmpty()) {
+            
+            // username is the name of this registry, ("NCF") 
+            String username = ClusterIdUtil.getId();
+            
+            for (String providerKey: deleteMap.keySet()) {
+                // delete the ids for this provider.
+                List<String> ids = deleteMap.get(providerKey);
+                
+                if (ids.size() <= PURGE_BATCH_SIZE) {
+                    purgeMetaData(ids, username);
+                    deletes += ids.size();
+                } else {
+                    // break it into chunks, + 1 if remainder
+                    int mod = ids.size() % PURGE_BATCH_SIZE;
+                    Float total = (float) (ids.size()/PURGE_BATCH_SIZE);
+                    int batches = (int) Math.floor(total);
+                    if (mod != 0) {
+                        batches = batches + 1;
+                    } 
+
+                    int start = 0;
+                    int end = PURGE_BATCH_SIZE;
+
+                    for (int i = 0; i < batches; i++) {
+                        
+                        if (i > 0) {
+                            start = end;
+                            if ((start + PURGE_BATCH_SIZE) < ids.size()) {
+                                end = start + PURGE_BATCH_SIZE;
+                            } else {
+                                end = ids.size();
+                            }
+                        }
+
+                        List<String> batch = ids.subList(start, end);
+                        purgeMetaData(batch, username);
+                        deletes += batch.size();
+                    }
+                }
             }
         }
 
