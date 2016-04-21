@@ -37,6 +37,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 26, 2014 5424       dhladky     Initial creation
+ * Apr 21, 2016 5424       dhladky     Fixes from initial testing.
  * 
  * </pre>
  * 
@@ -58,7 +59,7 @@ public interface IPDAGetCoverageResponseHandler {
      */
     @WebMethod
     public void handleGetCoverageResponse(
-            @WebParam(name = "GetCoverage", targetNamespace = "http://www.opengis.net/ows/2.0", partName = "Body")
+            @WebParam(name = "OperationResponse", targetNamespace = "http://www.opengis.net/ows/2.0", partName = "Body")
             net.opengis.ows.v_2_0.ManifestType manifestType)
             throws ServiceExceptionReport;
 

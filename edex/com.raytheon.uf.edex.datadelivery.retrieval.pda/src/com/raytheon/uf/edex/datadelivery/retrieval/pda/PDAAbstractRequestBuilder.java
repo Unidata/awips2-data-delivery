@@ -45,6 +45,7 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 12, 2016 5424        dhladky      created.
+ * Apr 21, 2016 5424       dhladky     Fixes from initial testing.
  * 
  * </pre>
  * 
@@ -78,7 +79,7 @@ public abstract class PDAAbstractRequestBuilder extends PDARequestBuilder {
             + "xmlns:gml=\"http://www.opengis.net/gml\" \n"
             + "xmlns:ogc=\"http://www.opengis.net/ogc\" \n"
             + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n"
-            + "xsi:schemaLocation=\"http://www.opengis.net/wcs/2.0 http://schemas.opengis.net/wcs/2.0/wcsAll.xsd\" \">\n";
+            + "xsi:schemaLocation=\"http://www.opengis.net/wcs/2.0 http://schemas.opengis.net/wcs/2.0/wcsAll.xsd\">\n";
     
     /** SOAP FOOTER for request **/
     protected static final String footer = "</wcs:GetCoverage>\n"
