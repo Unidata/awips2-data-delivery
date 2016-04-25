@@ -76,6 +76,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 14, 2014  3121      dhladky      Initial creation.
+ * Apr 25, 2016  5424      dhladky      Updated datasize calculation.
  * 
  * </pre>
  * 
@@ -103,9 +104,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     private final List<String> asString = new ArrayList<String>(1);
 
     private final Map<String, ImmutableDate> dateStringToDateMap = new HashMap<String, ImmutableDate>(1);
-
-    private boolean useLatestDate = true;
     
+    @SuppressWarnings("rawtypes")
     private DataSetMetaData metaData;
     
     private DateFormat dateFormat = null;
@@ -120,6 +120,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      * @param subscription
      *            Subscription object
      */
+    @SuppressWarnings("rawtypes")
     public PDASubsetManagerDlg(Shell shell, boolean loadDataSet,
             Subscription subscription) {
         super(shell, loadDataSet, subscription);
@@ -212,15 +213,15 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         }
 
         ReferencedEnvelope env = spatialTabControls.getEnvelope();
-        int timesSelected = timingTabControls.getSelectedTimes().length;
         // Update the data set size label text.
         this.sizeLbl.setText(SizeUtil.prettyByteSize(dataSize
-                .getDataSetSizeInBytes(env, timesSelected)));
+                .getDataSetSizeInBytes(env)));
     }
 
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings({ "rawtypes", "unused" })
     @Override
     protected Time setupDataSpecificTime(Time newTime, Subscription sub) {
 
@@ -265,7 +266,6 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
         Time time = newTime;
         Date selectedDate = null;
-        this.useLatestDate = false;
         
         if (!selection.isLatest()) {
             try {
@@ -299,6 +299,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     protected Subscription populateSubscription(Subscription sub, boolean create) {
         
@@ -356,6 +357,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      * #loadFromSubscription
      * (com.raytheon.uf.common.datadelivery.registry.Subscription)
      */
+    @SuppressWarnings("rawtypes")
     @Override
     protected void loadFromSubscription(Subscription subscription) {
         super.loadFromSubscription(subscription);
@@ -397,6 +399,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      * 
      * @return the DataSetMetaData that applies, or null if none
      */
+    @SuppressWarnings("rawtypes")
     protected DataSetMetaData retrieveFilteredDataSetMetaData(Date selectedDate) {
         try {
             PDADataSetMetaData dsmd = (PDADataSetMetaData) DataDeliveryHandlers
