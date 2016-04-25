@@ -61,6 +61,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Jun 01, 2015   2805     dhladky     Made highlighted selections work properly through updates.
  * Jul 08, 2015   2805     dhladky     Added boolean check for whether to allow find highlighting, no longer find on update.
  * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
+ * Apr 23, 2016   5528     dhladky     Fixed Yes/No dialog implementation.
  * 
  * </pre>
  * 
@@ -327,9 +328,8 @@ public class FindDlg extends CaveSWTDialog {
             } else {
                 if (!hitEnd) {
                     int answer = DataDeliveryUtils
-                            .showMessage(
+                            .showYesNoMessage(
                                     getShell(),
-                                    SWT.YES | SWT.NO,
                                     "Search from Beginning",
                                     "The end of the table has been reached.  Would you like to search from the beginning of the table?");
                     if (answer == SWT.NO) {
