@@ -108,6 +108,7 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * Jul 08, 2015  2805      dhladky     Removed re-evaluation of find dialog buttons on update.
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues, changed page number selection to spinner
  *                                     instead of combo box that gets huge if there are lots of pages
+ * Apr 26, 2016  5528      dhladky     Prevent null pointer on initial use of find tool.
  * 
  * 
  * </pre>
@@ -1118,8 +1119,10 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         handlePageSelection();
         TableItem item = table.getItem(pageIndex);
         table.setSelection(item);
-        highlightRows.clear();
-        highlightRows.add(row);
+        if (highlightRows != null) {
+            highlightRows.clear();
+            highlightRows.add(row);
+        }
     }
 
     /**
