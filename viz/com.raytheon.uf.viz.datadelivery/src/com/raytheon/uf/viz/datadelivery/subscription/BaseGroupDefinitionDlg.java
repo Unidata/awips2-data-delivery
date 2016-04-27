@@ -72,6 +72,7 @@ import com.raytheon.viz.ui.presenter.components.WidgetConf;
  * Jan 08, 2013 1453       djohnson     Split creation and edit dialogs.
  * Apr 08, 2013 1826       djohnson     Remove delivery options.
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
+ * Feb 01, 2016 5289       tgurney      Add missing minimize button in trim
  * 
  * </pre>
  * 
@@ -121,7 +122,8 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
      *            callback to subscription manager
      */
     public BaseGroupDefinitionDlg(Shell parent, IGroupAction callback) {
-        super(parent, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN,
+                CAVE.INDEPENDENT_SHELL
                 | CAVE.DO_NOT_BLOCK);
         setText(getDialogTitle());
         this.callback = callback;

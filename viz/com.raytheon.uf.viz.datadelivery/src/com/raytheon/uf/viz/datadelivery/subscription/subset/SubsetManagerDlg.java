@@ -156,7 +156,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * May 17, 2015   4047     dhladky      verified non-blocking.
  * Jul 01, 2015   4047     dhladky      Use callback YES NO dialog for closing.
  * Oct 15, 2015   4657     rferrel      Make data the return value to allow cleanup in the callback.
- * Mar 16, 2016   3919     tjensen      Cleanup unneeded interfaces
+ * Jan 29, 2016   5289     tgurney      Add missing maximize button in trim
  * 
  * </pre>
  * 
@@ -236,7 +236,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      *            The DataSetMetaData
      */
     public SubsetManagerDlg(Shell shell, boolean loadDataSet, DataSet dataSet) {
-        super(shell, SWT.RESIZE | SWT.DIALOG_TRIM | SWT.MIN,
+        super(shell, SWT.RESIZE | SWT.DIALOG_TRIM | SWT.MAX | SWT.MIN,
                 CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         this.loadDataSet = loadDataSet;
         this.dataSet = dataSet;
