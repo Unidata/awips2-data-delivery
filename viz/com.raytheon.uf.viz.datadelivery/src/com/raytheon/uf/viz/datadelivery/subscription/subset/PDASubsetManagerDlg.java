@@ -77,6 +77,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * ------------ ---------- ----------- --------------------------
  * Aug 14, 2014  3121      dhladky      Initial creation.
  * Apr 25, 2016  5424      dhladky      Updated datasize calculation.
+ * Apr 27, 2016  5366      tjensen      Updates for time selection changes
  * 
  * </pre>
  * 
@@ -90,9 +91,9 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
             .getHandler(PDASubsetManagerDlg.class);
 
     private final String TIMING_TAB_TEXT = "Retrieval Times";
-    
+
     private final String NO_DATA_FOR_DATE = "No data is available for the specified date.";
-    
+
     private final String NO_DATES_FOR_DATASET = "No dates for this Dataset available.";
 
     /** Point data size utility */
@@ -100,16 +101,17 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     /** The point subset tab */
     private PDATimingSubsetTab timingTabControls;
-    
-    private final List<String> asString = new ArrayList<String>(1);
 
-    private final Map<String, ImmutableDate> dateStringToDateMap = new HashMap<String, ImmutableDate>(1);
-    
+    private final List<String> asString = new ArrayList<>(1);
+
+    private final Map<String, ImmutableDate> dateStringToDateMap = new HashMap<>(
+            1);
+
     @SuppressWarnings("rawtypes")
     private DataSetMetaData metaData;
-    
+
     private DateFormat dateFormat = null;
-   
+
     /**
      * Constructor.
      * 
@@ -163,7 +165,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         this.dataSet = dataSet;
         setTitle();
     }
-    
+
     /**
      * Creates the date formatter
      */
@@ -189,7 +191,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         timingComp.setLayout(tgl);
         timingComp.setLayoutData(tgd);
         timingTab.setControl(timingComp);
-        timingTabControls = new PDATimingSubsetTab(timingComp, this, shell, retrieveDatesForDataSet());
+        timingTabControls = new PDATimingSubsetTab(timingComp, this, shell,
+                retrieveDatesForDataSet());
         TabItem spatialTab = new TabItem(tabFolder, SWT.NONE);
         spatialTab.setText(SPATIAL_TAB);
         Composite spatialComp = new Composite(tabFolder, SWT.NONE);
@@ -213,6 +216,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         }
 
         ReferencedEnvelope env = spatialTabControls.getEnvelope();
+
         // Update the data set size label text.
         this.sizeLbl.setText(SizeUtil.prettyByteSize(dataSize
                 .getDataSetSizeInBytes(env)));
@@ -221,15 +225,13 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     /**
      * {@inheritDoc}
      */
-    @SuppressWarnings({ "rawtypes", "unused" })
+    @SuppressWarnings({ "rawtypes" })
     @Override
     protected Time setupDataSpecificTime(Time newTime, Subscription sub) {
 
-        PDADataSet DataSet = (PDADataSet) dataSet;
-
         if (asString.isEmpty()) {
-            SortedSet<ImmutableDate> newestToOldest = new TreeSet<ImmutableDate>(
-                    Ordering.natural().reverse());
+            SortedSet<ImmutableDate> newestToOldest = new TreeSet<>(Ordering
+                    .natural().reverse());
             try {
                 newestToOldest.addAll(DataDeliveryHandlers
                         .getDataSetMetaDataHandler().getDatesForDataSet(
@@ -255,8 +257,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
             }
         }
 
-        PDATimingSelectionDlg dlg = new PDATimingSelectionDlg(
-                getShell(), (PDADataSet) dataSet, sub, asString);
+        PDATimingSelectionDlg dlg = new PDATimingSelectionDlg(getShell(),
+                (PDADataSet) dataSet, sub, asString);
 
         PDATimeSelection selection = dlg.openDlg();
 
@@ -266,12 +268,13 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
         Time time = newTime;
         Date selectedDate = null;
-        
+
         if (!selection.isLatest()) {
             try {
                 selectedDate = time.parseDate(selection.getDate());
             } catch (ParseException e) {
-                statusHandler.handle(Priority.PROBLEM, "Can't parse selected Date", e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Can't parse selected Date", e);
             }
             metaData = retrieveFilteredDataSetMetaData(selectedDate);
             if (metaData == null) {
@@ -302,7 +305,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     protected Subscription populateSubscription(Subscription sub, boolean create) {
-        
+
         sub.setProvider(dataSet.getProviderName());
         sub.setDataSetName(dataSet.getDataSetName());
         sub.setDataSetType(dataSet.getDataSetType());
@@ -316,9 +319,9 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         cov.setEnvelope(dataSet.getCoverage().getEnvelope());
         setCoverage(sub, cov);
 
-        List<Parameter> paramList = new ArrayList<Parameter>();
+        List<Parameter> paramList = new ArrayList<>();
         Map<String, Parameter> paramMap = dataSet.getParameters();
-        List<DataLevelType> levelTypeList = new ArrayList<DataLevelType>();
+        List<DataLevelType> levelTypeList = new ArrayList<>();
         levelTypeList.add(new DataLevelType(DataLevelType.LevelType.SFC));
         for (String key : paramMap.keySet()) {
             Parameter p = paramMap.get(key);
@@ -342,30 +345,22 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      * {@inheritDoc}
      */
     @Override
-    protected void loadFromSubsetXML(SubsetXML subsetXml) {
-        super.loadFromSubsetXML(subsetXml);
+    protected void loadFromSubsetXML(SubsetXML mySubsetXml) {
+        super.loadFromSubsetXML(mySubsetXml);
 
-        PDATimeXML time = (PDATimeXML) subsetXml.getTime();
+        PDATimeXML time = (PDATimeXML) mySubsetXml.getTime();
         this.timingTabControls.setSelectedTimes(time.getTimes());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.subscription.subset.SubsetManagerDlg
-     * #loadFromSubscription
-     * (com.raytheon.uf.common.datadelivery.registry.Subscription)
-     */
     @SuppressWarnings("rawtypes")
     @Override
-    protected void loadFromSubscription(Subscription subscription) {
-        super.loadFromSubscription(subscription);
+    protected void loadFromSubscription(Subscription mySubscription) {
+        super.loadFromSubscription(mySubscription);
 
-        ArrayList<String> subvals = new ArrayList<String>();
-        subvals.add(subscription.getTime().getStart().toString());
-        subvals.add(subscription.getTime().getEnd().toString());
-        
+        ArrayList<String> subvals = new ArrayList<>();
+        subvals.add(mySubscription.getTime().getStart().toString());
+        subvals.add(mySubscription.getTime().getEnd().toString());
+
         PDATimeXML time = new PDATimeXML();
         time.setTimes(subvals);
 
@@ -393,7 +388,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     protected TimeXML getDataTimeInfo() {
         return timingTabControls.getSaveInfo();
     }
-    
+
     /**
      * Retrieve the filtered {@link DATASETMETADATA}.
      * 
@@ -403,7 +398,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     protected DataSetMetaData retrieveFilteredDataSetMetaData(Date selectedDate) {
         try {
             PDADataSetMetaData dsmd = (PDADataSetMetaData) DataDeliveryHandlers
-                    .getDataSetMetaDataHandler().getByDataSetDate(dataSet.getDataSetName(),
+                    .getDataSetMetaDataHandler().getByDataSetDate(
+                            dataSet.getDataSetName(),
                             dataSet.getProviderName(), selectedDate);
             if (dsmd == null) {
                 DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
@@ -416,7 +412,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
             return null;
         }
     }
-    
+
     /**
      * Retrieve the filtered {@link DATES}.
      * 
@@ -427,17 +423,28 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         try {
             List<String> dates = null;
             Set<ImmutableDate> sdates = DataDeliveryHandlers
-                    .getDataSetMetaDataHandler().getDatesForDataSet(dataSet.getDataSetName(), dataSet.getProviderName());
+                    .getDataSetMetaDataHandler()
+                    .getDatesForDataSet(dataSet.getDataSetName(),
+                            dataSet.getProviderName());
             if (sdates == null) {
                 DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
                         NO_DATES_FOR_DATASET);
             } else {
-                dates = new ArrayList<String>(sdates.size());
-                for (ImmutableDate date: sdates) {
-                    dates.add(date.toString());
+                // Only add the most recent available time.
+                ImmutableDate mostRecent = null;
+                dates = new ArrayList<>(1);
+
+                for (ImmutableDate date : sdates) {
+                    if (mostRecent == null || date.after(mostRecent)) {
+                        mostRecent = date;
+                    }
                 }
+                if (mostRecent != null) {
+                    dates.add(mostRecent.toString());
+                }
+
             }
-            
+
             return dates;
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
