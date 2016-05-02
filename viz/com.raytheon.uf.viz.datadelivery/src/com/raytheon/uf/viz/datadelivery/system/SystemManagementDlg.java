@@ -53,21 +53,27 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 17, 2012   730      jpiatt      Initial creation.
- * Oct 23, 2012 1286       djohnson    Hook into bandwidth management.
- * Nov 20, 2012 1286       djohnson    Implement IDisplay.
- * Jan 04, 2013 1420       mpduff      Remove applying of rules.
- * Jan 17, 2013 1501       djohnson    Close the dialog when force apply occurs, 
- *                                     and check whether changes have already been applied when OK is pressed.
- * May 17, 2013 2000       djohnson    Move bandwidth configuration into its own tab, add subscription overlap rules.
- * Jul 16, 2013 1655       mpduff      Add system status tab.
- * Aug 08, 2013 2180       mpduff      Redesigned UI.
- * Oct 03, 2013 2386       mpduff      Implemented multiple data types for overlap rules
- * Nov 19, 2013 2387       skorolev    Add timer for status refresh.
- * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
- * Nov 20, 2014 2749       ccody       Changed System Management to a non-modal dialog
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 17, 2012  730      jpiatt    Initial creation.
+ * Oct 23, 2012  1286     djohnson  Hook into bandwidth management.
+ * Nov 20, 2012  1286     djohnson  Implement IDisplay.
+ * Jan 04, 2013  1420     mpduff    Remove applying of rules.
+ * Jan 17, 2013  1501     djohnson  Close the dialog when force apply occurs,
+ *                                  and check whether changes have already been
+ *                                  applied when OK is pressed.
+ * May 17, 2013  2000     djohnson  Move bandwidth configuration into its own
+ *                                  tab, add subscription overlap rules.
+ * Jul 16, 2013  1655     mpduff    Add system status tab.
+ * Aug 08, 2013  2180     mpduff    Redesigned UI.
+ * Oct 03, 2013  2386     mpduff    Implemented multiple data types for overlap
+ *                                  rules
+ * Nov 19, 2013  2387     skorolev  Add timer for status refresh.
+ * Nov 19, 2014  3852     dhladky   Resurrected the Unscheduled state.
+ * Nov 20, 2014  2749     ccody     Changed System Management to a non-modal
+ *                                  dialog
+ * May 02, 2016  5482     randerso  Fixed GUI sizing issues
+ * 
  * </pre>
  * 
  * @author jpiatt
@@ -210,7 +216,7 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
 
         gl = new GridLayout(1, false);
         gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        tree = new Tree(treeComp, SWT.NO_SCROLL);
+        tree = new Tree(treeComp, SWT.H_SCROLL);
         tree.setLayout(gl);
         tree.setLayoutData(gd);
         populateTree();
