@@ -29,9 +29,11 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 28, 2014   #3121    dhladky     Initial javadoc
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Aug 28, 2014  3121     dhladky   Initial javadoc
+ * May 03, 2016  5599     tjensen   Added subscription name to decodeObjects
+ * 
  * </pre>
  * 
  * @author dhladky
@@ -39,12 +41,18 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
  */
 
 public interface IPDAMetaDataAdapter {
-    
+
     /**
-     * Gets the correct satellite decoder 
+     * Gets the correct satellite decoder
+     * 
+     * @param FileName
+     *            path to file
+     * @param subName
+     *            Subscription Name
      * @return
      * @throws Exception
      */
-    public PluginDataObject[] decodeObjects(String FileName) throws Exception;
+    public PluginDataObject[] decodeObjects(String FileName, String subName)
+            throws Exception;
 
 }

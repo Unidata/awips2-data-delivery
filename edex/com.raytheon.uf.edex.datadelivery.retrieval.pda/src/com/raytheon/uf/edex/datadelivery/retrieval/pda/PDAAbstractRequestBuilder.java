@@ -34,18 +34,18 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 
 /**
  * 
- * PDA abstract requestBuilder.
- * Builds the geographic (Bounding Box) delimited
+ * PDA abstract requestBuilder. Builds the geographic (Bounding Box) delimited
  * requests for PDA data. Then executes the request to PDA.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 12, 2016 5424        dhladky      created.
- * Apr 21, 2016 5424       dhladky     Fixes from initial testing.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------
+ * Apr 12, 2016  5424     dhladky   created.
+ * Apr 21, 2016  5424     dhladky   Fixes from initial testing.
+ * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
  * 
  * </pre>
  * 
@@ -59,7 +59,7 @@ public abstract class PDAAbstractRequestBuilder extends PDARequestBuilder {
             .getHandler(PDAAbstractRequestBuilder.class);
 
     protected String metaDataID = null;
-    
+
     protected OgcJaxbManager manager = null;
 
     public static final String CRS = getServiceConfig().getConstantValue(
@@ -69,7 +69,7 @@ public abstract class PDAAbstractRequestBuilder extends PDARequestBuilder {
             "BLANK");
 
     protected static final String SOAP_ACTION = "urn:getCoverage";
-    
+
     /** SOAP HEADER for request **/
     protected static final String header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
             + "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n"
@@ -80,24 +80,24 @@ public abstract class PDAAbstractRequestBuilder extends PDARequestBuilder {
             + "xmlns:ogc=\"http://www.opengis.net/ogc\" \n"
             + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n"
             + "xsi:schemaLocation=\"http://www.opengis.net/wcs/2.0 http://schemas.opengis.net/wcs/2.0/wcsAll.xsd\">\n";
-    
+
     /** SOAP FOOTER for request **/
     protected static final String footer = "</wcs:GetCoverage>\n"
-            + "</soapenv:Body>\n" 
-            + "</soapenv:Envelope>\n";
-    
+            + "</soapenv:Body>\n" + "</soapenv:Envelope>\n";
+
     /**
      * RetrievalGenerator used constructor
+     * 
      * @param ra
      * @param metaDataID
      */
-    protected PDAAbstractRequestBuilder(RetrievalAttribute<Time,Coverage> ra, String metaDataID) {
+    protected PDAAbstractRequestBuilder(RetrievalAttribute<Time, Coverage> ra,
+            String subName, String metaDataID) {
 
-        super(ra);
+        super(ra, subName);
         setMetaDataID(metaDataID);
     }
 
-    
     /**
      * Performs the request and returns response.
      * 
@@ -138,82 +138,92 @@ public abstract class PDAAbstractRequestBuilder extends PDARequestBuilder {
 
     /**
      * Set key to PDA parent dataSet
+     * 
      * @param metaDataID
      */
     protected void setMetaDataID(String metaDataID) {
 
-        // PDA sends metadata ID's without the "C" but then requires the C for queries.
-        // They should really just add the "C" to all of their metadata ID's.
+        /*
+         * PDA sends metadata ID's without the "C" but then requires the C for
+         * queries. They should really just add the "C" to all of their metadata
+         * ID's.
+         */
         if (!metaDataID.startsWith("C")) {
-            metaDataID = "C"+metaDataID;
-            statusHandler.handle(Priority.INFO, "Added 'C' to metaDataID! "+ metaDataID);
-        } 
-        
+            metaDataID = "C" + metaDataID;
+            statusHandler.handle(Priority.INFO, "Added 'C' to metaDataID! "
+                    + metaDataID);
+        }
+
         this.metaDataID = metaDataID;
     }
-    
+
     /**
      * Check to see if this coverage is subsetted
+     * 
      * @param coverage
      * @return
      */
     protected boolean isSubsetted(Coverage coverage) {
-        
+
         ReferencedEnvelope requestEnv = coverage.getRequestEnvelope();
         ReferencedEnvelope fullEnv = coverage.getEnvelope();
-          
+
         if (!fullEnv.equals(requestEnv)) {
             return true;
         }
-        
+
         return false;
     }
-    
-    
+
     /**
      * Add metaDataID to query
+     * 
      * @return
      */
     protected String processMetaDataID() {
-        
+
         StringBuilder sb = new StringBuilder(128);
         sb.append("<wcs:CoverageId>");
         sb.append(getMetaDataID());
         sb.append("</wcs:CoverageId>\n");
-        
+
         return sb.toString();
     }
-    
-    
-    
+
     /**
      * Strip un-needed SOAP headers
+     * 
      * @param response
      * @return
      */
     protected String stripSoapHeaders(String response) {
-        
+
         if (response != null) {
             // temporary code, remove the soap tags, we don't want them.
-            if (response.contains("<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">")) {
-                response = response.replaceAll("<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">", "");
+            if (response
+                    .contains("<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">")) {
+                response = response
+                        .replaceAll(
+                                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">",
+                                "");
             }
-            
+
             if (response.contains("<soapenv:Body>")) {
                 response = response.replaceAll("<soapenv:Body>", "");
             }
-            
+
             if (response.contains("</soapenv:Body>")) {
                 response = response.replaceAll("</soapenv:Body>", "");
             }
-            
+
             if (response.contains("</soapenv:Envelope>")) {
                 response = response.replaceAll("</soapenv:Envelope>", "");
             }
             statusHandler.handle(Priority.INFO,
-                    "Stripped <soapenv> tags from PDA response object: " + response);
+                    "Stripped <soapenv> tags from PDA response object: "
+                            + response);
         }
-        
+
         return response;
     }
 
@@ -240,10 +250,11 @@ public abstract class PDAAbstractRequestBuilder extends PDARequestBuilder {
      * Configure need classes
      * 
      * Create JAXB manager
+     * 
      * @throws JAXBException
      */
     protected abstract void configureJAXBManager() throws JAXBException;
-    
+
     /**
      * Process the response from PDA
      * 
@@ -251,5 +262,5 @@ public abstract class PDAAbstractRequestBuilder extends PDARequestBuilder {
      * @return
      */
     protected abstract String processResponse(String response);
- 
+
 }

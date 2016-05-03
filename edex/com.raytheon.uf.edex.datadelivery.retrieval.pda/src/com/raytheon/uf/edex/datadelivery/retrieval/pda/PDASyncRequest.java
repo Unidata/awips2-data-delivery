@@ -40,12 +40,15 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sept 27, 2014 3127        dhladky      created.
- * Nov 15, 2015   5139       dhladky     PDA changed interface, requires a SOAP header.
- * Jan 16, 2016   5260       dhladky     Fixes to errors found in testing.
- * Apr 06, 2016   5424       dhladky     Moved to sync request. Pulled common portions out to super class.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 27, 2014  3127     dhladky   created.
+ * Nov 15, 2015  5139     dhladky   PDA changed interface, requires a SOAP
+ *                                  header.
+ * Jan 16, 2016  5260     dhladky   Fixes to errors found in testing.
+ * Apr 06, 2016  5424     dhladky   Moved to sync request. Pulled common
+ *                                  portions out to super class.
+ * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
  * 
  * </pre>
  * 
@@ -57,19 +60,21 @@ public class PDASyncRequest extends PDAAbstractRequestBuilder {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDASyncRequest.class);
-    
-    private static final String extensionHeader =  "<wcs:Extension>\n" 
-                                                 + "<ows:ExtendedCapabilities xmlns:ows=\"http://www.opengis.net/ows\">store</ows:ExtendedCapabilities>\n"
-                                                 + "</wcs:Extension>\n";
-    
+
+    private static final String extensionHeader = "<wcs:Extension>\n"
+            + "<ows:ExtendedCapabilities xmlns:ows=\"http://www.opengis.net/ows\">store</ows:ExtendedCapabilities>\n"
+            + "</wcs:Extension>\n";
+
     /**
      * SYNC request
+     * 
      * @param ra
      * @param metaDataID
      */
-    public PDASyncRequest(RetrievalAttribute<Time, Coverage> ra, String metaDataID) {
-        
-        super(ra, metaDataID);
+    public PDASyncRequest(RetrievalAttribute<Time, Coverage> ra,
+            String subName, String metaDataID) {
+
+        super(ra, subName, metaDataID);
         // create the request
         StringBuilder query = new StringBuilder(512);
         query.append(header);
@@ -82,27 +87,29 @@ public class PDASyncRequest extends PDAAbstractRequestBuilder {
         // set the request
         setRequest(query.toString());
     }
-       
+
     /**
      * Processes the response from PDA, synchronous.
+     * 
      * @param response
      * @return
      */
     public String processResponse(String response) {
-       
+
         String filePath = null;
 
         try {
-           
+
             net.opengis.gmlcov.v_1_0.AbstractDiscreteCoverageType coverage = null;
             Object responseObject = getManager().unmarshalFromXml(response);
-            
+
             if (responseObject instanceof net.opengis.gmlcov.v_1_0.AbstractDiscreteCoverageType) {
                 coverage = (net.opengis.gmlcov.v_1_0.AbstractDiscreteCoverageType) responseObject;
                 // the FTPS URL for the dataset
                 filePath = coverage.getRangeSet().getFile().getFileReference();
             } else {
-                throw new Exception("Unexpected response object: "+responseObject.toString());
+                throw new Exception("Unexpected response object: "
+                        + responseObject.toString());
             }
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR,
@@ -112,7 +119,7 @@ public class PDASyncRequest extends PDAAbstractRequestBuilder {
 
         return filePath;
     }
-    
+
     /**
      * Use correct OGC libraries for casting.
      * 
@@ -125,7 +132,7 @@ public class PDASyncRequest extends PDAAbstractRequestBuilder {
                     net.opengis.wcs.v_1_1_2.ObjectFactory.class,
                     net.opengis.gmlcov.v_1_0.ObjectFactory.class,
                     net.opengis.sensorml.v_2_0.ObjectFactory.class,
-                    net.opengis.swecommon.v_2_0.ObjectFactory.class};
+                    net.opengis.swecommon.v_2_0.ObjectFactory.class };
 
             try {
                 manager = new OgcJaxbManager(classes);

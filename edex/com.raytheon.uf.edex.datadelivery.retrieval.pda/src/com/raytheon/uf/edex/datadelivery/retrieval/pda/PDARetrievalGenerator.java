@@ -1,4 +1,5 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -51,13 +52,14 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2014 3120       dhladky     Initial creation
- * Sept 14, 2104 3121      dhladky     Sharpened Retrieval generation.
- * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
- * Jan 18, 2016  5260      dhladky     Testing changes.
- * Jan 20, 2016  5280      dhladky     removed FTPSURL from request URL.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------
+ * Jun 13, 2014  3120     dhladky   Initial creation
+ * Sep 14, 2104  3121     dhladky   Sharpened Retrieval generation.
+ * Sep 26, 2014  3127     dhladky   Adding geographic subsetting.
+ * Jan 18, 2016  5260     dhladky   Testing changes.
+ * Jan 20, 2016  5280     dhladky   removed FTPSURL from request URL.
+ * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
  * 
  * </pre>
  * 
@@ -65,16 +67,15 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * @version 1.0
  */
 
-
 public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARetrievalGenerator.class);
-    
+
     public PDARetrievalGenerator(ServiceType serviceType) {
         super(serviceType);
     }
-    
+
     public PDARetrievalGenerator() {
 
         super(ServiceType.PDA);
@@ -82,12 +83,11 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
 
     @Override
     public List<Retrieval> buildRetrieval(SubscriptionBundle bundle) {
-        
-                
-        List<Retrieval> retrievals = new ArrayList<Retrieval>();
+
+        List<Retrieval> retrievals = new ArrayList<>();
         @SuppressWarnings("unchecked")
         Subscription<Time, Coverage> sub = bundle.getSubscription();
-        
+
         if (sub.getUrl() == null) {
             statusHandler
                     .info("Skipping subscription "
@@ -95,8 +95,8 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
                             + " that is unfulfillable with the current metadata (null URL.)");
             return Collections.emptyList();
         }
-                
-        //TODO since we have no switches this is all meaningless right now
+
+        // TODO since we have no switches this is all meaningless right now
         Time subTime = sub.getTime();
         // Gets the most recent time, which is kept as the end time.
         Date endDate = subTime.getEnd();
@@ -107,7 +107,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
 
         // With PDA it's one param at a time. so always 0.
         Parameter param = null;
-        
+
         if (sub.getParameter() != null) {
             param = (Parameter) sub.getParameter().get(0);
         }
@@ -116,13 +116,13 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             Retrieval retrieval = getRetrieval(sub, bundle, param, subTime);
             retrievals.add(retrieval);
         } catch (Exception e) {
-            statusHandler.error("PDA Retrieval building has failed." +e);
+            statusHandler.error("PDA Retrieval building has failed." + e);
             return Collections.emptyList();
         }
 
         return retrievals;
     }
-    
+
     /**
      * Get the retrieval
      * 
@@ -133,8 +133,9 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
      * @param Time
      * @return
      */
-    private Retrieval getRetrieval(Subscription<Time, Coverage> sub, SubscriptionBundle bundle,
-            Parameter param, Time time) throws Exception {
+    private Retrieval getRetrieval(Subscription<Time, Coverage> sub,
+            SubscriptionBundle bundle, Parameter param, Time time)
+            throws Exception {
 
         Retrieval retrieval = new Retrieval();
         retrieval.setSubscriptionName(sub.getName());
@@ -149,7 +150,8 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             retrieval.setDataType(DataType.PDA);
         } else {
             throw new UnsupportedOperationException(
-                    "PDA retrieval does not support coverages of type:  "+cov.getClass().getName());
+                    "PDA retrieval does not support coverages of type:  "
+                            + cov.getClass().getName());
         }
 
         final ProviderType providerType = bundle.getProvider().getProviderType(
@@ -157,7 +159,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         final String plugin = providerType.getPlugin();
 
         // Attribute processing
-        RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<Time, Coverage>();
+        RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<>();
         att.setCoverage(cov);
 
         /**
@@ -199,7 +201,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             lparam.setLevels(param.getLevels());
             att.setParameter(lparam);
         }
-    
+
         att.setTime(time);
         att.setSubName(retrieval.getSubscriptionName());
         att.setPlugin(plugin);
@@ -215,10 +217,12 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
     }
 
     @Override
-    protected Subscription<Time, Coverage> removeDuplicates(Subscription<Time, Coverage> sub) {
-        throw new UnsupportedOperationException("Not implemented for PDA at this time!");
+    protected Subscription<Time, Coverage> removeDuplicates(
+            Subscription<Time, Coverage> sub) {
+        throw new UnsupportedOperationException(
+                "Not implemented for PDA at this time!");
     }
-    
+
     /**
      * Retrieve the Coverage for this Retrieval Attribute
      * 
@@ -256,9 +260,10 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         metaDataKey = pdadsmd.getMetaDataID();
 
         if (this.getRetrievalMode() == RETRIEVAL_MODE.SYNC) {
-            request = new PDASyncRequest(ra, metaDataKey);
+            request = new PDASyncRequest(ra, sub.getName(), metaDataKey);
         } else {
-            request = new PDAAsyncRequest(ra, metaDataKey, retrievalID);
+            request = new PDAAsyncRequest(ra, sub.getName(), metaDataKey,
+                    retrievalID);
         }
 
         // Make the request then process the response.

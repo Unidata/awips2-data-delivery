@@ -1,4 +1,5 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -40,12 +41,14 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 12, 2014 3120        dhladky      created.
- * Sept 04, 2014 3121       dhladky     Clarified and sharpened creation, largely un-implemented at this point.
- * Sept 27, 2014 3127       dhladky     Geographic subsetting.
- * Apr 06, 2016  5424       dhladky     Dual ASYNC and SYNC processing.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 12, 2014  3120     dhladky   created.
+ * Sep 04, 2014  3121     dhladky   Clarified and sharpened creation, largely
+ *                                  un-implemented at this point.
+ * Sep 27, 2014  3127     dhladky   Geographic subsetting.
+ * Apr 06, 2016  5424     dhladky   Dual ASYNC and SYNC processing.
+ * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
  * 
  * </pre>
  * 
@@ -53,18 +56,19 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @version 1.0
  */
 
+public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
 
-public class PDARequestBuilder extends RequestBuilder<Time,Coverage> {
-    
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARequestBuilder.class);
-   
+
     protected static ServiceConfig pdaServiceConfig;
-    
+
     protected static String subsetRequestURL = null;
- 
+
     protected String request = null;
-    
+
+    protected String subName = null;
+
     protected static final String DIMENSION_LON = "Long";
 
     protected static final String DIMENSION_LAT = "Lat";
@@ -74,40 +78,42 @@ public class PDARequestBuilder extends RequestBuilder<Time,Coverage> {
     protected static final String DIMENSION_OPEN = "<wcs:Dimension>";
 
     protected static final String DIMENSION_TRIM_CLOSE = "</wcs:DimensionTrim>";
-    
+
     protected static final String DIMENSION_CLOSE = "</wcs:Dimension>";
-    
+
     protected static final String TRIM_HIGH_OPEN = "<wcs:TrimHigh>";
-    
+
     protected static final String TRIM_HIGH_CLOSE = "</wcs:TrimHigh>";
-    
+
     protected static final String TRIM_LOW_OPEN = "<wcs:TrimLow>";
-    
+
     protected static final String TRIM_LOW_CLOSE = "</wcs:TrimLow>";
-            
+
     /**
      * Retrieval Adapter constructor
+     * 
      * @param ra
      */
-    protected PDARequestBuilder(RetrievalAttribute<Time,Coverage> ra) {
-
+    protected PDARequestBuilder(RetrievalAttribute<Time, Coverage> ra,
+            String subName) {
         super(ra);
+        this.subName = subName;
     }
-    
-    
+
     @Override
     public String processTime(Time prtXML) {
         throw new UnsupportedOperationException("Not implemented for PDA!");
     }
-      
+
     @Override
     public String getRequest() {
-        // There are no switches for full data set PDA. 
+        // There are no switches for full data set PDA.
         return request;
     }
-    
+
     /**
      * Sets the request string
+     * 
      * @param request
      */
     public void setRequest(String request) {
@@ -115,11 +121,31 @@ public class PDARequestBuilder extends RequestBuilder<Time,Coverage> {
     }
 
     /**
+     * Get Subscription name
+     * 
+     * @return
+     */
+    public String getSubName() {
+        return subName;
+    }
+
+    /**
+     * Sets Subscription name
+     * 
+     * @param subName
+     *            Name of the subscription
+     */
+    public void setSubName(String subName) {
+        this.subName = subName;
+    }
+
+    /**
      * Get the instance of the service config
+     * 
      * @return
      */
     protected static ServiceConfig getServiceConfig() {
-        
+
         if (pdaServiceConfig == null) {
             pdaServiceConfig = HarvesterServiceManager.getInstance()
                     .getServiceConfig(ServiceType.PDA);

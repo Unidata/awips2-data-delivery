@@ -20,7 +20,6 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * further licensing information.
  **/
 
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,10 +42,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2014 3120       dhladky     Initial creation
- * Sept 14, 2104 3121      dhladky     Serialization adjustments
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Jun 13, 2014  3120     dhladky   Initial creation
+ * Sep 14, 2104  3121     dhladky   Serialization adjustments
+ * May 03, 2016  5599     tjensen   Added subscription name.
  * 
  * </pre>
  * 
@@ -61,47 +61,53 @@ public class PDARetrievalResponse extends RetrievalResponse<Time, Coverage> {
 
     // we do not serialize this directly
     private Map<FILE, Object> payload;
-    
+
     @XmlElement
     @DynamicSerializeElement
     private byte[] fileBytes;
-    
+
     @XmlElement
     @DynamicSerializeElement
     private String fileName;
-    
+
+    @XmlElement
+    @DynamicSerializeElement
+    private String subName;
+
     // public constructor
     public PDARetrievalResponse() {
-        
+
     }
-    
+
     // useful constructor
     public PDARetrievalResponse(RetrievalAttribute<Time, Coverage> attribute) {
         super(attribute);
     }
 
     public enum FILE {
-        FILE_BYTES, FILE_NAME;
+        FILE_BYTES, FILE_NAME, SUBSCRIPTION_NAME;
     }
 
     @Override
     public void setPayLoad(Object payLoad) {
-        
-        this.payload = (Map<FILE,Object>)(payload);
+
+        this.payload = (Map<FILE, Object>) (payload);
         // we only serialize these things
-        setFileName((String)payload.get(FILE.FILE_NAME));
-        setFileBytes((byte[])payload.get(FILE.FILE_BYTES));
+        setFileName((String) payload.get(FILE.FILE_NAME));
+        setFileBytes((byte[]) payload.get(FILE.FILE_BYTES));
+        setSubName((String) payload.get(FILE.SUBSCRIPTION_NAME));
     }
 
     @Override
     public Map<FILE, Object> getPayLoad() {
-        
+
         if (payload == null) {
-            payload = new HashMap<FILE, Object>(2);
+            payload = new HashMap<>(3);
             payload.put(FILE.FILE_NAME, getFileName());
             payload.put(FILE.FILE_BYTES, getFileBytes());
+            payload.put(FILE.SUBSCRIPTION_NAME, getSubName());
         }
-        
+
         return payload;
     }
 
@@ -121,4 +127,11 @@ public class PDARetrievalResponse extends RetrievalResponse<Time, Coverage> {
         this.fileName = fileName;
     }
 
+    public String getSubName() {
+        return subName;
+    }
+
+    public void setSubName(String subName) {
+        this.subName = subName;
+    }
 }

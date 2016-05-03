@@ -35,10 +35,9 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 
 /**
  * 
- * PDA asynchronous subset Request Builder / Executor.
- * Builds the geographic (Bounding Box) delimited
- * requests for PDA data. Then executes the request to PDA
- * receiving a message waiting for the async response.
+ * PDA asynchronous subset Request Builder / Executor. Builds the geographic
+ * (Bounding Box) delimited requests for PDA data. Then executes the request to
+ * PDA receiving a message waiting for the async response.
  * 
  * <pre>
  * 
@@ -53,7 +52,6 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * @author dhladky
  * @version 1.0
  */
-
 
 public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
@@ -89,13 +87,14 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
     /**
      * ASYNC request
+     * 
      * @param ra
      * @param metaDataID
      * @param retrievalID
      */
     public PDAAsyncRequest(RetrievalAttribute<Time, Coverage> ra,
-            String metaDataID, String retrievalID) {
-        super(ra, metaDataID);
+            String subName, String metaDataID, String retrievalID) {
+        super(ra, subName, metaDataID);
 
         setRetrievalID(retrievalID);
         // create the request
@@ -110,14 +109,15 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
         // set the request
         setRequest(query.toString());
     }
-     
+
     /**
      * Processes the response from PDA, asynchronous.
+     * 
      * @param response
      * @return
      */
     public String processResponse(String response) {
-       
+
         String report = null;
 
         try {
@@ -138,13 +138,16 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
                             report = r;
                             break;
                         } else {
-                            statusHandler.error("PDA asynchronous request has failed. " +r);
+                            statusHandler
+                                    .error("PDA asynchronous request has failed. "
+                                            + r);
                         }
                     }
                 }
 
             } else {
-                throw new Exception("Unexpected response object: "+responseObject.toString());
+                throw new Exception("Unexpected response object: "
+                        + responseObject.toString());
             }
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR,
@@ -154,7 +157,7 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
         return report;
     }
-    
+
     /**
      * Use correct OGC libraries for casting.
      * 
@@ -167,8 +170,8 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
                     net.opengis.wcs.v_1_1_2.ObjectFactory.class,
                     net.opengis.gmlcov.v_1_0.ObjectFactory.class,
                     net.opengis.sensorml.v_2_0.ObjectFactory.class,
-                    net.opengis.swecommon.v_2_0.ObjectFactory.class, 
-                    net.opengis.ows.v_2_0.ObjectFactory.class};
+                    net.opengis.swecommon.v_2_0.ObjectFactory.class,
+                    net.opengis.ows.v_2_0.ObjectFactory.class };
 
             try {
                 manager = new OgcJaxbManager(classes);
@@ -186,20 +189,23 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
     private void setRetrievalID(String retrievalID) {
         this.retrievalID = retrievalID;
     }
-    
+
     /**
      * Gets the retreivalID and response handler for the retrieval
+     * 
      * @return
      */
     private String getExtension() {
-        
+
         StringBuilder sb = new StringBuilder(256);
         sb.append("<wcs:Extension>\n");
-        sb.append("<ows:ExtendedCapabilities xmlns:ows=\"http://www.opengis.net/ows\" responseHandler=\""+RESPONSE_HANDLER_ADDRESS+"\">\n");
-        sb.append("<ows:Identifier codeSpace=\"locator\">"+getRetrievalID()+"</ows:Identifier>\n");
+        sb.append("<ows:ExtendedCapabilities xmlns:ows=\"http://www.opengis.net/ows\" responseHandler=\""
+                + RESPONSE_HANDLER_ADDRESS + "\">\n");
+        sb.append("<ows:Identifier codeSpace=\"locator\">" + getRetrievalID()
+                + "</ows:Identifier>\n");
         sb.append("</ows:ExtendedCapabilities>\n");
         sb.append("</wcs:Extension>\n");
-        
+
         return sb.toString();
     }
 }

@@ -35,6 +35,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -54,13 +55,15 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 28, 2014 #3121       dhladky     Initial javadoc
- * Oct 14, 2014  #3127      dhladky     Improved deletion of files
- * Nov 20, 2014  #3127      dhladky     GOES Sounding processing.
- * Dec 02, 2014  #3826      dhladky     PDA test code
- * Jan 28, 2016  #5299      dhladky     PDA testing related fixes.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 28, 2014  3121     dhladky   Initial javadoc
+ * Oct 14, 2014  3127     dhladky   Improved deletion of files
+ * Nov 20, 2014  3127     dhladky   GOES Sounding processing.
+ * Dec 02, 2014  3826     dhladky   PDA test code
+ * Jan 28, 2016  5299     dhladky   PDA testing related fixes.
+ * May 03, 2016  5599     tjensen   Pass subscription name to GoesrDecoder to
+ *                                  override sectorID.
  * 
  * </pre>
  * 
@@ -69,7 +72,8 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  */
 
 public class PDAMetaDataAdapter extends
-        AbstractMetadataAdapter<PluginDataObject, Time, Coverage> implements IPDAMetaDataAdapter {
+        AbstractMetadataAdapter<PluginDataObject, Time, Coverage> implements
+        IPDAMetaDataAdapter {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDAMetaDataAdapter.class);
@@ -79,13 +83,13 @@ public class PDAMetaDataAdapter extends
 
     /** generic satellite data **/
     public static final String satellite = "satellite";
-    
+
     /** goes sounding data **/
     public static final String goessounding = "goessounding";
 
     /** goesr decoder **/
     private GoesrDecoder goesrDecoder = null;
-    
+
     /** goes sounding decoder **/
     private GOESSoundingDecoder goessoundingDecoder = null;
 
@@ -94,12 +98,12 @@ public class PDAMetaDataAdapter extends
 
     // decoder operating type
     private String type = null;
-    
+
     /** decoder type default **/
     private static final String DEFAULT_TYPE = "DEFAULT_TYPE";
 
     public PDAMetaDataAdapter() {
-        
+
     }
 
     @Override
@@ -115,21 +119,22 @@ public class PDAMetaDataAdapter extends
          * tell how the metadata will be different. This is a work in progress.
          * We need to be able to dynamically switch decoder based on attribute.
          */
-         type = getServiceConfig(serviceType).getConstantValue(DEFAULT_TYPE);
+        type = getServiceConfig(serviceType).getConstantValue(DEFAULT_TYPE);
     }
 
     /**
      * All of the work for SAT/GOESR DD decoding is done in the NetCDF decoders.
      */
     @Override
-    public PluginDataObject[] decodeObjects(String fileName) throws Exception {
+    public PluginDataObject[] decodeObjects(String fileName, String subName)
+            throws Exception {
 
         PluginDataObject[] pdos = null;
 
         try {
             if (type.equals(goesr)) {
                 statusHandler.debug("Processing as GOESR imagery.....");
-               pdos = getGoesrDecoder().decode(new File(fileName));
+                pdos = getGoesrDecoder().decode(new File(fileName));
             } else if (type.equals(satellite)) {
                 statusHandler.debug("Processing as legacy SAT imagery.....");
                 pdos = getSatDecoder().decode(new File(fileName));
@@ -137,8 +142,11 @@ public class PDAMetaDataAdapter extends
                 statusHandler.debug("Processing as legacy GOES sounding .....");
                 pdos = processGoesSounding(fileName);
             } else {
-                throw new IllegalArgumentException("Unknown type detected. "+type);
+                throw new IllegalArgumentException("Unknown type detected. "
+                        + type);
             }
+
+            postProcessPdos(pdos, subName);
         } catch (Exception e) {
             statusHandler.error("Couldn't decode PDA data! " + fileName, e);
         } finally {
@@ -159,6 +167,28 @@ public class PDAMetaDataAdapter extends
         return pdos;
     }
 
+    /**
+     * Performs any necessary post processing on decoded pdos before they are
+     * persisted.
+     * 
+     * @param pdos
+     *            Array of decoded pdos to be processed
+     * @param subName
+     *            subscription name
+     */
+    private void postProcessPdos(PluginDataObject[] pdos, String subName) {
+        /*
+         * For all PDOs that are SatelliteRecords, replace the sectorId with the
+         * subscription name so we can tie the record to the subscription.
+         */
+        for (PluginDataObject pdo : pdos) {
+            if (pdo instanceof SatelliteRecord) {
+                SatelliteRecord sr = (SatelliteRecord) pdo;
+                sr.setSectorID(subName);
+            }
+        }
+    }
+
     @Override
     public PluginDataObject getRecord(PluginDataObject o) {
         // unimplemented by PDA, returns what you give it in this case.
@@ -167,67 +197,79 @@ public class PDAMetaDataAdapter extends
 
     @Override
     public void allocatePdoArray(int size) {
-        // unimplemented by PDA, don't know the number of SAT records in the NetCDF file.
+        // unimplemented by PDA, don't know the number of SAT records in the
+        // NetCDF file.
     }
-    
+
     /**
      * get an ESB instance of the GOESR decoder
+     * 
      * @return
-    */
+     */
     private GoesrDecoder getGoesrDecoder() {
         if (goesrDecoder == null) {
-            goesrDecoder = (GoesrDecoder) EDEXUtil.getESBComponent("goesrDecoder");
+            goesrDecoder = (GoesrDecoder) EDEXUtil
+                    .getESBComponent("goesrDecoder");
         }
         return goesrDecoder;
     }
-    
+
     /**
      * Get the GOES sounding decoder from the ESB
+     * 
      * @return
      */
     private GOESSoundingDecoder getGoesSoundingDecoder() {
         if (goessoundingDecoder == null) {
-            goessoundingDecoder = (GOESSoundingDecoder) EDEXUtil.getESBComponent("goessoundingDecoder");
+            goessoundingDecoder = (GOESSoundingDecoder) EDEXUtil
+                    .getESBComponent("goessoundingDecoder");
         }
         return goessoundingDecoder;
     }
-    
+
     /**
      * get an ESB instance of the SAT decoder
+     * 
      * @return
      */
     private GiniSatelliteDecoder getSatDecoder() {
         if (satelliteDecoder == null) {
-            satelliteDecoder = (GiniSatelliteDecoder) EDEXUtil.getESBComponent("giniDecoder");
+            satelliteDecoder = (GiniSatelliteDecoder) EDEXUtil
+                    .getESBComponent("giniDecoder");
         }
         return satelliteDecoder;
     }
-    
+
     /**
      * Process the incoming GOES Sounding files
+     * 
      * @param fileName
      * @return
      */
     private PluginDataObject[] processGoesSounding(String fileName) {
-        
+
         Headers headers = null;
-        List<PluginDataObject> pdos = new ArrayList<PluginDataObject>(0);
-        
+        List<PluginDataObject> pdos = new ArrayList<>(0);
+
         if (fileName != null) {
             // Add the WMO headers necessary for ingest
             headers = new Headers();
             headers.put(WMOHeader.INGEST_FILE_NAME, fileName);
         }
-        
+
         if (headers != null) {
             try {
                 // convert back to byte array to conform to expected interface
-                GOESSoundingSeparator separator = GOESSndgSeparatorFactory.getSeparator(ResponseProcessingUtilities.getBytes(fileName), headers);
+                GOESSoundingSeparator separator = GOESSndgSeparatorFactory
+                        .getSeparator(
+                                ResponseProcessingUtilities.getBytes(fileName),
+                                headers);
                 // walk the iterator
                 while (separator.hasNext()) {
                     GoesSoundingInput gsi = separator.next();
                     // call the decoder
-                    PluginDataObject[] separatorPdos = getGoesSoundingDecoder().decode(gsi, headers);
+                    PluginDataObject[] separatorPdos = getGoesSoundingDecoder()
+                            .decode(gsi, headers);
                     // add to main pdo array
                     if (separatorPdos != null) {
                         for (int i = 0; i < separatorPdos.length - 1; i++) {
@@ -236,13 +278,15 @@ public class PDAMetaDataAdapter extends
                     }
                 }
             } catch (Exception e) {
-                statusHandler.handle(Priority.ERROR, "Failed to process GOESSounding file! "+fileName, e);
+                statusHandler.handle(Priority.ERROR,
+                        "Failed to process GOESSounding file! " + fileName, e);
             }
         } else {
-            throw new IllegalArgumentException("Filename doesn't create a good header, "+fileName);
+            throw new IllegalArgumentException(
+                    "Filename doesn't create a good header, " + fileName);
         }
-        
+
         return pdos.toArray(new PluginDataObject[pdos.size()]);
     }
-    
+
 }
