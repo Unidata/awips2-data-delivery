@@ -54,7 +54,6 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Sept 04, 2014 3121      dhladky     Sharpened the retrieval mechanism.
  * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
  * Dec 03, 2014  3826      dhladky     PDA test readiness
- * Jan 18, 2016 5260       dhladky     Fixes to errors found in testing.
  * 
  * </pre>
  * 
@@ -84,45 +83,31 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         String localFilePath = null;
         File directory = null;
         String fileName = null;
+        
+        try {
 
-        if (request.getRequest() != null) {
-
-            try {
-
-                String providerName = request.getAttribute().getProvider();
-                // Have to re-write the URL for the connection to the FTPS root
-                localFilePath = PDAConnectionUtil.ftpsConnect(this
-                        .getProviderRetrievalXMl().getConnection(),
-                        providerName, request.getRequest());
-
-                // camel embeds the file in a directory of same name, extract.
-                if (localFilePath != null) {
-                    statusHandler.handle(Priority.INFO,
-                            "Received file from PDA, stored to location: "
-                                    + localFilePath);
-                    directory = new File(localFilePath);
-                    if (directory.isDirectory()) {
-                        for (File file : directory.listFiles()) {
-                            if (!file.getName().endsWith(fileExtension)) {
-                                // you will only ever find one plus the file
-                                // with the .camelLock extension
-                                fileName = file.getAbsolutePath();
-                                break;
-                            }
+            //
+            String providerName = request.getAttribute().getProvider();
+            localFilePath = PDAConnectionUtil.ftpsConnect(this.getProviderRetrievalXMl().getConnection(),
+                    providerName, request.getRequest());
+            
+            // camel embeds the file in a directory of same name, extract.
+            if (localFilePath != null) {
+                directory = new File(localFilePath);
+                if (directory.isDirectory()) {
+                    for (File file : directory.listFiles()) {
+                        if (!file.getName().endsWith(fileExtension)) {
+                            // you will only ever find one plus the file with the .camel extension
+                            fileName = file.getAbsolutePath();
+                            break;
                         }
                     }
                 }
-
-            } catch (Exception e) {
-                statusHandler
-                        .handle(Priority.ERROR, "FTPS error occurred!", e);
-                EventBus.publish(new RetrievalEvent(e.getMessage()));
             }
-        } else {
-            statusHandler.handle(Priority.ERROR,
-                    "Request URL for Dataset is null!");
-            EventBus.publish(new RetrievalEvent(
-                    "Request URL for Dataset is null!"));
+            
+        } catch (Exception e) {
+            statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
+            EventBus.publish(new RetrievalEvent(e.getMessage()));
         }
 
         // We have to read in the file and store in RetrievalResponse as a byte[]

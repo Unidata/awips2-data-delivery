@@ -25,11 +25,8 @@ import java.util.Map;
 import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -51,7 +48,6 @@ import com.raytheon.uf.common.util.registry.RegistryException;
  * May 31, 2013 2038       djohnson     Plugin contributable registry.
  * Jun 11, 2013  2101      dhladky      Updated for Madis
  * Sept 20, 2014 2131      dhladky      Make service type generics better.  Need to work on raw types more.
- * Jan 28, 2016  #5299     dhladky      Added service config retrieval method.
  * 
  * </pre>
  * 
@@ -70,8 +66,6 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
     protected RetrievalAttribute<T, C> attXML;
 
     protected static Map<String, String[]> parameterMap = new HashMap<String, String[]>();
-    
-    protected static ServiceConfig serviceConfig;
 
     @SuppressWarnings("rawtypes")
     // TODO Figure a way to not have to do raw types with
@@ -171,21 +165,5 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
     public boolean isPointData() {
         return isPointData;
     }
-    
-    /**
-     * Get the instance of the service config
-     * 
-     * @return
-     */
-    protected ServiceConfig getServiceConfig(ServiceType serviceType) {
-
-        if (serviceConfig == null) {
-            serviceConfig = HarvesterServiceManager.getInstance()
-                    .getServiceConfig(serviceType);
-        }
-
-        return serviceConfig;
-    }
    
-
 }

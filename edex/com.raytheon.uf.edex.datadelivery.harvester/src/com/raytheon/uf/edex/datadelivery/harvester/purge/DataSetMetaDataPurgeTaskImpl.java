@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.raytheon.uf.common.datadelivery.harvester.Agent;
+import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
 import com.raytheon.uf.common.datadelivery.registry.DataDeliveryRegistryObjectTypes;
@@ -61,7 +63,6 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  * Dec 12, 2012 1410       dhladky      multi provider configurations.
  * Sept 30, 2013 1797      dhladky      Generics
  * Apr 12,2014   3012     dhladky      Purge never worked, fixed to make work.
- * Jan 18, 2016  5261     dhladky      Enabled purging for PDA.
  * 
  * </pre>
  * 
@@ -132,7 +133,6 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
      * 
      * @return the {@link HarvesterConfig}
      */
-    @SuppressWarnings("deprecation")
     @VisibleForTesting
     static Map<String, String> getHarvesterConfigs() {
 
@@ -151,10 +151,14 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
                         se.getLocalizedMessage(), se);
             }
 
-            // collect files
             if (hc != null) {
                 if (hc.getAgent() != null) {
-                    configs.add(hc);
+                    // we only want crawler types for CrawlerMetadata
+                    Agent agent = hc.getAgent();
+                    if (agent instanceof CrawlAgent) {
+                        // collect file
+                        configs.add(hc);
+                    }
                 }
             }
         }

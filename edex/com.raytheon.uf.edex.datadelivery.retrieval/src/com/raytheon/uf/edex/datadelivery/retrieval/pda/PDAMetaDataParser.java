@@ -69,7 +69,6 @@ import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
  * Sept 04, 2014 3121        dhladky     Adjustments to parsing, simulation.
  * Sept 27, 2014 3127        dhladky     Added metaDataID for geographic subsetting.
  * Apr 27, 2015  4881        dhladky     PDA changed the structure of the file format messages.
- * Jan 20, 2016  5280        dhladky     Don't send datasetname separately.
  * </pre>
  * 
  * @author dhladky
@@ -294,7 +293,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             for (Entry<String, Parameter> parm : parameters.entrySet()) {
                 storeParameter(parm.getValue());
             }
-
+            storeDataSetName(pdaDataSet);
             storeDataSet(pdaDataSet);
         }
 

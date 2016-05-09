@@ -31,10 +31,11 @@ import com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder;
 import com.raytheon.edex.plugin.goessounding.GOESSoundingSeparator;
 import com.raytheon.edex.plugin.goessounding.GoesSoundingInput;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.dataplugin.goessounding.GOESSounding;
+import com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -43,12 +44,12 @@ import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMetadataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.IPDAMetaDataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
-import com.raytheon.uf.edex.plugin.goesr.GoesrDecoder;
+//import com.raytheon.uf.edex.plugin.goesr.GOESRDecoder;
 import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
 
 /**
  * 
- * Convert RetrievalAttribute to Satellite/GOESSounding objects.
+ * Convert RetrievalAttribute to Satellite.
  * 
  * <pre>
  * 
@@ -60,7 +61,6 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * Oct 14, 2014  #3127      dhladky     Improved deletion of files
  * Nov 20, 2014  #3127      dhladky     GOES Sounding processing.
  * Dec 02, 2014  #3826      dhladky     PDA test code
- * Jan 28, 2016  #5299      dhladky     PDA testing related fixes.
  * 
  * </pre>
  * 
@@ -69,7 +69,7 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  */
 
 public class PDAMetaDataAdapter extends
-        AbstractMetadataAdapter<PluginDataObject, Time, Coverage> implements IPDAMetaDataAdapter {
+        AbstractMetadataAdapter<GOESSounding, Time, Coverage> implements IPDAMetaDataAdapter {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDAMetaDataAdapter.class);
@@ -77,16 +77,15 @@ public class PDAMetaDataAdapter extends
     /** goesr data, sat **/
     public static final String goesr = "goesr";
 
-    /** generic satellite data **/
+    /** general satellite data **/
     public static final String satellite = "satellite";
     
     /** goes sounding data **/
     public static final String goessounding = "goessounding";
 
     /** goesr decoder **/
-    private GoesrDecoder goesrDecoder = null;
+    //private GOESRDecoder goesrDecoder = null;
     
-    /** goes sounding decoder **/
     private GOESSoundingDecoder goessoundingDecoder = null;
 
     /** satellite decoder **/
@@ -94,28 +93,21 @@ public class PDAMetaDataAdapter extends
 
     // decoder operating type
     private String type = null;
-    
-    /** decoder type default **/
-    private static final String DEFAULT_TYPE = "DEFAULT_TYPE";
 
     public PDAMetaDataAdapter() {
-        
     }
+
 
     @Override
     public void processAttributeXml(RetrievalAttribute<Time, Coverage> attXML)
             throws InstantiationException {
 
         this.attXML = attXML;
-        ServiceType serviceType = ServiceType.PDA;
-        /**
-         * TODO The only data we have right now is GOESR imagery. Need to find a
-         * better way to tell the difference between GOESR and GOESSounding
-         * data, since PDA has no GOESSounding data at this time, I am unable to
-         * tell how the metadata will be different. This is a work in progress.
-         * We need to be able to dynamically switch decoder based on attribute.
-         */
-         type = getServiceConfig(serviceType).getConstantValue(DEFAULT_TYPE);
+        // TODO The only data we have right now is GOESSounding
+        // Find a better way to tell the difference between them
+        //if (attXML.getPlugin().equals("satellite")) {
+            type = "goessounding";
+        //}
     }
 
     /**
@@ -128,16 +120,12 @@ public class PDAMetaDataAdapter extends
 
         try {
             if (type.equals(goesr)) {
-                statusHandler.debug("Processing as GOESR imagery.....");
-               pdos = getGoesrDecoder().decode(new File(fileName));
+            //   pdos = getGoesrDecoder().decode(
+            //         ResponseProcessingUtilities.getBytes(fileName));
             } else if (type.equals(satellite)) {
-                statusHandler.debug("Processing as legacy SAT imagery.....");
                 pdos = getSatDecoder().decode(new File(fileName));
             } else if (type.equals(goessounding)) {
-                statusHandler.debug("Processing as legacy GOES sounding .....");
                 pdos = processGoesSounding(fileName);
-            } else {
-                throw new IllegalArgumentException("Unknown type detected. "+type);
             }
         } catch (Exception e) {
             statusHandler.error("Couldn't decode PDA data! " + fileName, e);
@@ -160,7 +148,7 @@ public class PDAMetaDataAdapter extends
     }
 
     @Override
-    public PluginDataObject getRecord(PluginDataObject o) {
+    public PluginDataObject getRecord(GOESSounding o) {
         // unimplemented by PDA, returns what you give it in this case.
         return o;
     }
@@ -173,13 +161,14 @@ public class PDAMetaDataAdapter extends
     /**
      * get an ESB instance of the GOESR decoder
      * @return
-    */
-    private GoesrDecoder getGoesrDecoder() {
+    
+    private GOESRDecoder getGoesrDecoder() {
         if (goesrDecoder == null) {
-            goesrDecoder = (GoesrDecoder) EDEXUtil.getESBComponent("goesrDecoder");
+            goesrDecoder = (GOESRDecoder) EDEXUtil.getESBComponent("goesrDecoder");
         }
         return goesrDecoder;
     }
+     */
     
     /**
      * Get the GOES sounding decoder from the ESB
@@ -244,5 +233,5 @@ public class PDAMetaDataAdapter extends
         
         return pdos.toArray(new PluginDataObject[pdos.size()]);
     }
-    
+   
 }

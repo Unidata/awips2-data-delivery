@@ -36,8 +36,6 @@ import javax.xml.bind.annotation.XmlRootElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug, 21 2013  3121      dhladky     Grid Subscription Overlap
- * Nov, 10, 2015 4644      dhladky     Fixed PDA overlaps
- * Jan 18, 2016 5260       dhladky     Updated with better values.
  * 
  * </pre>
  * 
@@ -49,10 +47,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
 
     @XmlElement(required = true)
-    private int maxAllowedParameterDuplication;
+    private int maxAllowedForecastHourDuplication;
 
     @XmlElement(required = true)
-    private int maxAllowedTimeDuplication;
+    private int maxAllowedCycleDuplication;
 
     /**
      * Constructor.
@@ -62,20 +60,22 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
     }
 
     /**
-     * Constructor
+     * Constructor.
      * 
      * @param maxAllowedParameterDuplication
-     * @param maxAllowedTimeDuplication
+     * @param maxAllowedForecastHourDuplication
+     * @param maxAllowedCycleDuplication
      * @param maxAllowedSpatialDuplication
      * @param matchStrategy
      */
     public PDASubscriptionOverlapConfig(int maxAllowedParameterDuplication,
-            int maxAllowedTimeDuplication,
-            int maxAllowedSpatialDuplication,
+            int maxAllowedForecastHourDuplication,
+            int maxAllowedCycleDuplication, int maxAllowedSpatialDuplication,
             SubscriptionOverlapMatchStrategy matchStrategy) {
 
         this.maxAllowedParameterDuplication = maxAllowedParameterDuplication;
-        this.maxAllowedTimeDuplication = maxAllowedTimeDuplication;
+        this.maxAllowedForecastHourDuplication = maxAllowedForecastHourDuplication;
+        this.maxAllowedCycleDuplication = maxAllowedCycleDuplication;
         this.maxAllowedSpatialDuplication = maxAllowedSpatialDuplication;
         this.matchStrategy = matchStrategy;
     }
@@ -83,17 +83,32 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
     /**
      * @return the maxAllowedForecastHourDuplication
      */
-    public int getMaxAllowedTimeDuplication() {
-        return maxAllowedTimeDuplication;
+    public int getMaxAllowedForecastHourDuplication() {
+        return maxAllowedForecastHourDuplication;
     }
 
     /**
      * @param maxAllowedForecastHourDuplication
      *            the maxAllowedForecastHourDuplication to set
      */
-    public void setMaxAllowedTimeDuplication(
-            int maxAllowedTimeDuplication) {
-        this.maxAllowedTimeDuplication = maxAllowedTimeDuplication;
+    public void setMaxAllowedForecastHourDuplication(
+            int maxAllowedForecastHourDuplication) {
+        this.maxAllowedForecastHourDuplication = maxAllowedForecastHourDuplication;
+    }
+
+    /**
+     * @return the maxAllowedCycleDuplication
+     */
+    public int getMaxAllowedCycleDuplication() {
+        return maxAllowedCycleDuplication;
+    }
+
+    /**
+     * @param maxAllowedCycleDuplication
+     *            the maxAllowedCycleDuplication to set
+     */
+    public void setMaxAllowedCycleDuplication(int maxAllowedCycleDuplication) {
+        this.maxAllowedCycleDuplication = maxAllowedCycleDuplication;
     }
 
     /**
@@ -101,10 +116,12 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
      */
     @Override
     public SubscriptionOverlapConfig getNeverOverlaps() {
-        return new PDASubscriptionOverlapConfig(
+        return new GridSubscriptionOverlapConfig(
+                SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapMatchStrategy.MATCH_ALL);
     }
 }
+

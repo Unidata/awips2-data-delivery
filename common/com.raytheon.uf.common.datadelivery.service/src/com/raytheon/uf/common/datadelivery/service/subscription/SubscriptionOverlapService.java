@@ -59,8 +59,6 @@ import com.raytheon.uf.common.util.FileUtil;
  * Oct 03, 2013  2386      mpduff       Moved the subscription overlap rules files into the rules directory.
  * Oct 25, 2013  2292      mpduff       Move overlap checks to edex.
  * Nov 12, 2013  2361      njensen      Made JAXBManager static and initialized on first use
- * Nov 10, 2015  4644      dhladky      Added PDA overlap strategies
- * Jan 18, 2016 5260       dhladky      Updated with better values.
  * Jan 20, 2016  5244      njensen      Replaced calls to deprecated LocalizationFile methods
  *
  *
@@ -94,8 +92,7 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
                 Class<?>[] clazzes = new Class<?>[] {
                         SubscriptionOverlapConfig.class,
                         GridSubscriptionOverlapConfig.class,
-                        PointSubscriptionOverlapConfig.class,
-                        PDASubscriptionOverlapConfig.class };
+                        PointSubscriptionOverlapConfig.class };
                 jaxbManager = new JAXBManager(clazzes);
             } catch (JAXBException e) {
                 throw new ExceptionInInitializerError(e);
@@ -127,10 +124,6 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
         } else if (config instanceof GridSubscriptionOverlapConfig) {
             fileName = SUBSCRIPTION_OVERLAP_CONFIG_FILE_PATH
                     + DataType.GRID.name()
-                    + SUBSCRIPTION_OVERLAP_CONFIG_FILE_ROOT;
-        } else if (config instanceof PDASubscriptionOverlapConfig) {
-            fileName = SUBSCRIPTION_OVERLAP_CONFIG_FILE_PATH
-                    + DataType.PDA.name()
                     + SUBSCRIPTION_OVERLAP_CONFIG_FILE_ROOT;
         } else {
             throw new IllegalArgumentException(config.getClass()
@@ -181,9 +174,6 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
                 case POINT:
                     config = (PointSubscriptionOverlapConfig) obj;
                     break;
-                case PDA:
-                    config = (PDASubscriptionOverlapConfig) obj;
-                    break;
                 }
             }
         } catch (Exception e) {
@@ -197,9 +187,6 @@ public class SubscriptionOverlapService<T extends Time, C extends Coverage>
             case POINT:
                 config = new PointSubscriptionOverlapConfig()
                         .getNeverOverlaps();
-                break;
-            case PDA:
-                config = new PDASubscriptionOverlapConfig().getNeverOverlaps();
                 break;
             }
         }
