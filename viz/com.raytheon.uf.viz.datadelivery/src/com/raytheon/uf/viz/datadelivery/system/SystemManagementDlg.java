@@ -29,6 +29,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -168,64 +169,34 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         SystemRuleManager.getInstance().registerAsListener(this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
-        return new GridLayout(1, false);
+        return new GridLayout(2, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
-     */
     @Override
     protected Object constructShellLayoutData() {
         return new GridData(SWT.FILL, SWT.FILL, true, true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
 
-        GridLayout gl = new GridLayout(2, false);
+        tree = new Tree(shell, SWT.H_SCROLL | SWT.BORDER);
+        GC gc = new GC(tree);
+        int treeWdith = gc.getFontMetrics().getAverageCharWidth() * 35;
+        gc.dispose();
+
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        Composite comp = new Composite(shell, SWT.NONE);
-        comp.setLayout(gl);
-        comp.setLayoutData(gd);
-
-        gl = new GridLayout(1, false);
-        gl.marginHeight = 0;
-        gl.marginWidth = 0;
-        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        gd.minimumWidth = 220;
-        treeComp = new Composite(comp, SWT.BORDER);
-        treeComp.setLayout(gl);
-        treeComp.setLayoutData(gd);
-
-        gl = new GridLayout(1, false);
-        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        tree = new Tree(treeComp, SWT.H_SCROLL);
-        tree.setLayout(gl);
+        gd.minimumWidth = treeWdith;
         tree.setLayoutData(gd);
         populateTree();
 
-        gl = new GridLayout(1, false);
+        GridLayout gl = new GridLayout(1, false);
         gl.marginHeight = 0;
         gl.marginWidth = 0;
         gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        Composite c = new Composite(comp, SWT.BORDER);
+        Composite c = new Composite(shell, SWT.BORDER);
         c.setLayout(gl);
         c.setLayoutData(gd);
 
@@ -240,7 +211,7 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
 
         systemStatusComp.createTimer();
 
-        comp.addDisposeListener(new DisposeListener() {
+        shell.addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent e) {
                 systemStatusComp.timer.shutdown();
@@ -417,11 +388,6 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         tree.select(ti);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#disposed()
-     */
     @Override
     protected void disposed() {
         super.disposed();
