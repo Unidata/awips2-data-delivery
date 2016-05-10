@@ -39,10 +39,12 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 16, 2012            mpduff     Initial creation.
- * Aug 08, 2012    863     jpiatt     Added clean & dirty checks.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 16, 2012           mpduff    Initial creation.
+ * Aug 08, 2012  863      jpiatt    Added clean & dirty checks.
+ * May 05, 2016  5487     tjensen   Added special case for Pressure Level
+ *                                  sorting
  * 
  * </pre>
  * 
@@ -110,6 +112,14 @@ public class LevelParameterSelection extends Composite implements IUpdate {
             levelConfig.setListHeight(75);
             levelConfig.setListWidth(100);
             levelConfig.setShowUpDownBtns(false);
+            /*
+             * Pressure levels are numeric values that are sorted in reverse
+             * order.
+             */
+            if (id.equals("Pressure Levels")) {
+                levelConfig.setNumericData(true);
+                levelConfig.setReverseSort(true);
+            }
             levelConfig.setFullList(levelList);
 
             dualLevelList = new DualList(this, SWT.NONE, levelConfig, this);
