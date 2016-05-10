@@ -121,6 +121,7 @@ public class PDASubscriptionOverlapConfig extends SubscriptionOverlapConfig {
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
+                SubscriptionOverlapConfig.ONE_HUNDRED_PERCENT,
                 SubscriptionOverlapMatchStrategy.MATCH_ALL);
     }
 }
