@@ -37,7 +37,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
+import com.raytheon.uf.edex.datadelivery.retrieval.handlers.AsyncRetrievalBroker;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
+import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilities;
 
 /**
@@ -83,13 +85,16 @@ public class SubscriptionRetrievalAgent extends
     private final IRetrievalDao retrievalDao;
 
     private final IProviderHandler providerHandler;
+    
+    private final AsyncRetrievalBroker broker = AsyncRetrievalBroker.getInstance();
 
-    public SubscriptionRetrievalAgent(Network network, String destinationUri,
-            final Object notifier, int defaultPriority,
-            RetrievalManager retrievalManager,
+    public SubscriptionRetrievalAgent(Network network, String retrievalRoute,
+            String asyncRetrievalUri, final Object notifier,
+            int defaultPriority, RetrievalManager retrievalManager,
             IBandwidthDao<?, ?> bandwidthDao, IRetrievalDao retrievalDao,
             IProviderHandler providerHandler) {
-        super(network, destinationUri, notifier, retrievalManager);
+        super(network, retrievalRoute, asyncRetrievalUri, notifier,
+                retrievalManager);
         this.defaultPriority = defaultPriority;
         this.bandwidthDao = bandwidthDao;
         this.retrievalDao = retrievalDao;
@@ -189,7 +194,7 @@ public class SubscriptionRetrievalAgent extends
                     try {
                         Object[] payload = retrievals.toArray();
                         RetrievalGeneratorUtilities.sendToRetrieval(
-                                destinationUri, network, payload);
+                                retrievalRoute, network, payload);
                     } catch (Exception e) {
                         statusHandler.handle(Priority.PROBLEM,
                                 "Couldn't send RetrievalRecords to Queue!", e);
@@ -197,9 +202,30 @@ public class SubscriptionRetrievalAgent extends
                     statusHandler.info("Sent " + retrievals.size()
                             + " retrieval(s) to queue. " + network.toString());
                 } else {
-                    statusHandler.info("Processed " + retrievals.size()
-                            + " retrieval(s), awaiting provider trigger. "
-                            + network.toString());
+
+                    for (RetrievalRequestRecordPK pk : retrievals) {
+
+                        AsyncRetrievalResponse ars = broker.getRetrieval(pk.toString());
+                        
+                        if (ars != null) {
+                            try {
+                                RetrievalGeneratorUtilities
+                                        .sendToAsyncRetrieval(
+                                                asyncRetrievalRoute, ars);
+                            } catch (Exception e) {
+                                statusHandler
+                                        .handle(Priority.PROBLEM,
+                                                "Couldn't send RetrievalRecords to Async Queue!",
+                                                e);
+                            }
+                        } else {
+                            statusHandler
+                                    .info("Processed "
+                                            + retrievals.size()
+                                            + " retrieval(s), awaiting provider trigger. "
+                                            + network.toString());
+                        }
+                    }
                 }
 
             } else {

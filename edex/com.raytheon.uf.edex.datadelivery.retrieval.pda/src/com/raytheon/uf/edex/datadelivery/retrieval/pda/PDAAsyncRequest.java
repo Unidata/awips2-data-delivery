@@ -22,9 +22,6 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
 import javax.xml.bind.JAXBException;
 
-import net.opengis.ows.v_2_0.ExceptionReport;
-import net.opengis.ows.v_2_0.ExceptionType;
-
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
@@ -46,6 +43,7 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 06, 2016 5424        dhladky      created.
+ * May 10, 2016 5424        dhladky      Fixes from testing.
  * 
  * </pre>
  * 
@@ -79,6 +77,7 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
                     ASYNC_RESPONSE_HANDLER);
             EXCEPTION_REPORT_COMPARE = EXCEPTION_REPORT_COMPARE_PREFIX
                     + RESPONSE_HANDLER_ADDRESS;
+            statusHandler.info("Async retrievals will be processed at: "+RESPONSE_HANDLER_ADDRESS);
         } else {
             throw new IllegalArgumentException(
                     "ASYNC_RESPONSE_HANDLER must be set in the PDAServiceConfig.xml for ASYNC requests to work.");
@@ -120,39 +119,13 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
         String report = null;
 
-        try {
-            // Gets an XML string response from the PDA server
-            Object responseObject = getManager().unmarshalFromXml(response);
+        if (response.contains(EXCEPTION_REPORT_COMPARE)) {
+            statusHandler.info("Successful asynchronous request: " + response);
+            report = response;
 
-            if (responseObject instanceof ExceptionReport) {
-                ExceptionReport exceptionReport = (ExceptionReport) responseObject;
-
-                // Determine if it's a good or a bad exception
-                for (ExceptionType exception : ((ExceptionReport) exceptionReport)
-                        .getException()) {
-                    for (String r : exception.getExceptionText()) {
-                        if (PDAAsyncRequest.EXCEPTION_REPORT_COMPARE.equals(r)) {
-                            statusHandler
-                                    .info("Successful asynchronous request: "
-                                            + r);
-                            report = r;
-                            break;
-                        } else {
-                            statusHandler
-                                    .error("PDA asynchronous request has failed. "
-                                            + r);
-                        }
-                    }
-                }
-
-            } else {
-                throw new Exception("Unexpected response object: "
-                        + responseObject.toString());
-            }
-        } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR,
-                    "Request for datset failed! URL: " + subsetRequestURL
-                            + "\n XML:  " + this.getRequest(), e);
+        } else {
+            statusHandler.error("PDA asynchronous request has failed. "
+                    + response);
         }
 
         return report;

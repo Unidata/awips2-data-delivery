@@ -15,14 +15,11 @@ import net.opengis.ows.v_2_0.AbstractReferenceBaseType;
 import net.opengis.ows.v_2_0.ManifestType;
 import net.opengis.ows.v_2_0.ReferenceGroupType;
 
-import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
+import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilities;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
@@ -37,6 +34,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * ------------ ---------- ----------- --------------------------
  * Mar 16, 2016 5424       dhladky     Initial creation
  * Apr 21, 2016 5424       dhladky     Fixes from initial testing.
+ * May 06, 2016 5424       dhladky     Added work around for PDA timing issue.
  * 
  * </pre>
  * 
@@ -56,13 +54,10 @@ public class GetCoverageResponseHandler implements
     /** JAXB Manager **/
     private OgcJaxbManager jaxbManager = null;
     
-    /** retrieval DAO **/
-    private RetrievalDao retrievalDao;
-    
     /** split on slash for RetrievalPK **/
     private String SLASH = "/";
     
-    /** Retrieval queue endpoint */
+    /** Async processor queue endpoint */
     private String destinationUri;
 
     /** OWS class factory **/
@@ -78,12 +73,8 @@ public class GetCoverageResponseHandler implements
      * @param destinationUri
      * @param retrievalDao
      */
-    public GetCoverageResponseHandler(String destinationUri,
-            RetrievalDao retrievalDao) {
+    public GetCoverageResponseHandler(String destinationUri) {
         this.destinationUri = destinationUri;
-        this.retrievalDao = retrievalDao;
-        statusHandler.info("Constructed response handler, Queue:"
-                + destinationUri + " DAO:" + retrievalDao.getClass().getName());
     }
 
     /**
@@ -157,43 +148,26 @@ public class GetCoverageResponseHandler implements
             String subscriptionName = recordParts[0];
             Integer index = Integer.valueOf(recordParts[1]);
 
-            RetrievalRequestRecordPK pk = new RetrievalRequestRecordPK(
-                    subscriptionName, index);
-            RetrievalRequestRecord rrr = retrievalDao.getById(pk);
-            Retrieval retrieval = null;
+            AsyncRetrievalResponse ars = new AsyncRetrievalResponse();
+            ars.setRetrievalID(index);
+            ars.setSubscriptionName(subscriptionName);
+            ars.setFileName(fileLink);
 
-            if (rrr != null) {
-
+            if (ars != null) {
                 try {
-                    retrieval = rrr.getRetrievalObj();
-                    // Set the url with the link used in retrieval.
-                    retrieval.getConnection().setUrl(fileLink);
-                    rrr.setRetrievalObj(retrieval);
-
-                } catch (SerializationException e1) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Could not serialize and set the Subscription Retrieval object. PK:"
-                                    + retrievalID, e1);
-                }
-
-                // update for posterity
-                retrievalDao.update(rrr);
-
-                try {
-                    RetrievalGeneratorUtilities.sendToRetrieval(destinationUri,
-                            rrr.getNetwork(),
-                            new Object[] { rrr.getRetrievalObj() });
-                    statusHandler.info("Sent PDA retrieval to queue. "
-                            + rrr.getNetwork().toString());
+                    RetrievalGeneratorUtilities.sendToAsyncRetrieval(
+                            destinationUri, ars);
                 } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Couldn't send RetrievalRecord to Queue! ID: "
-                                    + retrievalID, e);
+                    statusHandler
+                            .handle(Priority.PROBLEM,
+                                    "Couldn't send RetrievalRecords to Async Queue!",
+                                    e);
                 }
-            } else {
-                statusHandler.error("Unable to lookup retrieval record. PK: "
-                        + retrievalID+" No record exists in DB.");
             }
+
+        } else {
+            statusHandler
+                    .warn("Did not recieve a valid retrievalID or fileLink");
         }
     }
 

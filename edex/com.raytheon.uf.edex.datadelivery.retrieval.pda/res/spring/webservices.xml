@@ -22,8 +22,7 @@
     <!-- Define concrete implementation of the PDA async retrieval endpoint -->
     <bean id="GetCoverageResponseHandler"
     class="com.raytheon.uf.edex.datadelivery.retrieval.pda.GetCoverageResponseHandler">
-        <constructor-arg value="notifyRetrieval" />
-        <constructor-arg ref="retrievalDaoPdaImpl" />
+        <constructor-arg value="jms-durable:queue:asyncRetrievalQueue" type="java.lang.String" />
     </bean>
 
     <!-- PDA SOAP Async retrieval response handler -->
@@ -38,12 +37,5 @@
             <ref bean="securityOutInterceptor" />
         </jaxws:outInterceptors>
     </jaxws:server>
-
-    <!-- retrievalDao is referenced numerous places in the retrieval setup. 
-         However, webservices use a separate Spring container so you have to add 
-         your own bean reference to it here. -->
-    <bean id="retrievalDaoPdaImpl" class="com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao">
-        <property name="sessionFactory" ref="metadataSessionFactory" />
-    </bean>
 
 </beans>	

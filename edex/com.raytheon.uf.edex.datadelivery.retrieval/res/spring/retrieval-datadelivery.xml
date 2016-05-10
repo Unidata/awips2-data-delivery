@@ -77,30 +77,54 @@
 		<constructor-arg ref="subNotifyTask" />
 		<constructor-arg ref="retrievalTaskFactoryMap" />
 	</bean>
+	
+    <!--  async retrievals run through this processor. -->	
+    <bean id="asyncRetrievalProcessor" class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.AsyncRetrievalProcessor">
+        <constructor-arg type="java.lang.String" value="notifyRetrieval" />
+        <constructor-arg ref="retrievalDao" />
+    </bean>
 
-	<camelContext id="dataDeliveryNotify-camel" xmlns="http://camel.apache.org/schema/spring"
-		errorHandlerRef="errorHandler">
-		<endpoint id="notifyRetrievalQueue"
-			uri="jms-durable:queue:notifyRetrieval?concurrentConsumers=${retrieval-process.threads}" />
-		<!-- SendToRetrievals method from RetrievalGeneratorUtilities links to 
-			this queue -->
-		<route id="notifyRetrieval">
-			<from ref="notifyRetrievalQueue" />
-			<doTry>
-				<pipeline>
-					<bean ref="retrievalHandler" method="notify" />
-				</pipeline>
-				<doCatch>
-					<exception>java.lang.Throwable</exception>
-					<to uri="log:notifyRetrieval?level=ERROR" />
-				</doCatch>
-			</doTry>
-		</route>
-		<!-- event bus messages -->
-		<route id="dataDeliveryNotify">
-			<from uri="direct-vm:dataDeliveryNotify" />
-			<to uri="direct-vm:stageNotification" />
-		</route>
+    <camelContext id="dataDeliveryNotify-camel" xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
+        
+        <endpoint id="notifyRetrievalQueue" uri="jms-durable:queue:notifyRetrieval?concurrentConsumers=${retrieval-process.threads}" />
+
+       <!-- SendToRetrievals method from RetrievalGeneratorUtilities links to this queue -->
+        <route id="notifyRetrieval">
+            <from ref="notifyRetrievalQueue" />
+            <doTry>
+                <pipeline>
+                   <bean ref="retrievalHandler" method="notify" />
+                </pipeline>
+                <doCatch>
+                    <exception>java.lang.Throwable</exception>
+                    <to uri="log:notifyRetrieval?level=ERROR" />
+                </doCatch>
+            </doTry>
+        </route>
+        <!-- event bus messages -->
+        <route id="dataDeliveryNotify">
+            <from uri="direct-vm:dataDeliveryNotify" />
+            <to uri="direct-vm:stageNotification" />
+        </route>
+        
+        <!-- Asynchronous retrieval queue -->
+        <endpoint id="asyncRetrievalQueue"
+            uri="jms-durable:queue:asyncRetrievalQueue?concurrentConsumers=1" />
+   
+        <!-- Processes the Async Retrievals harvested by any handlers -->
+        <route id="asyncRetrievalProcess">
+            <from uri="asyncRetrievalQueue" />
+            <doTry>
+                <pipeline>
+                    <bean ref="asyncRetrievalProcessor" method="processRetrieval" />
+                </pipeline>
+                <doCatch>
+                    <exception>java.lang.Throwable</exception>
+                    <to uri="log:asyncRetrievalProcessor?level=ERROR" />
+                </doCatch>
+            </doTry>
+        </route>
+		
 	</camelContext>
 
 </beans>

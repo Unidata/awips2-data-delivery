@@ -54,7 +54,9 @@ public abstract class RetrievalAgent<ALLOCATION_TYPE extends BandwidthAllocation
 
     protected final Network network;
 
-    protected final String destinationUri;
+    protected final String retrievalRoute;
+    
+    protected final String asyncRetrievalRoute;
 
     protected final RetrievalManager retrievalManager;
     
@@ -65,17 +67,20 @@ public abstract class RetrievalAgent<ALLOCATION_TYPE extends BandwidthAllocation
      * 
      * @param network
      *            the network this retrieval agent utilizes
-     * @param destinationUri
+     * @param retrievalRoute
+     *            the destination uri to send objects
+     * @param asyncRetrievalUri
      *            the destination uri to send objects
      * @param notifier
      *            the object used to signal the agent that data is available
      * @param retrievalManager
      *            the retrieval manager
      */
-    public RetrievalAgent(Network network, String destinationUri,
+    public RetrievalAgent(Network network, String retrievalRoute, String asyncRetrievalUri,
             final Object notifier, RetrievalManager retrievalManager) {
         this.network = network;
-        this.destinationUri = destinationUri;
+        this.retrievalRoute = retrievalRoute;
+        this.asyncRetrievalRoute = asyncRetrievalUri;
         this.notifier = notifier;
         this.retrievalManager = retrievalManager;
     }

@@ -38,6 +38,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.database.plugin.DataURIDatabaseUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.handlers.RetrievalRequestWrapper;
 import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionRetrievalRequestWrapper;
+import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalResponse;
 
 /**
  * 
@@ -54,7 +55,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionRetrieva
  * Dec 11, 2013   2625     mpduff       Remove creation of DataURI.
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
  * Apr 09, 2014   3012     dhladky      Added error message.
- * Apr 21, 2014   2060     njensen     Remove dependency on grid dataURI column
+ * Apr 21, 2014   2060     njensen      Remove dependency on grid dataURI column
+ * May 10, 2016   5424     dhladky      Async retrieval capability added.
  * 
  * </pre>
  * 
@@ -144,4 +146,17 @@ public class RetrievalGeneratorUtilities {
             EDEXUtil.getMessageProducer().sendAsync(destinationUri, bytes);
         }
     }
+
+    /**
+     * Sends AsyncRetrievalResponse records to AsyncRetrievalProcessor
+     * @param destinationUri
+     * @param ars
+     */
+    public static void sendToAsyncRetrieval(String destinationUri,
+            AsyncRetrievalResponse ars) throws Exception {
+
+        byte[] bytes = SerializationUtil.transformToThrift(ars);
+        EDEXUtil.getMessageProducer().sendAsyncUri(destinationUri, bytes);
+    }
+
 }
