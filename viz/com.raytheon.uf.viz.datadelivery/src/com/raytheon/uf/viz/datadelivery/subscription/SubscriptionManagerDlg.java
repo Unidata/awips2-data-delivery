@@ -165,7 +165,6 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
  * Jul 01, 2015  4047      dhladky     RefreshTask was configured to not run often enough.
  * Jan 29, 2016  5289      tgurney    Add missing maximize button in trim
- * Feb 10, 2016  5144      dhladky    Remove set of originatingSite on update.  This caused many problems with Shared Subscriptions.
  * Mar 16, 2016  3919      tjensen    Cleanup unneeded interfaces
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
