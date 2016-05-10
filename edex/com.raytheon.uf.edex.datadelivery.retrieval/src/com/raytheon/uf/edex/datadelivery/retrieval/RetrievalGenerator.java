@@ -30,9 +30,7 @@ import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -51,8 +49,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jul 25, 2012 955        djohnson     Use {@link ServiceTypeFactory}.
  * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
  * Nov 26, 2012 1340       dhladky      Recognize type of subscriptions for statistics.
- * Sept 30, 2013 1797      dhladky      Made some of the retrieval process flow generic.
- * Jan 18, 2016 5260       dhladky      Exposed access to serviceConfig.
+ * Sept 30, 2013 1797      dhladky      Genericizing some of this flow
  * 
  * </pre>
  * 
@@ -65,8 +62,6 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RetrievalGenerator.class);
-    
-    private static ServiceConfig serviceConfig;
 
     public RetrievalGenerator(ServiceType serviceType) {
         this.serviceType = serviceType;
@@ -144,21 +139,6 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
 
         return param;
 
-    }
-
-    /**
-     * Get the instance of the service config
-     * 
-     * @return
-     */
-    protected ServiceConfig getServiceConfig() {
-
-        if (serviceConfig == null) {
-            serviceConfig = HarvesterServiceManager.getInstance()
-                    .getServiceConfig(getServiceType());
-        }
-
-        return serviceConfig;
     }
 
 }

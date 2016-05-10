@@ -40,8 +40,6 @@ import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOver
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 22, 2013    2292    mpduff      Initial creation
- * Nov 12, 2015    4644    dhladky     Added PDA types.
- * Jan 18, 2016    5261    dhladky     Testing related updates.
  * 
  * </pre>
  * 
@@ -61,7 +59,6 @@ public class OverlapDataFactory<T extends Time, C extends Coverage> {
      * @param sub2
      * @return
      */
-    @SuppressWarnings("rawtypes")
     public static OverlapData<?, ?> getOverlapData(Subscription<?, ?> sub1,
             Subscription<?, ?> sub2) {
         if (sub1.getDataSetType() != sub2.getDataSetType()) {
@@ -76,8 +73,6 @@ public class OverlapDataFactory<T extends Time, C extends Coverage> {
                     sub2, config);
         } else if (dt == DataType.POINT) {
             return new PointOverlapData<PointTime, Coverage>(sub1, sub2, config);
-        } else if (dt == DataType.PDA) {
-            return new PDAOverlapData<Time, Coverage>(sub1, sub2, config);
         }
 
         throw new IllegalArgumentException("Invalid Data Type: "

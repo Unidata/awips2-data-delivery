@@ -37,7 +37,6 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 3, 2012  1241      djohnson     Initial creation
- * Jan 20, 2016  5280     dhladky      Increase efficiency of object replication.
  * 
  * </pre>
  * 
@@ -69,15 +68,4 @@ public interface IParameterHandler extends IRegistryObjectHandler<Parameter> {
      */
     List<String> getDataLevelTypeDescriptions(List<String> dataTypes)
             throws RegistryHandlerException;
-    
-
-    /**
-     * Get a parameter by name
-     * @param parameterName
-     * @return
-     * @throws RegistryHandlerException
-     */
-    Parameter getByName(String parameterName)
-            throws RegistryHandlerException;
-
 }
