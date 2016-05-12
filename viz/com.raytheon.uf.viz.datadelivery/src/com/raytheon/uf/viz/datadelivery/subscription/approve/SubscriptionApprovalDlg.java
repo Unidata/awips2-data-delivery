@@ -105,6 +105,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Apr 18, 2014  3012      dhladky      Null check.
  * Aug 18, 2014 2746       ccody       Non-local Subscription changes not updating dialogs
  * Jan 05, 2015 3898       ccody       Delete existing Site subscription if it is updated to a Shared Subscription
+ * Feb 01, 2016 5289       tgurney     Add missing maximize button in trim
  * 
  * </pre>
  * 
@@ -169,7 +170,7 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
      *            The parent Shell
      */
     public SubscriptionApprovalDlg(Shell parent) {
-        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE,
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE,
                 CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText("Subscription Approval");
     }

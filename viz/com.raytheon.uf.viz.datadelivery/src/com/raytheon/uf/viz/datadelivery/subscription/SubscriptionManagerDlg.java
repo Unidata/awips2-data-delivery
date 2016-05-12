@@ -164,6 +164,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * May 17, 2015  4047      dhladky     verified non-blocking.
  * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
  * Jul 01, 2015  4047      dhladky     RefreshTask was configured to not run often enough.
+ * Jan 29, 2016  5289      tgurney    Add missing maximize button in trim
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * 
  * </pre>
@@ -311,7 +312,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     public SubscriptionManagerDlg(Shell parent,
             ISubscriptionManagerFilter filter) {
-        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE,
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE,
                 CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT
                         | CAVE.DO_NOT_BLOCK);
 

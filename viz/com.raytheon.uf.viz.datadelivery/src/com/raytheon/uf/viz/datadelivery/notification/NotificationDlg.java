@@ -121,6 +121,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Jun 01, 2015  2805      dhladky    Made highlighted selections work properly through updates.
  * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
  * Jul 08, 2015  2805      dhladky    Added boolean check for whether to allow find highlighting, no longer find on update.
+ * Feb 01, 2016  5289      tgurney    Add missing maximize button in trim
  * 
  * </pre>
  * 
@@ -225,7 +226,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      *            parent shell
      */
     public NotificationDlg(Shell parent) {
-        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE,
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE,
                 CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT | CAVE.DO_NOT_BLOCK);
         setText(TITLE_TEXT);
         NotificationHandler.addListener(this);

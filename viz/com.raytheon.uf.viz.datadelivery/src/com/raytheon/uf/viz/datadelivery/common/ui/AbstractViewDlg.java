@@ -38,7 +38,9 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 24, 2012            lvenable     Initial creation
+ * Feb 24, 2012            lvenable    Initial creation
+ * Feb 01, 2016       5289 tgurney     Add missing minimize and maximize
+ *                                     buttons in trim
  * 
  * </pre>
  * 
@@ -73,7 +75,8 @@ public abstract class AbstractViewDlg extends CaveSWTDialog {
      *            Dialog ID.
      */
     public AbstractViewDlg(Shell parentShell, IDialogClosed callback, Point shellSize, String id) {
-        super(parentShell, SWT.DIALOG_TRIM | SWT.RESIZE, CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MAX | SWT.MIN,
+                CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
 
         this.callback = callback;
         this.shellSize = shellSize;

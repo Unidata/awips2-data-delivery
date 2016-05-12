@@ -165,5 +165,5 @@ public abstract class AbstractMetadataAdapter<RecordKey, T extends Time, C exten
     public boolean isPointData() {
         return isPointData;
     }
-
+   
 }

@@ -55,6 +55,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Nov 19, 2013   1531     mpduff      Made resizable.
  * Jan 29, 2014   2722     mpduff      GraphDataUtil not in this class.
  * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven. Added 'Refresh' option
+ * Jan 29, 2016   5289     tgurney     Add missing maximize button in trim
  * Mar 28, 2016   5482     randerso    Fixed fixed size button
  * 
  * </pre>
@@ -90,7 +91,8 @@ public class BandwidthUtilizationDlg extends CaveSWTDialog {
      *            Graph data utility object
      */
     public BandwidthUtilizationDlg(Shell parent) {
-        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.RESIZE, CAVE.DO_NOT_BLOCK
+        super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE,
+                CAVE.DO_NOT_BLOCK
                 | CAVE.INDEPENDENT_SHELL);
         setText("Bandwidth Utilization");
     }

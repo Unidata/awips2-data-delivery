@@ -68,7 +68,6 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Nov 19, 2013 2387       skorolev    Add timer for status refresh.
  * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
  * Nov 20, 2014 2749       ccody       Changed System Management to a non-modal dialog
- * Nov 12, 2015 4644       dhladky     Added rules for PDA subscriptions.
  * </pre>
  * 
  * @author jpiatt
@@ -81,8 +80,7 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         PRIORITY_RULES("Priority Rules"), LATENCY_RULES("Latency Rules"), SUBSCRIPTION_RULES(
                 "Subscription Rules"), GRID_SUBSCRIPTION_RULES(
                 "Grid Subscription Rules"), POINT_SUBSCRIPTION_RULES(
-                "Point Subscription Rules"), PDA_SUBSCRIPTION_RULES(
-                        "PDA Subscription Rules"), BANDWIDTH("Bandwidth"), DATA_PROVIDER_PASSWORD(
+                "Point Subscription Rules"), BANDWIDTH("Bandwidth"), DATA_PROVIDER_PASSWORD(
                 "Data Provider Password"), REGISTRY_PROVIDER_STATUS(
                 "Registry/Provider Status");
 
@@ -147,9 +145,6 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
 
     /** Subscription rules composite for Point rules */
     private SubscriptionComposite pointSubRuleComp;
-    
-    /** Subscription rules composite for PDA rules */
-    private SubscriptionComposite pdaSubRuleComp;
 
     /** Rule stack composite */
     private Composite ruleStack;
@@ -287,11 +282,6 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         pointSubscriptionRule
                 .setText(SystemManagementSettings.POINT_SUBSCRIPTION_RULES
                         .getName());
-        
-        TreeItem pdaSubscriptionRule = new TreeItem(subscriptionRuleNode, 2);
-        pdaSubscriptionRule
-                .setText(SystemManagementSettings.PDA_SUBSCRIPTION_RULES
-                        .getName());
 
         TreeItem settingsNode = new TreeItem(tree, 1);
         settingsNode.setText("Settings");
@@ -332,12 +322,6 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
                 SystemManagementSettings.GRID_SUBSCRIPTION_RULES.getName())) {
             ruleStackLayout.topControl = compMap
                     .get(SystemManagementSettings.GRID_SUBSCRIPTION_RULES
-                            .getName());
-            ruleStack.layout();
-        } else if (item.getText().equals(
-                SystemManagementSettings.PDA_SUBSCRIPTION_RULES.getName())) {
-            ruleStackLayout.topControl = compMap
-                    .get(SystemManagementSettings.PDA_SUBSCRIPTION_RULES
                             .getName());
             ruleStack.layout();
         }
@@ -422,14 +406,6 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         griddedSubRuleComp.setLayoutData(gd);
         compMap.put(SystemManagementSettings.GRID_SUBSCRIPTION_RULES.getName(),
                 griddedSubRuleComp);
-        
-        gl = new GridLayout(1, false);
-        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        pdaSubRuleComp = new PDASubscriptionRuleComposite(stackComp);
-        pdaSubRuleComp.setLayout(gl);
-        pdaSubRuleComp.setLayoutData(gd);
-        compMap.put(SystemManagementSettings.PDA_SUBSCRIPTION_RULES.getName(),
-                pdaSubRuleComp);
 
         TreeItem ti = tree.getItem(0);
         tree.select(ti);
@@ -533,7 +509,6 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
                     systemPriorityComp.loadList();
                     griddedSubRuleComp.loadConfiguration();
                     pointSubRuleComp.loadConfiguration();
-                    pdaSubRuleComp.loadConfiguration();
                 }
             }
         });

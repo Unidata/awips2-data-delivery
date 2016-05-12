@@ -80,9 +80,8 @@ import com.raytheon.uf.viz.datadelivery.utils.TypeOperationItems;
  * Jul 11, 2013   2106      djohnson   setAvailableBandwidth service now returns names of subscriptions.
  * Oct 03, 2013   2386      mpduff     Add overlap rules.
  * Nov 19, 2013   2387      skorolev   Add system status refresh listeners.
- * Sept 04, 2014  2131      dhladky    PDA data type added.
+ * Sept 04, 2014  2131      dhladky    PAD data type added.
  * Nov 20, 2014   2749      ccody      Put Set Avail Bandwidth Save into async, non-UI thread
- * Nov 12, 2015   4644      dhladky    Added actual rules file for PDA.
  * Nov 30, 2015   4834      njensen    ChangedLocalizationOpFailedException to LocalizationException
  * 
  * </pre>
@@ -112,10 +111,6 @@ public class SystemRuleManager {
     /** Grid overlap rule file */
     private final String GRID_SUB_RULE_FILE = RULE_PATH
             + "GRIDSubscriptionOverlapRules.xml";
-
-    /** PDA overlap rule file */
-    private final String PDA_SUB_RULE_FILE = RULE_PATH
-            + "PDASubscriptionOverlapRules.xml";
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -854,18 +849,7 @@ public class SystemRuleManager {
                 break;
 
             case PDA:
-                lf = pm.getStaticLocalizationFile(this.PDA_SUB_RULE_FILE);
-                if (lf != null && lf.exists()) {
-                    PDASubscriptionOverlapConfig config;
-                    try {
-                        config = (PDASubscriptionOverlapConfig) unmarshaller
-                                .unmarshal(lf.getFile());
-                        overlapRulesMap.put(dt, config);
-                    } catch (Exception e) {
-                        statusHandler.handle(Priority.PROBLEM,
-                                e.getLocalizedMessage(), e);
-                    }
-                }
+                // Not yet implemented
                 break;
 
             default:
