@@ -28,6 +28,7 @@ import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -57,6 +58,7 @@ import com.raytheon.viz.ui.widgets.duallist.SearchUtils;
  * Jan 07, 2013   1432     mpduff      Fix case sensitive and exclude checkboxes.
  * Feb 25, 2013   1588     mpduff      Fix match any/all.
  * Aug 20, 2013   1733     mpduff      Match any/all now executes the search on selection.
+ * Mar 28, 2016   5482     randerso    Fix GUI sizing issues
  * 
  * </pre>
  * 
@@ -161,7 +163,10 @@ public class FilterComp extends AbstractFilterComp implements IUpdate {
         regExLbl.setText("Search: ");
 
         regExTxt = new Text(controlComp, SWT.BORDER);
-        gd = new GridData(225, SWT.DEFAULT);
+        GC gc = new GC(regExTxt);
+        int textWidth = gc.getFontMetrics().getAverageCharWidth() * 40;
+        gc.dispose();
+        gd = new GridData(textWidth, SWT.DEFAULT);
         regExTxt.setLayoutData(gd);
         regExTxt.setToolTipText("Enter text for search");
         regExTxt.addFocusListener(new FocusAdapter() {

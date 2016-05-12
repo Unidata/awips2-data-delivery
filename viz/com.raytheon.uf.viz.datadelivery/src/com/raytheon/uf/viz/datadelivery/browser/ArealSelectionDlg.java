@@ -46,15 +46,16 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 27, 2012            mpduff     Initial creation.
- * Jun  1, 2012   645      jpiatt     Added tooltips.
- * Aug 10, 2012  1002      mpduff     Implementing dataset size estimation.
- * Oct 31, 2012  1278      mpduff     Change validation method call.
- * Dec 07, 2012  1278      bgonzale   Coordinate Array initialization in ctor.
- * Dec 10, 2012  1259      bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
- * Jul 12, 2013  2141      mpduff     Fix typo.
+ * Feb 27, 2012            mpduff      Initial creation.
+ * Jun  1, 2012   645      jpiatt      Added tooltips.
+ * Aug 10, 2012  1002      mpduff      Implementing dataset size estimation.
+ * Oct 31, 2012  1278      mpduff      Change validation method call.
+ * Dec 07, 2012  1278      bgonzale    Coordinate Array initialization in ctor.
+ * Dec 10, 2012  1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
+ * Jul 12, 2013  2141      mpduff      Fix typo.
  * Feb 10, 2016  5323      tjensen    Fix error with cancel
  * Feb 22, 2016  5323      tjensen    Add Confirm Cancel when closing with X button.
+ * Mar 28, 2016   5482     randerso    Fix GUI sizing issues
  * 
  * </pre>
  * 
@@ -118,10 +119,14 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
         btnComp.setLayout(gl);
         btnComp.setLayoutData(gd);
 
+        int buttonWidth = btnComp.getDisplay().getDPI().x;
+
         // OK button
         Button okBtn = new Button(btnComp, SWT.PUSH);
         okBtn.setText("OK");
-        okBtn.setLayoutData(new GridData(70, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -145,7 +150,9 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
         // Cancel button
         Button cancelBtn = new Button(btnComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
-        cancelBtn.setLayoutData(new GridData(70, SWT.DEFAULT));
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
+        cancelBtn.setLayoutData(gd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {

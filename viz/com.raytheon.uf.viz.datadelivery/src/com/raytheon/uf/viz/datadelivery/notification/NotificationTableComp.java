@@ -39,12 +39,13 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
@@ -83,28 +84,31 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 18, 2012   687      lvenable     Initial creation.
- * Aug 09, 2012   430      jpiatt       Modifications for sort asc & sort desc.
- * Aug 30, 2012  1120      jpiatt       Added clickSort flag.
- * Sep 06, 2012   687      mpduff       Call the table selection method of the ITableChanged interface.
- * Oct 22, 2012   1284     mpduff       Fix the start/end index for pagination of new records, code cleanup.
- * Nov 29, 2012  1285      bgonzale     Added a refresh pause button to the Notification Center Dialog.
- * Jan 22, 2013  1520      mpduff       Update javadoc.
- * Apr 25, 2013  1820      mpduff       Get the column list every time.
- * Aug 30, 2013  2314      mpduff       Sort the table data on load.
- * Sep 16, 2013  2375      mpduff       Removed initial sorting.
- * Sep 26, 2013  2417      mpduff       Fix the find all row selection.
- * Oct 15, 2013  2451      skorolev     Get highlighted rows after message update.
- * Nov 01, 2013  2431      skorolev     Changed labels on the table.
- * Feb 07, 2014  2453      mpduff       Refactored.
- * Apr 18, 2014  3012      dhladky      Null check.
- * Aug 18, 2014  2746      ccody        Non-local Subscription changes not updating dialogs
- * Oct 29, 2014  2749      ccody        Unable to change the OPSNET Bandwidth value for Data Delivery
- * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
- * Jun 09, 2015  4047      dhladky      Dialog blocked CAVE at initial startup, fixed.
- * Jun 10, 2015  4059      dhladky      Fixed manual selections being blown away by updates. (under #4047 check in)
- * Jul 01, 2015  4047      dhladky      Selected indexes never took paging into account.
- * Jul 08, 2015  2805      dhladky      Removed re-evaluation of find dialog buttons on update.
+ * Jun 18, 2012   687      lvenable    Initial creation.
+ * Aug 09, 2012   430      jpiatt      Modifications for sort asc & sort desc.
+ * Aug 30, 2012  1120      jpiatt      Added clickSort flag.
+ * Sep 06, 2012   687      mpduff      Call the table selection method of the ITableChanged interface.
+ * Oct 22, 2012   1284     mpduff      Fix the start/end index for pagination of new records, code cleanup.
+ * Nov 29, 2012  1285      bgonzale    Added a refresh pause button to the Notification Center Dialog.
+ * Jan 22, 2013  1520      mpduff      Update javadoc.
+ * Apr 25, 2013  1820      mpduff      Get the column list every time.
+ * Aug 30, 2013  2314      mpduff      Sort the table data on load.
+ * Sep 16, 2013  2375      mpduff      Removed initial sorting.
+ * Sep 26, 2013  2417      mpduff      Fix the find all row selection.
+ * Oct 15, 2013  2451      skorolev    Get highlighted rows after message update.
+ * Nov 01, 2013  2431      skorolev    Changed labels on the table.
+ * Feb 07, 2014  2453      mpduff      Refactored.
+ * Apr 18, 2014  3012      dhladky     Null check.
+ * Aug 18, 2014  2746      ccody       Non-local Subscription changes not updating dialogs
+ * Oct 29, 2014  2749      ccody       Unable to change the OPSNET Bandwidth value for Data Delivery
+ * Dec 03, 2014  3840      ccody       Implement Comparator based sorting
+ * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
+ * Jun 10, 2015  4059      dhladky     Fixed manual selections being blown away by updates. (under #4047 check in)
+ * Jul 01, 2015  4047      dhladky     Selected indexes never took paging into account.
+ * Jul 08, 2015  2805      dhladky     Removed re-evaluation of find dialog buttons on update.
+ * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues, changed page number selection to spinner
+ *                                     instead of combo box that gets huge if there are lots of pages
+ * Apr 26, 2016  5528      dhladky     Prevent null pointer on initial use of find tool.
  * 
  * 
  * </pre>
@@ -132,9 +136,10 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /** Filtered Table list object */
     private final List<NotificationRowData> visibleTableList = new ArrayList<NotificationRowData>();
-    
+
     /** Concurrent List applicable here **/
-    private List<NotificationRecord> notificationList = Collections.synchronizedList(new ArrayList<NotificationRecord>());
+    private List<NotificationRecord> notificationList = Collections
+            .synchronizedList(new ArrayList<NotificationRecord>());
 
     /** Notification rows */
     private final String ROWS = "Rows ";
@@ -142,6 +147,10 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     private final String PAUSE_BUTTON_TEXT = "Pause";
 
     private final String PAUSE_MSG_TEXT = " <Paused>";
+
+    private final String PAGE_AMT_FORMAT = "of %d";
+
+    private final int MAX_PAGES = 999;
 
     /** Number row label */
     private Label numRowsLbl;
@@ -152,17 +161,14 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     /** Number row label */
     private Label pageAmtLbl;
 
-    /** Page Combo box */
-    private Combo pageCbo;
+    /** Page Spinner */
+    private Spinner pageSpin;
 
     /** Configured value per page */
     private int rowsPerPage = 100;
 
     /** Highlight indices */
     private List<NotificationRowData> highlightRows = null;
-
-    /** Dual List Object */
-    private final List<String> pages = new ArrayList<String>();
 
     /** Callback for the message loader */
     private final IMessageLoad msgLoadCallback;
@@ -191,10 +197,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     /** Index of the last visible data row */
     private int tableDataEndIndex = 20;
 
-    /** The selected page */
-    private int pageSelection;
-    
-    /**Enables and disables find Dialog in favor of manually selected rows */
+    /** Enables and disables find Dialog in favor of manually selected rows */
     private boolean isFindable = true;
 
     /**
@@ -240,18 +243,18 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     private void createBottomPageControls() {
 
         // Bottom Composite
-        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        Composite bottomComp = new Composite(this, SWT.NONE);
         GridLayout gl = new GridLayout(3, false);
         gl.marginWidth = 0;
         gl.marginHeight = 0;
-
-        Composite bottomComp = new Composite(this, SWT.NONE);
         bottomComp.setLayout(gl);
+
+        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         bottomComp.setLayoutData(gd);
 
         Composite pageComp = new Composite(bottomComp, SWT.NONE);
 
-        gd = new GridData(SWT.FILL, SWT.CENTER, true, false);
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, false, false);
         gl = new GridLayout(3, false);
         pageComp.setLayout(gl);
         pageComp.setLayoutData(gd);
@@ -260,12 +263,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         pageLbl = new Label(pageComp, SWT.NONE);
         pageLbl.setText("Page: ");
 
-        // Page Selection Combo Box
-        GridData comboData = new GridData(65, SWT.DEFAULT);
-        pageCbo = new Combo(pageComp, SWT.READ_ONLY);
-        pageCbo.setLayoutData(comboData);
-        pageCbo.select(0);
-        pageCbo.addSelectionListener(new SelectionAdapter() {
+        // Page Selection Spinner
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        pageSpin = new Spinner(pageComp, SWT.BORDER);
+        pageSpin.setLayoutData(gd);
+        pageSpin.setValues(1, 1, MAX_PAGES, 0, 1, 10);
+        pageSpin.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
                 handlePageSelection();
@@ -273,11 +276,18 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         });
 
         pageAmtLbl = new Label(pageComp, SWT.NONE);
-        gd = new GridData(50, SWT.DEFAULT);
+        GC gc = new GC(pageAmtLbl);
+        int textWidth = gc
+                .textExtent(String.format(PAGE_AMT_FORMAT, MAX_PAGES)).x;
+        gc.dispose();
+
+        gd = new GridData(textWidth, SWT.DEFAULT);
         pageAmtLbl.setLayoutData(gd);
 
         pauseButton = new Button(bottomComp, SWT.CHECK);
         pauseButton.setText(PAUSE_BUTTON_TEXT);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        pauseButton.setLayoutData(gd);
         pauseButton
                 .setToolTipText("When checked, the Notification Table UI will"
                         + " not refresh, re-sort, or allow user modification"
@@ -288,7 +298,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 boolean isLocked = pauseButton.getSelection();
 
                 messageReceivedWhilePausedCount = 0;
-                pageCbo.setEnabled(!isLocked);
+                pageSpin.setEnabled(!isLocked);
                 tableChangeCallback.tableLock(isLocked);
                 if (isLocked) {
                     pauseButton.setBackground(getDisplay().getSystemColor(
@@ -304,14 +314,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         });
 
         // Row Label
-        Composite rowComp = new Composite(bottomComp, SWT.NONE);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        gl = new GridLayout(1, false);
-        rowComp.setLayout(gl);
-        rowComp.setLayoutData(gd);
-
-        gd = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        numRowsLbl = new Label(rowComp, SWT.RIGHT);
+        numRowsLbl = new Label(bottomComp, SWT.RIGHT);
         numRowsLbl.setLayoutData(gd);
     }
 
@@ -335,10 +339,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
         calculateNumberOfPages();
 
-        int pageNumber = pageCbo.getSelectionIndex();
-        if (pageNumber == -1) {
-            pageNumber = 0;
-        }
+        int pageNumber = pageSpin.getSelection() - 1;
         tableDataStartIndex = pageNumber * rowsPerPage;
         tableDataEndIndex = tableDataStartIndex + rowsPerPage - 1;
 
@@ -426,11 +427,11 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         if (showToolTips) {
             numRowsLbl.setToolTipText("Rows per page");
             pageLbl.setToolTipText("Page Selection");
-            pageCbo.setToolTipText("Select a Page");
+            pageSpin.setToolTipText("Select a Page");
         } else {
             numRowsLbl.setToolTipText("");
             pageLbl.setToolTipText("");
-            pageCbo.setToolTipText("");
+            pageSpin.setToolTipText("");
         }
     }
 
@@ -445,7 +446,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
         int numPages = calculateNumberOfPages();
 
-        pageAmtLbl.setText(" of " + numPages);
+        pageAmtLbl.setText(String.format(PAGE_AMT_FORMAT, numPages));
 
         if (numFilteredRows == 0) {
             // No rows visible possibly due to filtering
@@ -529,18 +530,11 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     private int calculateNumberOfPages() {
         // Calculate number of pages needed
         int numFilteredRows = filteredTableList.getSize();
-        int numPages = (numFilteredRows / rowsPerPage);
+        int numPages = numFilteredRows / rowsPerPage;
 
         // Add an extra page if excess rows
-        if (numFilteredRows > (numPages * rowsPerPage)) {
+        if (numFilteredRows > numPages * rowsPerPage) {
             numPages = numPages + 1;
-        }
-
-        pages.clear();
-
-        // Add pages for combo box
-        for (int i = 1; i <= numPages; i++) {
-            pages.add(String.valueOf(i));
         }
 
         return numPages;
@@ -619,7 +613,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                         .getUserFilterXml().getUserList();
 
                 MessageLoadXML messageLoad = msgLoadCallback.getMessageLoad();
-   
+
                 if (CollectionUtil.isNullOrEmpty(fnotificationRecords)) {
 
                     notificationList = handler.intialLoad(messageLoad, users);
@@ -637,7 +631,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 }
 
                 synchronized (notificationList) {
-                    
+
                     if (CollectionUtil.isNullOrEmpty(notificationList)) {
                         return Status.OK_STATUS;
                     }
@@ -650,7 +644,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                         NotificationRowData rd = new NotificationRowData();
                         Integer recordId = record.getId();
                         Calendar recordCalendarDate = record.getDate();
-                        if ((recordId == null) || (recordCalendarDate == null)) {
+                        if (recordId == null || recordCalendarDate == null) {
                             statusHandler
                                     .error("Error Extracting data from Notification Message: One or more mandatory values are null.\n"
                                             + "ID: "
@@ -745,14 +739,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
                         filteredTableList.sortData(sortComparator);
 
-                        calculateNumberOfPages();
-                        pageCbo.setItems(pages.toArray(new String[0]));
-                        int numPages = filteredTableList.getSize()
-                                / rowsPerPage;
-                        if (pageSelection > numPages) {
-                            pageSelection = numPages;
-                        }
-                        pageCbo.select(pageSelection);
+                        int numPages = calculateNumberOfPages();
+                        pageSpin.setMaximum(numPages);
 
                         populateTable();
                     }
@@ -761,7 +749,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 return Status.OK_STATUS;
             }
         };
-        
+
         job.schedule();
     }
 
@@ -829,7 +817,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             subscriptionFlag = true;
         }
 
-        if ((num.contains(priority + 1))) {
+        if (num.contains(priority + 1)) {
             priorityFlag = true;
         }
 
@@ -837,7 +825,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             filterFlag = true;
         }
 
-        return (filterFlag);
+        return filterFlag;
     }
 
     private boolean passesFilter(NotificationRecord notificationRecord) {
@@ -845,7 +833,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         boolean filterFlag = false;
 
         if (notificationRecord == null) {
-            return (false);
+            return false;
         }
 
         String nrUsername = notificationRecord.getUsername();
@@ -858,8 +846,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             // Check to see if we already HAVE this message
             NotificationRowData rd = null;
             int filteredTableListSize = this.filteredTableList.getSize();
-            for (int i = 0; ((i < filteredTableListSize) && (filterFlag == true)); i++) {
-                rd = (NotificationRowData) this.filteredTableList.getDataRow(i);
+            for (int i = 0; i < filteredTableListSize && filterFlag == true; i++) {
+                rd = this.filteredTableList.getDataRow(i);
                 String rdCategory = rd.getCategory();
                 Integer rdPriority = rd.getPriority();
                 String rdMessage = rd.getMessage();
@@ -1070,10 +1058,11 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             int[] indices = table.getSelectionIndices();
             selectedRowIds.clear();
             // Extract selected notification ids from the table page
-            List<NotificationRowData> highlights = new ArrayList<NotificationRowData>(indices.length);
+            List<NotificationRowData> highlights = new ArrayList<NotificationRowData>(
+                    indices.length);
             for (int index : indices) {
                 // have to account for paging
-                index = (rowsPerPage * pageSelection) + index;
+                index = rowsPerPage * (pageSpin.getSelection() - 1) + index;
                 NotificationRowData rowData = filteredTableList
                         .getDataRow(index);
                 if (rowData == null) {
@@ -1082,8 +1071,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 highlights.add(rowData);
                 selectedRowIds.add(rowData.getId());
             }
-            
-            if(!highlights.isEmpty()) {
+
+            if (!highlights.isEmpty()) {
                 selectRows(highlights);
             }
         }
@@ -1105,13 +1094,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
      */
     @Override
     public void handlePageSelection() {
-        this.pageSelection = pageCbo.getSelectionIndex();
 
         // Clean highlighted selections on the page
         selectedRowIds.clear();
 
         // Calculate indices
-        this.tableDataStartIndex = rowsPerPage * pageSelection;
+        this.tableDataStartIndex = rowsPerPage * (pageSpin.getSelection() - 1);
         this.tableDataEndIndex = tableDataStartIndex + rowsPerPage;
         populateTable();
     }
@@ -1127,13 +1115,14 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         int selectedPage = dataIndex / rowsPerPage + 1;
         int pageIndex = dataIndex % rowsPerPage;
 
-        pageCbo.select(selectedPage - 1);
+        pageSpin.setSelection(selectedPage);
         handlePageSelection();
         TableItem item = table.getItem(pageIndex);
         table.setSelection(item);
-        this.pageSelection = pageCbo.getSelectionIndex();
-        highlightRows.clear();
-        highlightRows.add(row);
+        if (highlightRows != null) {
+            highlightRows.clear();
+            highlightRows.add(row);
+        }
     }
 
     /**
@@ -1195,7 +1184,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     @Override
     public int getCurrentSelectionIndex() {
-        return rowsPerPage * (pageCbo.getSelectionIndex())
+        return rowsPerPage * pageSpin.getSelection()
                 + table.getSelectionIndex();
     }
 
