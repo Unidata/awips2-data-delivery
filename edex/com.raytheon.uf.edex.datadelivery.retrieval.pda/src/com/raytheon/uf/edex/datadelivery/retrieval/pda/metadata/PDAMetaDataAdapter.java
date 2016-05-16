@@ -64,6 +64,7 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * Jan 28, 2016  5299     dhladky   PDA testing related fixes.
  * May 03, 2016  5599     tjensen   Pass subscription name to GoesrDecoder to
  *                                  override sectorID.
+ * May 16, 2016  5599     tjensen   Refresh dataURI after overriding sectorID.
  * 
  * </pre>
  * 
@@ -185,6 +186,12 @@ public class PDAMetaDataAdapter extends
             if (pdo instanceof SatelliteRecord) {
                 SatelliteRecord sr = (SatelliteRecord) pdo;
                 sr.setSectorID(subName);
+                /*
+                 * Set DataURI to null, then call getDataURI to recreate it with
+                 * the new sectorId.
+                 */
+                sr.setDataURI(null);
+                sr.getDataURI();
             }
         }
     }

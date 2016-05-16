@@ -45,14 +45,14 @@ public interface IPDAMetaDataAdapter {
     /**
      * Gets the correct satellite decoder
      * 
-     * @param FileName
+     * @param fileName
      *            path to file
      * @param subName
      *            Subscription Name
      * @return
      * @throws Exception
      */
-    public PluginDataObject[] decodeObjects(String FileName, String subName)
+    public PluginDataObject[] decodeObjects(String fileName, String subName)
             throws Exception;
 
 }
