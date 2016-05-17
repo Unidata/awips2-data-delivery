@@ -67,7 +67,6 @@ import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.uf.viz.core.rsc.ResourceType;
 import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.uf.viz.productbrowser.ProductBrowserDataDefinition;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
 import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
@@ -77,6 +76,7 @@ import com.raytheon.viz.grid.rsc.GridResourceData;
 import com.raytheon.viz.pointdata.PlotModels;
 import com.raytheon.viz.pointdata.rsc.PlotResourceData;
 import com.raytheon.viz.pointdata.util.PointDataInventory;
+import com.raytheon.viz.satellite.rsc.SatResourceData;
 import com.raytheon.viz.ui.BundleProductLoader;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
@@ -91,20 +91,25 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 17, 2013  2391      mpduff      Initial creation
- * Sept 22, 2013 2246      dhladky     Setup binoffset for time into +-5 min intervals
- * Oct 13,  2013 2460      dhladky     Added display of Adhoc subscriptions
- * Nov 19, 2013  2458      mpduff      Only pull subscriptions for the local site
- * Nov 21, 2013  2554      dhladky     Restored ADHOC's to working.
- * Jan 14, 2014  2459      mpduff      Change Subscription status code
- * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
- * Jun 24, 2014  3128      bclement    changed loadProperties to be GridLoadProperties
- * Jul 07, 2014  3135      bsteffen    Allow reuse of definition across multiple tree selections.
- * Sep 09, 2014  3356      njensen     Remove CommunicationException
- * Jun 11, 2015  4042      dhladky     Refactored using bsteffen's interface to make it thread safe, cleaner.
- * Jun 16, 2015  4566      dhladky     Fixed error in map for Plugin names.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 17, 2013  2391     mpduff    Initial creation
+ * Sep 22, 2013  2246     dhladky   Setup binoffset for time into +-5 min
+ *                                  intervals
+ * Oct 13, 2013  2460     dhladky   Added display of Adhoc subscriptions
+ * Nov 19, 2013  2458     mpduff    Only pull subscriptions for the local site
+ * Nov 21, 2013  2554     dhladky   Restored ADHOC's to working.
+ * Jan 14, 2014  2459     mpduff    Change Subscription status code
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Jun 24, 2014  3128     bclement  changed loadProperties to be
+ *                                  GridLoadProperties
+ * Jul 07, 2014  3135     bsteffen  Allow reuse of definition across multiple
+ *                                  tree selections.
+ * Sep 09, 2014  3356     njensen   Remove CommunicationException
+ * Jun 11, 2015  4042     dhladky   Refactored using bsteffen's interface to
+ *                                  make it thread safe, cleaner.
+ * Jun 16, 2015  4566     dhladky   Fixed error in map for Plugin names.
+ * May 04, 2016  5599     tjensen   Fixed PDA label population.
  * 
  * </pre>
  * 
@@ -112,22 +117,22 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * @version 1.0
  */
 
-public class DataDeliveryProductBrowserDataDefinition
-        implements ProductBrowserDataDefinition, PreferenceBasedDataDefinition {
-    
+public class DataDeliveryProductBrowserDataDefinition implements
+        PreferenceBasedDataDefinition {
+
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataDeliveryProductBrowserDataDefinition.class);
 
-    /** Constant for MADIS plugin lookups*/
+    /** Constant for MADIS plugin lookups */
     private static final String MADIS = "madis";
 
     /** Constant for GRID plugin lookups */
     private static final String GRID = "grid";
 
-    /** Constant for sat plugin lookups*/
-    private static final String PDA = "sat";
+    /** Constant for sat plugin lookups */
+    private static final String PDA = "satellite";
 
-    /** Constant for point plugin lookups*/
+    /** Constant for point plugin lookups */
     private static final String POINT = "point";
 
     /** Plot model file */
@@ -140,16 +145,17 @@ public class DataDeliveryProductBrowserDataDefinition
     private static final String DATA_DELIVERY = "Data Delivery";
 
     /** Point order */
-    private static final String[] POINT_ORDER = new String[] { "type", "subscription",
-            "level" };
-    
+    private static final String[] POINT_ORDER = new String[] { "type",
+            "subscription", "level" };
+
     /** PDA order, same as point */
-    private static final String[] PDA_ORDER = POINT_ORDER;
+    private static final String[] PDA_ORDER = new String[] { "sectorID",
+            "creatingEntity", "physicalElement" };
 
     private static final String[] GRID_ORDER = new String[] {
             GridInventory.MODEL_NAME_QUERY, GridInventory.PARAMETER_QUERY,
             GridInventory.MASTER_LEVEL_QUERY, GridInventory.LEVEL_ID_QUERY };
-    
+
     /** cache lookup plugins to DataDelivery names map **/
     private Map<DataType, String> productMap;
 
@@ -157,13 +163,13 @@ public class DataDeliveryProductBrowserDataDefinition
      * Setup as 5 mins +- (60x5=300) from a reference time
      */
     private static final int frameOffset = 300;
-    
+
     /**
      * Constructor.
      */
     public DataDeliveryProductBrowserDataDefinition() {
 
-        HashMap<DataType, String> protoProductMap = new HashMap<DataType, String>(3);
+        HashMap<DataType, String> protoProductMap = new HashMap<>(3);
         protoProductMap.put(DataType.GRID, GRID);
         protoProductMap.put(DataType.PDA, PDA);
         protoProductMap.put(DataType.POINT, POINT);
@@ -174,7 +180,7 @@ public class DataDeliveryProductBrowserDataDefinition
      * {@inheritDoc}
      */
     public List<ProductBrowserLabel> populateData(String[] selection) {
-       
+
         if (selection.length == 1) {
             // Get provider names
             String[] dataTypes = getDataTypes();
@@ -194,17 +200,22 @@ public class DataDeliveryProductBrowserDataDefinition
                         SVG);
                 String param = order[2];
                 return formatData(param, results, selection);
-            } else if (selection[1].equalsIgnoreCase(DataType.GRID.name())) {
-                // Must remove the first selection so this matches with the grid
-                // version
+            } else if (selection[1].equalsIgnoreCase(DataType.GRID.name())
+                    || selection[1].equalsIgnoreCase(DataType.PDA.name())) {
+                /*
+                 * Must remove the first selection so this matches with the
+                 * grid/pda version
+                 */
                 String[] usedSelection = realignSelection(selection);
 
                 return populateUpperData(usedSelection);
+
             }
         }
 
         if (selection.length >= 4) {
-            if (selection[1].equalsIgnoreCase(DataType.GRID.name())) {
+            if (selection[1].equalsIgnoreCase(DataType.GRID.name())
+                    || selection[1].equalsIgnoreCase(DataType.PDA.name())) {
                 // Must remove the first selection so this matches with the grid
                 // version
                 String[] usedSelection = realignSelection(selection);
@@ -214,9 +225,10 @@ public class DataDeliveryProductBrowserDataDefinition
         }
         return null;
     }
-    
+
     /**
      * Populate the Upper (Higher Level menus) of the product drop downs
+     * 
      * @param selection
      * @return
      */
@@ -225,6 +237,7 @@ public class DataDeliveryProductBrowserDataDefinition
         List<ProductBrowserLabel> parameters = null;
         boolean product = false;
         String[] order = extractOrder(selection);
+
         String param = order[selection.length - 1];
         HashMap<String, RequestConstraint> queryList = getProductParameters(
                 selection, order);
@@ -234,7 +247,8 @@ public class DataDeliveryProductBrowserDataDefinition
         if (temp != null) {
             parameters = formatData(param, temp, selection);
         } else {
-            throw new IllegalArgumentException("Query for menu data cannot be null..."+product);
+            throw new IllegalArgumentException(
+                    "Query for menu data cannot be null..." + product);
         }
 
         if (parameters != null) {
@@ -263,13 +277,6 @@ public class DataDeliveryProductBrowserDataDefinition
         return usedSelection;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.productbrowser.AbstractProductBrowserDataDefinition
-     * #formatData(java.lang.String, java.lang.String[])
-     */
     public List<ProductBrowserLabel> formatData(String param,
             String[] parameters, String[] selection) {
         if (Arrays.asList(GRID_ORDER).contains(param)) {
@@ -277,7 +284,7 @@ public class DataDeliveryProductBrowserDataDefinition
                     parameters);
         } else {
             /* Data Type or point data. */
-            List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
+            List<ProductBrowserLabel> temp = new ArrayList<>();
             String[] order = extractOrder(selection);
             for (int i = 0; i < parameters.length; i++) {
                 ProductBrowserLabel label = new ProductBrowserLabel(
@@ -290,17 +297,19 @@ public class DataDeliveryProductBrowserDataDefinition
             return temp;
         }
     }
-    
+
     /**
-     * Function for taking upper menu (higher level) data and renaming it for the product browser tree
+     * Function for taking upper menu (higher level) data and renaming it for
+     * the product browser tree
      * 
      * 
      * @param param
      * @param parameters
      * @return
      */
-    public List<ProductBrowserLabel> formatUpperData(String param, String[] parameters) {
-        List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
+    public List<ProductBrowserLabel> formatUpperData(String param,
+            String[] parameters) {
+        List<ProductBrowserLabel> temp = new ArrayList<>();
         for (int i = 0; i < parameters.length; i++) {
             temp.add(new ProductBrowserLabel(parameters[i], null));
         }
@@ -329,9 +338,10 @@ public class DataDeliveryProductBrowserDataDefinition
             plotResourceData.setPlotModelFile(SVG);
             plotResourceData.setLevelKey(selection[selection.length - 1]);
             resourceData = plotResourceData;
-        } else if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())
-                || selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
+        } else if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
             resourceData = new GridResourceData();
+        } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
+            resourceData = new SatResourceData();
         }
 
         return resourceData;
@@ -342,22 +352,24 @@ public class DataDeliveryProductBrowserDataDefinition
      */
     public HashMap<String, RequestConstraint> getProductParameters(
             String[] selection, String[] order) {
-        
+
         String productName = extractProductName(selection);
-        
+
         if (productName.equalsIgnoreCase(DataType.POINT.name())) {
             return getPointProductParameters(selection, order);
-        } else if (productName.equalsIgnoreCase(DataType.GRID.name())
-                || productName.equalsIgnoreCase(DataType.PDA.name())) {
+        } else if (productName.equalsIgnoreCase(DataType.GRID.name())) {
             return getGridProductParameters(selection, order);
+        } else if (productName.equalsIgnoreCase(productMap.get(DataType.PDA))) {
+            return getPdaProductParameters(selection, order);
         } else {
             throw new IllegalArgumentException("Invalid data type: "
                     + productName);
         }
     }
-    
+
     /**
-     * Getting the map of request constraints for upper menus populating the resource data
+     * Getting the map of request constraints for upper menus populating the
+     * resource data
      * 
      * @param selection
      * @param order
@@ -365,8 +377,8 @@ public class DataDeliveryProductBrowserDataDefinition
      */
     public HashMap<String, RequestConstraint> getUpperProductParameters(
             String[] selection, String[] order) {
-        HashMap<String, RequestConstraint> queryList = new HashMap<String, RequestConstraint>();
-        String productName =  extractProductName(selection);
+        HashMap<String, RequestConstraint> queryList = new HashMap<>();
+        String productName = extractProductName(selection);
         queryList.put(PLUGIN_NAME, new RequestConstraint(productName));
 
         String[] usedSelection = realignSelection(selection);
@@ -389,8 +401,34 @@ public class DataDeliveryProductBrowserDataDefinition
     private HashMap<String, RequestConstraint> getGridProductParameters(
             String[] selection, String[] order) {
         if (selection.length > 5) {
-            // Must remove the first selection so this matches with the grid
-            // version
+            /*
+             * Must remove the first selection so this matches with the grid
+             * version
+             */
+            String[] tmpSelection = realignSelection(selection);
+
+            return getUpperProductParameters(tmpSelection, order);
+        } else {
+            return getUpperProductParameters(selection, order);
+        }
+    }
+
+    /**
+     * Get the PDA parameters
+     * 
+     * @param selection
+     *            The selected node
+     * @param order
+     *            The order
+     * @return The constraint map
+     */
+    private HashMap<String, RequestConstraint> getPdaProductParameters(
+            String[] selection, String[] order) {
+        if (selection.length > 4) {
+            /*
+             * Must remove the first selection so this matches with the pda
+             * version
+             */
             String[] tmpSelection = realignSelection(selection);
 
             return getUpperProductParameters(tmpSelection, order);
@@ -411,7 +449,7 @@ public class DataDeliveryProductBrowserDataDefinition
      */
     private HashMap<String, RequestConstraint> getPointProductParameters(
             String[] selection, String[] order) {
-        HashMap<String, RequestConstraint> queryList = new HashMap<String, RequestConstraint>();
+        HashMap<String, RequestConstraint> queryList = new HashMap<>();
         queryList.put(PLUGIN_NAME, new RequestConstraint(MADIS));
         PointDataInventory inv = PlotModels.getInstance().getInventory();
         if (!inv.getTypeKey(selection[1])
@@ -438,7 +476,7 @@ public class DataDeliveryProductBrowserDataDefinition
     private List<RequestConstraint> getSpatialConstraint(
             String selectedSubscriptionName) {
 
-        List<RequestConstraint> cons = new ArrayList<RequestConstraint>();
+        List<RequestConstraint> cons = new ArrayList<>();
 
         Coverage cov = null;
         for (Subscription s : getSubscriptions()) {
@@ -487,7 +525,7 @@ public class DataDeliveryProductBrowserDataDefinition
      */
     @SuppressWarnings("rawtypes")
     private List<String> getSubscriptions(DataType dataType) {
-        final List<String> subNames = new ArrayList<String>();
+        final List<String> subNames = new ArrayList<>();
 
         List<Subscription> subList = getSubscriptions();
         for (Subscription s : subList) {
@@ -504,12 +542,13 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Extract data types from the subscriptions listed
+     * 
      * @return string[]
      */
     @SuppressWarnings("rawtypes")
     private String[] getDataTypes() {
         List<Subscription> subList = getSubscriptions();
-        List<String> dataTypes = new ArrayList<String>();
+        List<String> dataTypes = new ArrayList<>();
         for (Subscription s : subList) {
             String dt = StringUtils.capitalize(s.getDataSetType().name()
                     .toLowerCase());
@@ -528,7 +567,7 @@ public class DataDeliveryProductBrowserDataDefinition
      */
     @SuppressWarnings("rawtypes")
     private List<Subscription> getSubscriptions() {
-        List<Subscription> subList = new ArrayList<Subscription>();
+        List<Subscription> subList = new ArrayList<>();
         final ISubscriptionHandler handler = RegistryObjectHandlers
                 .get(ISubscriptionHandler.class);
         try {
@@ -555,33 +594,28 @@ public class DataDeliveryProductBrowserDataDefinition
         return subList;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.productbrowser.AbstractProductBrowserDataDefinition
-     * #getDisplayTypes()
-     */
-    public Map<ResourceType, List<DisplayType>> getDisplayTypes(String[] selection) {
+    public Map<ResourceType, List<DisplayType>> getDisplayTypes(
+            String[] selection) {
 
         for (String selectedDataType : selection) {
             if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
-                Map<ResourceType, List<DisplayType>> type = new HashMap<ResourceType, List<DisplayType>>();
-                List<DisplayType> types = new ArrayList<DisplayType>();
+                Map<ResourceType, List<DisplayType>> type = new HashMap<>();
+                List<DisplayType> types = new ArrayList<>();
                 types.add(DisplayType.CONTOUR);
                 types.add(DisplayType.IMAGE);
                 /*
-                 * Stage 2 of this process will be more tricky.
-                 * Need to determine in this ProductBroswer definition if both U & V wind components are available
-                 * Then query both sets of PDOs and merge them into a GeneralGridGeometry so you can call VectorDataUV 
-                 * (Draws barbs) with the data for both.
+                 * Stage 2 of this process will be more tricky. Need to
+                 * determine in this ProductBroswer definition if both U & V
+                 * wind components are available Then query both sets of PDOs
+                 * and merge them into a GeneralGridGeometry so you can call
+                 * VectorDataUV (Draws barbs) with the data for both.
                  */
-                //types.add(DisplayType.BARB);
+                // types.add(DisplayType.BARB);
                 type.put(ResourceType.PLAN_VIEW, types);
                 return type;
             } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
-                Map<ResourceType, List<DisplayType>> type = new HashMap<ResourceType, List<DisplayType>>();
-                List<DisplayType> types = new ArrayList<DisplayType>();
+                Map<ResourceType, List<DisplayType>> type = new HashMap<>();
+                List<DisplayType> types = new ArrayList<>();
                 types.add(DisplayType.CONTOUR);
                 types.add(DisplayType.IMAGE);
                 type.put(ResourceType.PLAN_VIEW, types);
@@ -600,6 +634,7 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Gets the Display pane for the editor
+     * 
      * @return
      */
     private IDisplayPaneContainer getEditor() {
@@ -617,6 +652,7 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Open the editor
+     * 
      * @param editorId
      * @return
      */
@@ -640,12 +676,13 @@ public class DataDeliveryProductBrowserDataDefinition
 
     /**
      * Get the descriptor for these resources
+     * 
      * @return
      */
     private Class<? extends IDescriptor> getDescriptorClass() {
         return MapDescriptor.class;
     }
-        
+
     @Override
     public boolean checkAvailability() {
         return true;
@@ -655,8 +692,8 @@ public class DataDeliveryProductBrowserDataDefinition
     public Collection<DisplayType> getValidDisplayTypes(String[] selection) {
         Map<ResourceType, List<DisplayType>> displayTypeMap = getDisplayTypes(selection);
         EnumSet<DisplayType> result = EnumSet.noneOf(DisplayType.class);
-        if(displayTypeMap != null){
-            for(List<DisplayType> displayTypes: displayTypeMap.values()){
+        if (displayTypeMap != null) {
+            for (List<DisplayType> displayTypes : displayTypeMap.values()) {
                 result.addAll(displayTypes);
             }
         }
@@ -666,7 +703,7 @@ public class DataDeliveryProductBrowserDataDefinition
     @Override
     public void loadResource(String[] selection, DisplayType displayType) {
 
-        // Get the editor 
+        // Get the editor
         IDisplayPaneContainer container = getEditor();
         if (container == null) {
             return;
@@ -675,32 +712,34 @@ public class DataDeliveryProductBrowserDataDefinition
         // create the default load properties
         LoadProperties loadProperties = new GridLoadProperties();
         AbstractRequestableResourceData resourceData = getResourceData(selection);
-        
+
         if (displayType != null) {
-            loadProperties.getCapabilities().getCapability(resourceData, DisplayTypeCapability.class)
+            loadProperties.getCapabilities()
+                    .getCapability(resourceData, DisplayTypeCapability.class)
                     .setDisplayType(displayType);
         }
-        
+
         // processing specific to MADIS, points
         String[] order = extractOrder(selection);
         (resourceData).setMetadataMap(getProductParameters(selection, order));
-         
+
         // Make the resource pair
         ResourcePair pair = new ResourcePair();
         pair.setResourceData(resourceData);
         pair.setLoadProperties(loadProperties);
         pair.setProperties(new ResourceProperties());
-               
+
         // Construct the display, add the pair
         AbstractRenderableDisplay display = (AbstractRenderableDisplay) container
                 .getActiveDisplayPane().getRenderableDisplay();
         display = (AbstractRenderableDisplay) display.createNewDisplay();
         display.getDescriptor().getResourceList().add(pair);
-  
+
         // Get the bundle, add display
         Bundle b = new Bundle();
         b.setDisplays(new AbstractRenderableDisplay[] { display });
-        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b).schedule();
+        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b)
+                .schedule();
     }
 
     @Override
@@ -708,7 +747,8 @@ public class DataDeliveryProductBrowserDataDefinition
         if (selection.length == 0) {
             // This is only used for the initial population of the tree
             String[] order = extractOrder(selection);
-            ProductBrowserLabel label = new ProductBrowserLabel(DATA_DELIVERY, DATA_DELIVERY);
+            ProductBrowserLabel label = new ProductBrowserLabel(DATA_DELIVERY,
+                    DATA_DELIVERY);
             label.setData(DATA_DELIVERY);
             label.setProduct(order.length == 0);
             return Collections.singletonList(label);
@@ -727,9 +767,10 @@ public class DataDeliveryProductBrowserDataDefinition
         }
         return stringBuilder.toString();
     }
-    
+
     /**
      * Query the levels and types for the menus items
+     * 
      * @param param
      * @param queryList
      * @return
@@ -762,17 +803,18 @@ public class DataDeliveryProductBrowserDataDefinition
         }
         return null;
     }
-    
+
     /**
      * Extracts the product (plugin) name from the selection string array
+     * 
      * @param selection
      * @return
      */
     private String extractProductName(String[] selection) {
-        
+
         String productName = null;
-        
-        for (String name: selection) {
+
+        for (String name : selection) {
             if (name.equalsIgnoreCase(DataType.GRID.name())) {
                 productName = productMap.get(DataType.GRID);
                 break;
@@ -784,17 +826,18 @@ public class DataDeliveryProductBrowserDataDefinition
                 break;
             }
         }
-        
+
         return productName;
     }
 
     /**
      * Extract the correct click level order list
+     * 
      * @param selection
      * @return
      */
     private String[] extractOrder(String[] selection) {
-        
+
         String[] order = null;
         // return default, point is default
         if (selection.length < 2) {
@@ -810,11 +853,11 @@ public class DataDeliveryProductBrowserDataDefinition
                 } else if (name.equalsIgnoreCase(DataType.POINT.name())) {
                     order = POINT_ORDER;
                     break;
-                } 
+                }
             }
         }
 
         return order;
     }
-     
+
 }
