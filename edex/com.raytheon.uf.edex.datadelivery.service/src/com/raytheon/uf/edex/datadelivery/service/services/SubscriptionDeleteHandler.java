@@ -65,7 +65,7 @@ public class SubscriptionDeleteHandler extends
 
         Class handlerClass = ReflectionUtil.forName(request.getHandlerClass());
 
-        IBaseSubscriptionHandler handler = RegistryObjectHandlers
+        IBaseSubscriptionHandler handler = (IBaseSubscriptionHandler) RegistryObjectHandlers
                 .get(handlerClass);
         final IUser user = request.getUser();
         final String username = (user == null) ? null : user.uniqueId()
