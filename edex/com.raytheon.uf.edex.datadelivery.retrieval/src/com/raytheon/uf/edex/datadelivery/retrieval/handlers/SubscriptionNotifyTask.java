@@ -1,5 +1,6 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,15 +37,22 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 9, 2012  1022       djohnson     No longer extends Thread, simplify {@link SubscriptionDelay}.
- * Oct 10, 2012 0726       djohnson     Use the subRetrievalKey for notifying the retrieval manager.
- * Nov 25, 2012  1268      dhladky      Added additional fields to process subscription tracking
- * Feb 05, 2013 1580       mpduff       EventBus refactor.
- * Mar 05, 2013 1647       djohnson     Debug log running message.
- * Jan 08, 2013 2645       bgonzale     Catch all exceptions in run to prevent the recurring timer from failing.
- * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 09, 2012  1022     djohnson  No longer extends Thread, simplify {@link
+ *                                  SubscriptionDelay}.
+ * Oct 10, 2012  726      djohnson  Use the subRetrievalKey for notifying the
+ *                                  retrieval manager.
+ * Nov 25, 2012  1268     dhladky   Added additional fields to process
+ *                                  subscription tracking
+ * Feb 05, 2013  1580     mpduff    EventBus refactor.
+ * Mar 05, 2013  1647     djohnson  Debug log running message.
+ * Jan 08, 2013  2645     bgonzale  Catch all exceptions in run to prevent the
+ *                                  recurring timer from failing.
+ * Jul 22, 2014  2732     ccody     Add Date Time to SubscriptionRetrievalEvent
+ *                                  message
+ * May 17, 2016  5662     tjensen   Cleanup duplicate parameters in failed
+ *                                  message
  * 
  * </pre>
  * 
@@ -73,8 +81,7 @@ public class SubscriptionNotifyTask implements Runnable {
         final String key;
 
         final Long retrievalRequestTime;
-        
-        
+
         SubscriptionDelay(String subName, String owner, String plugin,
                 SubscriptionType subscriptionType, Network network,
                 String provider, Long subRetrievalKey, long delayedUntilMillis,
@@ -125,7 +132,8 @@ public class SubscriptionNotifyTask implements Runnable {
                 eqBuilder.append(network, other.network);
                 eqBuilder.append(provider, other.provider);
                 eqBuilder.append(subRetrievalKey, other.subRetrievalKey);
-                eqBuilder.append(retrievalRequestTime, other.retrievalRequestTime);
+                eqBuilder.append(retrievalRequestTime,
+                        other.retrievalRequestTime);
                 return eqBuilder.isEquals();
             }
             return super.equals(obj);
@@ -159,17 +167,17 @@ public class SubscriptionNotifyTask implements Runnable {
         }
 
         /**
-         * Returns The date time (long) of the Data Retrieval Request.
-         * has passed.
+         * Returns The date time (long) of the Data Retrieval Request. has
+         * passed.
          * 
-         * @return retrievalRequestTime  Time that Retrieval Request was generated
+         * @return retrievalRequestTime Time that Retrieval Request was
+         *         generated
          */
         @VisibleForTesting
         Long getRetrievalRequestTime() {
-            return(retrievalRequestTime);
+            return (retrievalRequestTime);
         }
 
-        
         @Override
         public int hashCode() {
             HashCodeBuilder hcBuilder = new HashCodeBuilder();
@@ -211,11 +219,13 @@ public class SubscriptionNotifyTask implements Runnable {
         try {
             Retrieval retrievalObject = record.getRetrievalObj();
             if (retrievalObject != null) {
-                retrievalRequestTimeLong = retrievalObject.getRequestRetrievalTime();
+                retrievalRequestTimeLong = retrievalObject
+                        .getRequestRetrievalTime();
             }
-        }
-        catch(SerializationException se) {
-            statusHandler.error("Error occurred unmarshalling retrieval object for determining Subscriptiong Request time.", se);
+        } catch (SerializationException se) {
+            statusHandler
+                    .error("Error occurred unmarshalling retrieval object for determining Subscriptiong Request time.",
+                            se);
         }
 
         if (retrievalRequestTimeLong == null) {
@@ -226,18 +236,17 @@ public class SubscriptionNotifyTask implements Runnable {
                 record.getOwner(), record.getPlugin(),
                 record.getSubscriptionType(), record.getNetwork(),
                 record.getProvider(), record.getSubRetrievalKey(),
-                startTime + 11000,
-                retrievalRequestTimeLong );
+                startTime + 11000, retrievalRequestTimeLong);
     }
 
     // set written to by other threads
-    private ConcurrentMap<String, SubscriptionDelay> waitingSubscriptions = new ConcurrentHashMap<String, SubscriptionDelay>();
+    private ConcurrentMap<String, SubscriptionDelay> waitingSubscriptions = new ConcurrentHashMap<>();
 
     // set used for draining all entries, while other queue being written to
-    private ConcurrentMap<String, SubscriptionDelay> subscriptionsInProcess = new ConcurrentHashMap<String, SubscriptionDelay>(
+    private ConcurrentMap<String, SubscriptionDelay> subscriptionsInProcess = new ConcurrentHashMap<>(
             64);
 
-    private final DelayQueue<SubscriptionDelay> subscriptionQueue = new DelayQueue<SubscriptionDelay>();
+    private final DelayQueue<SubscriptionDelay> subscriptionQueue = new DelayQueue<>();
 
     private final IRetrievalDao dao;
 
@@ -280,7 +289,7 @@ public class SubscriptionNotifyTask implements Runnable {
                 subscriptionQueue.addAll(subscriptionsInProcess.values());
                 subscriptionsInProcess.clear();
             }
-            
+
             SubscriptionDelay subToCheck = subscriptionQueue.poll();
             while (subToCheck != null) {
                 Map<RetrievalRequestRecord.State, Integer> stateCounts = dao
@@ -300,7 +309,7 @@ public class SubscriptionNotifyTask implements Runnable {
                             .name());
                     event.setNetwork(subToCheck.network.name());
                     event.setRetrievalRequestTime(subToCheck.retrievalRequestTime);
-                    
+
                     RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
                     retrievalManagerNotifyEvent.setId(Long
                             .toString(subToCheck.subRetrievalKey));
@@ -325,14 +334,21 @@ public class SubscriptionNotifyTask implements Runnable {
                         StringBuffer sb = new StringBuffer(300);
                         try {
                             sb.append("Failed parameters: ");
+                            List<String> parameters = new ArrayList<>();
                             for (RetrievalRequestRecord failedRec : failedRecs) {
                                 Retrieval retrieval = failedRec
                                         .getRetrievalObj();
                                 for (RetrievalAttribute<?, ?> att : retrieval
                                         .getAttributes()) {
-                                    sb.append(att.getParameter().getName()
-                                            + ", ");
+                                    if (!parameters.contains(att.getParameter()
+                                            .getName())) {
+                                        parameters.add(att.getParameter()
+                                                .getName());
+                                    }
                                 }
+                            }
+                            for (String param : parameters) {
+                                sb.append(param + ", ");
                             }
                             sb.delete(sb.length() - 2, sb.length());
                             event.setFailureMessage(sb.toString());
@@ -353,7 +369,7 @@ public class SubscriptionNotifyTask implements Runnable {
                     } else {
                         event.setNumFailed(numFailed);
                     }
-                    
+
                     EventBus.publish(event);
                     EventBus.publish(retrievalManagerNotifyEvent);
                     dao.removeSubscription(subToCheck.subName);
