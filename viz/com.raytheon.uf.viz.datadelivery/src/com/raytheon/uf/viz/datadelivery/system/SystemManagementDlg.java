@@ -29,6 +29,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -53,22 +54,28 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 17, 2012   730      jpiatt      Initial creation.
- * Oct 23, 2012 1286       djohnson    Hook into bandwidth management.
- * Nov 20, 2012 1286       djohnson    Implement IDisplay.
- * Jan 04, 2013 1420       mpduff      Remove applying of rules.
- * Jan 17, 2013 1501       djohnson    Close the dialog when force apply occurs, 
- *                                     and check whether changes have already been applied when OK is pressed.
- * May 17, 2013 2000       djohnson    Move bandwidth configuration into its own tab, add subscription overlap rules.
- * Jul 16, 2013 1655       mpduff      Add system status tab.
- * Aug 08, 2013 2180       mpduff      Redesigned UI.
- * Oct 03, 2013 2386       mpduff      Implemented multiple data types for overlap rules
- * Nov 19, 2013 2387       skorolev    Add timer for status refresh.
- * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
- * Nov 20, 2014 2749       ccody       Changed System Management to a non-modal dialog
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 17, 2012  730      jpiatt    Initial creation.
+ * Oct 23, 2012  1286     djohnson  Hook into bandwidth management.
+ * Nov 20, 2012  1286     djohnson  Implement IDisplay.
+ * Jan 04, 2013  1420     mpduff    Remove applying of rules.
+ * Jan 17, 2013  1501     djohnson  Close the dialog when force apply occurs,
+ *                                  and check whether changes have already been
+ *                                  applied when OK is pressed.
+ * May 17, 2013  2000     djohnson  Move bandwidth configuration into its own
+ *                                  tab, add subscription overlap rules.
+ * Jul 16, 2013  1655     mpduff    Add system status tab.
+ * Aug 08, 2013  2180     mpduff    Redesigned UI.
+ * Oct 03, 2013  2386     mpduff    Implemented multiple data types for overlap
+ *                                  rules
  * Nov 12, 2015 4644       dhladky     Added rules for PDA subscriptions.
+ * Nov 19, 2013  2387     skorolev  Add timer for status refresh.
+ * Nov 19, 2014  3852     dhladky   Resurrected the Unscheduled state.
+ * Nov 20, 2014  2749     ccody     Changed System Management to a non-modal
+ *                                  dialog
+ * May 02, 2016  5482     randerso  Fixed GUI sizing issues
+ * 
  * </pre>
  * 
  * @author jpiatt
@@ -167,64 +174,34 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         SystemRuleManager.getInstance().registerAsListener(this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
-        return new GridLayout(1, false);
+        return new GridLayout(2, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
-     */
     @Override
     protected Object constructShellLayoutData() {
         return new GridData(SWT.FILL, SWT.FILL, true, true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
 
-        GridLayout gl = new GridLayout(2, false);
+        tree = new Tree(shell, SWT.H_SCROLL | SWT.BORDER);
+        GC gc = new GC(tree);
+        int treeWdith = gc.getFontMetrics().getAverageCharWidth() * 35;
+        gc.dispose();
+
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        Composite comp = new Composite(shell, SWT.NONE);
-        comp.setLayout(gl);
-        comp.setLayoutData(gd);
-
-        gl = new GridLayout(1, false);
-        gl.marginHeight = 0;
-        gl.marginWidth = 0;
-        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        gd.minimumWidth = 220;
-        treeComp = new Composite(comp, SWT.BORDER);
-        treeComp.setLayout(gl);
-        treeComp.setLayoutData(gd);
-
-        gl = new GridLayout(1, false);
-        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        tree = new Tree(treeComp, SWT.NO_SCROLL);
-        tree.setLayout(gl);
+        gd.minimumWidth = treeWdith;
         tree.setLayoutData(gd);
         populateTree();
 
-        gl = new GridLayout(1, false);
+        GridLayout gl = new GridLayout(1, false);
         gl.marginHeight = 0;
         gl.marginWidth = 0;
         gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        Composite c = new Composite(comp, SWT.BORDER);
+        Composite c = new Composite(shell, SWT.BORDER);
         c.setLayout(gl);
         c.setLayoutData(gd);
 
@@ -239,7 +216,7 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
 
         systemStatusComp.createTimer();
 
-        comp.addDisposeListener(new DisposeListener() {
+        shell.addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent e) {
                 systemStatusComp.timer.shutdown();
@@ -435,11 +412,6 @@ public class SystemManagementDlg extends CaveSWTDialog implements IDisplay,
         tree.select(ti);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#disposed()
-     */
     @Override
     protected void disposed() {
         super.disposed();
