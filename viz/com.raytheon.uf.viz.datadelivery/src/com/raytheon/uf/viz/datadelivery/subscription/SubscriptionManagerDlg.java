@@ -709,10 +709,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     private void createBottomButtons() {
         GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
-        GridLayout gl = new GridLayout(2, false);
+        GridLayout gl = new GridLayout(2, true);
 
-        int buttonWidth = 100;
-        GridData btnData = new GridData(buttonWidth, SWT.DEFAULT);
+        GridData btnData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 
         Composite actionComp = new Composite(shell, SWT.NONE);
         actionComp.setLayout(gl);
@@ -728,7 +727,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             }
         });
 
-        btnData = new GridData(buttonWidth, SWT.DEFAULT);
+        btnData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         deactivateBtn = new Button(actionComp, SWT.PUSH);
         deactivateBtn.setText("Deactivate");
         deactivateBtn.setLayoutData(btnData);
