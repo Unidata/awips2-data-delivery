@@ -157,6 +157,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jul 01, 2015   4047     dhladky      Use callback YES NO dialog for closing.
  * Oct 15, 2015   4657     rferrel      Make data the return value to allow cleanup in the callback.
  * Jan 29, 2016   5289     tgurney      Add missing maximize button in trim
+ * Mar 16, 2016   3919     tjensen      Cleanup unneeded interfaces
  * Apr 21, 2015   5482     randerso     Fixed GUI sizing issues
  * 
  * </pre>
