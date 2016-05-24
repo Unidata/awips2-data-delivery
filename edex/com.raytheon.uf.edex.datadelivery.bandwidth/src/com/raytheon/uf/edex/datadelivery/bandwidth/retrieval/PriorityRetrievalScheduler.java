@@ -23,17 +23,24 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 27, 2012 726        jspinks     Initial release.
- * Oct 17, 2012 0726       djohnson    If unable to find a bucket with floorKey, use ceilingKey.
- * Oct 26, 2012 1286       djohnson    Return list of unscheduled allocations.
- * Jan 25, 2013 1528       djohnson    Lower priority requests should not be able to unschedule higher priority requests.
- * Jun 25, 2013 2106       djohnson    Access bandwidth bucket contents through RetrievalPlan.
- * Dec 17, 2013 2636       bgonzale    When adding to buckets, call the constrained method.
- * Feb 14, 2014 2636       mpduff      Clean up logging.
- * Apr 02, 2014  2810      dhladky     Priority sorting of allocations.
- * May 27, 2015  4531      dhladky     Remove excessive Calendar references.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 27, 2012  726      jspinks   Initial release.
+ * Oct 17, 2012  726      djohnson  If unable to find a bucket with floorKey,
+ *                                  use ceilingKey.
+ * Oct 26, 2012  1286     djohnson  Return list of unscheduled allocations.
+ * Jan 25, 2013  1528     djohnson  Lower priority requests should not be able
+ *                                  to unschedule higher priority requests.
+ * Jun 25, 2013  2106     djohnson  Access bandwidth bucket contents through
+ *                                  RetrievalPlan.
+ * Dec 17, 2013  2636     bgonzale  When adding to buckets, call the constrained
+ *                                  method.
+ * Feb 14, 2014  2636     mpduff    Clean up logging.
+ * Apr 02, 2014  2810     dhladky   Priority sorting of allocations.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * May 23, 2016  5639     tjensen   Fix reprioritization
+ * 
  * </pre>
  * 
  * @version 1.0
@@ -47,15 +54,16 @@ public class PriorityRetrievalScheduler implements IRetrievalScheduler {
     public List<BandwidthAllocation> schedule(RetrievalPlan plan,
             BandwidthAllocation allocation) {
 
-        Set<BandwidthAllocation> unscheduled = new HashSet<BandwidthAllocation>();
+        Set<BandwidthAllocation> unscheduled = new HashSet<>();
 
-        // First get the retrieval start time. Compare the buckets
-        // in order, to see if there is room for the BandwidthAllocation
-        // If there is room, simply add the allocation to the
-        // bucket and return. If there is not room, then we need
-        // to compare the allocations that are not active to the
-        // proposed allocation and see if we need to move already
-        // scheduled allocations.
+        /*
+         * First get the retrieval start time. Compare the buckets in order, to
+         * see if there is room for the BandwidthAllocation If there is room,
+         * simply add the allocation to the bucket and return. If there is not
+         * room, then we need to compare the allocations that are not active to
+         * the proposed allocation and see if we need to move already scheduled
+         * allocations.
+         */
         Date startTime = allocation.getStartTime();
         Date endTime = allocation.getEndTime();
 
@@ -83,7 +91,7 @@ public class PriorityRetrievalScheduler implements IRetrievalScheduler {
         long bandwidthRequired = allocation.getEstimatedSizeInBytes();
         boolean split = false;
 
-        SortedMap<BandwidthBucket, Object> reservations = new TreeMap<BandwidthBucket, Object>();
+        SortedMap<BandwidthBucket, Object> reservations = new TreeMap<>();
 
         while (notScheduled && itr.hasNext()) {
 
@@ -163,7 +171,7 @@ public class PriorityRetrievalScheduler implements IRetrievalScheduler {
             unscheduled.add(allocation);
         }
 
-        return new ArrayList<BandwidthAllocation>(unscheduled);
+        return new ArrayList<>(unscheduled);
     }
 
     private List<BandwidthAllocation> reprioritize(RetrievalPlan plan,
@@ -173,36 +181,61 @@ public class PriorityRetrievalScheduler implements IRetrievalScheduler {
                 .debug("Re-prioritizing necessary for BandwidthAllocation: "
                         + request);
 
-        // Look in the window between start and end times to see if there are
-        // lower priority
-        // retrievals that can be moved..
+        /*
+         * Look in the window between start and end times to see if there are
+         * lower priority retrievals that can be moved.
+         */
         SortedSet<BandwidthBucket> window = plan.getBucketsInWindow(startKey,
                 endKey);
 
         boolean enoughBandwidth = false;
         long total = 0;
-        List<BandwidthAllocation> lowerPriorityRequests = new ArrayList<BandwidthAllocation>();
+        long requestSize = request.getEstimatedSizeInBytes();
+        List<BandwidthAllocation> lowerPriorityRequests = new ArrayList<>();
+
+        /*
+         * Calculate how much bandwidth is already available before trying to
+         * make room.
+         */
         for (BandwidthBucket bucket : window) {
-            for (BandwidthAllocation o : plan
-                    .getBandwidthAllocationsForBucket(bucket)) {
-                long estimatedSizeInBytes = o.getEstimatedSizeInBytes();
-                
-                if (request.compareTo(o) == 1) {
-                    total += estimatedSizeInBytes;
-                    lowerPriorityRequests.add(o);
-                } 
-                // See if we have found enough room
-                if (total >= estimatedSizeInBytes) {
-                    enoughBandwidth = true;
-                    break;
+            total += bucket.getAvailableBandwidth();
+        }
+        if (total < requestSize) {
+            for (BandwidthBucket bucket : window) {
+                for (BandwidthAllocation o : plan
+                        .getBandwidthAllocationsForBucket(bucket)) {
+                    long estimatedSizeInBytes = o.getEstimatedSizeInBytes();
+                    bucket.getAvailableBandwidth();
+
+                    // Priority Enum has Highest Priority = lowest value
+                    if (request.compareTo(o) == -1) {
+                        total += estimatedSizeInBytes;
+                        lowerPriorityRequests.add(o);
+                    }
+                    // See if we have found enough room
+                    if (total >= requestSize) {
+                        enoughBandwidth = true;
+                        break;
+                    }
                 }
             }
+        } else {
+            /*
+             * We have enough bandwidth available without having to reprioritize
+             * anything. We shouldn't get here since reprioritize should only
+             * get called if there isn't enough space available.
+             */
+            statusHandler
+                    .warn("Attempted reprioritize when enough bandwidth is already available");
+            enoughBandwidth = true;
         }
 
         if (enoughBandwidth) {
-            // Since we have found enough bandwidth, go back and remove
-            // the identified BandwidthAllocations from the plan. Then
-            // attempt to reinsert them at a later point...
+            /*
+             * Since we have found enough bandwidth, go back and remove the
+             * identified BandwidthAllocations from the plan. Then attempt to
+             * reinsert them at a later point...
+             */
             for (BandwidthAllocation reservation : lowerPriorityRequests) {
                 statusHandler.info("Removing request " + reservation
                         + " to make room for request " + request);
@@ -212,9 +245,10 @@ public class PriorityRetrievalScheduler implements IRetrievalScheduler {
             // This should insert the request in the window we just created...
             List<BandwidthAllocation> unscheduled = schedule(plan, request);
 
-            // Now attempt to reschedule the removed requests (but not the
-            // reservations),
-            // which may result in further rescheduling...
+            /*
+             * Now attempt to reschedule the removed requests (but not the
+             * reservations), which may result in further rescheduling...
+             */
             for (BandwidthAllocation reservation : lowerPriorityRequests) {
                 if (reservation instanceof BandwidthAllocation) {
                     unscheduled.addAll(schedule(plan, reservation));
@@ -222,8 +256,7 @@ public class PriorityRetrievalScheduler implements IRetrievalScheduler {
             }
             return unscheduled;
         } else {
-            List<BandwidthAllocation> unscheduled = new ArrayList<BandwidthAllocation>(
-                    1);
+            List<BandwidthAllocation> unscheduled = new ArrayList<>(1);
             unscheduled.add(request);
             return unscheduled;
         }
