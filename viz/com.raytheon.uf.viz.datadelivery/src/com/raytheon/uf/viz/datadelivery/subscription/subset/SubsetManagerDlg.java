@@ -156,6 +156,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * May 17, 2015   4047     dhladky      verified non-blocking.
  * Jul 01, 2015   4047     dhladky      Use callback YES NO dialog for closing.
  * Oct 15, 2015   4657     rferrel      Make data the return value to allow cleanup in the callback.
+ * Apr 21, 2015   5482     randerso     Fixed GUI sizing issues
  * 
  * </pre>
  * 
@@ -425,15 +426,16 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /** Create the buttons */
     private void createButtons() {
-        GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
-        GridLayout gl = new GridLayout(3, false);
 
         Composite bottomComp = new Composite(shell, SWT.NONE);
+        GridLayout gl = new GridLayout(3, true);
         bottomComp.setLayout(gl);
+        GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
         bottomComp.setLayoutData(gd);
 
-        int buttonWidth = 87;
-        GridData btnData = new GridData(buttonWidth, SWT.DEFAULT);
+        int buttonWidth = bottomComp.getDisplay().getDPI().x;
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
 
         final Button subscribeBtn = new Button(bottomComp, SWT.PUSH);
         if (!create) {
@@ -444,7 +446,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             subscribeBtn
                     .setToolTipText("Click to create a subscription to a subset");
         }
-        subscribeBtn.setLayoutData(btnData);
+        subscribeBtn.setLayoutData(gd);
         subscribeBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -458,7 +460,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
                 if (subscription == null) {
                     launchCreateSubscriptionGui(createSubscription(
-                            new SiteSubscription(), Network.OPSNET));
+                            new SiteSubscription<>(), Network.OPSNET));
                 } else {
                     setupCommonSubscriptionAttributes(subscription,
                             subscription.getRoute());
@@ -472,10 +474,11 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             }
         });
 
-        btnData = new GridData(buttonWidth, SWT.DEFAULT);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button queryBtn = new Button(bottomComp, SWT.PUSH);
         queryBtn.setText("Query");
-        queryBtn.setLayoutData(btnData);
+        queryBtn.setLayoutData(gd);
         queryBtn.setToolTipText("Click to query subset data");
         queryBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -484,10 +487,11 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             }
         });
 
-        btnData = new GridData(buttonWidth, SWT.DEFAULT);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gd.minimumWidth = buttonWidth;
         Button cancelBtn = new Button(bottomComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
-        cancelBtn.setLayoutData(btnData);
+        cancelBtn.setLayoutData(gd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
