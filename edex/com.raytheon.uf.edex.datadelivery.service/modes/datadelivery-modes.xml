@@ -25,6 +25,7 @@
 <edexModes>
     <mode name="request">
         <exclude>grid-metadata.xml</exclude>
+        <exclude>event-datadelivery-common.xml</exclude>
     </mode>
 	<mode name="ingest">
 		<exclude>webservices.xml</exclude>
