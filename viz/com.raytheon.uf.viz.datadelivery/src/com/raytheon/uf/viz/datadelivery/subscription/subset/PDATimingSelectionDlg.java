@@ -47,10 +47,11 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 12, 2014  3121      dhladky      Initial creation.
- * May 17, 2015  4047      dhladky      verified non-blocking.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Aug 12, 2014  3121     dhladky   Initial creation.
+ * May 17, 2015  4047     dhladky   verified non-blocking.
+ * Jun 16, 2016  5683     tjensen   Change Cancel to return PDATimeSelection
  * 
  * </pre>
  * 
@@ -75,16 +76,12 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     /** Priority Composite */
     private PriorityComp priorityComp;
 
-    /** Callback to the presenter at preopen */
-    private Runnable preOpenCallback;
-
     /** The subscription object */
+    @SuppressWarnings("rawtypes")
     private final Subscription subscription;
 
-    private final PDADataSet dataset;
-
     private final java.util.List<String> dateList;
-    
+
     /** List of dates/cycles */
     private List dateCycleList;
 
@@ -97,11 +94,11 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
      * @param dateStringToDateMap
      */
     public PDATimingSelectionDlg(Shell parentShell, PDADataSet dataset,
+            @SuppressWarnings("rawtypes")
             Subscription subscription, java.util.List<String> dateList) {
         super(parentShell, CAVE.DO_NOT_BLOCK);
         setText("Select Date");
         this.subscription = subscription;
-        this.dataset = dataset;
         this.dateList = dateList;
     }
 
@@ -179,9 +176,9 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                GriddedTimeSelection gts = new GriddedTimeSelection();
-                gts.setCancel(true);
-                setReturnValue(gts);
+                PDATimeSelection pts = new PDATimeSelection();
+                pts.setCancel(true);
+                setReturnValue(pts);
                 close();
             }
         });
@@ -218,7 +215,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     public boolean isLatestDataEnabled() {
         return useLatestChk.getSelection();
     }
-    
+
     /**
      * Set the date/cycle list enabled.
      */
@@ -235,13 +232,15 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     /**
      * OK Button action method.
      */
+    @SuppressWarnings("unchecked")
     private void handleOk() {
         PDATimeSelection data = new PDATimeSelection();
         if (!isLatestDataEnabled()) {
             String selection = dateCycleList.getItem(dateCycleList
                     .getSelectionIndex());
-            DataDeliveryGUIUtils.latencyValidChk(
-                    priorityComp.getLatencyValue(), getMaxLatency(subscription));
+            DataDeliveryGUIUtils
+                    .latencyValidChk(priorityComp.getLatencyValue(),
+                            getMaxLatency(subscription));
             data.setDate(selection);
         } else {
             data.setLatest(true);
@@ -250,4 +249,3 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         setReturnValue(data);
     }
 }
-
