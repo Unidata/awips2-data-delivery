@@ -18,71 +18,72 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-    
+
 <!-- 
        Refer to edex/modes/README.txt for documentation
 --> 
 <edexModes>
-	<mode name="request">
+    <mode name="request">
         <!-- exclude dpa services -->
         <exclude>.*dpa.*</exclude>
-	</mode>
-	<mode name="ingest">  
-		<!-- exclude dpa services -->
+    </mode>
+    <mode name="ingest">  
+        <!-- exclude dpa services -->
         <exclude>.*dpa.*</exclude>
-	</mode>
-	<mode name="dataProviderAgentTemplate" template="true">
-		<include>ebxml.xml</include>
-		<include>ebxml-webservices.xml</include>
-        <include>ebxml-registry-dao.xml</include>
-        <include>ebxml-validator-plugins.xml</include>
-		<include>manualIngest*</include>
-		<include>time-common.xml</include>
-		<include>distribution-spring.xml</include>
-		<include>persist-ingest.xml</include>
-		<include>auth-common.xml</include>
-		<include>database-common.xml</include>
-		<!-- Remote connect to registry services -->
-		<include>datadelivery-standalone.xml</include>
-		<include>datadelivery-handlers.xml</include>
-		<include>datadelivery-handlers-impl.xml</include>
-		<include>request-router.xml</include>
-		<include>utility-request.xml</include>
-		<include>dpa-datadelivery.xml</include>
-		<include>edex-security.xml</include>
-		<include>geo-common.xml</include>
-		<!-- Don't want this for DPA, we don't need a local registry -->
-		<exclude>harvester-datadelivery-standalone.xml</exclude>
-		<exclude>datadelivery-standalone.xml</exclude>
-		
-		<!-- OGC/DPA services -->
-		<include>ogc-common.xml</include>
-		<include>wfs-ogc-request.xml</include>
-		<include>wfs-ogc-rest-request.xml</include>
-		<include>wfs-ogc-soap-request.xml</include>
-		<include>wfs-ogc-soap-wsdl.xml</include>
-		<!--  Purge OGC/DPA registred plugins -->
-		<include>purge-spring.xml</include>
-		<include>purge-spring-impl.xml</include>
+    </mode>
+    <mode name="dataProviderAgentTemplate" template="true">
+        <include>ebxml.xml</include>
+        <include>ebxml-webservices.xml</include>
+                <include>ebxml-impl.xml</include>
+                <include>ebxml-registry-dao.xml</include>
+                <include>ebxml-validator-plugins.xml</include>
+        <include>manualIngest*</include>
+        <include>time-common.xml</include>
+        <include>distribution-spring.xml</include>
+        <include>persist-ingest.xml</include>
+        <include>auth-common.xml</include>
+        <include>database-common.xml</include>
+        <!-- Remote connect to registry services -->
+        <include>datadelivery-standalone.xml</include>
+        <include>datadelivery-handlers.xml</include>
+        <include>datadelivery-handlers-impl.xml</include>
+        <include>request-router.xml</include>
+        <include>utility-request.xml</include>
+        <include>dpa-datadelivery.xml</include>
+        <include>edex-security.xml</include>
+        <include>geo-common.xml</include>
+        <!-- Don't want this for DPA, we don't need a local registry -->
+        <exclude>harvester-datadelivery-standalone.xml</exclude>
+        <exclude>datadelivery-standalone.xml</exclude>
+
+        <!-- OGC/DPA services -->
+        <include>ogc-common.xml</include>
+        <include>wfs-ogc-request.xml</include>
+        <include>wfs-ogc-rest-request.xml</include>
+        <include>wfs-ogc-soap-request.xml</include>
+        <include>wfs-ogc-soap-wsdl.xml</include>
+        <!--  Purge OGC/DPA registred plugins -->
+        <include>purge-spring.xml</include>
+        <include>purge-spring-impl.xml</include>
         <include>purge-logs.xml</include>
-	</mode>
-	<!-- This is MADIS implmentation of dataprovideragent -->
-	<mode name="dataprovideragent">
-		<includeMode>dataProviderAgentTemplate</includeMode>
-		<!-- pointdata/madis specific services -->
-		<include>pointdata-common.xml</include>
-		<include>madis-common.xml</include>
-		<include>madis-ogc.xml</include>
-		<include>madis-ogc-registry.xml</include>
-		<!-- pointdata/obs specific services 
-		<include>obs-common.xml</include>
-		<include>pointdata-common.xml</include>
-		<include>obs-dpa-ingest.xml</include>
-		<include>obs-ogc.xml</include>-->
-		<!-- grid specific services 
-		<include>gridcoverage-.*.xml</include>
-		<include>grib-distribution.xml</include>
-		<include>level-common.xml</include>
-		<include>parameter-common.xml</include>	-->
-	</mode>
+    </mode>
+    <!-- This is MADIS implmentation of dataprovideragent -->
+    <mode name="dataprovideragent">
+        <includeMode>dataProviderAgentTemplate</includeMode>
+        <!-- pointdata/madis specific services -->
+        <include>pointdata-common.xml</include>
+        <include>madis-common.xml</include>
+        <include>madis-ogc.xml</include>
+        <include>madis-ogc-registry.xml</include>
+        <!-- pointdata/obs specific services 
+        <include>obs-common.xml</include>
+        <include>pointdata-common.xml</include>
+        <include>obs-dpa-ingest.xml</include>
+        <include>obs-ogc.xml</include>-->
+        <!-- grid specific services 
+        <include>gridcoverage-.*.xml</include>
+        <include>grib-distribution.xml</include>
+        <include>level-common.xml</include>
+        <include>parameter-common.xml</include>    -->
+    </mode>
 </edexModes>
