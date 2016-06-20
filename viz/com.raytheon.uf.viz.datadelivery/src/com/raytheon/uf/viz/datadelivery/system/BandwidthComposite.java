@@ -55,12 +55,15 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug  6, 2013    2180    mpduff      Initial creation
- * Oct 17, 2013    2455    skorolev    Fixed a problem with Changes Applied window.
- * Nov 19, 2014    2749    ccody       Put Set Avail Bandwidth Save into async, non-UI thread
- * Mar 28, 2016    5482    randerso    Fixed GUI sizing issues
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 06, 2013  2180     mpduff    Initial creation
+ * Oct 17, 2013  2455     skorolev  Fixed a problem with Changes Applied window.
+ * Nov 19, 2014  2749     ccody     Put Set Avail Bandwidth Save into async,
+ *                                  non-UI thread
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
+ *                                  to block
  * 
  * </pre>
  * 
@@ -187,7 +190,7 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                 || unscheduledSubscriptions.isEmpty()) {
             applyChanges = true;
         } else {
-            Set<String> subscriptionNames = new TreeSet<String>(
+            Set<String> subscriptionNames = new TreeSet<>(
                     unscheduledSubscriptions);
 
             StringBuilder sb = new StringBuilder(StringUtil.createMessage(
@@ -197,9 +200,8 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
             sb.append(StringUtil.NEWLINE).append(StringUtil.NEWLINE);
             sb.append("Would you like to change the bandwidth anyway?");
 
-            int response = DataDeliveryUtils.showMessage(
-                    getParent().getShell(), SWT.YES | SWT.NO,
-                    "Bandwidth Amount", sb.toString());
+            int response = DataDeliveryUtils.showYesNoMessage(getParent()
+                    .getShell(), "Bandwidth Amount", sb.toString());
             if (response == SWT.YES) {
                 applyChanges = true;
             }

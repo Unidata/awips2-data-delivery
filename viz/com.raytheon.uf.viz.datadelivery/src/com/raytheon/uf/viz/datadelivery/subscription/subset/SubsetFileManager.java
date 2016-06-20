@@ -62,19 +62,22 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 28, 2012            mpduff     Initial creation.
- * Jun 07, 2012   687      lvenable   Table data refactor.
- * Jun  8, 2012   684      jpiatt     Modify file display.
- * Jul 30, 2012   702      jpiatt     Code cleanup.
- * Aug 22, 2012  0743      djohnson   Add TimeXML subclasses.
- * Nov 19, 2012  1289      bgonzale   Added deleteArea(String) method.
- * Jun 04, 2013   223      mpduff     Added PointTimeXML to JaxB context.
- * Oct 11, 2013   2386     mpduff     Refactor DD Front end.
- * Apr 10, 2014   2864     mpduff     Changed how saved subset files are stored.
- * Nov 30, 2015   4834     njensen    Changed LocalizationOpFailedException to LocalizationException
- * Dec 09, 2015   4834     njensen    updates for API changes to LocalizationFile
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 28, 2012           mpduff    Initial creation.
+ * Jun 07, 2012  687      lvenable  Table data refactor.
+ * Jun 08, 2012  684      jpiatt    Modify file display.
+ * Jul 30, 2012  702      jpiatt    Code cleanup.
+ * Aug 22, 2012  743      djohnson  Add TimeXML subclasses.
+ * Nov 19, 2012  1289     bgonzale  Added deleteArea(String) method.
+ * Jun 04, 2013  223      mpduff    Added PointTimeXML to JaxB context.
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Apr 10, 2014  2864     mpduff    Changed how saved subset files are stored.
+ * Nov 30, 2015  4834     njensen   Changed LocalizationOpFailedException to
+ *                                  LocalizationException
+ * Dec 09, 2015  4834     njensen   updates for API changes to LocalizationFile
+ * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
+ *                                  to block
  * 
  * </pre>
  * 
@@ -107,7 +110,7 @@ public class SubsetFileManager {
     /** Unmarshaller object */
     private Unmarshaller unmarshaller;
 
-    private final Map<DataType, Set<LocalizationFile>> subsetFiles = new HashMap<DataType, Set<LocalizationFile>>();
+    private final Map<DataType, Set<LocalizationFile>> subsetFiles = new HashMap<>();
 
     /**
      * Constructor.
@@ -170,8 +173,8 @@ public class SubsetFileManager {
             String msg = "The file "
                     + areaLocFile.getFile().getName()
                     + " already exists.\n\nWould you like to overwrite the file?";
-            int response = DataDeliveryUtils.showMessage(shell, SWT.YES
-                    | SWT.NO, "File Exists", msg);
+            int response = DataDeliveryUtils.showYesNoMessage(shell,
+                    "File Exists", msg);
             if (response == SWT.NO) {
                 return false;
             }
@@ -263,7 +266,7 @@ public class SubsetFileManager {
 
         LocalizationFile[] fileArr = pm.listFiles(context, path, extensions,
                 false, true);
-        Set<LocalizationFile> files = new TreeSet<LocalizationFile>();
+        Set<LocalizationFile> files = new TreeSet<>();
         for (LocalizationFile file : fileArr) {
             files.add(file);
         }
@@ -306,8 +309,8 @@ public class SubsetFileManager {
             String msg = "The file "
                     + subsetLocFile.getFile().getName()
                     + " already exists.\n\nWould you like to overwrite the file?";
-            int response = DataDeliveryUtils.showMessage(shell, SWT.YES
-                    | SWT.NO, "File Exists", msg);
+            int response = DataDeliveryUtils.showYesNoMessage(shell,
+                    "File Exists", msg);
             if (response == SWT.NO) {
                 return false;
             }
@@ -400,7 +403,7 @@ public class SubsetFileManager {
     }
 
     public String[] getAllLocalizationFileNames() {
-        List<String> fileList = new ArrayList<String>();
+        List<String> fileList = new ArrayList<>();
 
         for (DataType type : DataType.values()) {
             Set<LocalizationFile> files = getLocalizationFiles(type);

@@ -116,7 +116,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Jan 08, 2014  2642      mpduff       Enable/disable menus based on site, allow user to add their site to a shared sub.
  * Feb 04, 2014  2722      mpduff       Add last update time.
  * Feb 11, 2014  2771      bgonzale     Use Data Delivery ID instead of Site.
- * Mar 24, 2014  #2951     lvenable     Added dispose checks for SWT widgets.
+ * Mar 24, 2014  2951      lvenable     Added dispose checks for SWT widgets.
  * Apr 18, 2014  3012      dhladky      Null check.
  * Oct 28, 2014  2748      ccody        Changes for receiving Subscription Status changes
  * Nov 19, 2014  3852      dhladky      Fixed message overload problem.
@@ -127,6 +127,9 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Jan 30, 2015  2746      dhladky      Special handling for shared sub updates/deletes
  * Feb 04, 2015  4047      dhladky      Fixed deleting tableData before job has retrieved replacement.
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
+ * Jun 20, 2016 5676       tjensen      Use showYesNoMessage for prompts that need to block
+ * 
+ * 
  * @version 1.0
  */
 
@@ -224,8 +227,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
         this.setLayout(gl);
         this.setLayoutData(gd);
 
-        subManagerData = new TableDataManager<SubscriptionManagerRowData>(
-                TABLE_TYPE.SUBSCRIPTION);
+        subManagerData = new TableDataManager<>(TABLE_TYPE.SUBSCRIPTION);
 
         createColumns();
 
@@ -284,8 +286,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
         }
 
         if (table.getSelectionCount() > 1) {
-            int choice = DataDeliveryUtils.showMessage(this.getShell(),
-                    SWT.ERROR | SWT.YES | SWT.NO, "Single Selection Only",
+            int choice = DataDeliveryUtils.showYesNoMessage(this.getShell(),
+                    "Single Selection Only",
                     "Multiple subscriptions are selected.\n"
                             + "Only the first selected item will be used.\n\n"
                             + "Continue?");
@@ -410,7 +412,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
         final SubscriptionHandler handler = RegistryObjectHandlers
                 .get(SubscriptionHandler.class);
-        final List<Subscription> subList = new ArrayList<Subscription>();
+        final List<Subscription> subList = new ArrayList<>();
         final Shell jobShell = getShell();
 
         Job job = new Job("Retrieving Subscriptions...") {
