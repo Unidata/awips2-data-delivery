@@ -7,6 +7,9 @@
     <tx:annotation-driven transaction-manager="metadataTxManager"
         proxy-target-class="true" />
 
+    <tx:annotation-driven transaction-manager="admin_metadataTxManager"
+        proxy-target-class="true" />
+
     <!-- Stores beans that are used in bandwidth-datadelivery.xml, but that 
         have different implementations between production code and test code -->
     <bean
@@ -15,9 +18,14 @@
         <constructor-arg ref="bandwidthManager" />
     </bean>
 
+    <bean id="admin_bandwidthAllocationDao"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.BandwidthAllocationDao">
+        <property name="sessionFactory" ref="admin_metadataSessionFactory" />
+    </bean>
+
     <bean id="hibernateBandwidthDbInit"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.HibernateBandwidthDbInit">
-        <property name="dao" ref="bandwidthAllocationDao" />
+        <property name="dao" ref="admin_bandwidthAllocationDao" />
     </bean>
 
     <bean id="retrievalAgentManager"
