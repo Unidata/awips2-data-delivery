@@ -79,17 +79,20 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 23, 2012            jpiatt      Added file save action.
- * Jun  1, 2012    645     jpiatt      Added tooltips.
- * Jun 19, 2012    717     jpiatt      Save action update.
- * Aug 22, 2012   0743     djohnson    Add new TimeXML sub-classes.
- * Apr 25, 2013   1820     mpduff      Implement deletion of config file.
- * Jun 04, 2013    223     mpduff      Refactor method rename and add new class to JaxB context.
- * Sep 04, 2013   2314     mpduff      Made non-blocking.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 23, 2012           jpiatt    Added file save action.
+ * Jun 01, 2012  645      jpiatt    Added tooltips.
+ * Jun 19, 2012  717      jpiatt    Save action update.
+ * Aug 22, 2012  743      djohnson  Add new TimeXML sub-classes.
+ * Apr 25, 2013  1820     mpduff    Implement deletion of config file.
+ * Jun 04, 2013  223      mpduff    Refactor method rename and add new class to
+ *                                  JaxB context.
+ * Sep 04, 2013  2314     mpduff    Made non-blocking.
  * Feb 01, 2016   5289     tgurney    Add missing close button in trim
- * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
+ *                                  to block
  * 
  * </pre>
  * 
@@ -281,7 +284,7 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
 
     @Override
     protected void initializeComponents(Shell shell) {
-        locFileMap = new TreeMap<String, LocalizationFile>();
+        locFileMap = new TreeMap<>();
         controlFont = new Font(shell.getDisplay(), "Monospace", 10, SWT.NORMAL);
 
         // Create the List and preview controls.
@@ -484,7 +487,7 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
         buttonComp.setLayoutData(gd);
 
         int minimumWidth = buttonComp.getDisplay().getDPI().x;
-        
+
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         gd.minimumWidth = minimumWidth;
         actionBtn = new Button(buttonComp, SWT.PUSH);
@@ -629,8 +632,8 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
                     String msg = locFile.getFile().getName()
                             + " already exists.\n\nAre you sure you want to overwrite the file?";
 
-                    int answer = DataDeliveryUtils.showMessage(getShell(),
-                            SWT.YES | SWT.NO, "Overwrite?", msg);
+                    int answer = DataDeliveryUtils.showYesNoMessage(getShell(),
+                            "Overwrite?", msg);
 
                     if (answer == SWT.YES) {
                         setReturnValue(locFile);
@@ -729,7 +732,7 @@ public class LoadSaveConfigDlg extends CaveSWTDialog {
         String[] extensions = new String[] { ".xml" };
         IPathManager pm = PathManagerFactory.getPathManager();
 
-        ArrayList<LocalizationContext> contextList = new ArrayList<LocalizationContext>();
+        ArrayList<LocalizationContext> contextList = new ArrayList<>();
         contextList.add(pm.getContext(LocalizationType.CAVE_STATIC,
                 LocalizationLevel.SITE));
         contextList.add(pm.getContext(LocalizationType.CAVE_STATIC,
