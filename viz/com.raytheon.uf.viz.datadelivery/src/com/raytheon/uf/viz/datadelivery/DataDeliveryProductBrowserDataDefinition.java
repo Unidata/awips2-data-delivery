@@ -177,7 +177,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
     public DataDeliveryProductBrowserDataDefinition() {
 
         HashMap<DataType, String> protoProductMap = new HashMap<>(3);
-                3);
         protoProductMap.put(DataType.GRID, GRID);
         protoProductMap.put(DataType.PDA, PDA);
         protoProductMap.put(DataType.POINT, POINT);
