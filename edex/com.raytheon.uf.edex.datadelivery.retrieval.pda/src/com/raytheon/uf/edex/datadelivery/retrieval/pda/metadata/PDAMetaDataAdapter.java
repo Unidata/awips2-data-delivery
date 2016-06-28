@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,6 +21,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.io.FileDeleteStrategy;
@@ -42,17 +43,18 @@ import com.raytheon.uf.common.wmo.WMOHeader;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMetadataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
-import com.raytheon.uf.edex.plugin.goesr.GoesrDecoder;
+import com.raytheon.uf.edex.netcdf.decoder.NetcdfRecordInfo;
+import com.raytheon.uf.edex.plugin.goesr.GoesrNetcdfDecoder;
 import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
 
 /**
- * 
+ *
  * Convert RetrievalAttribute to Satellite/GOESSounding objects.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 28, 2014  3121      dhladky     Initial javadoc
@@ -61,9 +63,10 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * Dec 02, 2014  3826      dhladky     PDA test code
  * Jan 28, 2016  5299      dhladky     PDA testing related fixes.
  * Mar 16, 2016  3919      tjensen     Cleanup unneeded interfaces
- * 
+ * Jun 27, 2016  5584      nabowle     Netcdf decoder consolidation.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
@@ -84,7 +87,7 @@ public class PDAMetaDataAdapter extends
     public static final String goessounding = "goessounding";
 
     /** goesr decoder **/
-    private GoesrDecoder goesrDecoder = null;
+    private GoesrNetcdfDecoder goesrDecoder = null;
 
     /** goes sounding decoder **/
     private GOESSoundingDecoder goessoundingDecoder = null;
@@ -121,7 +124,7 @@ public class PDAMetaDataAdapter extends
     /**
      * Gets the correct satellite decoder. All of the work for SAT/GOESR DD
      * decoding is done in the NetCDF decoders.
-     * 
+     *
      * @return
      * @throws Exception
      */
@@ -132,7 +135,7 @@ public class PDAMetaDataAdapter extends
         try {
             if (type.equals(goesr)) {
                 statusHandler.debug("Processing as GOESR imagery.....");
-                pdos = getGoesrDecoder().decode(new File(fileName));
+                pdos = processGoesr(fileName);
             } else if (type.equals(satellite)) {
                 statusHandler.debug("Processing as legacy SAT imagery.....");
                 pdos = getSatDecoder().decode(new File(fileName));
@@ -179,12 +182,12 @@ public class PDAMetaDataAdapter extends
 
     /**
      * get an ESB instance of the GOESR decoder
-     * 
+     *
      * @return
      */
-    private GoesrDecoder getGoesrDecoder() {
+    private GoesrNetcdfDecoder getGoesrDecoder() {
         if (goesrDecoder == null) {
-            goesrDecoder = (GoesrDecoder) EDEXUtil
+            goesrDecoder = (GoesrNetcdfDecoder) EDEXUtil
                     .getESBComponent("goesrDecoder");
         }
         return goesrDecoder;
@@ -192,7 +195,7 @@ public class PDAMetaDataAdapter extends
 
     /**
      * Get the GOES sounding decoder from the ESB
-     * 
+     *
      * @return
      */
     private GOESSoundingDecoder getGoesSoundingDecoder() {
@@ -205,7 +208,7 @@ public class PDAMetaDataAdapter extends
 
     /**
      * get an ESB instance of the SAT decoder
-     * 
+     *
      * @return
      */
     private GiniSatelliteDecoder getSatDecoder() {
@@ -218,14 +221,14 @@ public class PDAMetaDataAdapter extends
 
     /**
      * Process the incoming GOES Sounding files
-     * 
+     *
      * @param fileName
      * @return
      */
     private PluginDataObject[] processGoesSounding(String fileName) {
 
         Headers headers = null;
-        List<PluginDataObject> pdos = new ArrayList<PluginDataObject>(0);
+        List<PluginDataObject> pdos = new ArrayList<>(0);
 
         if (fileName != null) {
             // Add the WMO headers necessary for ingest
@@ -263,6 +266,32 @@ public class PDAMetaDataAdapter extends
         }
 
         return pdos.toArray(new PluginDataObject[pdos.size()]);
+    }
+
+    /**
+     * Process incoming GOES-R files.
+     *
+     * @param fileName
+     *            The name of the file.
+     * @return The pdos
+     */
+    public PluginDataObject[] processGoesr(String fileName) {
+        List<PluginDataObject> pdoList = new ArrayList<>();
+        try {
+            Iterator<NetcdfRecordInfo> infoIter = getGoesrDecoder().split(
+                    new File(fileName));
+            while (infoIter.hasNext()) {
+                PluginDataObject[] splitPdos = getGoesrDecoder().decode(
+                        infoIter.next());
+                for (PluginDataObject pdo : splitPdos) {
+                    pdoList.add(pdo);
+                }
+            }
+        } catch (Exception e) {
+            statusHandler.handle(Priority.ERROR,
+                    "Failed to process GOES-R file " + fileName, e);
+        }
+        return pdoList.toArray(new PluginDataObject[0]);
     }
 
 }

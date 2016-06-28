@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: PDA
 Bundle-SymbolicName: com.raytheon.uf.edex.datadelivery.retrieval.pda
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.16.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.0.0",
@@ -27,7 +27,8 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.
  com.raytheon.edex.plugin.goessounding;bundle-version="1.14.0",
  com.raytheon.uf.common.dataplugin.goessounding;bundle-version="1.14.0",
  com.raytheon.uf.edex.plugin.goesr;bundle-version="1.15.0",
- net.opengis_v2;bundle-version="1.0.0"
+ net.opengis_v2;bundle-version="1.0.0",
+ com.raytheon.uf.edex.netcdf;bundle-version="1.16.1"
 Import-Package: com.raytheon.uf.common.util
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval.pda,
  com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata
