@@ -21,6 +21,7 @@ package com.raytheon.uf.common.datadelivery.retrieval.util;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -36,6 +37,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 20, 2014   3121     dhladky     creation
+ * Apr 19, 2016   5424     dhladky     Re-visited sizing.
  * 
  * </pre>
  * 
@@ -45,7 +47,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 public class PDADataSizeUtils extends DataSizeUtils<PDADataSet> {
 
-    /**
+   /**
      * Constructor.
      * 
      * @param dataSet
@@ -60,8 +62,30 @@ public class PDADataSizeUtils extends DataSizeUtils<PDADataSet> {
      */
     @Override
     public long getFullSizeInBytes() {
-        // Not applicable for point data sets
-        return -999;
+
+        if (dataSet != null) {
+            if (fullSize == -999) {
+                Coverage coverage = dataSet.getCoverage();
+                ReferencedEnvelope envelope = coverage.getEnvelope();
+                /**
+                 * Since we don't have any NX/NY resolution info provided in the
+                 * metadata for PDA. The only "Scientific" estimate we can do
+                 * for actual size of requests is estimate based on the LAT LON
+                 * span of the request multiplied by a constant. This estimate
+                 * will have to do until we have REAL values for PDA after EOP
+                 * is implemented.
+                 * 
+                 * The constant 5 is chosen because 5/5 in the
+                 * getDataSetSizeInBytes calculation will yield a "1". Then this
+                 * is multiplied by the constant 5000 bytes assumed as overhead
+                 * for PDA. So, a 1X1 degree grid span is around 5000 bytes of
+                 * data and calculated progressively from there.
+                 */
+                fullSize = getDataSetSizeInBytes(envelope);
+            }
+        }
+
+        return fullSize;
     }
 
     /**
@@ -70,8 +94,7 @@ public class PDADataSizeUtils extends DataSizeUtils<PDADataSet> {
     @Override
     public long getDataSetSizeInBytes(Subscription<?, ?> subscription) {
         return getDataSetSizeInBytes(subscription.getCoverage()
-                .getRequestEnvelope(),
-                subscription.getTime().getNumTimes());
+                .getRequestEnvelope());
     }
 
     /**
@@ -83,14 +106,17 @@ public class PDADataSizeUtils extends DataSizeUtils<PDADataSet> {
      *            The data retrieval interval
      * @return Data set size in bytes
      */
-    public long getDataSetSizeInBytes(ReferencedEnvelope envelope, int interval) {
+    public long getDataSetSizeInBytes(ReferencedEnvelope envelope) {
+
+        /**
+         * interval is overridden here, there is only one time per PDA retrieval
+         */
         Coordinate ur = EnvelopeUtils.getUpperRightLatLon(envelope);
         Coordinate ll = EnvelopeUtils.getLowerLeftLatLon(envelope);
         double lonSpan = Math.abs(ll.x - ur.x);
         double latSpan = Math.abs(ll.y - ur.y);
 
         return dataSet.getServiceType().getRequestBytesPerLatLonBoxAndTime(
-                latSpan, lonSpan, interval);
+                latSpan, lonSpan, TIME_SIZE);
     }
 }
-

@@ -21,7 +21,6 @@ package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -29,13 +28,13 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.PDATimeXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
-import com.raytheon.viz.ui.widgets.duallist.DualList;
-import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 
 /**
  * PDA Time Subset Tab. Sets the data retrieval dates.
@@ -46,7 +45,8 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 29, 2014   3121     dhladky      Initial creation.
+ * Aug 29, 2014   3121     dhladky     Initial creation.
+ * Apr 27, 2016   5366     tjensen     Only allow the most recent available time to be selected.
  * 
  * </pre>
  * 
@@ -55,12 +55,8 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  */
 
 public class PDATimingSubsetTab extends DataTimingSubsetTab {
-    
-    /** Time list */
-    private DualList timeDualList;
 
-    /** Time configuration */
-    private final DualListConfig timeHoursDualConfig = new DualListConfig();
+    private Text ltValueTxt;
 
     /**
      * Constructor.
@@ -82,37 +78,34 @@ public class PDATimingSubsetTab extends DataTimingSubsetTab {
     private void init(List<String> times) {
 
         GridLayout gl = new GridLayout(1, false);
-        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-
-        gl.horizontalSpacing = 0;
-        gl.verticalSpacing = 0;
-        gl.marginWidth = 0;
-        gl.marginHeight = 0;
+        GridData gd = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
 
         Group timeGrp = new Group(parentComp, SWT.NONE);
-        timeGrp.setText(" Dataset Times ");
+        timeGrp.setText(" Dataset Time ");
         timeGrp.setLayout(gl);
         timeGrp.setLayoutData(gd);
 
-        timeHoursDualConfig.setAvailableListLabel("Available Times:");
-        timeHoursDualConfig.setSelectedListLabel("Selected Times:");
-        timeHoursDualConfig.setListHeight(125);
-        timeHoursDualConfig.setListWidth(175);
-        timeHoursDualConfig.setShowUpDownBtns(false);
-        timeHoursDualConfig.setNumericData(true);
-        timeHoursDualConfig.setFullList(times);
-   
-        timeDualList = new DualList(timeGrp, SWT.NONE,
-                timeHoursDualConfig, this);
-    }
+        gd = new GridData();
+        gd.horizontalSpan = 1;
+        Label l = new Label(timeGrp, SWT.LEFT);
+        l.setText("PDA retrieves the latest metadata time available.");
+        l.setLayoutData(gd);
 
-    /**
-     * Get the selected times
-     * 
-     * @return the selected times
-     */
-    public String[] getSelectedTimes() {
-        return this.timeDualList.getSelectedListItems();
+        gl = new GridLayout(4, false);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+
+        Composite timeComp = new Composite(timeGrp, SWT.NONE);
+        timeComp.setLayout(gl);
+        timeComp.setLayoutData(gd);
+
+        Label ltLabel = new Label(timeComp, SWT.NONE);
+        ltLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true, false));
+        ltLabel.setText("Latest Time:");
+
+        ltValueTxt = new Text(timeComp, SWT.BORDER);
+        ltValueTxt.setLayoutData(new GridData(250, SWT.DEFAULT));
+        ltValueTxt.setText(times.get(0));
+        ltValueTxt.setEditable(false);
     }
 
     /**
@@ -122,70 +115,12 @@ public class PDATimingSubsetTab extends DataTimingSubsetTab {
      *            list of times
      */
     public void setSelectedTimes(List<String> times) {
-        timeDualList.clearSelection();
+        ltValueTxt.clearSelection();
 
+        // Only one time should be given, so just grab the 1st.
         if (!CollectionUtil.isNullOrEmpty(times)) {
-            String[] selTimes = times.toArray(new String[times.size()]);
-            timeDualList.selectItems(selTimes);
+            ltValueTxt.setText(times.get(0));
         }
-    }
-
-    /**
-     * Set the available times
-     * 
-     * @param times
-     *            list of times
-     */
-    public void setAvailableTimes(List<String> times) {
-        timeDualList.setFullList(new ArrayList<String>(times));
-    }
-
-    /**
-     * Update the selected times.
-     * 
-     * @param fcstHours
-     *            list of times
-     */
-    public void updateSelectedTimes(List<String> times) {
-        List<String> selectedTimes = new ArrayList<String>();
-        String[] selectedItems = timeDualList.getSelectedSelection();
-
-        // Add the saved hours
-        for (String time : timeDualList.getAvailableListItems()) {
-            if (times.contains(time)) {
-                selectedTimes.add(time);
-            }
-        }
-
-        // Add in the previously selected times
-        selectedTimes.addAll(Arrays.asList(selectedItems));
-
-        // Sort the times
-        List<Integer> intList = new ArrayList<Integer>();
-        for (String hr : selectedTimes) {
-            intList.add(Integer.parseInt(hr));
-        }
-
-        Collections.sort(intList);
-
-        selectedTimes.clear();
-        for (int i : intList) {
-            selectedTimes.add(String.valueOf(i));
-        }
-        timeDualList.selectItems(selectedTimes.toArray(new String[selectedTimes
-                .size()]));
-    }
-
-    /**
-     * Are the data valid?
-     * 
-     * @return true if valid
-     */
-    public boolean isValid() {
-        if (timeDualList.getSelectedListItems().length > 0) {
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -195,8 +130,8 @@ public class PDATimingSubsetTab extends DataTimingSubsetTab {
      */
     public TimeXML getSaveInfo() {
         PDATimeXML time = new PDATimeXML();
-        time.setTimes(new ArrayList<String>(Arrays.asList(timeDualList
-                .getSelectedListItems())));
+        time.setTimes(new ArrayList<>(Arrays.asList(ltValueTxt
+                .getSelectionText())));
         return time;
     }
 }

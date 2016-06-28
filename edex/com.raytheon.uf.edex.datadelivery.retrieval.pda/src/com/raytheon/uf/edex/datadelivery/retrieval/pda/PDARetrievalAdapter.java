@@ -1,4 +1,5 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -48,13 +49,14 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2014 3120       dhladky     Initial creation
- * Sept 04, 2014 3121      dhladky     Sharpened the retrieval mechanism.
- * Sept 26, 2014 3127      dhladky     Adding geographic subsetting.
- * Dec 03, 2014  3826      dhladky     PDA test readiness
- * Jan 18, 2016 5260       dhladky     Fixes to errors found in testing.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------
+ * Jun 13, 2014  3120     dhladky   Initial creation
+ * Sep 04, 2014  3121     dhladky   Sharpened the retrieval mechanism.
+ * Sep 26, 2014  3127     dhladky   Adding geographic subsetting.
+ * Dec 03, 2014  3826     dhladky   PDA test readiness
+ * Jan 18, 2016  5260     dhladky   Fixes to errors found in testing.
+ * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
  * 
  * </pre>
  * 
@@ -65,22 +67,25 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARetrievalAdapter.class);
-    
+
     private static final String fileExtension = ".camelLock";
-    
+
     @Override
     public IRetrievalRequestBuilder<Time, Coverage> createRequestMessage(
             RetrievalAttribute<Time, Coverage> prxml) {
-         
-        PDARequestBuilder reqBuilder = new PDARequestBuilder(prxml);
-        reqBuilder.setRequest(this.getProviderRetrievalXMl().getConnection().getUrl());
+
+        PDARequestBuilder reqBuilder = new PDARequestBuilder(prxml,
+                getProviderRetrievalXMl().getSubscriptionName());
+        reqBuilder.setRequest(this.getProviderRetrievalXMl().getConnection()
+                .getUrl());
 
         return reqBuilder;
     }
-         
+
     @Override
-    public RetrievalResponse<Time, Coverage> performRequest(IRetrievalRequestBuilder<Time, Coverage> request) {
-        
+    public RetrievalResponse<Time, Coverage> performRequest(
+            IRetrievalRequestBuilder<Time, Coverage> request) {
+
         String localFilePath = null;
         File directory = null;
         String fileName = null;
@@ -88,7 +93,6 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         if (request.getRequest() != null) {
 
             try {
-
                 String providerName = request.getAttribute().getProvider();
                 // Have to re-write the URL for the connection to the FTPS root
                 localFilePath = PDAConnectionUtil.ftpsConnect(this
@@ -114,8 +118,7 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                 }
 
             } catch (Exception e) {
-                statusHandler
-                        .handle(Priority.ERROR, "FTPS error occurred!", e);
+                statusHandler.handle(Priority.ERROR, "FTPS error occurred!", e);
                 EventBus.publish(new RetrievalEvent(e.getMessage()));
             }
         } else {
@@ -125,12 +128,14 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                     "Request URL for Dataset is null!"));
         }
 
-        // We have to read in the file and store in RetrievalResponse as a byte[]
-        // We have to do this in order to allow for Shared Subscription delivery of 
-        // PDA data which must be serialized and delivered via SBN, which isn't going
-        // to give us a nice pretty file we can access.
+        /*
+         * We have to read in the file and store in RetrievalResponse as a
+         * byte[] We have to do this in order to allow for Shared Subscription
+         * delivery of PDA data which must be serialized and delivered via SBN,
+         * which isn't going to give us a nice pretty file we can access.
+         */
 
-         PDARetrievalResponse pr = new PDARetrievalResponse(
+        PDARetrievalResponse pr = new PDARetrievalResponse(
                 request.getAttribute());
 
         if (fileName != null) {
@@ -139,6 +144,10 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                 pr.setFileBytes((ResponseProcessingUtilities
                         .getCompressedFile(fileName)));
                 pr.setFileName(fileName);
+                if (request instanceof PDARequestBuilder) {
+                    PDARequestBuilder pdaRequest = (PDARequestBuilder) request;
+                    pr.setSubName(pdaRequest.getSubName());
+                }
 
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
@@ -148,16 +157,16 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
             statusHandler.handle(Priority.PROBLEM,
                     "FileName for object pulled from PDA server is null!");
         }
-       
+
         return pr;
     }
 
     @Override
     public Map<String, PluginDataObject[]> processResponse(
 
-            IRetrievalResponse<Time, Coverage> response) throws TranslationException {
+    IRetrievalResponse<Time, Coverage> response) throws TranslationException {
 
-        Map<String, PluginDataObject[]> map = new HashMap<String, PluginDataObject[]>();
+        Map<String, PluginDataObject[]> map = new HashMap<>();
         PDATranslator translator;
 
         try {
@@ -168,10 +177,11 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         }
 
         try {
-            
+
             @SuppressWarnings("unchecked")
-            Map<FILE, Object> payload = (Map<FILE, Object>) response.getPayLoad();
-            
+            Map<FILE, Object> payload = (Map<FILE, Object>) response
+                    .getPayLoad();
+
             if (payload != null) {
                 PluginDataObject[] pdos = translator
                         .asPluginDataObjects(payload);

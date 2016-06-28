@@ -47,14 +47,15 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 12, 2014  3121      dhladky     Initial creation.
- * May 17, 2015  4047      dhladky     Verified non-blocking.
- * Jan 19, 2016  5054      randerso    Fixed dialog to display with title bar  
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Aug 12, 2014  3121     dhladky   Initial creation.
+ * May 17, 2015  4047     dhladky   Verified non-blocking.
+ * Jan 19, 2016  5054     randerso  Fixed dialog to display with title bar  
  *                                     and in correct location.
- * Feb 09, 2016  5324      randerso    Remove CAVE.DO_NOT_BLOCK until DR #5327 is worked
- * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
+ * Feb 09, 2016  5324     randerso  Remove CAVE.DO_NOT_BLOCK until DR #5327 is worked
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues 
+ * Jun 16, 2016  5683     tjensen   Change Cancel to return PDATimeSelection
  * 
  * </pre>
  * 
@@ -79,13 +80,9 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     /** Priority Composite */
     private PriorityComp priorityComp;
 
-    /** Callback to the presenter at preopen */
-    private Runnable preOpenCallback;
-
     /** The subscription object */
+    @SuppressWarnings("rawtypes")
     private final Subscription subscription;
-
-    private final PDADataSet dataset;
 
     private final java.util.List<String> dateList;
 
@@ -101,11 +98,11 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
      * @param dateStringToDateMap
      */
     public PDATimingSelectionDlg(Shell parentShell, PDADataSet dataset,
+            @SuppressWarnings("rawtypes")
             Subscription subscription, java.util.List<String> dateList) {
         super(parentShell, SWT.DIALOG_TRIM);
         setText("Select Date");
         this.subscription = subscription;
-        this.dataset = dataset;
         this.dateList = dateList;
     }
 
@@ -185,9 +182,9 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                GriddedTimeSelection gts = new GriddedTimeSelection();
-                gts.setCancel(true);
-                setReturnValue(gts);
+                PDATimeSelection pts = new PDATimeSelection();
+                pts.setCancel(true);
+                setReturnValue(pts);
                 close();
             }
         });
@@ -241,6 +238,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     /**
      * OK Button action method.
      */
+    @SuppressWarnings("unchecked")
     private void handleOk() {
         PDATimeSelection data = new PDATimeSelection();
         if (!isLatestDataEnabled()) {

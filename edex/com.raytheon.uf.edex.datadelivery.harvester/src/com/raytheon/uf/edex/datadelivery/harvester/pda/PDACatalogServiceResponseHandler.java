@@ -70,6 +70,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Jan 18, 2016 5260       dhladky     FQDN usage to lessen OGC class collisions.
  * Jan 20, 2016 5280       dhladky     Logging improvement.
  * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
+ * Apr 05, 2016 5424       dhladky     More logging enhancements.
  * 
  * </pre>
  * 
@@ -330,7 +331,14 @@ public class PDACatalogServiceResponseHandler {
 
             InsertType trans = (InsertType) o;
             if (debug) {
-                statusHandler.info("Insert Message:  " + trans.toString());
+                statusHandler.info("Insert Message: Elements present.");
+                List<Element> elements = trans.getAny();
+                for (Element element : elements) {
+                    if (element.getLocalName() != null) {
+                        statusHandler
+                                .info("Element: " + element.getLocalName());
+                    }
+                }
             }
 
             for (int i = 0; i < trans.getAny().size(); i++) {
@@ -361,25 +369,37 @@ public class PDACatalogServiceResponseHandler {
                         Node node = nodes.item(j);
 
                         if (node.getLocalName().equals(LOWER_CORNER)) {
-                            if (debug) {
-                                statusHandler.info("LOWER_CORNER: "
-                                        + node.toString());
-                            }
                             if (node.getFirstChild() != null) {
                                 if (node.getFirstChild().getNodeValue() != null) {
                                     lowerCorner = node.getFirstChild()
                                             .getNodeValue();
+                                    if (debug) {
+                                        statusHandler.info("LOWER_CORNER: "
+                                                + lowerCorner);
+                                    }
+                                } else {
+                                    statusHandler.warn("LOWER_CORNER is blank!");
                                 }
                             }
                         } else if (node.getLocalName().equals(UPPER_CORNER)) {
-                            if (debug) {
-                                statusHandler.info("UPPER_CORNER: "
-                                        + node.toString());
-                            }
+                            
                             if (node.getFirstChild() != null) {
                                 if (node.getFirstChild().getNodeValue() != null) {
                                     upperCorner = node.getFirstChild()
                                             .getNodeValue();
+                                    if (debug) {
+                                        statusHandler.info("UPPER_CORNER: "
+                                                + upperCorner);
+                                    }
+                                } else {
+                                    statusHandler.warn("UPPER_CORNER is blank!");
+                                }
+                            }
+                        } else {
+                            if (node.getFirstChild() != null) {
+                                if (node.getFirstChild().getNodeValue() != null) {
+                                      statusHandler.info("Extra node: "+node.getLocalName()+" value:"
+                                            + node.getFirstChild().getNodeValue());
                                 }
                             }
                         }
@@ -444,13 +464,13 @@ public class PDACatalogServiceResponseHandler {
                 if (upperCorner != null && lowerCorner != null) {
                     bbt.setLowerCorner(lowerVals);
                     bbt.setUpperCorner(upperVals);
+                    // 2 dimensions
+                    bbt.setDimensions(BigInteger.valueOf(new Integer(2).intValue()));
+                    JAXBElement<BoundingBoxType> jaxbBoundingBox = boundingBoxFactory
+                            .createBoundingBox(bbt);
+                    boundingBoxes.add(jaxbBoundingBox);
                 }
-
-                // 2 dimensions
-                bbt.setDimensions(BigInteger.valueOf(new Integer(2).intValue()));
-                JAXBElement<BoundingBoxType> jaxbBoundingBox = boundingBoxFactory
-                        .createBoundingBox(bbt);
-                boundingBoxes.add(jaxbBoundingBox);
+                
                 // Add everything to the BriefRecordType
                 brt = new BriefRecordType();
                 brt.setBoundingBox(boundingBoxes);

@@ -57,6 +57,7 @@ import com.raytheon.uf.common.security.encryption.AESEncryptor;
  * ------------ ---------- ----------- --------------------------
  * Dec 18, 2014 3839       ccody       Initial creation
  * Feb 13, 2015 3839       dhladky     Original impl didn't write providerkey to DB.
+ * Mar 04, 2016 5388       dhladky     Changed AESEncryptor constructor
  * </pre>
  * 
  * @author ccody
@@ -296,9 +297,8 @@ public class SetDataProviderDataCLI {
 
         if (plainText != null && providerKey != null) {
             try {
-                AESEncryptor encryptionProcessor = new AESEncryptor();
-                encryptPassword = encryptionProcessor.encrypt(providerKey,
-                        plainText);
+                AESEncryptor encryptionProcessor = new AESEncryptor(providerKey);
+                encryptPassword = encryptionProcessor.encrypt(plainText);
             } catch (Exception e) {
                 System.out.println("Unable to encrypt password!");
                 if (isVerbose == true) {

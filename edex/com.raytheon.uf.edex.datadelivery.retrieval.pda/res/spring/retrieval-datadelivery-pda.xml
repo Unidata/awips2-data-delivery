@@ -13,18 +13,14 @@
     <!-- We can supply any plugin data object here listed in the Provider object 
          as a type. PDA really doesn't care. It outputs a generic PluginDataObject 
          and is not specific like other providers. -->
-    <constructor-arg
-      value="com.raytheon.uf.common.dataplugin.goessounding.GOESSounding" />
-    <constructor-arg
-      value="com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata.PDAMetaDataAdapter"
-      type="java.lang.Class" />
+        <constructor-arg value="com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord" />
+        <constructor-arg value="com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata.PDAMetaDataAdapter" type="java.lang.Class" />
   </bean>
 
   <bean id="satelliteDecoder"
     class="com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder" />
 
-  <bean id="goessoundingDecoder" depends-on="goessoundingRegistered"
-    class="com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder" />
+    <bean id="goessoundingDecoder" depends-on="goessoundingRegistered" class="com.raytheon.edex.plugin.goessounding.GOESSoundingDecoder" />
 
   <bean id="goesrPathManager" class="com.raytheon.uf.common.localization.PathManagerFactory"
     factory-method="getPathManager" />

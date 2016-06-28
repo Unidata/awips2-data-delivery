@@ -71,7 +71,6 @@ import com.raytheon.uf.viz.core.rsc.ResourceType;
 import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
 import com.raytheon.uf.viz.datacube.DataCubeContainer;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.uf.viz.productbrowser.ProductBrowserDataDefinition;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
 import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
@@ -81,6 +80,7 @@ import com.raytheon.viz.grid.xml.FieldDisplayTypesFactory;
 import com.raytheon.viz.pointdata.PlotModels;
 import com.raytheon.viz.pointdata.rsc.PlotResourceData;
 import com.raytheon.viz.pointdata.util.PointDataInventory;
+import com.raytheon.viz.satellite.rsc.SatResourceData;
 import com.raytheon.viz.ui.BundleProductLoader;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
@@ -95,22 +95,28 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 17, 2013  2391      mpduff      Initial creation
- * Sept 22, 2013 2246      dhladky     Setup binoffset for time into +-5 min intervals
- * Oct 13,  2013 2460      dhladky     Added display of Adhoc subscriptions
- * Nov 19, 2013  2458      mpduff      Only pull subscriptions for the local site
- * Nov 21, 2013  2554      dhladky     Restored ADHOC's to working.
- * Jan 14, 2014  2459      mpduff      Change Subscription status code
- * Feb 11, 2014  2771      bgonzale    Use Data Delivery ID instead of Site.
- * Jun 24, 2014  3128      bclement    changed loadProperties to be GridLoadProperties
- * Jul 07, 2014  3135      bsteffen    Allow reuse of definition across multiple tree selections.
- * Sep 09, 2014  3356      njensen     Remove CommunicationException
- * Jun 11, 2015  4042      dhladky     Refactored using bsteffen's interface to make it thread safe, cleaner.
- * Jun 16, 2015  4566      dhladky     Fixed error in map for Plugin names.
- * Mar 08, 2016  4621      tjensen     Added support for Derived Parameters for Grid products
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 17, 2013  2391     mpduff    Initial creation
+ * Sep 22, 2013  2246     dhladky   Setup binoffset for time into +-5 min
+ *                                  intervals
+ * Oct 13, 2013  2460     dhladky   Added display of Adhoc subscriptions
+ * Nov 19, 2013  2458     mpduff    Only pull subscriptions for the local site
+ * Nov 21, 2013  2554     dhladky   Restored ADHOC's to working.
+ * Jan 14, 2014  2459     mpduff    Change Subscription status code
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Jun 24, 2014  3128     bclement  changed loadProperties to be
+ *                                  GridLoadProperties
+ * Jul 07, 2014  3135     bsteffen  Allow reuse of definition across multiple
+ *                                  tree selections.
+ * Sep 09, 2014  3356     njensen   Remove CommunicationException
+ * Jun 11, 2015  4042     dhladky   Refactored using bsteffen's interface to
+ *                                  make it thread safe, cleaner.
+ * Jun 16, 2015  4566     dhladky   Fixed error in map for Plugin names.
+ * Mar 08, 2016  4621     tjensen   Added support for Derived Parameters for Grid products
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * May 04, 2016  5599     tjensen   Fixed PDA label population.
+
  * 
  * </pre>
  * 
@@ -119,7 +125,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  */
 
 public class DataDeliveryProductBrowserDataDefinition implements
-        ProductBrowserDataDefinition, PreferenceBasedDataDefinition {
+        PreferenceBasedDataDefinition {
 
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataDeliveryProductBrowserDataDefinition.class);
@@ -131,7 +137,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
     private static final String GRID = "grid";
 
     /** Constant for sat plugin lookups */
-    private static final String PDA = "sat";
+    private static final String PDA = "satellite";
 
     /** Constant for point plugin lookups */
     private static final String POINT = "point";
@@ -150,7 +156,8 @@ public class DataDeliveryProductBrowserDataDefinition implements
             "subscription", "level" };
 
     /** PDA order, same as point */
-    private static final String[] PDA_ORDER = POINT_ORDER;
+    private static final String[] PDA_ORDER = new String[] { "sectorID",
+            "creatingEntity", "physicalElement" };
 
     private static final String[] GRID_ORDER = new String[] {
             GridConstants.DATASET_ID, GridConstants.PARAMETER_ABBREVIATION,
@@ -169,7 +176,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
      */
     public DataDeliveryProductBrowserDataDefinition() {
 
-        HashMap<DataType, String> protoProductMap = new HashMap<DataType, String>(
+        HashMap<DataType, String> protoProductMap = new HashMap<>(3);
                 3);
         protoProductMap.put(DataType.GRID, GRID);
         protoProductMap.put(DataType.PDA, PDA);
@@ -201,17 +208,22 @@ public class DataDeliveryProductBrowserDataDefinition implements
                         SVG);
                 String param = order[2];
                 return formatData(param, results, selection);
-            } else if (selection[1].equalsIgnoreCase(DataType.GRID.name())) {
-                // Must remove the first selection so this matches with the grid
-                // version
+            } else if (selection[1].equalsIgnoreCase(DataType.GRID.name())
+                    || selection[1].equalsIgnoreCase(DataType.PDA.name())) {
+                /*
+                 * Must remove the first selection so this matches with the
+                 * grid/pda version
+                 */
                 String[] usedSelection = realignSelection(selection);
 
                 return populateGridUpperData(usedSelection);
+
             }
         }
 
         if (selection.length >= 4) {
-            if (selection[1].equalsIgnoreCase(DataType.GRID.name())) {
+            if (selection[1].equalsIgnoreCase(DataType.GRID.name())
+                    || selection[1].equalsIgnoreCase(DataType.PDA.name())) {
                 // Must remove the first selection so this matches with the grid
                 // version
                 String[] usedSelection = realignSelection(selection);
@@ -234,6 +246,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
         List<ProductBrowserLabel> parameters = null;
         boolean product = false;
         String[] order = extractOrder(selection);
+
         String param = order[selection.length - 1];
         HashMap<String, RequestConstraint> queryList = getProductParameters(
                 selection, order);
@@ -302,13 +315,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
         return usedSelection;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.productbrowser.AbstractProductBrowserDataDefinition
-     * #formatData(java.lang.String, java.lang.String[])
-     */
     public List<ProductBrowserLabel> formatData(String param,
             String[] parameters, String[] selection) {
         if (Arrays.asList(GRID_ORDER).contains(param)) {
@@ -316,7 +322,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
                     parameters);
         } else {
             /* Data Type or point data. */
-            List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
+            List<ProductBrowserLabel> temp = new ArrayList<>();
             String[] order = extractOrder(selection);
             for (int i = 0; i < parameters.length; i++) {
                 ProductBrowserLabel label = new ProductBrowserLabel(
@@ -341,7 +347,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
      */
     public List<ProductBrowserLabel> formatUpperData(String param,
             String[] parameters) {
-        List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
+        List<ProductBrowserLabel> temp = new ArrayList<>();
         for (int i = 0; i < parameters.length; i++) {
             temp.add(new ProductBrowserLabel(parameters[i], null));
         }
@@ -370,9 +376,10 @@ public class DataDeliveryProductBrowserDataDefinition implements
             plotResourceData.setPlotModelFile(SVG);
             plotResourceData.setLevelKey(selection[selection.length - 1]);
             resourceData = plotResourceData;
-        } else if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())
-                || selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
+        } else if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
             resourceData = new GridResourceData();
+        } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
+            resourceData = new SatResourceData();
         }
 
         return resourceData;
@@ -388,9 +395,10 @@ public class DataDeliveryProductBrowserDataDefinition implements
 
         if (productName.equalsIgnoreCase(DataType.POINT.name())) {
             return getPointProductParameters(selection, order);
-        } else if (productName.equalsIgnoreCase(DataType.GRID.name())
-                || productName.equalsIgnoreCase(DataType.PDA.name())) {
+        } else if (productName.equalsIgnoreCase(DataType.GRID.name())) {
             return getGridProductParameters(selection, order);
+        } else if (productName.equalsIgnoreCase(productMap.get(DataType.PDA))) {
+            return getPdaProductParameters(selection, order);
         } else {
             throw new IllegalArgumentException("Invalid data type: "
                     + productName);
@@ -407,7 +415,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
      */
     public HashMap<String, RequestConstraint> getUpperProductParameters(
             String[] selection, String[] order) {
-        HashMap<String, RequestConstraint> queryList = new HashMap<String, RequestConstraint>();
+        HashMap<String, RequestConstraint> queryList = new HashMap<>();
         String productName = extractProductName(selection);
         queryList.put(PLUGIN_NAME, new RequestConstraint(productName));
 
@@ -431,8 +439,34 @@ public class DataDeliveryProductBrowserDataDefinition implements
     private HashMap<String, RequestConstraint> getGridProductParameters(
             String[] selection, String[] order) {
         if (selection.length > 5) {
-            // Must remove the first selection so this matches with the grid
-            // version
+            /*
+             * Must remove the first selection so this matches with the grid
+             * version
+             */
+            String[] tmpSelection = realignSelection(selection);
+
+            return getUpperProductParameters(tmpSelection, order);
+        } else {
+            return getUpperProductParameters(selection, order);
+        }
+    }
+
+    /**
+     * Get the PDA parameters
+     * 
+     * @param selection
+     *            The selected node
+     * @param order
+     *            The order
+     * @return The constraint map
+     */
+    private HashMap<String, RequestConstraint> getPdaProductParameters(
+            String[] selection, String[] order) {
+        if (selection.length > 4) {
+            /*
+             * Must remove the first selection so this matches with the pda
+             * version
+             */
             String[] tmpSelection = realignSelection(selection);
 
             return getUpperProductParameters(tmpSelection, order);
@@ -453,7 +487,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
      */
     private HashMap<String, RequestConstraint> getPointProductParameters(
             String[] selection, String[] order) {
-        HashMap<String, RequestConstraint> queryList = new HashMap<String, RequestConstraint>();
+        HashMap<String, RequestConstraint> queryList = new HashMap<>();
         queryList.put(PLUGIN_NAME, new RequestConstraint(MADIS));
         PointDataInventory inv = PlotModels.getInstance().getInventory();
         if (!inv.getTypeKey(selection[1])
@@ -480,7 +514,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
     private List<RequestConstraint> getSpatialConstraint(
             String selectedSubscriptionName) {
 
-        List<RequestConstraint> cons = new ArrayList<RequestConstraint>();
+        List<RequestConstraint> cons = new ArrayList<>();
 
         Coverage cov = null;
         for (Subscription s : getSubscriptions()) {
@@ -529,7 +563,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
      */
     @SuppressWarnings("rawtypes")
     private List<String> getSubscriptions(DataType dataType) {
-        final List<String> subNames = new ArrayList<String>();
+        final List<String> subNames = new ArrayList<>();
 
         List<Subscription> subList = getSubscriptions();
         for (Subscription s : subList) {
@@ -552,7 +586,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
     @SuppressWarnings("rawtypes")
     private String[] getDataTypes() {
         List<Subscription> subList = getSubscriptions();
-        List<String> dataTypes = new ArrayList<String>();
+        List<String> dataTypes = new ArrayList<>();
         for (Subscription s : subList) {
             String dt = StringUtils.capitalize(s.getDataSetType().name()
                     .toLowerCase());
@@ -571,7 +605,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
      */
     @SuppressWarnings("rawtypes")
     private List<Subscription> getSubscriptions() {
-        List<Subscription> subList = new ArrayList<Subscription>();
+        List<Subscription> subList = new ArrayList<>();
         final SubscriptionHandler handler = RegistryObjectHandlers
                 .get(SubscriptionHandler.class);
         try {
@@ -625,8 +659,8 @@ public class DataDeliveryProductBrowserDataDefinition implements
 
         for (String selectedDataType : selection) {
             if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
-                Map<ResourceType, List<DisplayType>> type = new HashMap<ResourceType, List<DisplayType>>();
-                List<DisplayType> types = new ArrayList<DisplayType>();
+                Map<ResourceType, List<DisplayType>> type = new HashMap<>();
+                List<DisplayType> types = new ArrayList<>();
 
                 if (keyValMap.containsKey(GridConstants.PARAMETER_ABBREVIATION)) {
                     types = FieldDisplayTypesFactory
@@ -643,8 +677,8 @@ public class DataDeliveryProductBrowserDataDefinition implements
                 type.put(ResourceType.PLAN_VIEW, types);
                 return type;
             } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
-                Map<ResourceType, List<DisplayType>> type = new HashMap<ResourceType, List<DisplayType>>();
-                List<DisplayType> types = new ArrayList<DisplayType>();
+                Map<ResourceType, List<DisplayType>> type = new HashMap<>();
+                List<DisplayType> types = new ArrayList<>();
                 types.add(DisplayType.CONTOUR);
                 types.add(DisplayType.IMAGE);
                 type.put(ResourceType.PLAN_VIEW, types);

@@ -38,13 +38,14 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 
  * SOFTWARE HISTORY 
  * 
- * 
- * Date         Ticket# Engineer      Description 
- * ------------ -----   ------------------------------------------------ 
- * Aug 21, 2012         jsanchez      Made object serializable.
- * Nov 20, 2012         dhladky       More fields.
- * Dec 07, 2012 1104    djohnson      Simplify event type hierarchy.
- * Jul 22, 2014 2732    ccody         Add Date Time to SubscriptionRetrievalEvent message
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 21, 2012           jsanchez  Made object serializable.
+ * Nov 20, 2012           dhladky   More fields.
+ * Dec 07, 2012  1104     djohnson  Simplify event type hierarchy.
+ * Jul 22, 2014  2732     ccody     Add Date Time to SubscriptionRetrievalEvent
+ *                                  message
+ * May 17, 2016  5662     tjensen   Separated Data Time from rest of message
  * 
  * </pre>
  * 
@@ -61,7 +62,9 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
     private static final long serialVersionUID = -1139458560029047046L;
 
     private static final Map<String, String> FIELD_UNIT_MAP;
+
     private static final String sdfString = "yyyy-MM-dd HH:mm:ss";
+
     private static ThreadLocal<SimpleDateFormat> subscriptionDateFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
         protected SimpleDateFormat initialValue() {
@@ -69,16 +72,14 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
             return sdf;
         }
     };
-    
 
     static {
-        Map<String, String> m = new HashMap<String, String>();
+        Map<String, String> m = new HashMap<>();
         m.put("numComplete", "count");
         m.put("numfailed", "count");
         FIELD_UNIT_MAP = Collections.unmodifiableMap(m);
     }
 
-    
     protected Status status;
 
     protected String subscriptionType;
@@ -86,14 +87,13 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
     protected String failureMessage;
 
     protected Long retrievalRequestTime;
-    
+
     @DynamicSerializeElement
     protected int numFailed;
 
     @DynamicSerializeElement
     protected int numComplete;
 
-    
     @Override
     public NotificationRecord generateNotification() {
         String subname = getId();
@@ -102,16 +102,16 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
         StringBuffer sb = new StringBuffer();
         String retrievalRequestTimeString = null;
         if (retrievalRequestTime != null) {
-            retrievalRequestTimeString = subscriptionDateFormat.get().format(retrievalRequestTime);
+            retrievalRequestTimeString = subscriptionDateFormat.get().format(
+                    retrievalRequestTime);
         }
-        
-        
+
         switch (getStatus()) {
         case SUCCESS:
             sb.append("Successfully retrieved and stored data for ");
             sb.append(subname);
             if (retrievalRequestTime != null) {
-                sb.append(" Data Time: " + retrievalRequestTimeString);
+                sb.append("; Data Time: " + retrievalRequestTimeString);
             }
             break;
         case PARTIAL_SUCCESS:
@@ -120,7 +120,7 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
             sb.append(subname);
             sb.append(". Failure message: " + getFailureMessage());
             if (retrievalRequestTime != null) {
-                sb.append(" Data Time: " + retrievalRequestTimeString);
+                sb.append("; Data Time: " + retrievalRequestTimeString);
             }
             break;
         case FAILED:
@@ -129,7 +129,7 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
             sb.append(subname);
             sb.append(". Failure message: " + getFailureMessage());
             if (retrievalRequestTime != null) {
-                sb.append(" Data Time: " + retrievalRequestTimeString);
+                sb.append("; Data Time: " + retrievalRequestTimeString);
             }
             break;
         }
@@ -188,7 +188,7 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
     public void setStatus(Status status) {
         this.status = status;
     }
-    
+
     public Long getRetrievalRequestTime() {
         return retrievalRequestTime;
     }
@@ -199,7 +199,7 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
         }
         this.retrievalRequestTime = retrievalRequestTime;
     }
-    
+
     @Override
     public String toString() {
         StringBuilder rval = new StringBuilder(200);

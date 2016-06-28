@@ -36,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -55,15 +56,18 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 28, 2014  3121      dhladky     Initial javadoc
- * Oct 14, 2014  3127      dhladky     Improved deletion of files
- * Nov 20, 2014  3127      dhladky     GOES Sounding processing.
- * Dec 02, 2014  3826      dhladky     PDA test code
- * Jan 28, 2016  5299      dhladky     PDA testing related fixes.
- * Mar 16, 2016  3919      tjensen     Cleanup unneeded interfaces
- * Jun 27, 2016  5584      nabowle     Netcdf decoder consolidation.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 28, 2014  3121     dhladky   Initial javadoc
+ * Oct 14, 2014  3127     dhladky   Improved deletion of files
+ * Nov 20, 2014  3127     dhladky   GOES Sounding processing.
+ * Dec 02, 2014  3826     dhladky   PDA test code
+ * Jan 28, 2016  5299     dhladky   PDA testing related fixes.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * May 03, 2016  5599     tjensen   Pass subscription name to GoesrDecoder to
+ *                                  override sectorID.
+ * May 16, 2016  5599     tjensen   Refresh dataURI after overriding sectorID.
+ * Jun 27, 2016  5584     nabowle   Netcdf decoder consolidation.
  *
  * </pre>
  *
@@ -73,6 +77,7 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
 
 public class PDAMetaDataAdapter extends
         AbstractMetadataAdapter<PluginDataObject, Time, Coverage> {
+        IPDAMetaDataAdapter {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDAMetaDataAdapter.class);
@@ -128,7 +133,8 @@ public class PDAMetaDataAdapter extends
      * @return
      * @throws Exception
      */
-    public PluginDataObject[] decodeObjects(String fileName) throws Exception {
+    public PluginDataObject[] decodeObjects(String fileName, String subName)
+            throws Exception {
 
         PluginDataObject[] pdos = null;
 
@@ -146,6 +152,8 @@ public class PDAMetaDataAdapter extends
                 throw new IllegalArgumentException("Unknown type detected. "
                         + type);
             }
+
+            postProcessPdos(pdos, subName);
         } catch (Exception e) {
             statusHandler.error("Couldn't decode PDA data! " + fileName, e);
         } finally {
@@ -164,6 +172,34 @@ public class PDAMetaDataAdapter extends
         }
 
         return pdos;
+    }
+
+    /**
+     * Performs any necessary post processing on decoded pdos before they are
+     * persisted.
+     * 
+     * @param pdos
+     *            Array of decoded pdos to be processed
+     * @param subName
+     *            subscription name
+     */
+    private void postProcessPdos(PluginDataObject[] pdos, String subName) {
+        /*
+         * For all PDOs that are SatelliteRecords, replace the sectorId with the
+         * subscription name so we can tie the record to the subscription.
+         */
+        for (PluginDataObject pdo : pdos) {
+            if (pdo instanceof SatelliteRecord) {
+                SatelliteRecord sr = (SatelliteRecord) pdo;
+                sr.setSectorID(subName);
+                /*
+                 * Set DataURI to null, then call getDataURI to recreate it with
+                 * the new sectorId.
+                 */
+                sr.setDataURI(null);
+                sr.getDataURI();
+            }
+        }
     }
 
     @Override
