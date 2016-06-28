@@ -147,7 +147,7 @@ public abstract class MetaDataParser<O extends Object> implements
 
             if (store) {
                 dataSetName = dataSetToStore.getDataSetName();
-                IDataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
+                DataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
                 handler.update(RegistryUtil.registryUser, dataSetToStore);
                 statusHandler.info("Dataset [" + dataSetName
                         + "] successfully stored in Registry");

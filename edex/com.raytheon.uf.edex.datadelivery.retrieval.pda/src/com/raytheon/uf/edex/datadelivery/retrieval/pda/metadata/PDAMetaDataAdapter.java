@@ -77,7 +77,6 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
 
 public class PDAMetaDataAdapter extends
         AbstractMetadataAdapter<PluginDataObject, Time, Coverage> {
-        IPDAMetaDataAdapter {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDAMetaDataAdapter.class);

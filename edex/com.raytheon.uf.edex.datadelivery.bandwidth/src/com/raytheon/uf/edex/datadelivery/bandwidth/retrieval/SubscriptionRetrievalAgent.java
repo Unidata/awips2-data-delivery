@@ -108,7 +108,7 @@ public class SubscriptionRetrievalAgent extends
             String asyncRetrievalUri, final Object notifier,
             int defaultPriority, RetrievalManager retrievalManager,
             IBandwidthDao<?, ?> bandwidthDao, IRetrievalDao retrievalDao,
-            IProviderHandler providerHandler) {
+            ProviderHandler providerHandler) {
         super(network, retrievalRoute, asyncRetrievalUri, notifier,
                 retrievalManager);
         this.defaultPriority = defaultPriority;
