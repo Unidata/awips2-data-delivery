@@ -4,12 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
+import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 
 /**
  * 
@@ -27,6 +32,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
  * Mar 05, 2013 1647       djohnson     Sleep one minute between checks.
  * Jan 30, 2014   2686     dhladky      refactor of retrieval.
  * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
+ * Apr 06, 2016 5424       dhladky      Allow for ASYNC processing of retrievals.
  * 
  * </pre>
  * 
@@ -48,7 +54,9 @@ public abstract class RetrievalAgent<ALLOCATION_TYPE extends BandwidthAllocation
 
     protected final Network network;
 
-    protected final String destinationUri;
+    protected final String retrievalRoute;
+    
+    protected final String asyncRetrievalRoute;
 
     protected final RetrievalManager retrievalManager;
     
@@ -59,17 +67,20 @@ public abstract class RetrievalAgent<ALLOCATION_TYPE extends BandwidthAllocation
      * 
      * @param network
      *            the network this retrieval agent utilizes
-     * @param destinationUri
+     * @param retrievalRoute
+     *            the destination uri to send objects
+     * @param asyncRetrievalUri
      *            the destination uri to send objects
      * @param notifier
      *            the object used to signal the agent that data is available
      * @param retrievalManager
      *            the retrieval manager
      */
-    public RetrievalAgent(Network network, String destinationUri,
+    public RetrievalAgent(Network network, String retrievalRoute, String asyncRetrievalUri,
             final Object notifier, RetrievalManager retrievalManager) {
         this.network = network;
-        this.destinationUri = destinationUri;
+        this.retrievalRoute = retrievalRoute;
+        this.asyncRetrievalRoute = asyncRetrievalUri;
         this.notifier = notifier;
         this.retrievalManager = retrievalManager;
     }
@@ -179,5 +190,52 @@ public abstract class RetrievalAgent<ALLOCATION_TYPE extends BandwidthAllocation
      */
     public Network getNetwork() {
         return network;
+    }
+    
+    /**
+     * Returns the Retrieval Mode for the retrievals generated here. This can be
+     * configured specific to each provider. Defaults to SYNC
+     * 
+     * @param SeriviceType
+     * @return RETRIEVAL_MODE
+     */
+    protected RETRIEVAL_MODE getRetrievalMode(ServiceType type) {
+
+        // default to synchronous processing
+        RETRIEVAL_MODE mode = RETRIEVAL_MODE.SYNC;
+
+        ServiceConfig sc = getServiceConfig(type);
+
+        if (sc != null) {
+            if (sc.getConstantValue(RetrievalGenerator.RETRIEVAL_MODE_CONSTANT) != null) {
+                String mode_constant = sc
+                        .getConstantValue(RetrievalGenerator.RETRIEVAL_MODE_CONSTANT);
+                mode = RETRIEVAL_MODE.valueOf(mode_constant);
+            }
+        }
+
+        return mode;
+    }
+
+    /**
+     * Get the service configuration
+     * 
+     * @param ServiceType
+     * 
+     * @return ServiceConfig
+     */
+    protected ServiceConfig getServiceConfig(ServiceType type) {
+
+        ServiceConfig serviceConfig = null;
+
+        try {
+            serviceConfig = HarvesterServiceManager.getInstance()
+                    .getServiceConfig(type);
+        } catch (Exception e) {
+            statusHandler.error("Unable to load ServiceConfig! " + type.name(),
+                    e);
+        }
+
+        return serviceConfig;
     }
 }

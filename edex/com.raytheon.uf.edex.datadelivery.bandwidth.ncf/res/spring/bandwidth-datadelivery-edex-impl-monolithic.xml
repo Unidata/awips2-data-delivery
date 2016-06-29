@@ -27,6 +27,7 @@
         scope="prototype">
         <constructor-arg value="OPSNET" />
         <constructor-arg value="notifyRetrieval" />
+        <constructor-arg value="jms-durable:queue:asyncRetrievalQueue" />
         <constructor-arg ref="retrievalAgentNotifier" />
         <constructor-arg value="${bandwidth.default.retrieval.priority}" />
         <constructor-arg ref="retrievalManager" />
@@ -40,6 +41,7 @@
         scope="prototype">
         <constructor-arg value="SBN" />
         <constructor-arg value="notifyRetrieval" />
+        <constructor-arg value="jms-durable:queue:asyncRetrievalQueue" />
         <constructor-arg ref="retrievalAgentNotifier" />
         <constructor-arg value="${bandwidth.default.retrieval.priority}" />
         <constructor-arg ref="retrievalManager" />

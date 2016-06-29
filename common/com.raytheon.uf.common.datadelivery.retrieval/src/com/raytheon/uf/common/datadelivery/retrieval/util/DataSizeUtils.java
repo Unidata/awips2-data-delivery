@@ -52,6 +52,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Sept 09, 2013 2351      dhladky    Fixed incorrect calculation for default pointdata overhead
  * Nov 20, 2013   2554     dhladky    Generics
  * Sept 19, 2014 3121      dhladky    PDA data sizes.
+ * Apr 19, 2016  5424      dhladky    Re-visited sizing.
  * 
  * </pre>
  * 
@@ -60,6 +61,13 @@ import com.vividsolutions.jts.geom.Coordinate;
  */
 
 public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
+
+    
+    /**
+     * The constant 5 is chosen because 5/5 in the getDataSetSizeInBytes
+     * calculation will yield a "1".
+     **/
+    public static final int TIME_SIZE = 5;
 
     /**
      * Factory method to get a DataSizeUtils.
@@ -130,8 +138,9 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
             Coordinate ll = EnvelopeUtils.getLowerLeftLatLon(re);
             int lonSpan = (int) Math.abs(ll.x - ur.x);
             int latSpan = (int) Math.abs(ll.y - ur.y);
-            // TODO calculate this
-            return lonSpan * latSpan;
+            // TODO When we have EOP metadata redo this with better estimates
+            return st.getRequestBytesPerLatLonBoxAndTime(latSpan, lonSpan,
+                    PDADataSizeUtils.TIME_SIZE);
         }
         
         else {

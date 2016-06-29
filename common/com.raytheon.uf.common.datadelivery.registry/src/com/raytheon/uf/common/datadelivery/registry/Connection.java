@@ -50,6 +50,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Aug 08, 2013    2108     mpduff      Serialize the provider key.
  * 7/10/2014       1717     bphillip    Changed import of relocated AESEncryptor class
  * Aug 19, 2014    3120     dhladky     URL remapping for properties
+ * Mar 04, 2016    5388     dhladky     Changed AESEncryptor constructor
  * </pre>
  * 
  * @author dhladky
@@ -70,7 +71,7 @@ public class Connection implements Serializable {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(Connection.class);
     
-    private AESEncryptor encryptionProcessor = new AESEncryptor();
+    private AESEncryptor encryptionProcessor = null;
 
     public Connection() {
 
@@ -133,6 +134,18 @@ public class Connection implements Serializable {
     public String getPassword() {
         return password;
     }
+    
+    /**
+     * Creates encryption object
+     * @return
+     */
+    public AESEncryptor getEncryptor() {
+        if (providerKey != null && encryptionProcessor == null) {
+            encryptionProcessor = new AESEncryptor(providerKey);
+        }
+        
+        return encryptionProcessor;
+    }
 
     /**
      * You pass in the providerKey to the local DD client The reason for this is
@@ -146,9 +159,9 @@ public class Connection implements Serializable {
     public String getUnencryptedPassword() {
 
         if (password != null && providerKey != null) {
-
+            
             try {
-                return encryptionProcessor.decrypt(providerKey, password);
+                return getEncryptor().decrypt(password);
             } catch (Exception e) {
                 statusHandler.error("Unable to decrypt password!", e);
             }
@@ -171,7 +184,7 @@ public class Connection implements Serializable {
         if (password != null && providerKey != null) {
 
             try {
-                encryptPassword = encryptionProcessor.encrypt(providerKey, password);
+                encryptPassword = getEncryptor().encrypt(password);
                 setPassword(encryptPassword);
             } catch (Exception e) {
                 statusHandler.error("Unable to crypt password!", e);
@@ -195,7 +208,7 @@ public class Connection implements Serializable {
         if (userName != null && providerKey != null) {
 
             try {
-                return encryptionProcessor.decrypt(providerKey, userName);
+                return getEncryptor().decrypt(userName);
             } catch (Exception e) {
                 statusHandler.error("Unable to decrypt userName!", e);
             }
@@ -218,7 +231,7 @@ public class Connection implements Serializable {
         if (userName != null && providerKey != null) {
 
             try {
-                encryptUserName = encryptionProcessor.encrypt(providerKey, userName);
+                encryptUserName = getEncryptor().encrypt(userName);
                 setUserName(encryptUserName);
             } catch (Exception e) {
                 statusHandler.error("Unable to crypt userName!", e);

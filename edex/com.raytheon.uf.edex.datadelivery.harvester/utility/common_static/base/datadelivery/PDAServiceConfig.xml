@@ -22,7 +22,7 @@
     <constant name="SEPARATOR" value="-"/>
     <constant name="BASE_TYPE" value="Float"/>
     <constant name="UNITS" value="NONE"/>
-    <constant name="DEFAULT_FORMAT" value="BUFR"/>
+    <constant name="DEFAULT_FORMAT" value="SAT"/>
     <!-- Decoder type (temporary, until metadata improves from PDA) -->
     <constant name="DEFAULT_TYPE" value="goesr"/>
     <!--  Default PDA OGC CRS (WGS 84) -->
@@ -55,5 +55,8 @@
     <!-- JKS based keystore and trust modules for DD -->
     <constant name="KEYSTORE_FILE" value="/awips2/edex/conf/security/keystore.jks"/>
     <constant name="TRUSTSTORE_FILE" value="/awips2/edex/conf/security/truststore.jks"/>
+    <!-- These are used for ASYNC retrieval requests -->
+    <constant name="RETRIEVAL_MODE" value="ASYNC"/>
+    <constant name="ASYNC_RESPONSE_HANDLER" value="https://{SITE_ADDR_TO_PDA}:8082/GetCoverageResponseHandler"/>
 
 </serviceConfig>

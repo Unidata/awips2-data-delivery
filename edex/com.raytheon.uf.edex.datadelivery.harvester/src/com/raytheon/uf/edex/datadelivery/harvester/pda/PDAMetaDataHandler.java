@@ -63,6 +63,7 @@ import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
  * Jun 13, 2014  3120      dhladky     Initial creation
  * Oct 14, 2014  3127      dhladky     Improved deletion of used files.
  * Apr 21, 2015  4435      dhladky     PDA transaction processing.
+ * Feb 16, 2016  5365      dhladky     Streamlined to only process metadata updates with transactions.
  * Mar 16, 2016  3919      tjensen     Cleanup unneeded interfaces
  * 
  * </pre>
@@ -170,8 +171,9 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                 BriefRecordType record = (BriefRecordType) brief.getValue();
 
                 try {
+                    // false, only parse dataset, parameter, and datasetname info for getRecords()
                     parser.parseMetaData(provider, agent.getDateFormat(),
-                            record);
+                            record, false);
                     count++;
                 } catch (Exception e) {
                     statusHandler.handle(Priority.ERROR,
@@ -227,10 +229,11 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                     .getParser(lastDate);
 
             try {
+                // true, parse for metaData updates in transactions.
                 briefRecord = (BriefRecordType) getJaxbManager()
                         .unmarshalFromXml(new String(bytes));
                 parser.parseMetaData(provider, agent.getDateFormat(),
-                        briefRecord);
+                        briefRecord, true);
 
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,

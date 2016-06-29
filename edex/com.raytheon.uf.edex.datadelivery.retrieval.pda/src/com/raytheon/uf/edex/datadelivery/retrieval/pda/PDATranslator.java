@@ -1,3 +1,4 @@
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -44,11 +45,12 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 12, 2014 3121        dhladky      created.
- * Jan 28, 2016 5299        dhladky      Generic PDO type change.
- * Mar 16, 2016 3919        tjensen      Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------------
+ * Sep 12, 2014  3121     dhladky   created.
+ * Jan 28, 2016  5299     dhladky   Generic PDO type change.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * May 03, 2016  5599     tjensen   Pass subscription name into decodeObjects
  * 
  * </pre>
  * 
@@ -100,6 +102,7 @@ public class PDATranslator extends
         PluginDataObject[] pdos = null;
         PDAMetaDataAdapter pdaAdapter = (PDAMetaDataAdapter) metadataAdapter;
         String fileName = null;
+        String subName = null;
 
         try {
             /*
@@ -116,8 +119,9 @@ public class PDATranslator extends
                 ResponseProcessingUtilities.writeCompressedFile(
                         (byte[]) payload.get(FILE.FILE_BYTES), fileName);
             }
+            subName = (String) payload.get(FILE.SUBSCRIPTION_NAME);
             statusHandler.info("Processing PDA retrieval file: " + fileName);
-            pdos = pdaAdapter.decodeObjects(fileName);
+            pdos = pdaAdapter.decodeObjects(fileName, subName);
 
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
