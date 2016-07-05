@@ -73,11 +73,12 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 14, 2014  3121      dhladky      Initial creation.
- * Apr 25, 2016  5424      dhladky      Updated datasize calculation.
- * Apr 27, 2016  5366      tjensen      Updates for time selection changes
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------
+ * Aug 14, 2014  3121     dhladky   Initial creation.
+ * Apr 25, 2016  5424     dhladky   Updated datasize calculation.
+ * Apr 27, 2016  5366     tjensen   Updates for time selection changes
+ * Jul 05, 2016  5683     tjensen   Added handling for null returns
  * 
  * </pre>
  * 
@@ -313,6 +314,9 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
         Time newTime = new Time();
         newTime = setupDataSpecificTime(newTime, sub);
+        if (newTime == null) {
+            return null;
+        }
         sub.setTime(newTime);
 
         Coverage cov = new Coverage();

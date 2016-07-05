@@ -93,69 +93,91 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 17, 2012            mpduff       Initial creation.
- * Jun 04, 2012   645      jpiatt       Added tooltips & code clean up.
- * Jun 08, 2012   700      djohnson     Always use subset name for subscribed coverage.
- * Jun 21, 2012   736      djohnson     Change OPERATION_STATUS to OperationStatus.
- * Aug 02, 2012   955      djohnson     Type-safe registry query/responses.
- * Aug 08, 2012 863        jpiatt       Added clean & dirty checks.
- * Aug 10, 2012 1002       mpduff       Implementing dataset size estimation.
- * Aug 10, 2012 1022       djohnson     {@link SubsetXML} requires provider name,  use {@link GriddedDataSet}.
- * Aug 22, 2012 0743       djohnson     Subclass for data type specific operations.
- * Aug 29, 2012 0223       mpduff       Set cycle times in new sub object if not in create mode.
- * Sep 06, 2012 1121       mpduff       Use the DataLevelType.getKey() method.
- * Sep 07, 2012 1102       djohnson     Move setting subscription group name from old subscription into null check.
- * Oct 03, 2012 1241       djohnson     Use {@link DataDeliveryPermission} and registry handlers.
- * Oct  4, 2012 1245       jpiatt       Modify to reference util class & code clean up.
- * Oct 11, 2012 1221       mpduff       Set subscription's fulldataset flag.
- * Oct 31, 2012 1278       mpduff       Integrate SpatialUtils class.
- * Nov 09, 2012 1286       djohnson     Consolidate duplicate subscription handling.
- * Nov 26, 2012 1342       mpduff       Fix the closing of the dialog.
- * Nov 26, 2012 1286       djohnson     Always set registry ID on a subscription.
- * Dec 11, 2012 1405       mpduff       Move close confirmation dialog after event.doit = false.
- * Dec 10, 2012 1259       bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Dec 11, 2012 1264       mpduff       Changes to AreaComp.
- * Dec 12, 2012 1391       bgonzale     Mark this dialog as busy when the create subscription
- *                                      dialog is opened. Changed handleOK() to use create subscription
- *                                      dialog status in return result.
- * Dec 17, 2012 1434       mpduff       Don't allow underscores in name.
- * Dec 18, 2012 1439       mpduff       Redo subscription name validation.
- * Jan 02, 2012 1345       djohnson     Use gui thread task executor.
- * Jan 04, 2012 1420       mpduff       Pass the subscription in to the GriddedTimingSelectionDlg.
- * Jan 10, 2013 1444       mpduff       Fix the loading of saved subsets from the saved subset tab.
- * Jan 28, 2013 1530       djohnson     Break out long method chaining into local variables for debugging.
- * Jan 30, 2013 1543       djohnson     Use List instead of ArrayList.
- * Mar 21, 2013 1794       djohnson     Add option to create a shared subscription, if phase3 code is available.
- * Mar 29, 2013 1841       djohnson     Subscription is now UserSubscription.
- * Apr 08, 2013 1826       djohnson     Remove delivery options.
- * May 15, 2013 1040       mpduff       Implement shared subscriptions.
- * May 21, 2013 2020       mpduff       Rename UserSubscription to SiteSubscription.
- * May 28, 2013 1650       djohnson     More information when failing to schedule subscriptions.
- * Jun 04, 2013  223       mpduff       Moved data type specific code to sub classes.
- * Jun 11, 2013 2064       mpduff       Fix editing of subscriptions.
- * Jun 14, 2013 2108       mpduff       Refactored DataSizeUtils.
- * Oct 11, 2013   2386     mpduff       Refactor DD Front end.
- * Oct 15, 2013   2477     mpduff       Remove debug code.
- * Oct 23, 2013   2484     dhladky      Unique ID for subscriptions updated.
- * Oct 25, 2013   2292     mpduff       Move overlap processing to edex.
- * Nov 14, 2013   2538     mpduff       Added check for duplicate subscription.
- * Nov 14, 2013   2548     mpduff       Set the subscription type (QUERY OR RECURRING)
- * Jan 14, 2014   2459     mpduff       Change Subscription status code
- * Jan 20, 2014   2538     mpduff       Call doesNameExist method to check for dupes
- * Feb 11, 2014   2771     bgonzale     Use Data Delivery ID instead of Site.
- * Feb 26, 2014   #2833    lvenable     Added code to prevent the Subset (this) dialog from
- *                                      disappearing when the Subscription button is double clicked.
- *                                      Added dispose check for subscription button.
- * Mar 31, 2014   2889     dhladky      Added username for notification center tracking.
- * Apr 10, 2014   2864     mpduff       Changed how saved subset files are stored.
- * Aug 18, 2014   2746     ccody        Non-local Subscription changes not updating dialogs
- * Sept 04, 2014  3121     dhladky      Setup for PDA data type
- * Feb 13, 2015   3852     dhladky      All messaging is handled by the BWM and registry.
- * May 17, 2015   4047     dhladky      verified non-blocking.
- * Jul 01, 2015   4047     dhladky      Use callback YES NO dialog for closing.
- * Oct 15, 2015   4657     rferrel      Make data the return value to allow cleanup in the callback.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 17, 2012           mpduff    Initial creation.
+ * Jun 04, 2012  645      jpiatt    Added tooltips & code clean up.
+ * Jun 08, 2012  700      djohnson  Always use subset name for subscribed
+ *                                  coverage.
+ * Jun 21, 2012  736      djohnson  Change OPERATION_STATUS to OperationStatus.
+ * Aug 02, 2012  955      djohnson  Type-safe registry query/responses.
+ * Aug 08, 2012  863      jpiatt    Added clean & dirty checks.
+ * Aug 10, 2012  1002     mpduff    Implementing dataset size estimation.
+ * Aug 10, 2012  1022     djohnson  {@link SubsetXML} requires provider name, 
+ *                                  use {@link GriddedDataSet}.
+ * Aug 22, 2012  743      djohnson  Subclass for data type specific operations.
+ * Aug 29, 2012  223      mpduff    Set cycle times in new sub object if not in
+ *                                  create mode.
+ * Sep 06, 2012  1121     mpduff    Use the DataLevelType.getKey() method.
+ * Sep 07, 2012  1102     djohnson  Move setting subscription group name from
+ *                                  old subscription into null check.
+ * Oct 03, 2012  1241     djohnson  Use {@link DataDeliveryPermission} and
+ *                                  registry handlers.
+ * Oct 04, 2012  1245     jpiatt    Modify to reference util class & code clean
+ *                                  up.
+ * Oct 11, 2012  1221     mpduff    Set subscription's fulldataset flag.
+ * Oct 31, 2012  1278     mpduff    Integrate SpatialUtils class.
+ * Nov 09, 2012  1286     djohnson  Consolidate duplicate subscription handling.
+ * Nov 26, 2012  1342     mpduff    Fix the closing of the dialog.
+ * Nov 26, 2012  1286     djohnson  Always set registry ID on a subscription.
+ * Dec 11, 2012  1405     mpduff    Move close confirmation dialog after
+ *                                  event.doit = false.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Dec 11, 2012  1264     mpduff    Changes to AreaComp.
+ * Dec 12, 2012  1391     bgonzale  Mark this dialog as busy when the create
+ *                                  subscription dialog is opened. Changed
+ *                                  handleOK() to use create subscription dialog
+ *                                  status in return result.
+ * Dec 17, 2012  1434     mpduff    Don't allow underscores in name.
+ * Dec 18, 2012  1439     mpduff    Redo subscription name validation.
+ * Jan 02, 2012  1345     djohnson  Use gui thread task executor.
+ * Jan 04, 2012  1420     mpduff    Pass the subscription in to the
+ *                                  GriddedTimingSelectionDlg.
+ * Jan 10, 2013  1444     mpduff    Fix the loading of saved subsets from the
+ *                                  saved subset tab.
+ * Jan 28, 2013  1530     djohnson  Break out long method chaining into local
+ *                                  variables for debugging.
+ * Jan 30, 2013  1543     djohnson  Use List instead of ArrayList.
+ * Mar 21, 2013  1794     djohnson  Add option to create a shared subscription,
+ *                                  if phase3 code is available.
+ * Mar 29, 2013  1841     djohnson  Subscription is now UserSubscription.
+ * Apr 08, 2013  1826     djohnson  Remove delivery options.
+ * May 15, 2013  1040     mpduff    Implement shared subscriptions.
+ * May 21, 2013  2020     mpduff    Rename UserSubscription to SiteSubscription.
+ * May 28, 2013  1650     djohnson  More information when failing to schedule
+ *                                  subscriptions.
+ * Jun 04, 2013  223      mpduff    Moved data type specific code to sub
+ *                                  classes.
+ * Jun 11, 2013  2064     mpduff    Fix editing of subscriptions.
+ * Jun 14, 2013  2108     mpduff    Refactored DataSizeUtils.
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Oct 15, 2013  2477     mpduff    Remove debug code.
+ * Oct 23, 2013  2484     dhladky   Unique ID for subscriptions updated.
+ * Oct 25, 2013  2292     mpduff    Move overlap processing to edex.
+ * Nov 14, 2013  2538     mpduff    Added check for duplicate subscription.
+ * Nov 14, 2013  2548     mpduff    Set the subscription type (QUERY OR
+ *                                  RECURRING)
+ * Jan 14, 2014  2459     mpduff    Change Subscription status code
+ * Jan 20, 2014  2538     mpduff    Call doesNameExist method to check for dupes
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Feb 26, 2014  2833     lvenable  Added code to prevent the Subset (this)
+ *                                  dialog from disappearing when the
+ *                                  Subscription button is double clicked. Added
+ *                                  dispose check for subscription button.
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Apr 10, 2014  2864     mpduff    Changed how saved subset files are stored.
+ * Aug 18, 2014  2746     ccody     Non-local Subscription changes not updating
+ *                                  dialogs
+ * Sept 04, 201  3121     dhladky   Setup for PDA data type
+ * Feb 13, 2015  3852     dhladky   All messaging is handled by the BWM and
+ *                                  registry.
+ * May 17, 2015  4047     dhladky   verified non-blocking.
+ * Jul 01, 2015  4047     dhladky   Use callback YES NO dialog for closing.
+ * Oct 15, 2015  4657     rferrel   Make data the return value to allow cleanup
+ *                                  in the callback.
+ * Jul 05, 2016  5683     tjensen   Added checks for null on cancel
  * 
  * </pre>
  * 
@@ -456,13 +478,20 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                  */
                 subscribeBtn.setEnabled(false);
 
+                Subscription mySub = null;
                 if (subscription == null) {
-                    launchCreateSubscriptionGui(createSubscription(
-                            new SiteSubscription(), Network.OPSNET));
+                    mySub = createSubscription(new SiteSubscription(),
+                            Network.OPSNET);
+
                 } else {
-                    setupCommonSubscriptionAttributes(subscription,
+                    mySub = setupCommonSubscriptionAttributes(subscription,
                             subscription.getRoute());
-                    launchCreateSubscriptionGui(subscription);
+                }
+                if (mySub == null) {
+                    statusHandler
+                            .warn("Unable to process subscription creation. Null subscription received. Canceling...");
+                } else {
+                    launchCreateSubscriptionGui(mySub);
                 }
 
                 // Enable the subscription button if it is not disposed.
