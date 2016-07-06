@@ -26,7 +26,7 @@ import com.raytheon.uf.common.datadelivery.harvester.OGCAgent;
 import com.raytheon.uf.common.dataplugin.madis.MadisRecord;
 import com.raytheon.uf.common.pointdata.spatial.SurfaceObsLocation;
 import com.raytheon.uf.edex.ogc.common.util.PluginIngestFilter;
-import com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon;
+import com.raytheon.uf.edex.ogc.datadelivery.registry.WfsRegistryCollectorAddon;
 import com.raytheon.uf.edex.plugin.madis.ogc.MadisDimension;
 import com.raytheon.uf.edex.plugin.madis.ogc.MadisLayer;
 
@@ -75,7 +75,7 @@ public class MadisRegistryCollectorAddon extends
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon#getTime(com
+	 * com.raytheon.uf.edex.ogc.datadelivery.registry.WfsRegistryCollectorAddon#getTime(com
 	 * .raytheon.uf.common.dataplugin.PluginDataObject)
 	 */
 	@Override
@@ -88,7 +88,7 @@ public class MadisRegistryCollectorAddon extends
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon#copy(com.
+	 * com.raytheon.uf.edex.ogc.datadelivery.registry.WfsRegistryCollectorAddon#copy(com.
 	 * raytheon.uf.edex.ogc.common.db.SimpleLayer)
 	 */
 	@Override

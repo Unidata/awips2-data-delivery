@@ -23,7 +23,7 @@
    </requires>
 
    <plugin
-         id="com.raytheon.uf.edex.ogc.registry"
+         id="com.raytheon.uf.edex.ogc.datadelivery.registry"
          download-size="0"
          install-size="0"
          version="0.0.0"

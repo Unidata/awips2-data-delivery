@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Require-Bundle: com.raytheon.uf.common.status;bundle-version="1.12.1174",
  com.raytheon.uf.edex.ogc.common;bundle-version="1.0.0",
- com.raytheon.uf.edex.ogc.registry;bundle-version="1.0.0",
+ com.raytheon.uf.edex.ogc.datadelivery.registry;bundle-version="1.0.0",
  com.raytheon.uf.edex.plugin.obs.ogc;bundle-version="1.0.0",
  com.raytheon.uf.edex.wfs;bundle-version="1.0.0",
  com.raytheon.edex.plugin.obs;bundle-version="1.12.1174",

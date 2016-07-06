@@ -19,7 +19,7 @@ import com.raytheon.uf.common.pointdata.spatial.SurfaceObsLocation;
 import com.raytheon.uf.edex.ogc.common.db.DefaultPointDataDimension;
 import com.raytheon.uf.edex.ogc.common.db.LayerCollector;
 import com.raytheon.uf.edex.ogc.common.util.PluginIngestFilter;
-import com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon;
+import com.raytheon.uf.edex.ogc.datadelivery.registry.WfsRegistryCollectorAddon;
 import com.raytheon.uf.edex.plugin.obs.ogc.metar.MetarLayer;
 
 /**
@@ -60,7 +60,7 @@ public class ObsRegistryCollectorAddon
      * (non-Javadoc)
      * 
      * @see
-     * com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon#getTime(com
+     * com.raytheon.uf.edex.ogc.datadelivery.registry.WfsRegistryCollectorAddon#getTime(com
      * .raytheon.uf.common.dataplugin.PluginDataObject)
      */
     @Override
@@ -73,7 +73,7 @@ public class ObsRegistryCollectorAddon
      * (non-Javadoc)
      * 
      * @see
-     * com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon#copy(com.
+     * com.raytheon.uf.edex.ogc.datadelivery.registry.WfsRegistryCollectorAddon#copy(com.
      * raytheon.uf.edex.ogc.common.db.SimpleLayer)
      */
     @Override

@@ -30,13 +30,13 @@
 	</bean>
 
 	<bean id="madisRegistryAddonProvider"
-		class="com.raytheon.uf.edex.ogc.registry.RegistryCollectorAddonProvider"
+		class="com.raytheon.uf.edex.ogc.datadelivery.registry.RegistryCollectorAddonProvider"
 		depends-on="madisRegistryAddon">
 		<constructor-arg ref="madisRegistryAddon" />
 	</bean>
 
 	<bean id="madisWfsTypeModifier"
-		class="com.raytheon.uf.edex.ogc.registry.RegistryFeatureTypeModifier" />
+		class="com.raytheon.uf.edex.ogc.datadelivery.registry.RegistryFeatureTypeModifier" />
 	
 	<bean class="com.raytheon.uf.edex.ogc.common.util.AddonPropsPostProcessor" depends-on="madisRegistryAddonProvider, madisRegistryAddon">
 		<constructor-arg>

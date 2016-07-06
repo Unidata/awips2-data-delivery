@@ -6,7 +6,7 @@
 	<bean id="obsRegistryAddon" class="com.raytheon.uf.edex.plugin.obs.registry.ObsRegirstyCollectorAddon">
 	</bean>
 	
-	<bean id="obsRegistryAddonProvider" class="com.raytheon.uf.edex.ogc.registry.RegistryCollectorAddonProvider">
+	<bean id="obsRegistryAddonProvider" class="com.raytheon.uf.edex.ogc.datadelivery.registry.RegistryCollectorAddonProvider">
 		<constructor-arg ref="obsRegistryAddon"/>
 	</bean>
 	
