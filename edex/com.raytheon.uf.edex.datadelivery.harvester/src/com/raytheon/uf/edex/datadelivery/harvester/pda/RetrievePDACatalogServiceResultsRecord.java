@@ -20,13 +20,8 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * further licensing information.
  **/
 
-
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
@@ -53,6 +48,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAConnectionUtil;
  * ------------ ---------- ----------- --------------------------
  * June 13, 2014 3120      dhladky     Initial creation
  * Sept 14, 2015 4881      dhladky     Updates to PDA processing/ better debugging.
+ * Jul 11, 2016  5752      tjensen     Fix saving off file for comparison
  * 
  * </pre>
  * 
@@ -60,30 +56,29 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAConnectionUtil;
  * @version 1.0
  */
 
-
 public class RetrievePDACatalogServiceResultsRecord {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDACatalogServiceResponseHandler.class);
-    
+
     /** PDA harvester config **/
     private HarvesterConfig hc = null;
-    
+
     /** DEBUG PDA system **/
     private static final String DEBUG = "DEBUG";
-    
+
     /** PDA service config **/
     private static ServiceConfig pdaServiceConfig;
-    
+
     /** debug state */
     private Boolean debug = false;
-    
+
     /** spring constructor **/
     public RetrievePDACatalogServiceResultsRecord() {
         String dbValue = getServiceConfig().getConstantByName(DEBUG).getValue();
         debug = Boolean.valueOf(dbValue);
     }
-    
+
     /**
      * Read in the config file
      * 
@@ -98,17 +93,18 @@ public class RetrievePDACatalogServiceResultsRecord {
             try {
                 hc = HarvesterConfigurationManager.getPDAConfiguration();
             } catch (Exception e) {
-                statusHandler.handle(Priority.ERROR, "Could not retrieve PDA configuration!",
-                        e);
+                statusHandler.handle(Priority.ERROR,
+                        "Could not retrieve PDA configuration!", e);
             }
         }
 
         return hc;
     }
-    
+
     /**
-     * Spring enabled queue endpoint, called from spring
-     * Download the getRecordsResponseResult XML to local disk
+     * Spring enabled queue endpoint, called from spring Download the
+     * getRecordsResponseResult XML to local disk
+     * 
      * @param recordFilePath
      * @return
      */
@@ -118,22 +114,24 @@ public class RetrievePDACatalogServiceResultsRecord {
         byte[] outBytes = null;
         String localFilePath = null;
         String recordFilePath = null;
-        
+
         if (inBytes != null) {
-            
+
             PDACatalogServiceResponseWrapper psrwIn = null;
-            
+
             try {
                 psrwIn = SerializationUtil.transformFromThrift(
                         PDACatalogServiceResponseWrapper.class, inBytes);
             } catch (SerializationException e) {
-                statusHandler.handle(Priority.ERROR, "Failed to de-serialize message!", e);
+                statusHandler.handle(Priority.ERROR,
+                        "Failed to de-serialize message!", e);
             }
-            
-            recordFilePath = psrwIn.getFilePath();
+
+            if (psrwIn != null) {
+                recordFilePath = psrwIn.getFilePath();
+            }
         }
-        
-        
+
         String providerName = getHarvesterConfig().getProvider().getName();
         Connection providerConn = getHarvesterConfig().getProvider()
                 .getConnection();
@@ -151,7 +149,7 @@ public class RetrievePDACatalogServiceResultsRecord {
                     // Makes a copy on local file system for comparison.
                     String tmpDir = System.getProperty("java.io.tmpdir");
                     if (tmpDir != null) {
-                        FileUtil.copyFile(
+                        FileUtil.copyDirectory(
                                 new File(localFilePath),
                                 new File(tmpDir + "/getRecordsRequestFile"
                                         + (System.currentTimeMillis()) + ".xml"));
@@ -170,15 +168,14 @@ public class RetrievePDACatalogServiceResultsRecord {
                         "Unable to copy file to saved directory!!!!", e);
 
             }
-            
-           
+
         } else {
             throw new IllegalArgumentException(
                     "Provider information not valid!" + recordFilePath);
         }
 
         psrwOut = new PDACatalogServiceResponseWrapper(localFilePath);
-        
+
         try {
             outBytes = SerializationUtil.transformToThrift(psrwOut);
         } catch (SerializationException e) {
@@ -190,19 +187,20 @@ public class RetrievePDACatalogServiceResultsRecord {
 
         return outBytes;
     }
-   
+
     /**
      * Get the instance of the service config
+     * 
      * @return
      */
     private static ServiceConfig getServiceConfig() {
-        
+
         if (pdaServiceConfig == null) {
             pdaServiceConfig = HarvesterServiceManager.getInstance()
-            .getServiceConfig(ServiceType.PDA);
+                    .getServiceConfig(ServiceType.PDA);
         }
-        
+
         return pdaServiceConfig;
     }
-    
+
 }

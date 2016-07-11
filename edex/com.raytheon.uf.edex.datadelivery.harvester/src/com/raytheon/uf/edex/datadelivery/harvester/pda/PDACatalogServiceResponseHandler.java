@@ -83,7 +83,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @XmlSeeAlso({ net.opengis.cat.csw.v_2_0_2.ObjectFactory.class,
         net.opengis.gml.v_3_1_1.ObjectFactory.class,
-        net.opengis.filter.v_1_1_0.ObjectFactory.class})
+        net.opengis.filter.v_1_1_0.ObjectFactory.class })
 public class PDACatalogServiceResponseHandler implements
         IPDACatalogServiceResponseHandler {
 
@@ -165,7 +165,8 @@ public class PDACatalogServiceResponseHandler implements
     @WebMethod
     public void handleGetRecordsResponse(
             @WebParam(name = "GetRecordsResponse", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType response) throws ServiceExceptionReport {
+            net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType response)
+            throws ServiceExceptionReport {
 
         statusHandler
                 .info("-------Incoming GetRecords() response from PDA -----------");
@@ -202,7 +203,8 @@ public class PDACatalogServiceResponseHandler implements
     @WebMethod
     public void handleTransaction(
             @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            net.opengis.cat.csw.v_2_0_2.TransactionType transactions) throws ServiceExceptionReport {
+            net.opengis.cat.csw.v_2_0_2.TransactionType transactions)
+            throws ServiceExceptionReport {
 
         statusHandler.info("-------Incoming Transaction from PDA -----------");
         List<Object> records = transactions.getInsertOrUpdateOrDelete();
@@ -369,11 +371,12 @@ public class PDACatalogServiceResponseHandler implements
                                                 + lowerCorner);
                                     }
                                 } else {
-                                    statusHandler.warn("LOWER_CORNER is blank!");
+                                    statusHandler
+                                            .warn("LOWER_CORNER is blank!");
                                 }
                             }
                         } else if (node.getLocalName().equals(UPPER_CORNER)) {
-                            
+
                             if (node.getFirstChild() != null) {
                                 if (node.getFirstChild().getNodeValue() != null) {
                                     upperCorner = node.getFirstChild()
@@ -383,14 +386,18 @@ public class PDACatalogServiceResponseHandler implements
                                                 + upperCorner);
                                     }
                                 } else {
-                                    statusHandler.warn("UPPER_CORNER is blank!");
+                                    statusHandler
+                                            .warn("UPPER_CORNER is blank!");
                                 }
                             }
                         } else {
                             if (node.getFirstChild() != null) {
                                 if (node.getFirstChild().getNodeValue() != null) {
-                                      statusHandler.info("Extra node: "+node.getLocalName()+" value:"
-                                            + node.getFirstChild().getNodeValue());
+                                    statusHandler.info("Extra node: "
+                                            + node.getLocalName()
+                                            + " value:"
+                                            + node.getFirstChild()
+                                                    .getNodeValue());
                                 }
                             }
                         }
@@ -456,12 +463,13 @@ public class PDACatalogServiceResponseHandler implements
                     bbt.setLowerCorner(lowerVals);
                     bbt.setUpperCorner(upperVals);
                     // 2 dimensions
-                    bbt.setDimensions(BigInteger.valueOf(new Integer(2).intValue()));
+                    bbt.setDimensions(BigInteger.valueOf(new Integer(2)
+                            .intValue()));
                     JAXBElement<BoundingBoxType> jaxbBoundingBox = boundingBoxFactory
                             .createBoundingBox(bbt);
                     boundingBoxes.add(jaxbBoundingBox);
                 }
-                
+
                 // Add everything to the BriefRecordType
                 brt = new BriefRecordType();
                 brt.setBoundingBox(boundingBoxes);

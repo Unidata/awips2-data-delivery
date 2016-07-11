@@ -4,8 +4,7 @@
     <dateConfig>
         <format>YYYYMMddHHmmss</format>
     </dateConfig>
-    
-    <constant name="MODE" value="file"/>
+
     <constant name="BLANK" value=""/>
     <!-- Command Channel FTP protocol encryption type. -->
     <constant name="PROTOCOL" value="TLS"/>
@@ -58,5 +57,14 @@
     <!-- These are used for ASYNC retrieval requests -->
     <constant name="RETRIEVAL_MODE" value="ASYNC"/>
     <constant name="ASYNC_RESPONSE_HANDLER" value="https://{SITE_ADDR_TO_PDA}:8082/GetCoverageResponseHandler"/>
+    <!-- These are used for parsing the PDA data set metadata -->
+    <!-- Example: OR_ABI-L2-DMWF-M4C07_G16_s20161932020192_e20161932025000_c20161932032500.nc -->
+    <constant name="RECORD_TITLE_REGEX" value="([A-Z0-9]+_[A-Z0-9]+-[A-Z0-9]+)-(([A-Z0-9]{3,5})(C|F|M1|M2))-(M[34](C\d\d)?)_([A-Z0-9]+)_s([\d]{14})_e([\d]{14})_c([\d]{14})\.[a-zA-Z0-9]+" />
+    <constant name="COLLECTION_NAME_FORMAT" value="$1" />
+    <constant name="PARAM_FORMAT" value="$3" />
+    <constant name="START_TIME_FORMAT" value="$8" />
+    <constant name="END_TIME_FORMAT" value="$9" />
+    <constant name="CREATE_TIME_FORMAT" value="$10" />
+    <constant name="DATASET_NAME_FORMAT" value="$1-$2-$5_$7" />
 
 </serviceConfig>
