@@ -7,7 +7,8 @@
 	<provider serviceType="WFS" name="MADISOGC">
 		<connection>
 			<!-- for OGC it's your FQDN -->
-			<url>http://${harvester.external.address}:8085/wfs</url>
+			<!-- <url>http://${harvester.external.address}:8085/wfs</url>-->
+			<url>http://demo.opengeo.org/geoserver/wfs</url>
 			<userName>user</userName>
 			<password>password</password>
 			<encryption>CLEAR</encryption>
