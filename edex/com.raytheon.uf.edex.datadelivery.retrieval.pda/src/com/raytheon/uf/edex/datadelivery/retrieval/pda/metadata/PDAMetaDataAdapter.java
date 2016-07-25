@@ -36,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord;
+import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -65,7 +66,7 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * May 03, 2016  5599     tjensen   Pass subscription name to GoesrDecoder to
  *                                  override sectorID.
  * May 16, 2016  5599     tjensen   Refresh dataURI after overriding sectorID.
- * 
+ * Jul 25, 2016  5686     rjpeter   Fix dataURI of messageData.
  * </pre>
  * 
  * @author dhladky
@@ -186,12 +187,19 @@ public class PDAMetaDataAdapter extends
             if (pdo instanceof SatelliteRecord) {
                 SatelliteRecord sr = (SatelliteRecord) pdo;
                 sr.setSectorID(subName);
+
                 /*
                  * Set DataURI to null, then call getDataURI to recreate it with
                  * the new sectorId.
                  */
                 sr.setDataURI(null);
                 sr.getDataURI();
+                Object messageData = pdo.getMessageData();
+
+                if (messageData instanceof IDataRecord) {
+                    IDataRecord record = (IDataRecord) messageData;
+                    record.setGroup(sr.getDataURI());
+                }
             }
         }
     }
@@ -279,7 +287,7 @@ public class PDAMetaDataAdapter extends
                             .decode(gsi, headers);
                     // add to main pdo array
                     if (separatorPdos != null) {
-                        for (int i = 0; i < separatorPdos.length - 1; i++) {
+                        for (int i = 0; i < (separatorPdos.length - 1); i++) {
                             pdos.add(separatorPdos[i]);
                         }
                     }
