@@ -40,6 +40,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
+import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
@@ -55,6 +56,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
 import com.raytheon.uf.edex.ogc.common.OgcException;
 import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
+import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Parse PDA metadata
@@ -74,6 +76,8 @@ import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
  * Feb 16, 2016  5365     dhladky   Streamlined to exclude metaData updates for
  *                                  getRecords().
  * Jul 13, 2016  5752     tjensen   Refactor parseMetaData.
+ * Jul 22, 2016  5752     tjensen   Add additional logging information
+ * 
  * 
  * </pre>
  * 
@@ -223,6 +227,9 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         // Lookup for coverage information
         if (!record.getBoundingBox().isEmpty()) {
             coverage = getCoverage(record.getBoundingBox().get(0).getValue());
+        } else {
+            statusHandler.warn("Bounding box is empty for dataset '"
+                    + paramMap.get(DATASET_NAME) + "'");
         }
 
         /**
@@ -231,6 +238,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
          */
         if (coverage != null) {
 
+            statusHandler.info("Preparing to store DataSet: "
+                    + paramMap.get(DATASET_NAME));
             PDADataSet pdaDataSet = new PDADataSet();
             pdaDataSet.setCollectionName(paramMap.get(COLLECTION_NAME));
             pdaDataSet.setDataSetName(paramMap.get(DATASET_NAME));
@@ -252,6 +261,9 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             }
 
             storeDataSet(pdaDataSet);
+        } else {
+            statusHandler.warn("Coverage is null for: "
+                    + paramMap.get(DATASET_NAME));
         }
 
         /*
@@ -316,12 +328,13 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             BigInteger bi = BigInteger.valueOf(i.longValue());
             reOrderedBox.setDimensions(bi);
             // set the CRS
-            if (boundingBoxType.getCrs() == null) {
-                String crs = serviceConfig.getConstantValue("DEFAULT_CRS");
-                reOrderedBox.setCrs(crs);
-            } else {
-                reOrderedBox.setCrs(boundingBoxType.getCrs());
-            }
+            // TODO: Temporarily forcing CRS to default.
+            // if (boundingBoxType.getCrs() == null) {
+            String crs = serviceConfig.getConstantValue("DEFAULT_CRS");
+            reOrderedBox.setCrs(crs);
+            // } else {
+            // reOrderedBox.setCrs(boundingBoxType.getCrs());
+            // }
 
             if (debug == true) {
                 statusHandler.info("Parsed LOWER LON: "
@@ -338,6 +351,11 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             }
 
             envelope = BoundingBoxUtil.convert2D(reOrderedBox);
+
+            Coordinate ul = EnvelopeUtils.getUpperLeftLatLon(envelope);
+            Coordinate lr = EnvelopeUtils.getLowerRightLatLon(envelope);
+            statusHandler.info("Envelope Coods: (" + ul.x + "," + ul.y
+                    + ") to (" + lr.x + "," + lr.y + ")");
 
             coverage.setEnvelope(envelope);
 

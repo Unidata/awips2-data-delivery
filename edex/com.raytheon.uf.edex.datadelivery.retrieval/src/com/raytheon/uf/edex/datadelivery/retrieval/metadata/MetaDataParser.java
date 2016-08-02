@@ -55,23 +55,32 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011 218        dhladky      Initial creation
- * May 15, 2012 455        jspinks      Modified for storing object associations in registry.
- * Jun 21, 2012 736        djohnson     Change OPERATION_STATUS to OperationStatus.
- * Aug 02, 2012 955        djohnson     Type-safe registry query/responses.
- * Aug 10, 2012 1022       djohnson     {@link DataSetQuery} requires provider name.
- * Aug 20, 2012 0743       djohnson     Finish making registry type-safe.
- * Sep 14, 2012 1169       djohnson     Use storeOrReplaceRegistryObject.
- * Oct 03, 2012 1241       djohnson     Use registry handler, move unresolved reference handling into handlers themselves.
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Sept 30, 2013 1797      dhladky      Generics
- * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
- * Jun 21, 2014 3120       dhladky      Added more helper methods
- * Jan 20, 2016 5280       dhladky      Increase efficiency of object replication.
- * Feb 16, 2016 5365       dhladky      Refined interface for transaction, getRecords() exclusions.
- * Apr 05, 2016 5424       dhladky      Fixed initial condition for dataset which prevented storage.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2011  218      dhladky   Initial creation
+ * May 15, 2012  455      jspinks   Modified for storing object associations in
+ *                                  registry.
+ * Jun 21, 2012  736      djohnson  Change OPERATION_STATUS to OperationStatus.
+ * Aug 02, 2012  955      djohnson  Type-safe registry query/responses.
+ * Aug 10, 2012  1022     djohnson  {@link DataSetQuery} requires provider name.
+ * Aug 20, 2012  743      djohnson  Finish making registry type-safe.
+ * Sep 14, 2012  1169     djohnson  Use storeOrReplaceRegistryObject.
+ * Oct 03, 2012  1241     djohnson  Use registry handler, move unresolved
+ *                                  reference handling into handlers themselves.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Sep 30, 2013  1797     dhladky   Generics
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Jun 21, 2014  3120     dhladky   Added more helper methods
+ * Jan 20, 2016  5280     dhladky   Increase efficiency of object replication.
+ * Feb 16, 2016  5365     dhladky   Refined interface for transaction,
+ *                                  getRecords() exclusions.
+ * Apr 05, 2016  5424     dhladky   Fixed initial condition for dataset which
+ *                                  prevented storage.
+ * Jul 22, 2016  5752     tjensen   Fix storeDataSet and add additional logging
+ *                                  information
  * 
  * </pre>
  * 
@@ -81,7 +90,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public abstract class MetaDataParser<O extends Object> implements IParseMetaData<O> {
+public abstract class MetaDataParser<O extends Object> implements
+        IParseMetaData<O> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MetaDataParser.class);
@@ -89,7 +99,7 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
     protected ServiceConfig serviceConfig;
 
     public MetaDataParser() {
-        
+
     }
 
     /**
@@ -128,41 +138,47 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
     protected void storeDataSet(final DataSet dataSet) {
 
         String dataSetName = null;
-        
+
         try {
-     
+
             boolean store = false;
             // This returns null if no previous dataSet exists.
-            DataSet dataSetToStore = getDataSetToStore(dataSet);
-            
-            if (dataSetToStore == null) {
+            DataSet currentDataSet = DataDeliveryHandlers.getDataSetHandler()
+                    .getByNameAndProvider(dataSet.getDataSetName(),
+                            dataSet.getProviderName());
+
+            if (currentDataSet == null) {
                 store = true;
-                dataSetToStore = dataSet;
             } else {
-                if (!dataSetToStore.equals(dataSet)) {
+                if (!currentDataSet.equals(dataSet)) {
                     store = true;
                 }
             }
-            
+
             if (store) {
-                dataSetName = dataSetToStore.getDataSetName();
-                IDataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
-                handler.update(RegistryUtil.registryUser, dataSetToStore);
+                dataSetName = dataSet.getDataSetName();
+                IDataSetHandler handler = DataDeliveryHandlers
+                        .getDataSetHandler();
+                handler.update(RegistryUtil.registryUser, dataSet);
                 statusHandler.info("Dataset [" + dataSetName
                         + "] successfully stored in Registry");
-                storeDataSetName(dataSetToStore);
+                storeDataSetName(dataSet);
+            } else {
+                statusHandler
+                        .info("Matching dataset already exists in Registry. No update will be performed.");
             }
-            
+
         } catch (RegistryHandlerException e) {
             statusHandler.info("Dataset [" + dataSetName
                     + "] failed to store in Registry");
         }
     }
-    
+
     /**
      * Store Data objects
      * 
-     * @param DataSetMetaData<?>
+     * @param DataSetMetaData
+     *            <?>
      */
     public void storeMetaData(final DataSetMetaData<?> metaData) {
 
@@ -176,8 +192,8 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
             // "url" is ID for metaData
             currentMetaData = handler.getById(metaData.getUrl());
         } catch (RegistryHandlerException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, "Unable to lookup metadata ID: "+metaData.getUrl(), e1);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to lookup metadata ID: " + metaData.getUrl(), e1);
         }
 
         if (currentMetaData != null) {
@@ -217,9 +233,10 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
         // Now add the parameter Objects so we can associate
         // the DataSetName with parameters..
         dsn.setParameters(dataSetToStore.getParameters());
- 
+
         try {
-            DataDeliveryHandlers.getDataSetNameHandler().update(RegistryUtil.registryUser, dsn);
+            DataDeliveryHandlers.getDataSetNameHandler().update(
+                    RegistryUtil.registryUser, dsn);
             statusHandler.info("DataSetName object store complete, dataset ["
                     + dsn.getDataSetName() + "]");
         } catch (RegistryHandlerException e) {
@@ -241,7 +258,7 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
         IDataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
         Iterator<DataSetMetaData<?>> iter = metaDatas.iterator();
-        
+
         while (iter.hasNext()) {
 
             final DataSetMetaData<?> dsmd = iter.next();
@@ -278,7 +295,7 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
             }
         }
     }
-    
+
     /**
      * Make sure our provider is contained in the Registry
      * 
@@ -287,7 +304,7 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
     public void storeProvider(final Provider provider) {
 
         try {
-            
+
             IProviderHandler handler = DataDeliveryHandlers
                     .getProviderHandler();
 
@@ -313,7 +330,7 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
                             + "] failed to store in Registry");
         }
     }
-    
+
     /**
      * Store a parameter object to the registry. If necessary, also store the
      * ParameterLevel Objects needed to successfully store the Parameter Object.
@@ -324,11 +341,12 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
     public void storeParameter(Parameter parameter) {
 
         try {
-            
-            IParameterHandler handler = DataDeliveryHandlers.getParameterHandler();
+
+            IParameterHandler handler = DataDeliveryHandlers
+                    .getParameterHandler();
             Parameter currentParameter = handler.getByName(parameter.getName());
             boolean store = false;
-            
+
             if (currentParameter != null) {
                 if (!currentParameter.equals(parameter)) {
                     store = true;
@@ -336,36 +354,37 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
             } else {
                 store = true;
             }
-            
+
             if (store) {
                 handler.update(RegistryUtil.registryUser, parameter);
                 statusHandler.info("Parameter [" + parameter.getName()
                         + "] successfully stored in Registry");
             }
-  
+
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Failed to store parameter [" + parameter.getName() + "]");
         }
     }
-    
+
     /**
      * Gets the availability offset for this data set
+     * 
      * @param dataSetName
      * @param startMillis
      * @return
      */
     public int getDataSetAvailabilityTime(String dataSetName, long startMillis) {
-        
-     // Calculate dataset availability delay
+
+        // Calculate dataset availability delay
         DataSetInformation dsi = LookupManager.getInstance()
                 .getDataSetInformation(dataSetName);
         long offset = 0l;
         long endMillis = TimeUtil.newGmtCalendar().getTimeInMillis();
 
         /**
-         * This is here for if no one has configured this particular model
-         * They are gross defaults and will not guarantee this model working
+         * This is here for if no one has configured this particular model They
+         * are gross defaults and will not guarantee this model working
          */
         if (dsi == null) {
             Double multi = Double.parseDouble(serviceConfig
@@ -374,8 +393,8 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
                     .getConstantValue("DEFAULT_RUN_INCREMENT"));
             Integer defaultOffest = Integer.parseInt(serviceConfig
                     .getConstantValue("DEFAULT_OFFSET"));
-            dsi = new DataSetInformation(dataSetName, multi,
-                    runIncrement, defaultOffest);
+            dsi = new DataSetInformation(dataSetName, multi, runIncrement,
+                    defaultOffest);
             // writes out a place holder DataSetInformation object in the
             // file
             LookupManager.getInstance().modifyDataSetInformationLookup(dsi);
@@ -386,8 +405,8 @@ public abstract class MetaDataParser<O extends Object> implements IParseMetaData
         if (dsi.getRange() < offset) {
             offset = dsi.getDefaultOffset();
         }
-        
-        return (int)offset;
+
+        return (int) offset;
     }
 
 }
