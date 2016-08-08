@@ -19,33 +19,31 @@
  **/
 package com.raytheon.uf.edex.stats;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.JAXBException;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.Maps;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.PathManagerFactoryTest;
-import com.raytheon.uf.common.serialization.JAXBManager;
+import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.stats.StatsGrouping;
 import com.raytheon.uf.common.stats.StatsGroupingColumn;
 import com.raytheon.uf.common.stats.xml.StatisticsConfig;
 import com.raytheon.uf.common.stats.xml.StatisticsEventConfig;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.stats.util.ConfigLoader;
 
 /**
@@ -55,23 +53,25 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 15, 2013 1487       djohnson     Initial creation
- * Aug 26, 2014 3365       ccody        Separate Data Delivery tests out of AWIPS 2 baseline.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 15, 2013  1487     djohnson  Initial creation
+ * Aug 26, 2014  3365     ccody     Separate Data Delivery tests out of AWIPS 2
+ *                                  baseline.
+ * Aug 08, 2016  5744     mapeters  Stats config file moved from edex_static to
+ *                                  common_static
  * 
  * </pre>
  * 
  * @author djohnson
- * @version 1.0
  */
 
 public class AggregateManagerTest {
-    private static JAXBManager jaxbManager;
+    private static SingleTypeJAXBManager<StatisticsConfig> jaxbManager;
 
     @BeforeClass
     public static void classSetUp() throws JAXBException {
-        jaxbManager = new JAXBManager(StatisticsConfig.class);
+        jaxbManager = new SingleTypeJAXBManager<>(StatisticsConfig.class);
     }
 
     @Before
@@ -82,13 +82,15 @@ public class AggregateManagerTest {
     @Test
     public void testDeterminingGroupForEvent() throws Exception {
         IPathManager pm = PathManagerFactory.getPathManager();
-        final LocalizationFile lf = pm.getLocalizationFile(
-                new LocalizationContext(LocalizationType.EDEX_STATIC,
-                        LocalizationLevel.BASE), FileUtil.join("stats",
-                        "mockStats.xml"));
+        LocalizationContext ctx = pm.getContext(LocalizationType.COMMON_STATIC,
+                LocalizationLevel.BASE);
+        String path = "stats" + IPathManager.SEPARATOR + "mockStats.xml";
+        final ILocalizationFile lf = pm.getLocalizationFile(ctx, path);
 
-        final StatisticsConfig statisticsConfig = lf.jaxbUnmarshal(
-                StatisticsConfig.class, jaxbManager);
+        StatisticsConfig statisticsConfig = null;
+        try (InputStream is = lf.openInputStream()) {
+            statisticsConfig = jaxbManager.unmarshalFromInputStream(is);
+        }
 
         ConfigLoader.validate(
                 Maps.<String, StatisticsEventConfig> newHashMap(),
@@ -100,7 +102,7 @@ public class AggregateManagerTest {
         mockEvent.setProcessingTime(1000L);
         mockEvent.setProcessingLatency(500L);
 
-        List<StatsGrouping> groupList = new ArrayList<StatsGrouping>();
+        List<StatsGrouping> groupList = new ArrayList<>();
         groupList.add(new StatsGrouping("pluginName", "somePlugin"));
         groupList.add(new StatsGrouping("fileName", "someFileName"));
         StatsGroupingColumn expectedGroupingColumn = new StatsGroupingColumn();
@@ -109,7 +111,7 @@ public class AggregateManagerTest {
         final StatsGroupingColumn actualGroupingColumn = AggregateManager
                 .determineGroupRepresentationForEvent(statisticsConfig
                         .getEvents().iterator().next(), mockEvent);
-        assertThat(actualGroupingColumn, is(equalTo(expectedGroupingColumn)));
+        Assert.assertThat(actualGroupingColumn,
+                CoreMatchers.is(CoreMatchers.equalTo(expectedGroupingColumn)));
     }
-
 }
