@@ -33,9 +33,10 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 01, 2014 3550       ccody       Initial version
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------
+ * Dec 01, 2014  3550     ccody     Initial version
+ * Aug 09, 2016  5771     rjpeter   Update getByDataSetNameAndProvider to read only
  * 
  * </pre>
  * 
@@ -55,7 +56,7 @@ public class DataSetLatencyDao extends SessionManagedDao<Long, DataSetLatency>
      * {@inheritDoc}
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+    @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public DataSetLatency getByDataSetNameAndProvider(String dataSetName,
             String providerName) {
         return uniqueResult(GET_FOR_DATA_SET_AND_PROVIDER_NAME, "dataSetName",

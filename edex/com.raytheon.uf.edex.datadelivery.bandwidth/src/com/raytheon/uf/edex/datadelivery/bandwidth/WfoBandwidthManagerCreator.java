@@ -33,7 +33,6 @@ import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
@@ -57,27 +56,32 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2013 1543       djohnson     Initial creation
- * Feb 27, 2013 1644       djohnson     Schedule SBN subscriptions by routing to the NCF bandwidth manager.
- * Mar 11, 2013 1645       djohnson     Add missing Spring file.
- * May 15, 2013 2000       djohnson     Include daos.
- * Jul 10, 2013 2106       djohnson     Dependency inject registry handlers.
- * Oct 2,  2013 1797       dhladky      Generics
- * Oct 28, 2013 2506       bgonzale     SBN (Shared) Scheduled at the central registry.
- *                                      Added subscription notification service to bandwidth manager.
- * Nov 19, 2013 2545       bgonzale     Added registryEventListener method for update events.
- *                                      Added getBandwidthGraphData.
- *                                      Reschedule updated local subscriptions.
- * Nov 27, 2013 2545       mpduff       Get data by network
- * Dec 04, 2013 2566       bgonzale     use bandwidthmanager method to retrieve spring files.
- * Jan 14, 2014 2692       dhladky      AdhocSubscription handler
- * Jan 30, 2014 2636       mpduff       Scheduling refactor.
- * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
- * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
- * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
- * Mar 25, 2015 4329       dhladky      Threaded the graph data requests.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2013  1543     djohnson  Initial creation
+ * Feb 27, 2013  1644     djohnson  Schedule SBN subscriptions by routing to the
+ *                                  NCF bandwidth manager.
+ * Mar 11, 2013  1645     djohnson  Add missing Spring file.
+ * May 15, 2013  2000     djohnson  Include daos.
+ * Jul 10, 2013  2106     djohnson  Dependency inject registry handlers.
+ * Oct 02, 2013  1797     dhladky   Generics
+ * Oct 28, 2013  2506     bgonzale  SBN (Shared) Scheduled at the central
+ *                                  registry. Added subscription notification
+ *                                  service to bandwidth manager.
+ * Nov 19, 2013  2545     bgonzale  Added registryEventListener method for
+ *                                  update events. Added getBandwidthGraphData.
+ *                                  Reschedule updated local subscriptions.
+ * Nov 27, 2013  2545     mpduff    Get data by network
+ * Dec 04, 2013  2566     bgonzale  use bandwidthmanager method to retrieve
+ *                                  spring files.
+ * Jan 14, 2014  2692     dhladky   AdhocSubscription handler
+ * Jan 30, 2014  2636     mpduff    Scheduling refactor.
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Apr 22, 2014  2992     dhladky   Added IdUtil for siteList
+ * Oct 08, 2014  2746     ccody     Relocated registryEventListener to
+ *                                  EdexBandwidthManager super class
+ * Mar 25, 2015  4329     dhladky   Threaded the graph data requests.
+ * Aug 09, 2016  5771     rjpeter   Update constructor
  * 
  * </pre>
  * 
@@ -89,21 +93,22 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(WfoBandwidthManagerCreator.class);
-    
+
     /** Processes map <registryName, GraphData> **/
     private static ConcurrentHashMap<String, BandwidthGraphData> graphDataMap = null;
-    
+
     /** Processes list <registryName> **/
     private static List<String> processList = null;
-    
+
     /** NCF **/
     protected static final String NCF = "NCF";
-    
+
     /** LOCAL registry **/
     protected static final String LOCAL_REGISTRY = "LOCAL_REGISTRY";
-        
+
     /** The threaded requester for graph data **/
     protected static ExecutorService graphDataExecutor;
+
     /**
      * WFO {@link BandwidthManager} implementation.
      */
@@ -111,8 +116,9 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
             extends EdexBandwidthManager<T, C> {
 
         private static final String MODE_NAME = "registry";
-        
-        private static final String[] WFO_BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
+
+        private static final String[] WFO_BANDWIDTH_MANAGER_FILES = BandwidthUtil
+                .getSpringFileNamesForMode(MODE_NAME);
 
         // TODO: Change to be tied in Spring
         @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -140,16 +146,15 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
                 RegistryIdUtil idUtil,
                 IDataSetMetaDataHandler dataSetMetaDataHandler,
                 ISubscriptionHandler subscriptionHandler,
-                IAdhocSubscriptionHandler adhocSubscriptionHandler,
                 ISubscriptionNotificationService subscriptionNotificationService,
                 ISubscriptionFinder findSubscriptionsStrategy) {
-            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
-                    dataSetMetaDataHandler, subscriptionHandler,
-                    adhocSubscriptionHandler, subscriptionNotificationService,
-                    findSubscriptionsStrategy);
-            
+            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
+                    idUtil, dataSetMetaDataHandler, subscriptionHandler,
+                    subscriptionNotificationService, findSubscriptionsStrategy);
+
             graphDataExecutor = Executors.newFixedThreadPool(2);
         }
+
         @Override
         protected String[] getSpringFilesForNewInstance() {
             return WFO_BANDWIDTH_MANAGER_FILES;
@@ -192,9 +197,10 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
         protected BandwidthGraphData getBandwidthGraphData() {
             return requestGraphData();
         }
-        
+
         /**
          * Requests the local registry's bandwidth graph data.
+         * 
          * @return
          */
         protected BandwidthGraphData getLocalBandwidthGraphData() {
@@ -208,7 +214,8 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
          */
         protected BandwidthGraphData requestGraphData() {
 
-            graphDataMap = new ConcurrentHashMap<String, BandwidthGraphData>(2, 1.0f);
+            graphDataMap = new ConcurrentHashMap<String, BandwidthGraphData>(2,
+                    1.0f);
             processList = new ArrayList<String>(2);
 
             // Add the registries needed
@@ -217,7 +224,8 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
 
             // start threads
             for (String registry : processList) {
-                graphDataExecutor.execute(new GraphDataRequestor(registry, this));
+                graphDataExecutor
+                        .execute(new GraphDataRequestor(registry, this));
             }
 
             // count down latch
@@ -249,33 +257,30 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
                     data.merge(entry.getValue());
                 }
             }
-            
+
             graphDataMap = null;
             processList = null;
 
             return data;
         }
     }
-    
+
     /**
      * {@inheritDoc}
      */
     @Override
     public IBandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
-            BandwidthDaoUtil bandwidthDaoUtil,
-            RegistryIdUtil idUtil,
+            BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil,
             IDataSetMetaDataHandler dataSetMetaDataHandler,
             ISubscriptionHandler subscriptionHandler,
-            IAdhocSubscriptionHandler adhocSubscriptionHandler,
             ISubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
         return new WfoBandwidthManager<T, C>(dbInit, bandwidthDao,
-                retrievalManager, bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
-                subscriptionHandler, adhocSubscriptionHandler,
+                retrievalManager, bandwidthDaoUtil, idUtil,
+                dataSetMetaDataHandler, subscriptionHandler,
                 subscriptionNotificationService, findSubscriptionsStrategy);
     }
-    
 
     /**
      * Class to thread the retrieval of GraphData
@@ -285,7 +290,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
      */
     static class GraphDataRequestor implements Runnable {
 
-        private String registryName;
+        private final String registryName;
 
         @SuppressWarnings("rawtypes")
         private WfoBandwidthManager wfoBandwidthManager;
@@ -295,7 +300,9 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
             try {
                 process();
             } catch (Exception e) {
-                statusHandler.error("Unable to request graph data from this registry! "+registryName, e);
+                statusHandler.error(
+                        "Unable to request graph data from this registry! "
+                                + registryName, e);
             } finally {
                 processList.remove(registryName);
             }

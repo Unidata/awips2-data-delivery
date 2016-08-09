@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.Subscribe;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -26,31 +27,42 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 11, 2012 0726       djohnson     Add SW history, check for bandwidth enabled,
- *                                      change the event listener type.
- * Oct 26, 2012 1286       djohnson     Return list of unscheduled allocations.
- * Feb 05, 2013 1580       mpduff       EventBus refactor.
- * Feb 14, 2013 1596       djohnson     Warn log when unable to find a SubscriptionRetrieval.
- * 3/18/2013    1802       bphillip     Event bus registration is now a post-construct operation to ensure proxy is registered with bus
- * 3/13/2013    1802       bphillip     Moved event bus registration from post-construct to spring static method call
- * Jun 13, 2013 2095       djohnson     Can schedule any subclass of BandwidthAllocation.
- * Jun 25, 2013 2106       djohnson     Copy state from another instance, add ability to check for proposed bandwidth throughput changes.
- * Jul 09, 2013 2106       djohnson     Only needs to unregister from the EventBus when used in an EDEX instance, so handled in EdexBandwidthManager.
- * Oct 03, 2013 2267       bgonzale     Added check for no retrieval plan matching in the proposed retrieval plans.
- * Jan 30, 2014   2686     dhladky      refactor of retrieval.
- * Feb 10, 2014  2678      dhladky      Prevent duplicate allocations.
- * Apr 02, 2014  2810      dhladky      Priority sorting of allocations.
- * Sept 14, 2014 2131      dhladky      PDA additions
- * Jan 15, 2014  3884      dhladky      Removed shutdown, replaced with restart(), shutdown undermined #2749 BWM ticket;
- * Mar 08, 2015 3950       dhladky      Better logging of foreign retrieval ID's.
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 11, 2012  726      djohnson  Add SW history, check for bandwidth enabled,
+ *                                  change the event listener type.
+ * Oct 26, 2012  1286     djohnson  Return list of unscheduled allocations.
+ * Feb 05, 2013  1580     mpduff    EventBus refactor.
+ * Feb 14, 2013  1596     djohnson  Warn log when unable to find a
+ *                                  SubscriptionRetrieval.
+ * Mar 18, 2013  1802     bphillip  Event bus registration is now a
+ *                                  post-construct operation to ensure proxy is
+ *                                  registered with bus
+ * Mar 13, 2013  1802     bphillip  Moved event bus registration from
+ *                                  post-construct to spring static method call
+ * Jun 13, 2013  2095     djohnson  Can schedule any subclass of
+ *                                  BandwidthAllocation.
+ * Jun 25, 2013  2106     djohnson  Copy state from another instance, add
+ *                                  ability to check for proposed bandwidth
+ *                                  throughput changes.
+ * Jul 09, 2013  2106     djohnson  Only needs to unregister from the EventBus
+ *                                  when used in an EDEX instance, so handled in
+ *                                  EdexBandwidthManager.
+ * Oct 03, 2013  2267     bgonzale  Added check for no retrieval plan matching
+ *                                  in the proposed retrieval plans.
+ * Jan 30, 2014  2686     dhladky   refactor of retrieval.
+ * Feb 10, 2014  2678     dhladky   Prevent duplicate allocations.
+ * Apr 02, 2014  2810     dhladky   Priority sorting of allocations.
+ * Sept 14, 201  2131     dhladky   PDA additions
+ * Jan 15, 2014  3884     dhladky   Removed shutdown, replaced with restart(),
+ *                                  shutdown undermined #2749 BWM ticket;
+ * Mar 08, 2015  3950     dhladky   Better logging of foreign retrieval ID's.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Aug 09, 2016  5771     rjpeter   Allow concurrent event processing
  * 
  * </pre>
  * 
  * @author djohnson
- * @version 1.0
  */
 public class RetrievalManager {
 
@@ -59,18 +71,15 @@ public class RetrievalManager {
 
     // Package-private on purpose so agents have visibility
     static final BandwidthAllocation POISON_PILL = new BandwidthAllocation();
-   
+
     private final IBandwidthDao bandwidthDao;
 
     // A Map of the Paths to retrievalPlans
     private Map<Network, RetrievalPlan> retrievalPlans = Collections
             .synchronizedSortedMap(new TreeMap<Network, RetrievalPlan>());
 
-    private final Object notifier;
-
-    public RetrievalManager(IBandwidthDao bandwidthDao, Object notifier) {
+    public RetrievalManager(IBandwidthDao bandwidthDao) {
         this.bandwidthDao = bandwidthDao;
-        this.notifier = notifier;
     }
 
     public Map<Network, RetrievalPlan> getRetrievalPlans() {
@@ -91,9 +100,10 @@ public class RetrievalManager {
      */
     public <T extends BandwidthAllocation> List<BandwidthAllocation> schedule(
             List<T> inallocations) {
-        List<BandwidthAllocation> unscheduled = new ArrayList<BandwidthAllocation>();
+        List<BandwidthAllocation> unscheduled = new ArrayList<>();
         // Arrange allocations in priority order
-        List<BandwidthAllocation> bandwidthAllocations = new ArrayList<BandwidthAllocation>(inallocations.size());
+        List<BandwidthAllocation> bandwidthAllocations = new ArrayList<>(
+                inallocations.size());
         bandwidthAllocations.addAll(inallocations);
         Collections.sort(bandwidthAllocations);
 
@@ -138,6 +148,7 @@ public class RetrievalManager {
 
     @SuppressWarnings("unchecked")
     @Subscribe
+    @AllowConcurrentEvents
     public void retrievalCompleted(RetrievalManagerNotifyEvent event) {
 
         long eventId = Long.parseLong(event.getId());
@@ -199,15 +210,18 @@ public class RetrievalManager {
         }
         return null;
     }
-    
+
     /***
-     * Method used in practice because we need to search for expired allocations.
+     * Method used in practice because we need to search for expired
+     * allocations.
+     * 
      * @param network
      * @param agentType
      * @return
      */
-    public List<BandwidthAllocation> getRecentAllocations(Network network, String agentType) {
-        
+    public List<BandwidthAllocation> getRecentAllocations(Network network,
+            String agentType) {
+
         List<BandwidthAllocation> allocations = null;
 
         RetrievalPlan plan = getRetrievalPlans().get(network);
@@ -216,7 +230,7 @@ public class RetrievalManager {
                 return plan.getRecentAllocations(agentType);
             }
         }
-        
+
         return allocations;
     }
 
@@ -241,9 +255,9 @@ public class RetrievalManager {
             }
         }
     }
-    
+
     /**
-     * Restart the Retrieval 
+     * Restart the Retrieval
      */
     public void restart() {
         initRetrievalPlans();
@@ -281,7 +295,7 @@ public class RetrievalManager {
                 .entrySet()) {
             final RetrievalPlan proposedRetrievalPlan = proposedRetrievalManager.retrievalPlans
                     .get(entry.getKey());
-            if (proposedRetrievalPlan != null && entry.getValue() != null) {
+            if ((proposedRetrievalPlan != null) && (entry.getValue() != null)) {
                 if (proposedRetrievalPlan.getDefaultBandwidth() != entry
                         .getValue().getDefaultBandwidth()) {
                     proposingBandwidthChanges = true;

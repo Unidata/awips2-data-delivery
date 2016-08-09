@@ -26,7 +26,6 @@ import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.IDataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ISubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.ISubscriptionNotificationService;
@@ -50,21 +49,26 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2013 1543       djohnson     Initial creation
- * Feb 27, 2013 1644       djohnson     Schedule SBN subscriptions.
- * Mar 11, 2013 1645       djohnson     Add missing Spring file.
- * May 15, 2013 2000       djohnson     Include daos.
- * Jul 10, 2013 2106       djohnson     Dependency inject registry handlers.
- * Oct 3   2013 1797       dhladky      Generics added  
- * Nov 08, 2013 2506       bgonzale     Added subscription notification service to bandwidth manager.
- * Nov 19, 2013 2545       bgonzale     Added registryEventListener method for update events.
- *                                      Reschedule updated shared subscriptions.
- * Dec 04, 2013 2566       bgonzale     use bandwidthmanager method to retrieve spring files.
- * Jan 14, 2014 2692       dhladky      AdhocSubscription handler
- * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
- * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2013  1543     djohnson  Initial creation
+ * Feb 27, 2013  1644     djohnson  Schedule SBN subscriptions.
+ * Mar 11, 2013  1645     djohnson  Add missing Spring file.
+ * May 15, 2013  2000     djohnson  Include daos.
+ * Jul 10, 2013  2106     djohnson  Dependency inject registry handlers.
+ * Oct 03, 2013  1797     dhladky   Generics added
+ * Nov 08, 2013  2506     bgonzale  Added subscription notification service to
+ *                                  bandwidth manager.
+ * Nov 19, 2013  2545     bgonzale  Added registryEventListener method for
+ *                                  update events. Reschedule updated shared
+ *                                  subscriptions.
+ * Dec 04, 2013  2566     bgonzale  use bandwidthmanager method to retrieve
+ *                                  spring files.
+ * Jan 14, 2014  2692     dhladky   AdhocSubscription handler
+ * Apr 22, 2014  2992     dhladky   Added IdUtil for siteList
+ * Oct 08, 2014  2746     ccody     Relocated registryEventListener to
+ *                                  EdexBandwidthManager super class
+ * Aug 09, 2016  5771     rjpeter   Update constructor
  * 
  * </pre>
  * 
@@ -82,7 +86,8 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
 
         private static final String MODE_NAME = "centralRegistry";
 
-        private static final String[] NCF_BANDWIDTH_MANAGER_FILES = BandwidthUtil.getSpringFileNamesForMode(MODE_NAME);
+        private static final String[] NCF_BANDWIDTH_MANAGER_FILES = BandwidthUtil
+                .getSpringFileNamesForMode(MODE_NAME);
 
         /**
          * Constructor.
@@ -100,13 +105,11 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
                 RegistryIdUtil idUtil,
                 IDataSetMetaDataHandler dataSetMetaDataHandler,
                 ISubscriptionHandler subscriptionHandler,
-                IAdhocSubscriptionHandler adhocSubscriptionHandler,
                 ISubscriptionNotificationService subscriptionNotificationService,
                 ISubscriptionFinder findSubscriptionsStrategy) {
-            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
-                    dataSetMetaDataHandler, subscriptionHandler,
-                    adhocSubscriptionHandler, subscriptionNotificationService,
-                    findSubscriptionsStrategy);
+            super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
+                    idUtil, dataSetMetaDataHandler, subscriptionHandler,
+                    subscriptionNotificationService, findSubscriptionsStrategy);
         }
 
         @Override
@@ -141,16 +144,14 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
     @Override
     public IBandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
-            BandwidthDaoUtil bandwidthDaoUtil,
-            RegistryIdUtil idUtil,
+            BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil,
             IDataSetMetaDataHandler dataSetMetaDataHandler,
             ISubscriptionHandler subscriptionHandler,
-            IAdhocSubscriptionHandler adhocSubscriptionHandler,
             ISubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
         return new NcfBandwidthManager(dbInit, bandwidthDao, retrievalManager,
-                bandwidthDaoUtil, idUtil, dataSetMetaDataHandler, subscriptionHandler,
-                adhocSubscriptionHandler, subscriptionNotificationService,
+                bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
+                subscriptionHandler, subscriptionNotificationService,
                 findSubscriptionsStrategy);
     }
 

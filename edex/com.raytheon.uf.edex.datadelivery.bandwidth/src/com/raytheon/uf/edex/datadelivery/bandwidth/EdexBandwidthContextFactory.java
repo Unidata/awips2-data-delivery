@@ -51,16 +51,18 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 24, 2012 1286       djohnson     Initial creation
- * Feb 20, 2013 1543       djohnson     Add IEdexBandwidthManagerCreator.
- * Jul 10, 2013 2106       djohnson     Dependency inject registry handlers.
- * Oct 03, 2013 1797       dhladky      Some generics
- * Nov 07, 2013 2506       bgonzale     Added notification handler to bandwidth context.
- * Jan 14, 2014 2692       dhladky      AdhocSubscription handler
- * Jan 30, 2014 2636       mpduff       Scheduling refactor.
- * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 24, 2012  1286     djohnson  Initial creation
+ * Feb 20, 2013  1543     djohnson  Add IEdexBandwidthManagerCreator.
+ * Jul 10, 2013  2106     djohnson  Dependency inject registry handlers.
+ * Oct 03, 2013  1797     dhladky   Some generics
+ * Nov 07, 2013  2506     bgonzale  Added notification handler to bandwidth
+ *                                  context.
+ * Jan 14, 2014  2692     dhladky   AdhocSubscription handler
+ * Jan 30, 2014  2636     mpduff    Scheduling refactor.
+ * Apr 22, 2014  2992     dhladky   Added IdUtil for siteList
+ * Aug 09, 2016  5771     rjpeter   Update constructor
  * 
  * </pre>
  * 
@@ -91,11 +93,9 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
         IBandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
                 IBandwidthDao<T, C> bandwidthDao,
                 RetrievalManager retrievalManager,
-                BandwidthDaoUtil<T, C> bandwidthDaoUtil,
-                RegistryIdUtil idUtil,
+                BandwidthDaoUtil<T, C> bandwidthDaoUtil, RegistryIdUtil idUtil,
                 IDataSetMetaDataHandler dataSetMetaDataHandler,
                 ISubscriptionHandler subscriptionHandler,
-                IAdhocSubscriptionHandler adhocSubscriptionHandler,
                 ISubscriptionNotificationService notificationService,
                 ISubscriptionFinder findSubscriptionsStrategy);
     }
@@ -257,11 +257,10 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
     @Override
     public IBandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
-            BandwidthDaoUtil bandwidthDaoUtil,RegistryIdUtil idUtil) {
+            BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil) {
         return bandwidthManagerCreator.getBandwidthManager(dbInit,
                 bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
                 dataSetMetaDataHandler, subscriptionHandler,
-                adhocSubscriptionHandler, notificationService,
-                findSubscriptionsStrategy);
+                notificationService, findSubscriptionsStrategy);
     }
 }

@@ -91,7 +91,6 @@
 	<bean id="retrievalManager"
 		class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager">
 		<constructor-arg ref="bandwidthDao" />
-		<constructor-arg ref="retrievalAgentNotifier" />
 		<property name="retrievalPlans" ref="retrievalPlans" />
 	</bean>
 
