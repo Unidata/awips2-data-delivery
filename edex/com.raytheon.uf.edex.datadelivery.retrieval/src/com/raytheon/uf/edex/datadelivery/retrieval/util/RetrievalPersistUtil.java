@@ -20,7 +20,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.util;
  * further licensing information.
  **/
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +28,7 @@ import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.datastorage.StorageStatus;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
@@ -52,22 +53,23 @@ import com.raytheon.uf.edex.datadelivery.retrieval.mapping.PluginRouteList;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 26, 2012  1367      dhladky  Common plugin route persistence
- * Jan 30, 2014 2686       dhladky      refactor of retrieval.
+ * Nov 26, 2012 1367       dhladky     Common plugin route persistence
+ * Jan 30, 2014 2686       dhladky     Refactor of retrieval.
+ * Aug 08, 2016 5744       mapeters    Plugin routes file moved from
+ *                                     edex_static to common_static
  * 
  * </pre>
  * 
- * @version 1.0
  */
 
 public final class RetrievalPersistUtil {
 
-    private final String OVERRIDE_PATH = "mapping" + File.separatorChar
+    private final String OVERRIDE_PATH = "mapping" + IPathManager.SEPARATOR
             + "pluginRoutes.xml";
 
     private static JAXBManager jaxb;
 
-    private final Map<String, String> overrideDestinationUris = new HashMap<String, String>();
+    private final Map<String, String> overrideDestinationUris = new HashMap<>();
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RetrievalPersistUtil.class);
@@ -84,14 +86,13 @@ public final class RetrievalPersistUtil {
      * Sends the pdos to the default persist or post processing/persistence
      * route
      * 
-     * @param defaultRoute
+     * @param defaultPersistRoute
      * @param pluginName
      * @param pdos
      * @return
      */
     public static synchronized boolean routePlugin(String defaultPersistRoute,
-            String pluginName,
-            PluginDataObject[] pdos) {
+            String pluginName, PluginDataObject[] pdos) {
 
         boolean success = false;
 
@@ -121,8 +122,7 @@ public final class RetrievalPersistUtil {
 
                     pluginDao.persistToDatabase(pdos);
                     EDEXUtil.getMessageProducer().sendAsyncUri(
-                            defaultPersistRoute,
-                            pdos);
+                            defaultPersistRoute, pdos);
                     success = true;
                 }
             } catch (Exception e) {
@@ -140,9 +140,9 @@ public final class RetrievalPersistUtil {
     private void populateOverrides() {
 
         IPathManager pm = PathManagerFactory.getPathManager();
-        LocalizationFile lf = null;
+        ILocalizationFile lf = null;
         Map<LocalizationLevel, LocalizationFile> files = pm
-                .getTieredLocalizationFile(LocalizationType.EDEX_STATIC,
+                .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
                         OVERRIDE_PATH);
 
         if (files.containsKey(LocalizationLevel.SITE)) {
@@ -151,34 +151,28 @@ public final class RetrievalPersistUtil {
             lf = files.get(LocalizationLevel.BASE);
         }
 
-        if (lf != null) {
-            File file = lf.getFile();
+        if (lf != null && lf.exists()) {
+            PluginRouteList prl = null;
 
-            if (!file.exists()) {
-                statusHandler
-                        .warn("[Data Delivery] Configuration for plugin routes: "
-                                + file.getAbsolutePath() + " does not exist.");
-            } else {
+            try (InputStream is = lf.openInputStream()) {
+                prl = getJaxbManager().unmarshalFromInputStream(
+                        PluginRouteList.class, is);
+            } catch (Exception e) {
+                statusHandler.error(
+                        "[Data Delivery] Configuration for plugin routes failed to load: File: "
+                                + lf.getPath(), e);
+            }
 
-                PluginRouteList prl = null;
-
-                try {
-                    prl = getJaxbManager()
-                            .unmarshalFromXmlFile(PluginRouteList.class, file);
-                } catch (Exception e) {
-                    statusHandler.error(
-                            "[Data Delivery] Configuration for plugin routes failed to load: File: "
-                                    + file.getAbsolutePath(), e);
-                }
-
-                // construct the map
-                if (prl != null) {
-                    for (PluginRoute pr : prl.getPluginRoute()) {
-                        overrideDestinationUris
-                                .put(pr.getName(), pr.getValue());
-                    }
+            // construct the map
+            if (prl != null) {
+                for (PluginRoute pr : prl.getPluginRoute()) {
+                    overrideDestinationUris.put(pr.getName(), pr.getValue());
                 }
             }
+        } else {
+            statusHandler
+                    .warn("[Data Delivery] Configuration for plugin routes: "
+                            + OVERRIDE_PATH + " does not exist.");
         }
     }
 
