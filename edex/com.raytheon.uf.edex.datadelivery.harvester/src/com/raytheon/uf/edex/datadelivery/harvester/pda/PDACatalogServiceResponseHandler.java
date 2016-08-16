@@ -63,15 +63,17 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 16, 2014 3120       dhladky     Initial creation
- * Nov 10, 2014 3826       dhladky     Added more logging.
- * Apr 21, 2015 4435       dhladky     Connecting to PDA transactions
- * Sept 11, 2015 4881      dhladky     Updates to PDA processing, better tracking.
- * Jan 18, 2016  5260      dhladky     FQDN usage to lessen OGC class collisions.
- * Jan 20, 2016  5280      dhladky     Logging improvement.
- * Apr 05, 2016  5424      dhladky     More logging enhancements.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 16, 2014  3120     dhladky   Initial creation
+ * Nov 10, 2014  3826     dhladky   Added more logging.
+ * Apr 21, 2015  4435     dhladky   Connecting to PDA transactions
+ * Sep 11, 2015  4881     dhladky   Updates to PDA processing, better tracking.
+ * Jan 18, 2016  5260     dhladky   FQDN usage to lessen OGC class collisions.
+ * Jan 20, 2016  5280     dhladky   Logging improvement.
+ * Apr 05, 2016  5424     dhladky   More logging enhancements.
+ * Aug 11, 2016  5752     tjensen   Fix bounding box parsing in parseBriefRecord
  * 
  * </pre>
  * 
@@ -135,6 +137,8 @@ public class PDACatalogServiceResponseHandler implements
     private static final String LOWER_CORNER = "LowerCorner";
 
     private static final String UPPER_CORNER = "UpperCorner";
+
+    private static final String CRS = "crs";
 
     /** DEBUG PDA system **/
     private static final String DEBUG = "DEBUG";
@@ -211,8 +215,7 @@ public class PDACatalogServiceResponseHandler implements
 
         if (records != null) {
 
-            List<JAXBElement<BriefRecordType>> briefRecords = new ArrayList<JAXBElement<BriefRecordType>>(
-                    0);
+            List<JAXBElement<BriefRecordType>> briefRecords = new ArrayList<>(0);
 
             for (Object o : records) {
                 // We only care about insert messages, we delete
@@ -317,6 +320,7 @@ public class PDACatalogServiceResponseHandler implements
         String type = null;
         String lowerCorner = null;
         String upperCorner = null;
+        String crsAttr = null;
 
         // PDA only sends insert and delete, no update, we don't care about
         // delete.
@@ -356,6 +360,11 @@ public class PDACatalogServiceResponseHandler implements
                 } else if (element.getLocalName().equals(BOUNDING_BOX)) {
 
                     NodeList nodes = element.getChildNodes();
+                    crsAttr = element.getAttribute(CRS);
+
+                    if (debug) {
+                        statusHandler.info("CRS: " + crsAttr);
+                    }
 
                     for (int j = 0; j < nodes.getLength(); j++) {
 
@@ -409,10 +418,9 @@ public class PDACatalogServiceResponseHandler implements
             if (identifier != null && title != null && type != null) {
 
                 // identifier builder
-                List<JAXBElement<SimpleLiteral>> idLiterals = new ArrayList<JAXBElement<SimpleLiteral>>(
-                        1);
+                List<JAXBElement<SimpleLiteral>> idLiterals = new ArrayList<>(1);
                 SimpleLiteral idLiteral = new SimpleLiteral();
-                List<String> ids = new ArrayList<String>(1);
+                List<String> ids = new ArrayList<>(1);
                 ids.add(identifier);
                 idLiteral.setContent(ids);
                 JAXBElement<SimpleLiteral> jaxbIdLiteral = literalFactory
@@ -420,10 +428,10 @@ public class PDACatalogServiceResponseHandler implements
                 idLiterals.add(jaxbIdLiteral);
 
                 // title builder
-                List<JAXBElement<SimpleLiteral>> titleLiterals = new ArrayList<JAXBElement<SimpleLiteral>>(
+                List<JAXBElement<SimpleLiteral>> titleLiterals = new ArrayList<>(
                         1);
                 SimpleLiteral titleLiteral = new SimpleLiteral();
-                List<String> titles = new ArrayList<String>(1);
+                List<String> titles = new ArrayList<>(1);
                 titles.add(title);
                 titleLiteral.setContent(titles);
                 JAXBElement<SimpleLiteral> jaxbTitleLiteral = literalFactory
@@ -432,32 +440,39 @@ public class PDACatalogServiceResponseHandler implements
 
                 // type builder
                 SimpleLiteral typeLiteral = new SimpleLiteral();
-                List<String> types = new ArrayList<String>(1);
+                List<String> types = new ArrayList<>(1);
                 types.add(type);
                 typeLiteral.setContent(types);
 
                 // Bounding Box
-                List<JAXBElement<BoundingBoxType>> boundingBoxes = new ArrayList<JAXBElement<BoundingBoxType>>(
+                List<JAXBElement<BoundingBoxType>> boundingBoxes = new ArrayList<>(
                         1);
                 List<Double> upperVals = null;
                 List<Double> lowerVals = null;
 
                 if (upperCorner != null && lowerCorner != null) {
-                    // These arranged LAT LON!!!!!!!!!!!!!!!
                     String[] uppers = upperCorner.split(SPACE);
                     String[] lowers = lowerCorner.split(SPACE);
                     // uppers
-                    upperVals = new ArrayList<Double>(2);
+                    upperVals = new ArrayList<>(2);
                     upperVals.add(Double.parseDouble(uppers[0]));
                     upperVals.add(Double.parseDouble(uppers[1]));
                     // lowers
-                    lowerVals = new ArrayList<Double>(2);
+                    lowerVals = new ArrayList<>(2);
                     lowerVals.add(Double.parseDouble(lowers[0]));
                     lowerVals.add(Double.parseDouble(lowers[1]));
                 }
+
+                if (crsAttr == null || crsAttr.equals("")) {
+                    crsAttr = serviceConfig.getConstantValue(DEFAULT_CRS);
+                    statusHandler
+                            .warn("Unable to retrieve CRS from bounding box. Using default CRS: "
+                                    + crsAttr);
+                }
+
                 // create the Box
                 BoundingBoxType bbt = new BoundingBoxType();
-                bbt.setCrs(serviceConfig.getConstantValue(DEFAULT_CRS));
+                bbt.setCrs(crsAttr);
 
                 if (upperCorner != null && lowerCorner != null) {
                     bbt.setLowerCorner(lowerVals);

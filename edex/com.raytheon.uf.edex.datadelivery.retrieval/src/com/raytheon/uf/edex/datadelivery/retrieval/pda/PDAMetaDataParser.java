@@ -20,7 +20,6 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * further licensing information.
  **/
 
-import java.math.BigInteger;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
-import net.opengis.ows.v_1_0_0.BoundingBoxType;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
@@ -77,7 +75,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  getRecords().
  * Jul 13, 2016  5752     tjensen   Refactor parseMetaData.
  * Jul 22, 2016  5752     tjensen   Add additional logging information
- * 
+ * Aug 11, 2016  5752     tjensen   Removed unnecessary reordering in
+ *                                  getCoverage
  * 
  * </pre>
  * 
@@ -169,7 +168,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         // set date formatter
         setDateFormat(dateFormat);
 
-        extractor = new PDAFileMetaDataExtractor();
+        extractor = PDAFileMetaDataExtractor.getInstance();
 
         try {
             paramMap = extractor.extractMetaData(relativeDataURL);
@@ -183,107 +182,124 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             paramMap.put(FORMAT,
                     serviceConfig.getConstantValue("DEFAULT_FORMAT"));
 
+        } catch (MetaDataExtractionException e) {
+            // Don't need to print a stack trace for this.
+            statusHandler
+                    .error("MetaData extraction error, " + relativeDataURL);
+            // failure return
+            return;
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "MetaData extraction error, " + relativeDataURL, e);
             // failure return
             return;
         }
+        if ("false".equals(paramMap.get("ignoreData"))) {
 
-        // set the time object
-        /*
-         * If you are using "canned" data, it doesn't work with the subscription
-         * creation system based on a 48 hour window of retrievals. Setup a
-         * simulated, recent time that does.
-         */
-        if (serviceConfig.getConstantValue("SIMULATE").equals("true")) {
-            // make up a recent time
-            long currtime = TimeUtil.currentTimeMillis();
-            // make it 5 minutes old
-            long etime = currtime - (1000 * 60 * 5);
-            // make it 10 minutes old
-            long stime = currtime - (1000 * 60 * 10);
+            // set the time object
+            /*
+             * If you are using "canned" data, it doesn't work with the
+             * subscription creation system based on a 48 hour window of
+             * retrievals. Setup a simulated, recent time that does.
+             */
+            if (serviceConfig.getConstantValue("SIMULATE").equals("true")) {
+                // make up a recent time
+                long currtime = TimeUtil.currentTimeMillis();
+                // make it 5 minutes old
+                long etime = currtime - (1000 * 60 * 5);
+                // make it 10 minutes old
+                long stime = currtime - (1000 * 60 * 10);
 
-            time = new Time();
-            time.setFormat(getDateFormat());
-            time.setStart(new Date(stime));
-            time.setEnd(new Date(etime));
+                time = new Time();
+                time.setFormat(getDateFormat());
+                time.setStart(new Date(stime));
+                time.setEnd(new Date(etime));
 
-            idate = new ImmutableDate(time.getStart());
+                idate = new ImmutableDate(time.getStart());
 
-        } else {
-            // use real time parsed from file
-            time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
+            } else {
+                // use real time parsed from file
+                time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
 
-            try {
-                idate = new ImmutableDate(time.parseDate(paramMap
-                        .get(DATA_TIME)));
-            } catch (ParseException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Couldn't parse dataTime, " + relativeDataURL, e);
-            }
-        }
-
-        // Lookup for coverage information
-        if (!record.getBoundingBox().isEmpty()) {
-            coverage = getCoverage(record.getBoundingBox().get(0).getValue());
-        } else {
-            statusHandler.warn("Bounding box is empty for dataset '"
-                    + paramMap.get(DATASET_NAME) + "'");
-        }
-
-        /**
-         * This portion of the MetaData parser is only used when a coverage
-         * exists.
-         */
-        if (coverage != null) {
-
-            statusHandler.info("Preparing to store DataSet: "
-                    + paramMap.get(DATASET_NAME));
-            PDADataSet pdaDataSet = new PDADataSet();
-            pdaDataSet.setCollectionName(paramMap.get(COLLECTION_NAME));
-            pdaDataSet.setDataSetName(paramMap.get(DATASET_NAME));
-            pdaDataSet.setProviderName(provider.getName());
-            pdaDataSet.setDataSetType(DataType.PDA);
-            pdaDataSet.setTime(time);
-            pdaDataSet.setArrivalTime(arrivalTime.getTime());
-            // there is only one parameter per briefRecord at this point
-            Map<String, Parameter> parameters = getParameters(
-                    paramMap.get(PARAM_NAME), paramMap.get(COLLECTION_NAME),
-                    provider.getName(), paramMap.get(UNITS),
-                    paramMap.get(FILL_VALUE), paramMap.get(MISSING_VALUE));
-            pdaDataSet.setParameters(parameters);
-            // set the coverage
-            pdaDataSet.setCoverage(coverage);
-            // Store the parameter, data Set name, data Set
-            for (Entry<String, Parameter> parm : parameters.entrySet()) {
-                storeParameter(parm.getValue());
+                try {
+                    idate = new ImmutableDate(time.parseDate(paramMap
+                            .get(DATA_TIME)));
+                } catch (ParseException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Couldn't parse dataTime, " + relativeDataURL, e);
+                }
             }
 
-            storeDataSet(pdaDataSet);
+            // Lookup for coverage information
+            if (!record.getBoundingBox().isEmpty()) {
+                coverage = getCoverage(record.getBoundingBox().get(0)
+                        .getValue());
+            } else {
+                statusHandler.warn("Bounding box is empty for dataset '"
+                        + paramMap.get(DATASET_NAME) + "'");
+            }
+
+            /**
+             * This portion of the MetaData parser is only used when a coverage
+             * exists.
+             */
+            if (coverage != null) {
+
+                statusHandler.info("Preparing to store DataSet: "
+                        + paramMap.get(DATASET_NAME));
+                PDADataSet pdaDataSet = new PDADataSet();
+                pdaDataSet.setCollectionName(paramMap.get(COLLECTION_NAME));
+                pdaDataSet.setDataSetName(paramMap.get(DATASET_NAME));
+                pdaDataSet.setProviderName(provider.getName());
+                pdaDataSet.setDataSetType(DataType.PDA);
+                pdaDataSet.setTime(time);
+                pdaDataSet.setArrivalTime(arrivalTime.getTime());
+                // there is only one parameter per briefRecord at this point
+                Map<String, Parameter> parameters = getParameters(
+                        paramMap.get(PARAM_NAME),
+                        paramMap.get(COLLECTION_NAME), provider.getName(),
+                        paramMap.get(UNITS), paramMap.get(FILL_VALUE),
+                        paramMap.get(MISSING_VALUE));
+                pdaDataSet.setParameters(parameters);
+                // set the coverage
+                pdaDataSet.setCoverage(coverage);
+                // Store the parameter, data Set name, data Set
+                for (Entry<String, Parameter> parm : parameters.entrySet()) {
+                    storeParameter(parm.getValue());
+                }
+
+                storeDataSet(pdaDataSet);
+            } else {
+                statusHandler.warn("Coverage is null for: "
+                        + paramMap.get(DATASET_NAME));
+            }
+
+            /*
+             * This portion of the code is only used when processing a
+             * Transaction.
+             */
+            if (isMetaData) {
+
+                PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
+                pdadsmd.setMetaDataID(metaDataID);
+                pdadsmd.setArrivalTime(arrivalTime.getTime());
+                pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
+                        paramMap.get(COLLECTION_NAME), time.getStart()
+                                .getTime()));
+                pdadsmd.setTime(time);
+                pdadsmd.setDataSetName(paramMap.get(DATASET_NAME));
+                pdadsmd.setDataSetDescription(metaDataID + " " + DATASET_NAME);
+                pdadsmd.setDate(idate);
+                pdadsmd.setProviderName(provider.getName());
+                // In PDA's case it's actually a file name
+                pdadsmd.setUrl(metaDataURL);
+
+                storeMetaData(pdadsmd);
+            }
         } else {
-            statusHandler.warn("Coverage is null for: "
-                    + paramMap.get(DATASET_NAME));
-        }
-
-        /*
-         * This portion of the code is only used when processing a Transaction.
-         */
-        if (isMetaData) {
-
-            PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
-            pdadsmd.setMetaDataID(metaDataID);
-            pdadsmd.setArrivalTime(arrivalTime.getTime());
-            pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
-                    paramMap.get(COLLECTION_NAME), time.getStart().getTime()));
-            pdadsmd.setDataSetName(paramMap.get(DATASET_NAME));
-            pdadsmd.setDataSetDescription(metaDataID + " " + DATASET_NAME);
-            pdadsmd.setDate(idate);
-            pdadsmd.setProviderName(provider.getName());
-            // In PDA's case it's actually a file name
-            pdadsmd.setUrl(metaDataURL);
-
-            storeMetaData(pdadsmd);
+            statusHandler.info("Skipping DataSet '"
+                    + paramMap.get(DATASET_NAME)
+                    + "' due to parameter being in exclusion list");
         }
     }
 
@@ -300,57 +316,22 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         Coverage coverage = new Coverage();
 
         try {
-            /*
-             * Need to convert values! PDA sends LAT LON instead of the correct
-             * LON LAT format for Bounding Box. Need to covert before creating
-             * the envelope.
-             */
-            List<Double> inUppers = boundingBoxType.getUpperCorner();
-            List<Double> inLowers = boundingBoxType.getLowerCorner();
-
-            // uppers
-            List<Double> upperVals = new ArrayList<>(2);
-            upperVals.add(inUppers.get(1));
-            upperVals.add(inUppers.get(0));
-
-            // lowers
-            List<Double> lowerVals = new ArrayList<>(2);
-            lowerVals.add(inLowers.get(1));
-            lowerVals.add(inLowers.get(0));
-
-            BoundingBoxType reOrderedBox = (BoundingBoxType) boundingBoxType
-                    .createNewInstance();
-
-            reOrderedBox.setUpperCorner(upperVals);
-            reOrderedBox.setLowerCorner(lowerVals);
-            // enforce 2 dimensions
-            Integer i = new Integer(2);
-            BigInteger bi = BigInteger.valueOf(i.longValue());
-            reOrderedBox.setDimensions(bi);
-            // set the CRS
-            // TODO: Temporarily forcing CRS to default.
-            // if (boundingBoxType.getCrs() == null) {
-            String crs = serviceConfig.getConstantValue("DEFAULT_CRS");
-            reOrderedBox.setCrs(crs);
-            // } else {
-            // reOrderedBox.setCrs(boundingBoxType.getCrs());
-            // }
 
             if (debug == true) {
-                statusHandler.info("Parsed LOWER LON: "
-                        + reOrderedBox.getLowerCorner().get(0) + " LOWER LAT: "
-                        + reOrderedBox.getLowerCorner().get(1) + " size: "
-                        + reOrderedBox.getLowerCorner().size());
-                statusHandler.info("Parsed UPPER LON: "
-                        + reOrderedBox.getUpperCorner().get(0) + " UPPER LAT: "
-                        + reOrderedBox.getUpperCorner().get(1) + " size: "
-                        + reOrderedBox.getUpperCorner().size());
-                statusHandler.info("CRS: " + reOrderedBox.getCrs());
+                statusHandler.info("Parsed LOWER CORNER: "
+                        + boundingBoxType.getLowerCorner().get(0) + ", "
+                        + boundingBoxType.getLowerCorner().get(1) + " size: "
+                        + boundingBoxType.getLowerCorner().size());
+                statusHandler.info("Parsed UPPER CORNER: "
+                        + boundingBoxType.getUpperCorner().get(0) + ", "
+                        + boundingBoxType.getUpperCorner().get(1) + " size: "
+                        + boundingBoxType.getUpperCorner().size());
+                statusHandler.info("CRS: " + boundingBoxType.getCrs());
                 statusHandler.info("Dimensions: "
-                        + reOrderedBox.getDimensions());
+                        + boundingBoxType.getDimensions());
             }
 
-            envelope = BoundingBoxUtil.convert2D(reOrderedBox);
+            envelope = BoundingBoxUtil.convert2D(boundingBoxType);
 
             Coordinate ul = EnvelopeUtils.getUpperLeftLatLon(envelope);
             Coordinate lr = EnvelopeUtils.getLowerRightLatLon(envelope);
