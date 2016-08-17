@@ -184,8 +184,9 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
         } catch (MetaDataExtractionException e) {
             // Don't need to print a stack trace for this.
-            statusHandler
-                    .error("MetaData extraction error, " + relativeDataURL);
+            statusHandler.error("MetaData extraction error on "
+                    + relativeDataURL + ". Caused by: "
+                    + e.getLocalizedMessage());
             // failure return
             return;
         } catch (Exception e) {
