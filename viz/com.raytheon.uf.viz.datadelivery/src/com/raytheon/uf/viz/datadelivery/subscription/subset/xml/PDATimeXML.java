@@ -19,17 +19,9 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.subset.xml;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import com.raytheon.uf.common.util.CollectionUtil;
-import com.raytheon.uf.common.util.FileUtil;
 
 /**
  * Point time xml object.
@@ -38,74 +30,22 @@ import com.raytheon.uf.common.util.FileUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 20, 2014   3121     dhladky      Initial creation.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------
+ * Aug 20, 2014  3121     dhladky   Initial creation.
+ * Aug 17, 2016  5772     rjpeter   Only support latest time.
  * 
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 public class PDATimeXML extends TimeXML {
-   
-    
-    @XmlElement(name = "latestData")
-    protected boolean latestData;
-    
-    @XmlElements({ @XmlElement(name = "time", type = String.class) })
-    protected List<String> timeList = new ArrayList<String>();
 
-    /**
-     * @return the latestData
-     */
-    public boolean isLatestData() {
-        return latestData;
-    }
-    
-     /**
-     * @return the fcstHour
-     */
-    public List<String> getTimes() {
-        return timeList;
-    }
-
-    /**
-     * @param times
-     *            the times to set
-     */
-    public void setTimes(List<String> times) {
-        this.timeList = times;
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public String getPreviewString() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(FileUtil.EOL);
-        if (latestData) {
-            sb.append("Requesting Latest Data");
-        } else {
-            // TODO not sure what to do here?
-            //sb.append(getNonLatestData());
-        }
-        sb.append(FileUtil.EOL);
-
-        if (!CollectionUtil.isNullOrEmpty(timeList)) {
-            sb.append("Times:").append(FileUtil.EOL);
-            for (String fcst : timeList) {
-                sb.append(" ").append(fcst);
-            }
-            sb.append(FileUtil.EOL);
-        }
-        return sb.toString();
+        return "Requesting Latest Data";
     }
-   
-}
 
+}
