@@ -67,6 +67,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAParameterExclusions;
  * Sep 14, 2015  4881     dhladky   Updates to PDA processing.
  * Jul 13, 2016  5752     tjensen   Refactor extractMetaData
  * Aug 16, 2016  5752     tjensen   Added options for data set name translation
+ * Aug 18, 2016  5752     tjensen   Fix initSatMapping
  * 
  * </pre>
  * 
@@ -225,7 +226,7 @@ public class PDAFileMetaDataExtractor extends
 
         for (LocalizationFile mappingFile : mappingFiles) {
             try (InputStream inputStream = mappingFile.openInputStream()) {
-                JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
+                JAXBManager jaxb = new JAXBManager(PDAParameterExclusions.class);
                 PDAParameterExclusions fileSet = (PDAParameterExclusions) jaxb
                         .unmarshalFromInputStream(inputStream);
                 excludeList.addAll(fileSet.getParameterExclusions());
