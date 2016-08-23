@@ -20,20 +20,21 @@ import javax.xml.bind.annotation.XmlRootElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 11, 2016 5752       tjensen     Initial creation
+ * Aug 18, 2016 5752       tjensen     Use correct xml tags
  * 
  * </pre>
  * 
  * @author tjensen
  * @version 1.0
  */
-@XmlRootElement(name = "pdaResolutionMapSet")
+@XmlRootElement(name = "pdaDescriptionMapSet")
 @XmlAccessorType(XmlAccessType.NONE)
 public class PDADescriptionMapSet {
 
     /**
      * List of Resolution Mappings from the XML.
      */
-    @XmlElements({ @XmlElement(name = "pdaResolutionMap", type = PDADescriptionMap.class) })
+    @XmlElements({ @XmlElement(name = "pdaDescriptionMap", type = PDADescriptionMap.class) })
     private ArrayList<PDADescriptionMap> maps;
 
     public ArrayList<PDADescriptionMap> getMaps() {
