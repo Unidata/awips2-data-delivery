@@ -76,7 +76,6 @@ import com.raytheon.viz.grid.rsc.GridResourceData;
 import com.raytheon.viz.pointdata.PlotModels;
 import com.raytheon.viz.pointdata.rsc.PlotResourceData;
 import com.raytheon.viz.pointdata.util.PointDataInventory;
-import com.raytheon.viz.satellite.rsc.SatResourceData;
 import com.raytheon.viz.ui.BundleProductLoader;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
@@ -110,6 +109,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                  make it thread safe, cleaner.
  * Jun 16, 2015  4566     dhladky   Fixed error in map for Plugin names.
  * May 04, 2016  5599     tjensen   Fixed PDA label population.
+ * Aug 22, 2016  5843     tjensen   Remove PDA from DD Product Browser
  * 
  * </pre>
  * 
@@ -129,9 +129,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
     /** Constant for GRID plugin lookups */
     private static final String GRID = "grid";
 
-    /** Constant for sat plugin lookups */
-    private static final String PDA = "satellite";
-
     /** Constant for point plugin lookups */
     private static final String POINT = "point";
 
@@ -147,10 +144,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
     /** Point order */
     private static final String[] POINT_ORDER = new String[] { "type",
             "subscription", "level" };
-
-    /** PDA order, same as point */
-    private static final String[] PDA_ORDER = new String[] { "sectorID",
-            "creatingEntity", "physicalElement" };
 
     private static final String[] GRID_ORDER = new String[] {
             GridInventory.MODEL_NAME_QUERY, GridInventory.PARAMETER_QUERY,
@@ -171,7 +164,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
 
         HashMap<DataType, String> protoProductMap = new HashMap<>(3);
         protoProductMap.put(DataType.GRID, GRID);
-        protoProductMap.put(DataType.PDA, PDA);
         protoProductMap.put(DataType.POINT, POINT);
         productMap = Collections.unmodifiableMap(protoProductMap);
     }
@@ -200,11 +192,10 @@ public class DataDeliveryProductBrowserDataDefinition implements
                         SVG);
                 String param = order[2];
                 return formatData(param, results, selection);
-            } else if (selection[1].equalsIgnoreCase(DataType.GRID.name())
-                    || selection[1].equalsIgnoreCase(DataType.PDA.name())) {
+            } else if (selection[1].equalsIgnoreCase(DataType.GRID.name())) {
                 /*
-                 * Must remove the first selection so this matches with the
-                 * grid/pda version
+                 * Must remove the first selection so this matches with the grid
+                 * version
                  */
                 String[] usedSelection = realignSelection(selection);
 
@@ -214,8 +205,7 @@ public class DataDeliveryProductBrowserDataDefinition implements
         }
 
         if (selection.length >= 4) {
-            if (selection[1].equalsIgnoreCase(DataType.GRID.name())
-                    || selection[1].equalsIgnoreCase(DataType.PDA.name())) {
+            if (selection[1].equalsIgnoreCase(DataType.GRID.name())) {
                 // Must remove the first selection so this matches with the grid
                 // version
                 String[] usedSelection = realignSelection(selection);
@@ -262,9 +252,9 @@ public class DataDeliveryProductBrowserDataDefinition implements
 
     /**
      * Reorder the selection so that it lines up with the correct index of the
-     * product order arrays (GRID_ORDER, PDA_ORDER, etc) Meaning: You have to
-     * back off one selection index in order to process the correct index of the
-     * selection array to produce the correct resource.
+     * product order arrays (GRID_ORDER, etc) Meaning: You have to back off one
+     * selection index in order to process the correct index of the selection
+     * array to produce the correct resource.
      * 
      * @param selection
      * @return
@@ -340,8 +330,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
             resourceData = plotResourceData;
         } else if (selectedDataType.equalsIgnoreCase(DataType.GRID.name())) {
             resourceData = new GridResourceData();
-        } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
-            resourceData = new SatResourceData();
         }
 
         return resourceData;
@@ -359,8 +347,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
             return getPointProductParameters(selection, order);
         } else if (productName.equalsIgnoreCase(DataType.GRID.name())) {
             return getGridProductParameters(selection, order);
-        } else if (productName.equalsIgnoreCase(productMap.get(DataType.PDA))) {
-            return getPdaProductParameters(selection, order);
         } else {
             throw new IllegalArgumentException("Invalid data type: "
                     + productName);
@@ -403,30 +389,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
         if (selection.length > 5) {
             /*
              * Must remove the first selection so this matches with the grid
-             * version
-             */
-            String[] tmpSelection = realignSelection(selection);
-
-            return getUpperProductParameters(tmpSelection, order);
-        } else {
-            return getUpperProductParameters(selection, order);
-        }
-    }
-
-    /**
-     * Get the PDA parameters
-     * 
-     * @param selection
-     *            The selected node
-     * @param order
-     *            The order
-     * @return The constraint map
-     */
-    private HashMap<String, RequestConstraint> getPdaProductParameters(
-            String[] selection, String[] order) {
-        if (selection.length > 4) {
-            /*
-             * Must remove the first selection so this matches with the pda
              * version
              */
             String[] tmpSelection = realignSelection(selection);
@@ -611,13 +573,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
                  * VectorDataUV (Draws barbs) with the data for both.
                  */
                 // types.add(DisplayType.BARB);
-                type.put(ResourceType.PLAN_VIEW, types);
-                return type;
-            } else if (selectedDataType.equalsIgnoreCase(DataType.PDA.name())) {
-                Map<ResourceType, List<DisplayType>> type = new HashMap<>();
-                List<DisplayType> types = new ArrayList<>();
-                types.add(DisplayType.CONTOUR);
-                types.add(DisplayType.IMAGE);
                 type.put(ResourceType.PLAN_VIEW, types);
                 return type;
             }
@@ -818,9 +773,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
             if (name.equalsIgnoreCase(DataType.GRID.name())) {
                 productName = productMap.get(DataType.GRID);
                 break;
-            } else if (name.equalsIgnoreCase(DataType.PDA.name())) {
-                productName = productMap.get(DataType.PDA);
-                break;
             } else if (name.equalsIgnoreCase(DataType.POINT.name())) {
                 productName = productMap.get(DataType.POINT);
                 break;
@@ -846,9 +798,6 @@ public class DataDeliveryProductBrowserDataDefinition implements
             for (String name : selection) {
                 if (name.equalsIgnoreCase(DataType.GRID.name())) {
                     order = GRID_ORDER;
-                    break;
-                } else if (name.equalsIgnoreCase(DataType.PDA.name())) {
-                    order = PDA_ORDER;
                     break;
                 } else if (name.equalsIgnoreCase(DataType.POINT.name())) {
                     order = POINT_ORDER;
