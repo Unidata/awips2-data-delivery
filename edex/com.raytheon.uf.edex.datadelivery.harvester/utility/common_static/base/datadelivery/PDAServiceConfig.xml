@@ -67,6 +67,5 @@
     <constant name="SAT_FORMAT" value="$8" />
     <constant name="START_TIME_FORMAT" value="$9" />
     <constant name="END_TIME_FORMAT" value="$10" />
-    <constant name="CREATE_TIME_FORMAT" value="$11" />
 
 </serviceConfig>

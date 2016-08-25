@@ -68,6 +68,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAParameterExclusions;
  * Jul 13, 2016  5752     tjensen   Refactor extractMetaData
  * Aug 16, 2016  5752     tjensen   Added options for data set name translation
  * Aug 18, 2016  5752     tjensen   Fix initSatMapping
+ * Aug 25, 2016  5752     tjensen   Remove Create Time
  * 
  * </pre>
  * 
@@ -283,8 +284,6 @@ public class PDAFileMetaDataExtractor extends
         String sTimeFormat = serviceConfig
                 .getConstantValue("START_TIME_FORMAT");
         String eTimeFormat = serviceConfig.getConstantValue("END_TIME_FORMAT");
-        String cTimeFormat = serviceConfig
-                .getConstantValue("CREATE_TIME_FORMAT");
 
         // Make sure the filename matches the expected pattern before parsing
         Matcher titleMatcher = titlePattern.matcher(fileName);
@@ -304,8 +303,6 @@ public class PDAFileMetaDataExtractor extends
                     fileName.replaceAll(titlePattern.pattern(), sTimeFormat));
             paramMap.put("endTime",
                     fileName.replaceAll(titlePattern.pattern(), eTimeFormat));
-            paramMap.put("dataTime",
-                    fileName.replaceAll(titlePattern.pattern(), cTimeFormat));
             paramMap.put("dataSetName", dataSetName);
             paramMap.put("ignoreData", ignoreData);
             if (debug) {
