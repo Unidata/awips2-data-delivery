@@ -77,6 +77,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jul 22, 2016  5752     tjensen   Add additional logging information
  * Aug 11, 2016  5752     tjensen   Removed unnecessary reordering in
  *                                  getCoverage
+ * Aug 25, 2016  5752     tjensen   Change MetaData date to use start instead of
+ *                                  create
  * 
  * </pre>
  * 
@@ -106,8 +108,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     private static final String START_TIME = "startTime";
 
     private static final String END_TIME = "endTime";
-
-    private static final String DATA_TIME = "dataTime";
 
     /** DEBUG PDA system **/
     private static final String DEBUG = "DEBUG";
@@ -224,7 +224,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
                 try {
                     idate = new ImmutableDate(time.parseDate(paramMap
-                            .get(DATA_TIME)));
+                            .get(START_TIME)));
                 } catch (ParseException e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "Couldn't parse dataTime, " + relativeDataURL, e);
