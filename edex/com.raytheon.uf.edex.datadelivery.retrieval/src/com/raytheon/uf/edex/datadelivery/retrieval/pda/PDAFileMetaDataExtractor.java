@@ -22,7 +22,9 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +37,8 @@ import java.util.regex.Pattern;
 
 import javax.xml.bind.JAXBException;
 
+import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
+import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -44,6 +48,8 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.ImmutableDate;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADataSetNameMap;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADataSetNameMapSet;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADescriptionMap;
@@ -69,6 +75,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAParameterExclusions;
  * Aug 16, 2016  5752     tjensen   Added options for data set name translation
  * Aug 18, 2016  5752     tjensen   Fix initSatMapping
  * Aug 25, 2016  5752     tjensen   Remove Create Time
+ * Sep 01, 2016  5752     tjensen   Exclude data older than retention period
  * 
  * </pre>
  * 
@@ -78,6 +85,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAParameterExclusions;
 
 public class PDAFileMetaDataExtractor extends
         PDAMetaDataExtractor<String, String> {
+
+    private static final String PDA_PROVIDER = "PDA";
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDAFileMetaDataExtractor.class);
@@ -95,6 +104,10 @@ public class PDAFileMetaDataExtractor extends
 
     private Set<String> excludeList = null;
 
+    private Map<String, String> dataSetMetadataRetention = null;
+
+    private Map<String, String> dataSetMetadataDateFormat = null;
+
     public static synchronized PDAFileMetaDataExtractor getInstance() {
         if (instance == null) {
             instance = new PDAFileMetaDataExtractor();
@@ -108,6 +121,8 @@ public class PDAFileMetaDataExtractor extends
         resolutionMapping = new HashMap<>();
         satelliteMapping = new HashMap<>();
         excludeList = new HashSet<>();
+        dataSetMetadataDateFormat = new HashMap<>();
+        dataSetMetadataRetention = new HashMap<>();
 
         initMappings();
     }
@@ -134,6 +149,9 @@ public class PDAFileMetaDataExtractor extends
 
         statusHandler.info("Initializing Exclusion list...");
         initExclusionList(commonStaticBase, commonStaticSite);
+
+        statusHandler.info("Initializing Harvester Configs...");
+        initHarvesterConfigs(commonStaticBase, commonStaticSite);
     }
 
     private void initNameMapping(LocalizationContext commonStaticBase,
@@ -240,6 +258,32 @@ public class PDAFileMetaDataExtractor extends
         }
     }
 
+    private void initHarvesterConfigs(LocalizationContext commonStaticBase,
+            LocalizationContext commonStaticSite) {
+        LocalizationFile[] mappingFiles = PathManagerFactory.getPathManager()
+                .listFiles(
+                        new LocalizationContext[] { commonStaticBase,
+                                commonStaticSite }, "datadelivery/harvester",
+                        new String[] { "PDA-Harvester.xml" }, true, true);
+
+        for (LocalizationFile mappingFile : mappingFiles) {
+            try (InputStream inputStream = mappingFile.openInputStream()) {
+                JAXBManager jaxb = new JAXBManager(HarvesterConfig.class);
+                HarvesterConfig fileSet = (HarvesterConfig) jaxb
+                        .unmarshalFromInputStream(inputStream);
+                dataSetMetadataRetention.put(fileSet.getProvider().getName(),
+                        fileSet.getRetention());
+                dataSetMetadataDateFormat.put(fileSet.getProvider().getName(),
+                        fileSet.getAgent().getDateFormat());
+            } catch (LocalizationException | IOException
+                    | SerializationException | JAXBException e) {
+                statusHandler.error(
+                        "Unable to unmarshal DataSet name mapping file:"
+                                + mappingFile, e);
+            }
+        }
+    }
+
     private void addNameMappings(PDADataSetNameMapSet nameMapSet) {
         for (PDADataSetNameMap map : nameMapSet.getMaps()) {
             dataSetNameMapping.put(map.getParameter(), map.getDescription());
@@ -292,17 +336,26 @@ public class PDAFileMetaDataExtractor extends
             String sat = fileName.replaceAll(titlePattern.pattern(), satFormat);
             String param = fileName.replaceAll(titlePattern.pattern(),
                     paramFormat);
+            String startTime = fileName.replaceAll(titlePattern.pattern(),
+                    sTimeFormat);
+            String endTime = fileName.replaceAll(titlePattern.pattern(),
+                    eTimeFormat);
 
             String dataSetName = createDataSetName(param, res, sat);
             String collectionName = createCollectionName(sat);
-            String ignoreData = checkExcludeList(param);
+            boolean excludeParam = checkExcludeList(param);
+            boolean oldData = checkRetention(startTime, endTime);
+
+            String ignoreData = "false";
+            if (excludeParam || oldData) {
+                ignoreData = "true";
+            }
 
             paramMap.put("collectionName", collectionName);
             paramMap.put("paramName", param);
-            paramMap.put("startTime",
-                    fileName.replaceAll(titlePattern.pattern(), sTimeFormat));
-            paramMap.put("endTime",
-                    fileName.replaceAll(titlePattern.pattern(), eTimeFormat));
+            paramMap.put("startTime", startTime);
+
+            paramMap.put("endTime", endTime);
             paramMap.put("dataSetName", dataSetName);
             paramMap.put("ignoreData", ignoreData);
             if (debug) {
@@ -322,6 +375,65 @@ public class PDAFileMetaDataExtractor extends
         return paramMap;
     }
 
+    private boolean checkRetention(String startTime, String endTime) {
+        boolean oldDate = false;
+        Number retention = Double.valueOf(dataSetMetadataRetention
+                .get(PDA_PROVIDER));
+
+        if (retention != null) {
+
+            if (retention.intValue() != -1) {
+                /*
+                 * Retention is calculated in hours. We consider the whole day
+                 * to be 24 hours. So, a value of .25 would be considered 6
+                 * hours or, -24 * .25 = -6.0. Or with more than one day it
+                 * could be, -24 * 7 = -168. We let Number int conversion round
+                 * to nearest whole hour.
+                 */
+                retention = retention.doubleValue() * (-1)
+                        * TimeUtil.HOURS_PER_DAY;
+
+                // we are subtracting from current
+                Calendar thresholdTime = TimeUtil.newGmtCalendar();
+                thresholdTime.add(Calendar.HOUR_OF_DAY, retention.intValue());
+
+                Time time = getTime(startTime, endTime);
+                ImmutableDate date;
+                try {
+                    date = new ImmutableDate(time.parseDate(startTime));
+
+                    if (thresholdTime.getTimeInMillis() >= date.getTime()) {
+                        oldDate = true;
+                    }
+                } catch (ParseException e) {
+                    statusHandler.error("Error parsing date: ", e);
+                }
+            }
+        } else {
+            statusHandler
+                    .warn("Retention time unreadable for this DataSetMetaData provider! "
+                            + "Provider: " + PDA_PROVIDER);
+        }
+        return oldDate;
+    }
+
+    private Time getTime(String startTime, String endTime) {
+
+        Time time = new Time();
+        time.setFormat(dataSetMetadataDateFormat.get(PDA_PROVIDER));
+
+        try {
+            time.setStartDate(startTime);
+            time.setEndDate(endTime);
+        } catch (ParseException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Couldn't parse start/end time from format: "
+                            + dataSetMetadataDateFormat.get(PDA_PROVIDER), e);
+        }
+
+        return time;
+    }
+
     private String createCollectionName(String sat) {
         String collectionName = satelliteMapping.get(sat);
         if (collectionName == null) {
@@ -330,10 +442,10 @@ public class PDAFileMetaDataExtractor extends
         return collectionName;
     }
 
-    private String checkExcludeList(String shortName) {
-        String ignoreData = "false";
+    private boolean checkExcludeList(String shortName) {
+        boolean ignoreData = false;
         if (excludeList.contains(shortName)) {
-            ignoreData = "true";
+            ignoreData = true;
         }
         return ignoreData;
     }
