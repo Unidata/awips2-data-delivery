@@ -19,9 +19,7 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.SortedSet;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -32,7 +30,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.raytheon.uf.common.util.CollectionUtil;
+import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.PDATimeXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
 
@@ -43,17 +41,17 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 29, 2014   3121     dhladky     Initial creation.
- * Apr 27, 2016   5366     tjensen     Only allow the most recent available time to be selected.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 29, 2014  3121     dhladky   Initial creation.
+ * Apr 27, 2016  5366     tjensen   Only allow the most recent available time to
+ *                                  be selected.
+ * Aug 17, 2016  5772     rjpeter   Fix time handling.
  * 
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  */
-
 public class PDATimingSubsetTab extends DataTimingSubsetTab {
 
     private Text ltValueTxt;
@@ -69,13 +67,13 @@ public class PDATimingSubsetTab extends DataTimingSubsetTab {
      *            the shell
      */
     public PDATimingSubsetTab(Composite parentComp, IDataSize callback,
-            Shell shell, List<String> times) {
+            Shell shell, SortedSet<ImmutableDate> times) {
         super(parentComp, callback, shell);
 
         init(times);
     }
 
-    private void init(List<String> times) {
+    private void init(SortedSet<ImmutableDate> times) {
 
         GridLayout gl = new GridLayout(1, false);
         GridData gd = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
@@ -104,23 +102,14 @@ public class PDATimingSubsetTab extends DataTimingSubsetTab {
 
         ltValueTxt = new Text(timeComp, SWT.BORDER);
         ltValueTxt.setLayoutData(new GridData(250, SWT.DEFAULT));
-        ltValueTxt.setText(times.get(0));
-        ltValueTxt.setEditable(false);
-    }
 
-    /**
-     * List of times to set
-     * 
-     * @param fcstHours
-     *            list of times
-     */
-    public void setSelectedTimes(List<String> times) {
-        ltValueTxt.clearSelection();
-
-        // Only one time should be given, so just grab the 1st.
-        if (!CollectionUtil.isNullOrEmpty(times)) {
-            ltValueTxt.setText(times.get(0));
+        if ((times != null) && !times.isEmpty()) {
+            ltValueTxt.setText(times.first().toString());
+        } else {
+            ltValueTxt.setText("No Data Available");
         }
+
+        ltValueTxt.setEditable(false);
     }
 
     /**
@@ -129,9 +118,6 @@ public class PDATimingSubsetTab extends DataTimingSubsetTab {
      * @return TimeXML object
      */
     public TimeXML getSaveInfo() {
-        PDATimeXML time = new PDATimeXML();
-        time.setTimes(new ArrayList<>(Arrays.asList(ltValueTxt
-                .getSelectionText())));
-        return time;
+        return new PDATimeXML();
     }
 }

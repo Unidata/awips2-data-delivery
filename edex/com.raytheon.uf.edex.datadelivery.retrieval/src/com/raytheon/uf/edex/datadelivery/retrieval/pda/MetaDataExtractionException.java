@@ -17,35 +17,34 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.viz.datadelivery.subscription.subset.xml;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
+package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
 /**
- * Point time xml object.
+ * 
+ * Exception for when errors occur extracting metadata
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ------------------
- * Aug 20, 2014  3121     dhladky   Initial creation.
- * Aug 17, 2016  5772     rjpeter   Only support latest time.
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 17, 2016            tjensen     Initial creation
  * 
  * </pre>
  * 
- * @author dhladky
+ * @author tjensen
+ * @version 1.0
  */
-@XmlAccessorType(XmlAccessType.NONE)
-@XmlRootElement
-public class PDATimeXML extends TimeXML {
+public class MetaDataExtractionException extends Exception {
 
-    @Override
-    public String getPreviewString() {
-        return "Requesting Latest Data";
+    private static final long serialVersionUID = 1955281866716862669L;
+
+    public MetaDataExtractionException(String string) {
+        super(string);
     }
 
+    public MetaDataExtractionException(String string, Exception e) {
+        super(string, e);
+    }
 }

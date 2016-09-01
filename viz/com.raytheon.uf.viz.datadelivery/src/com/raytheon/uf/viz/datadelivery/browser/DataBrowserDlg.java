@@ -98,44 +98,53 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 10, 2012            lvenable    Initial creation.
- * Apr 3,  2012            jpiatt      Correct Exit-Save Changes dlg.
- * May 22, 2012   645      jpiatt      Added help dialog & tooltips.
- * Jun 21, 2012   736      djohnson    Change OPERATION_STATUS to OperationStatus.
- * Jul 24, 2012   955      djohnson    Matching datasets are returned in a {@link Set}.
- * Aug  7, 2012   863      jpiatt      Corrected Save Changes message functionality.
- * Aug 10, 2012  1022      djohnson    Use GriddedDataSet.
- * Aug 22, 2012  0743      djohnson    Convert back to DataSet.
- * Oct 03, 2012  1241      djohnson    Use {@link DataDeliveryPermission}.
- * Dec 07, 2012  1278      bgonzale    Fixed issue with clear where cursor could always
- *                                      show busy.
- * Dec 11, 2012  1405      mpduff      Move close confirmation dialog after event.doit = false.
- * Dec 10, 2012  1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
- * Dec 12, 2012  1391      bgonzale    Added job for dataset retrieval.
- * Jan 08, 2012  1436      bgonzale    Fixed area text box display update check.
- * Jan 14, 2012  1437      bgonzale    Clear filters when creating a new configuration.
- * May 15, 2013  1040      mpduff      Put DataDeliveryGUIUtils.markNotBusyInUIThread in finally block.
- * Jun 04, 2013   223      mpduff      Add data type to filters.
- * Jun 05, 2013  1800      mpduff      Move the area filter below the data type selection.
- * Jun 06, 2013  2030      mpduff      Updates to help.
- * Jul 05, 2013  2137      mpduff      Changed data type to a single select list, changed layout.
- * Jul 26, 2031  2232      mpduff      Refactored Data Delivery permissions.
- * Sep 04, 2013  2314      mpduff      Load/save config dialog now non-blocking.
- * Sep 26, 2013  2412      mpduff      Handle auto selecting data type.
- * Sep 26, 2013  2413      mpduff      Added isDirty check to New Configuration menu selection.
- * Oct 11, 2013  2386      mpduff      Refactor DD Front end.
- * Apr 10, 2014  2892      mpduff      Fix problems with loading of saved configs.
- * Oct 15, 2015  4657      rferrel     Limit the number of Subset Manager dialogs.
- * Nov 30, 2015   4834     njensen      Changed LocalizationOpFailedException to LocalizationException
- * Jan 29, 2016   5289     tgurney      Add missing minimize/maximize buttons in trim
- * Mar 24, 2016  5482      randerso    Fixed GUI sizing issue. Cleaned up timer code.
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 10, 2012           lvenable  Initial creation.
+ * Apr 03, 2012           jpiatt    Correct Exit-Save Changes dlg.
+ * May 22, 2012  645      jpiatt    Added help dialog & tooltips.
+ * Jun 21, 2012  736      djohnson  Change OPERATION_STATUS to OperationStatus.
+ * Jul 24, 2012  955      djohnson  Matching datasets are returned in a {@link
+ *                                  Set}.
+ * Aug 07, 2012  863      jpiatt    Corrected Save Changes message
+ *                                  functionality.
+ * Aug 10, 2012  1022     djohnson  Use GriddedDataSet.
+ * Aug 22, 2012  743      djohnson  Convert back to DataSet.
+ * Oct 03, 2012  1241     djohnson  Use {@link DataDeliveryPermission}.
+ * Dec 07, 2012  1278     bgonzale  fixed issue with clear where cursor could
+ *                                  always show busy.
+ * Dec 11, 2012  1405     mpduff    Move close confirmation dialog after
+ *                                  event.doit = false.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Dec 12, 2012  1391     bgonzale  Added job for dataset retrieval.
+ * Jan 08, 2012  1436     bgonzale  Fixed area text box display update check.
+ * Jan 14, 2012  1437     bgonzale  Clear filters when creating a new
+ *                                  configuration.
+ * May 15, 2013  1040     mpduff    Put
+ *                                  DataDeliveryGUIUtils.markNotBusyInUIThread
+ *                                  in finally block.
+ * Jun 04, 2013  223      mpduff    Add data type to filters.
+ * Jun 05, 2013  1800     mpduff    Move the area filter below the data type
+ *                                  selection.
+ * Jun 06, 2013  2030     mpduff    Updates to help.
+ * Jul 05, 2013  2137     mpduff    Changed data type to a single select list,
+ *                                  changed layout.
+ * Jul 26, 2031  2232     mpduff    Refactored Data Delivery permissions.
+ * Sep 04, 2013  2314     mpduff    Load/save config dialog now non-blocking.
+ * Sep 26, 2013  2412     mpduff    Handle auto selecting data type.
+ * Sep 26, 2013  2413     mpduff    Added isDirty check to New Configuration
+ *                                  menu selection.
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Apr 10, 2014  2892     mpduff    Fix problems with loading of saved configs.
+ * Oct 15, 2015  4657     rferrel   Limit the number of Subset Manager dialogs.
+ * Nov 30, 2015  4834     njensen   Changed LocalizationOpFailedException to LocalizationException
+ * Jan 29, 2016  5289     tgurney   Add missing minimize/maximize buttons in trim
+ * Mar 24, 2016  5482     randerso  Fixed GUI sizing issue. Cleaned up timer code.
+ * Aug 17, 2016  5772     rjpeter   Handle errors open Subset Dialog.
  * </pre>
  * 
  * @author lvenable
- * @version 1.0
  */
 public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         IDataLoad {
@@ -243,7 +252,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     private Composite mainTableComp = null;
 
     /** Only allow one Subset Manager Dialog for a given set of data. */
-    private final Map<DataSet<?, ?>, SubsetManagerDlg> smDialogs = new HashMap<DataSet<?, ?>, SubsetManagerDlg>();
+    private final Map<DataSet<?, ?>, SubsetManagerDlg> smDialogs = new HashMap<>();
 
     /**
      * Constructor.
@@ -698,19 +707,26 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                     dlg.bringToTop();
                 } else {
 
-                    dlg = SubsetManagerDlg.fromDataSet(shell, data);
-                    smDialogs.put(data, dlg);
-                    dlg.setCloseCallback(new ICloseCallback() {
+                    try {
+                        dlg = SubsetManagerDlg.fromDataSet(shell, data);
+                        smDialogs.put(data, dlg);
+                        dlg.setCloseCallback(new ICloseCallback() {
 
-                        @Override
-                        public void dialogClosed(Object returnValue) {
-                            if (returnValue instanceof DataSet<?, ?>) {
-                                DataSet<?, ?> data = (DataSet<?, ?>) returnValue;
-                                smDialogs.remove(data);
+                            @Override
+                            public void dialogClosed(Object returnValue) {
+                                if (returnValue instanceof DataSet<?, ?>) {
+                                    DataSet<?, ?> data = (DataSet<?, ?>) returnValue;
+                                    smDialogs.remove(data);
+                                }
                             }
-                        }
-                    });
-                    dlg.open();
+                        });
+
+                        dlg.open();
+                    } catch (Exception e) {
+                        statusHandler.handle(Priority.ERROR,
+                                "Unable to Subset Data Set", e);
+                        smDialogs.remove(data);
+                    }
                 }
             }
         } catch (AuthException e) {
@@ -742,15 +758,15 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
      * Handle the area selection.
      */
     private void handleAreaSelection() {
-        if (arealDlg == null || arealDlg.isDisposed()) {
+        if ((arealDlg == null) || arealDlg.isDisposed()) {
             arealDlg = new ArealSelectionDlg(getShell(), envelope);
             arealDlg.open();
         } else {
             arealDlg.bringToTop();
         }
 
-        if (arealDlg.getReturnValue() == null
-                || (Boolean) arealDlg.getReturnValue() == false) {
+        if ((arealDlg.getReturnValue() == null)
+                || ((Boolean) arealDlg.getReturnValue() == false)) {
             return;
         }
 
@@ -786,7 +802,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     private void updateAreaLabel(ReferencedEnvelope envelope) {
         this.envelope = envelope;
 
-        if (envelope == null || envelope.isEmpty()) {
+        if ((envelope == null) || envelope.isEmpty()) {
             upperLeftLabel.setText("");
             lowerRightLabel.setText("");
             clearBtn.setEnabled(false);
@@ -797,7 +813,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
             Coordinate lr = EnvelopeUtils.getLowerRightLatLon(envelope);
 
             // Check for empty values
-            if (ul.x == 0 && ul.y == 0 && lr.x == 0 && lr.y == 0) {
+            if ((ul.x == 0) && (ul.y == 0) && (lr.x == 0) && (lr.y == 0)) {
                 return;
             }
 
@@ -868,7 +884,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
             lastUpdate = 0;
         }
 
-        if (updateTimeLabel != null && updateTimeLabel.isDisposed() == false) {
+        if ((updateTimeLabel != null)
+                && (updateTimeLabel.isDisposed() == false)) {
             updateTimeLabel.setText("");
         }
     }
@@ -947,7 +964,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
      *            Dialog type.
      */
     private void displayLoadSaveConfigDlg(final DialogType type) {
-        if (loadSaveDlg == null || loadSaveDlg.isDisposed()) {
+        if ((loadSaveDlg == null) || loadSaveDlg.isDisposed()) {
             loadSaveDlg = new LoadSaveConfigDlg(shell, type, CONFIG_PATH,
                     DEFAULT_CONFIG, true);
             loadSaveDlg.setCloseCallback(new ICloseCallback() {
@@ -1122,7 +1139,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                 .getSelectionIndex());
         xml.addDataSetType(selectedDataType);
 
-        final List<DataSet> matchingDataSets = new ArrayList<DataSet>();
+        final List<DataSet> matchingDataSets = new ArrayList<>();
         final Shell jobParent = this.getShell();
 
         final Job job = new Job("Updating Results...") {

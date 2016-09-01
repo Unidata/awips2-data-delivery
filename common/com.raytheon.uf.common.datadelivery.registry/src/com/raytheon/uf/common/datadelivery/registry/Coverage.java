@@ -29,6 +29,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.geospatial.adapter.ReferencedEnvelopeAdapter;
@@ -43,11 +44,15 @@ import com.vividsolutions.jts.geom.Coordinate;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 17, 2011    191      dhladky     Initial creation
- * Dec 10, 2012   1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
- * Jan 15, 2014   2678      bgonzale    Added XmlRootElement annotation.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 17, 2011  191      dhladky   Initial creation
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Jan 15, 2014  2678     bgonzale  Added XmlRootElement annotation.
+ * Aug 02, 2016  5752     tjensen   Added equals()
+ * 
  * </pre>
  * 
  * @author dhladky
@@ -63,9 +68,9 @@ public class Coverage implements Serializable {
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -4989602744566078018L;
+    private static final long serialVersionUID = -4989602744566078018L;
 
-	public Coverage() {
+    public Coverage() {
 
     }
 
@@ -156,4 +161,16 @@ public class Coverage implements Serializable {
         return EnvelopeUtils.getLowerRightLatLon(envelope);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Coverage) {
+            Coverage other = (Coverage) obj;
+            EqualsBuilder eqBuilder = new EqualsBuilder();
+            eqBuilder.append(this.getEnvelope(), other.getEnvelope());
+            eqBuilder.append(this.getRequestEnvelope(),
+                    other.getRequestEnvelope());
+            return eqBuilder.isEquals();
+        }
+        return super.equals(obj);
+    }
 }
