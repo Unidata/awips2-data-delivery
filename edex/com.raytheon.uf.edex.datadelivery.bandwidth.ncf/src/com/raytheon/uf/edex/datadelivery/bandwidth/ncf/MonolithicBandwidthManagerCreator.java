@@ -124,8 +124,7 @@ public class MonolithicBandwidthManagerCreator<T extends Time, C extends Coverag
         return new MonolithicBandwidthManager(dbInit, bandwidthDao,
                 retrievalManager, bandwidthDaoUtil, idUtil,
                 dataSetMetaDataHandler, subscriptionHandler,
-                adhocSubscriptionHandler, subscriptionNotificationService,
-                findSubscriptionsStrategy);
+                subscriptionNotificationService, findSubscriptionsStrategy);
     }
 
 }
