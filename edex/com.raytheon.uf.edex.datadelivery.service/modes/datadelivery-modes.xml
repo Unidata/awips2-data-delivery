@@ -56,6 +56,7 @@
         <include>nwsauth-request.xml</include>
         <include>utility-common.xml</include>
         <include>utility-request.xml</include>
+        <include>stats-ingest.xml</include>
         <exclude>.*datadelivery.*-wfo.*</exclude>
         <exclude>.*datadelivery.*-monolithic.*</exclude>
     </mode>
