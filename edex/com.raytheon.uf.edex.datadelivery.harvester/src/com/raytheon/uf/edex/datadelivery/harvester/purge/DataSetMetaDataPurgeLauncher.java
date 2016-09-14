@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
 
 /**
  * Container class to hold the {@link IDataSetMetaDataPurgeTask} instance. It
@@ -34,10 +33,11 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 4, 2012  1102      djohnson     Initial creation
- * Apr 12,2014   3012     dhladky      Purge never worked, fixed to make work.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------
+ * Sep 04, 2012  1102     djohnson  Initial creation
+ * Apr 12, 2014  3012     dhladky   Purge never worked, fixed to make work.
+ * Sep 13, 2016  5846     tjensen   Improve purge to be more efficient
  * 
  * </pre>
  * 
@@ -45,19 +45,19 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  * @version 1.0
  */
 public class DataSetMetaDataPurgeLauncher {
-    
+
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataSetMetaDataPurgeLauncher.class);
 
-    private IDataSetMetaDataPurgeTask PURGE_TASK = null;
+    private IDataSetMetaDataPurgeTask purgeTask = null;
 
     private static final AtomicBoolean running = new AtomicBoolean();
 
     /**
      * Public constructor.
      */
-    public DataSetMetaDataPurgeLauncher(RegistryObjectDao rdo) {
-        PURGE_TASK = new DataSetMetaDataPurgeTaskImpl(rdo);
+    public DataSetMetaDataPurgeLauncher(DataSetMetaDataDao dsmdDao) {
+        purgeTask = new DataSetMetaDataPurgeTaskImpl(dsmdDao);
     }
 
     /**
@@ -66,7 +66,7 @@ public class DataSetMetaDataPurgeLauncher {
     public void runPurge() {
         try {
             if (running.compareAndSet(false, true)) {
-                PURGE_TASK.run();
+                purgeTask.run();
             } else if (statusHandler.isPriorityEnabled(Priority.INFO)) {
                 statusHandler
                         .info("DataSetMetaData purge already running, skipping...");

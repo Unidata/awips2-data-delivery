@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.harvester.purge;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -40,8 +41,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.ClusterIdUtil;
+import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
-import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
 
 /**
  * Purges {@link DataSetMetaData} instances that are no longer accessible on
@@ -53,16 +54,18 @@ import com.raytheon.uf.edex.registry.ebxml.dao.RegistryObjectDao;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 04, 2012 1102       djohnson     Initial creation
- * Oct 05, 2012 1241       djohnson     Replace RegistryManager calls with registry handler calls.
- * Dec 12, 2012 1410       dhladky      multi provider configurations.
- * Sept 30, 2013 1797      dhladky      Generics
- * Apr 12,2014   3012     dhladky      Purge never worked, fixed to make work.
- * Jan 18, 2016  5261     dhladky      Enabled purging for PDA.
- * Feb 18, 2016  5280     dhladky      Metadata not purging enough for PDA.
- * Apr 04, 2016  5424     dhladky      Metadata purge not efficient enough for PDA.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 04, 2012  1102     djohnson  Initial creation
+ * Oct 05, 2012  1241     djohnson  Replace RegistryManager calls with registry
+ *                                  handler calls.
+ * Dec 12, 2012  1410     dhladky   multi provider configurations.
+ * Sep 30, 2013  1797     dhladky   Generics
+ * Apr 12,2014   3012     dhladky   Purge never worked, fixed to make work.
+ * Jan 18, 2016  5261     dhladky   Enabled purging for PDA.
+ * Feb 18, 2016  5280     dhladky   Metadata not purging enough for PDA.
+ * Apr 04, 2016  5424     dhladky   Metadata purge not efficient enough for PDA.
+ * Sep 12, 2016  5846     tjensen   Improve purge to be more efficient
  * 
  * </pre>
  * 
@@ -74,22 +77,23 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataSetMetaDataPurgeTaskImpl.class);
 
-
     /** Data access object for registry objects */
-    private RegistryObjectDao rdo;
-    
+    private DataSetMetaDataDao dsmdDao;
+
     /** Purge 100 items at a time so we don't run hibernate out of shared memory **/
     private static int PURGE_BATCH_SIZE = 100;
-    
+
     /**
      * Delete list of provider registry object Ids.
+     * 
      * @param deleteIds
      * @param username
      */
-    static void purgeMetaData(List<String> deleteIds, String username) {
+    void purgeMetaData(List<String> deleteIds, String username) {
 
         try {
-            DataDeliveryHandlers.getDataSetMetaDataHandler().deleteByIds(username, deleteIds);
+            DataDeliveryHandlers.getDataSetMetaDataHandler().deleteByIds(
+                    username, deleteIds);
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to delete a DataSetMetaData instance!", e);
@@ -99,28 +103,8 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
     /**
      * Default Constructor.
      */
-    public DataSetMetaDataPurgeTaskImpl(RegistryObjectDao rdo) {
-        this.rdo = rdo;
-    }
-  
-    /**
-     * Gets the entire list of DSMD ids from the registry.
-     * 
-     * @return the map
-     */
-    @VisibleForTesting
-    List<String> getDataSetMetaDataIds() {
-        ArrayList<String> ids = null;
-        try {
-            // Gets the list of all available lids for current DataSetMetaData objects
-            ids = (ArrayList<String>) rdo.getRegistryObjectIdsOfType(DataDeliveryRegistryObjectTypes.DATASETMETADATA);
-        } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unable to retrieve DataSetMetaData ids!", e);
-            return Collections.emptyList();
-        }
-
-        return ids;
+    public DataSetMetaDataPurgeTaskImpl(DataSetMetaDataDao dsmdDao) {
+        this.dsmdDao = dsmdDao;
     }
 
     /**
@@ -132,16 +116,16 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
     @VisibleForTesting
     static Map<String, String> getHarvesterConfigs() {
 
-        // first get the Localization directory and find all harvester
-        // configs
-        List<HarvesterConfig> configs = new ArrayList<HarvesterConfig>();
+        // first get the Localization directory and find all harvester configs
+        List<HarvesterConfig> configs = new ArrayList<>();
 
         // if many, start many
         for (LocalizationFile lf : CrawlLauncher.getLocalizedFiles()) {
 
             HarvesterConfig hc = null;
             try {
-                hc = HarvesterConfigurationManager.getHarvesterFile(lf.getFile());
+                hc = HarvesterConfigurationManager.getHarvesterFile(lf
+                        .getFile());
             } catch (Exception se) {
                 statusHandler.handle(Priority.PROBLEM,
                         se.getLocalizedMessage(), se);
@@ -154,14 +138,14 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
                 }
             }
         }
-        
+
         Map<String, String> configMap = null;
 
         if (!configs.isEmpty()) {
-            configMap = new HashMap<String, String>(
-                    configs.size());
+            configMap = new HashMap<>(configs.size());
             for (HarvesterConfig config : configs) {
-                configMap.put(config.getProvider().getName(), config.getRetention());
+                configMap.put(config.getProvider().getName(),
+                        config.getRetention());
             }
         } else {
             return Collections.emptyMap();
@@ -169,116 +153,92 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
 
         return configMap;
     }
-    
+
     /**
      * {@inheritDoc}
      */
     @Override
     public void run() {
 
+        statusHandler.info("Starting DataSetMetaData Purge...");
         ITimer timer = TimeUtil.getTimer();
         timer.start();
 
-        List<String> idList = getDataSetMetaDataIds();
-        Map<String, List<String>> deleteMap = new HashMap<String, List<String>>();
         Map<String, String> configMap = getHarvesterConfigs();
         int deletes = 0;
-        
-        for (String id : idList) {
+
+        // Query for Data Provider Names
+        List<String> providerList = dsmdDao
+                .getProviderNames(
+                        DataDeliveryRegistryObjectTypes.DATASETMETADATA,
+                        "providerName");
+
+        // username is the name of this registry, ("NCF")
+        String username = ClusterIdUtil.getId();
+
+        // Loop over all the providers
+        for (String provider : providerList) {
             try {
-                DataSetMetaData<?> metaData = DataDeliveryHandlers
-                        .getDataSetMetaDataHandler().getById(id);
-                Number retention = Double.valueOf(configMap.get(metaData.getProviderName()));
+                Number retention = Double.valueOf(configMap.get(provider));
 
-                if (retention != null) {
-
-                    if (retention.intValue() == -1) {
-                        // no purging for this DSMD type
-                        continue;
-                    } else {
-                        /* 
-                         * Retention is calculated in hours.
-                         * We consider the whole day to be 24 hours.
-                         * So, a value of .25 would be considered 6 hours or, -24 * .25 = -6.0.
-                         * Or with more than one day it could be, -24 * 7 = -168.
-                         * We let Number int conversion round to nearest whole hour.
-                         */
-                        retention = retention.doubleValue() * (-1) * TimeUtil.HOURS_PER_DAY;
-                        
-                        // we are subtracting from current
-                        Calendar thresholdTime = TimeUtil.newGmtCalendar();
-                        thresholdTime.add(Calendar.HOUR_OF_DAY, retention.intValue());
-
-                        if (thresholdTime.getTimeInMillis() >= metaData
-                                .getDate().getTime()) {
-                            if (deleteMap.containsKey(metaData.getProviderName())) {
-                                deleteMap.get(metaData.getProviderName()).add(id);
-                            } else {
-                                List<String> deleteList = new ArrayList<String>(1);
-                                deleteList.add(id);
-                                deleteMap.put(metaData.getProviderName(), deleteList);
-                            }
-                        }
-                    } 
-                } else {
+                if (retention == null) {
                     statusHandler
                             .warn("Retention time unreadable for this DataSetMetaData provider! "
-                                    + id
-                                    + "Provider: "
-                                    + metaData.getProviderName());
+                                    + "Provider: " + provider);
+                    continue;
+                }
+
+                // no purging for this DSMD type
+                if (retention.intValue() == -1) {
+                    continue;
+                }
+
+                /*
+                 * Retention is calculated in hours. We consider the whole day
+                 * to be 24 hours. So, a value of .25 would be considered 6
+                 * hours or, -24 * .25 = -6.0. Or with more than one day it
+                 * could be, -24 * 7 = -168. We let Number int conversion round
+                 * to nearest whole hour.
+                 */
+                retention = retention.doubleValue() * (-1)
+                        * TimeUtil.HOURS_PER_DAY;
+
+                // we are subtracting from current
+                Calendar thresholdTime = TimeUtil.newGmtCalendar();
+                thresholdTime.add(Calendar.HOUR_OF_DAY, retention.intValue());
+
+                /*
+                 * <pre> Query for the objects that are: 1) DataSetMetaData 2)
+                 * Have the selected provider name 3) Have a date older than the
+                 * threshold time </pre>
+                 */
+                BigInteger retentionTime = BigInteger.valueOf(thresholdTime
+                        .getTimeInMillis());
+                int numIds = PURGE_BATCH_SIZE;
+                boolean doShutDown = EDEXUtil.isShuttingDown();
+                while (!doShutDown && numIds == PURGE_BATCH_SIZE) {
+                    List<String> ids = dsmdDao.getIdsBeyondRetention(
+                            DataDeliveryRegistryObjectTypes.DATASETMETADATA,
+                            "providerName", provider, "date", retentionTime,
+                            PURGE_BATCH_SIZE);
+                    numIds = ids.size();
+                    purgeMetaData(ids, username);
+                    deletes += numIds;
+                    doShutDown = EDEXUtil.isShuttingDown();
+                }
+                if (doShutDown) {
+                    statusHandler.warn("Purge interupted by shutdown!");
                 }
 
             } catch (Exception e) {
-                statusHandler.error("DataSetMetaData purge gather failed! " + id, e);
-            }
-        }
-        
-        if (!deleteMap.isEmpty()) {
-            
-            // username is the name of this registry, ("NCF") 
-            String username = ClusterIdUtil.getId();
-            
-            for (String providerKey: deleteMap.keySet()) {
-                // delete the ids for this provider.
-                List<String> ids = deleteMap.get(providerKey);
-                
-                if (ids.size() <= PURGE_BATCH_SIZE) {
-                    purgeMetaData(ids, username);
-                    deletes += ids.size();
-                } else {
-                    // break it into chunks, + 1 if remainder
-                    int mod = ids.size() % PURGE_BATCH_SIZE;
-                    Float total = (float) (ids.size()/PURGE_BATCH_SIZE);
-                    int batches = (int) Math.floor(total);
-                    if (mod != 0) {
-                        batches = batches + 1;
-                    } 
-
-                    int start = 0;
-                    int end = PURGE_BATCH_SIZE;
-
-                    for (int i = 0; i < batches; i++) {
-                        
-                        if (i > 0) {
-                            start = end;
-                            if ((start + PURGE_BATCH_SIZE) < ids.size()) {
-                                end = start + PURGE_BATCH_SIZE;
-                            } else {
-                                end = ids.size();
-                            }
-                        }
-
-                        List<String> batch = ids.subList(start, end);
-                        purgeMetaData(batch, username);
-                        deletes += batch.size();
-                    }
-                }
+                statusHandler.error("DataSetMetaData purge gather for "
+                        + provider + " failed! ", e);
             }
         }
 
         timer.stop();
         statusHandler.info(String.format(
                 "DataSetMetaData purge completed in %s ms.",
-                timer.getElapsedTime()+" deleted: "+deletes));
+                timer.getElapsedTime() + " deleted: " + deletes));
     }
 }

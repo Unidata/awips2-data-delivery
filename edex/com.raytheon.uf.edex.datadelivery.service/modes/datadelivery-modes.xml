@@ -51,6 +51,7 @@
         <includeMode>dataDeliveryTemplate</includeMode>
         <includeMode>ebxmlRegistry</includeMode>
         <include>bandwidth-datadelivery-.*-ncf.xml</include>
+        <include>stats-ingest.xml</include>
         <exclude>.*datadelivery.*-wfo.*</exclude>
         <exclude>.*datadelivery.*-monolithic.*</exclude>
     </mode>
