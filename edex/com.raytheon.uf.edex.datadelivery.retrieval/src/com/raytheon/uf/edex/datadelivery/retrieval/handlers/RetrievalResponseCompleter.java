@@ -32,9 +32,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 31, 2013 1543       djohnson     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------
+ * Jan 31, 2013  1543     djohnson  Initial creation
+ * Sep 01, 2016  5762     tjensen   Added improved logging
  * 
  * </pre>
  * 
@@ -66,6 +67,10 @@ public class RetrievalResponseCompleter implements IRetrievalResponseCompleter {
         RetrievalRequestRecord.State state = status.isSucceeded() ? RetrievalRequestRecord.State.COMPLETED
                 : RetrievalRequestRecord.State.FAILED;
         retrieval.setState(state);
+        if (state == RetrievalRequestRecord.State.FAILED) {
+            statusHandler.warn("Retrieval failed: "
+                    + retrieval.getId().getSubscriptionName());
+        }
 
         // update database
         try {

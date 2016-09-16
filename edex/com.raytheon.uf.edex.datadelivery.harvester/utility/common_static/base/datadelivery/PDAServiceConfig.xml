@@ -39,8 +39,10 @@
     <constant name="SUBSET_REQUEST_URL" value="https://140.90.190.159/services/OGC_In_Proxy"/>
     <!-- FTPS retrieval root URL -->
     <constant name="FTPS_REQUEST_URL" value="ftps://140.90.190.155"/>
-    <!-- REMOTE_VERIFICATION, False when you are hitting a load balanced FTP(S) server -->
-    <constant name="REMOTE_VERIFICATION" value="false"/>
+    <!-- REMOTE_VERIFICATION_ENABLED, False when you are hitting a load balanced FTP(S) server -->
+    <constant name="REMOTE_VERIFICATION_ENABLED" value="true"/>
+    <!-- DELETE_FILE_AFTER_PROCESSING, Deletes downloaded file after it has been processed -->
+    <constant name="DELETE_FILE_AFTER_PROCESSING" value="true"/>
     <!-- Disables the secure data channel defaults (execProc=P execPbsz=0). 
          Enabling this means you must manually specific the security protocol
          and Buffer size for the Data Channel in FTPS -->
