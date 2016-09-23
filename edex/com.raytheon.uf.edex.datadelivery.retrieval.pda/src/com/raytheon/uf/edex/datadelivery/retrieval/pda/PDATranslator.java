@@ -51,6 +51,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Jan 28, 2016  5299     dhladky   Generic PDO type change.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * May 03, 2016  5599     tjensen   Pass subscription name into decodeObjects
+ * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
  * 
  * </pre>
  * 
@@ -114,15 +115,20 @@ public class PDATranslator extends
              */
 
             fileName = (String) payload.get(FILE.FILE_NAME);
-            File file = new File(fileName);
-            if (!file.exists()) {
-                ResponseProcessingUtilities.writeCompressedFile(
-                        (byte[]) payload.get(FILE.FILE_BYTES), fileName);
+            if (fileName != null) {
+                File file = new File(fileName);
+                if (!file.exists()) {
+                    ResponseProcessingUtilities.writeCompressedFile(
+                            (byte[]) payload.get(FILE.FILE_BYTES), fileName);
+                }
+                subName = (String) payload.get(FILE.SUBSCRIPTION_NAME);
+                statusHandler
+                        .info("Processing PDA retrieval file: " + fileName);
+                pdos = pdaAdapter.decodeObjects(fileName, subName);
+            } else {
+                statusHandler
+                        .warn("Unable to process file: null file name received.");
             }
-            subName = (String) payload.get(FILE.SUBSCRIPTION_NAME);
-            statusHandler.info("Processing PDA retrieval file: " + fileName);
-            pdos = pdaAdapter.decodeObjects(fileName, subName);
-
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to decode PDA file objects!", e);

@@ -60,6 +60,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Jan 18, 2016  5260     dhladky   Testing changes.
  * Jan 20, 2016  5280     dhladky   removed FTPSURL from request URL.
  * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
+ * Sep 01, 2016  5762     tjensen   Improved logging
  * 
  * </pre>
  * 
@@ -248,10 +249,11 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
                         sub.getDataSetName(), sub.getProvider());
 
         if (pdadsmd != null) {
-            statusHandler.handle(Priority.INFO,
-                    "DataSetMetaData: " + pdadsmd.getDataSetDescription());
-            statusHandler.handle(Priority.INFO,
-                    "MetaDataID: " + pdadsmd.getMetaDataID());
+            statusHandler
+                    .handle(Priority.INFO,
+                            "DataSetMetaData: '" + pdadsmd.getDataSetName()
+                                    + "' MetaDataID: '"
+                                    + pdadsmd.getMetaDataID() + "'");
         } else {
             throw new IllegalArgumentException(
                     "No DataSetMetaData matches query criteria!");

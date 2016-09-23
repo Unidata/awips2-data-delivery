@@ -69,6 +69,7 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * Jul 25, 2016  5686     rjpeter   Fix dataURI of messageData.
  * Jun 27, 2016  5584     nabowle   Netcdf decoder consolidation.
  * Aug 22, 2016  5843     tjensen   Stop overriding dataURI
+ * Sep 16, 2016  5762     tjensen   Added config value to not delete files
  * </pre>
  *
  * @author dhladky
@@ -100,6 +101,8 @@ public class PDAMetaDataAdapter extends
     // decoder operating type
     private String type = null;
 
+    private boolean deleteAfterProcess = true;
+
     /** decoder type default **/
     private static final String DEFAULT_TYPE = "DEFAULT_TYPE";
 
@@ -121,6 +124,8 @@ public class PDAMetaDataAdapter extends
          * We need to be able to dynamically switch decoder based on attribute.
          */
         type = getServiceConfig(serviceType).getConstantValue(DEFAULT_TYPE);
+        deleteAfterProcess = Boolean.parseBoolean(getServiceConfig(serviceType)
+                .getConstantValue("DELETE_FILE_AFTER_PROCESSING"));
     }
 
     /**
@@ -152,16 +157,14 @@ public class PDAMetaDataAdapter extends
         } catch (Exception e) {
             statusHandler.error("Couldn't decode PDA data! " + fileName, e);
         } finally {
-            // Done! dispose of this file and it's directory
-            File file = new File(fileName);
-            if (file.exists()) {
-                File dir = new File(file.getParent());
-                if (dir.isDirectory()) {
+            // Done! dispose of this file
+            if (deleteAfterProcess) {
+                File file = new File(fileName);
+                if (file.exists()) {
                     // force delete it, no excuses.
-                    statusHandler
-                            .info("Deleting processed retrieval file directory. "
-                                    + dir.getName());
-                    FileDeleteStrategy.FORCE.delete(dir);
+                    statusHandler.info("Deleting processed retrieval file: "
+                            + file.getName());
+                    FileDeleteStrategy.FORCE.delete(file);
                 }
             }
         }

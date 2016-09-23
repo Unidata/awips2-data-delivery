@@ -27,7 +27,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @author tjensen
  * @version 1.0
  */
-@XmlRootElement(name = "NotificationServers")
+@XmlRootElement(name = "pdaParameterExclusions")
 @XmlAccessorType(XmlAccessType.NONE)
 public class PDAParameterExclusions {
 

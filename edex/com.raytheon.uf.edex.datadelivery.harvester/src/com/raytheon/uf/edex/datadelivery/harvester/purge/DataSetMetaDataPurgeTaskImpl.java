@@ -66,6 +66,7 @@ import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
  * Feb 18, 2016  5280     dhladky   Metadata not purging enough for PDA.
  * Apr 04, 2016  5424     dhladky   Metadata purge not efficient enough for PDA.
  * Sep 12, 2016  5846     tjensen   Improve purge to be more efficient
+ * Sep 22, 2016  5762     tjensen   Limit purge size and make it configurable.
  * 
  * </pre>
  * 
@@ -80,8 +81,19 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
     /** Data access object for registry objects */
     private DataSetMetaDataDao dsmdDao;
 
-    /** Purge 100 items at a time so we don't run hibernate out of shared memory **/
-    private static int PURGE_BATCH_SIZE = 100;
+    /**
+     * Purge a batch of items at a time so we don't run hibernate out of shared
+     * memory
+     **/
+    private static int PURGE_BATCH_SIZE = Integer.getInteger(
+            "metadata-purge.batch.size", 100);
+
+    /**
+     * Limit the total number of items to be purged in a run of the purger so we
+     * don't back up all the non-delete replication events.
+     **/
+    private static int PURGE_TOTAL_LIMIT = Integer.getInteger(
+            "metadata-purge.total.limit", 500);
 
     /**
      * Delete list of provider registry object Ids.
@@ -179,6 +191,11 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
         // Loop over all the providers
         for (String provider : providerList) {
             try {
+                if (deletes >= PURGE_TOTAL_LIMIT) {
+                    statusHandler
+                            .warn("Purge hit deletion limit. Some items may still remain to be purged.");
+                    break;
+                }
                 Number retention = Double.valueOf(configMap.get(provider));
 
                 if (retention == null) {
@@ -216,11 +233,16 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
                         .getTimeInMillis());
                 int numIds = PURGE_BATCH_SIZE;
                 boolean doShutDown = EDEXUtil.isShuttingDown();
-                while (!doShutDown && numIds == PURGE_BATCH_SIZE) {
+                while (!doShutDown && numIds == PURGE_BATCH_SIZE
+                        && deletes < PURGE_TOTAL_LIMIT) {
+                    int batchSize = PURGE_BATCH_SIZE;
+                    if (deletes + batchSize > PURGE_TOTAL_LIMIT) {
+                        batchSize = PURGE_TOTAL_LIMIT - deletes;
+                    }
                     List<String> ids = dsmdDao.getIdsBeyondRetention(
                             DataDeliveryRegistryObjectTypes.DATASETMETADATA,
                             "providerName", provider, "date", retentionTime,
-                            PURGE_BATCH_SIZE);
+                            batchSize);
                     numIds = ids.size();
                     purgeMetaData(ids, username);
                     deletes += numIds;
@@ -238,7 +260,7 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
 
         timer.stop();
         statusHandler.info(String.format(
-                "DataSetMetaData purge completed in %s ms.",
-                timer.getElapsedTime() + " deleted: " + deletes));
+                "DataSetMetaData purge completed in %s ms. Deleted: %s",
+                timer.getElapsedTime(), deletes));
     }
 }
