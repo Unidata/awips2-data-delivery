@@ -57,6 +57,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Jan 18, 2016  5260     dhladky   Fixes to errors found in testing.
  * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
+ * Sep 30, 2016  5762     tjensen   Improve Error Handling
  * 
  * </pre>
  * 
@@ -142,6 +143,7 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         } else {
             statusHandler.handle(Priority.PROBLEM,
                     "FileName for object pulled from PDA server is null!");
+            pr = null;
         }
 
         return pr;
