@@ -159,6 +159,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Jun 09, 2015 4047       dhladky     Performance improvement on startup, initial startup scheduling async now.
  * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * Sep 12, 2016 5772       tjensen     Allow PDA adhocs for older times
+ * Sep 30, 2016 5772       tjensen     Fix Adhocs for older times
  * </pre>
  * 
  * @author dhladky
@@ -1174,6 +1175,20 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         subscriptions.add(bandwidthDao.newBandwidthSubscription(subscription,
                 now.getTime()));
 
+        /**
+         * If the subscription does not have a URL set, set it to grab the
+         * latest time and URL. This is used for pointdata types and adhoc
+         * subscriptions created to grab the latest data when recurring
+         * subscriptions start.
+         */
+        if (subscription.getUrl() == null || "".equals(subscription.getUrl())) {
+            AdhocSubscription<T, C> subscriptionUpdated = bandwidthDaoUtil
+                    .setAdhocMostRecentUrlAndTime(subscription);
+            if (subscriptionUpdated != null) {
+                subscription = subscriptionUpdated;
+            }
+        }
+        
         // Use SimpleSubscriptionAggregator (i.e. no aggregation) to generate a
         // SubscriptionRetrieval for this AdhocSubscription
         SimpleSubscriptionAggregator a = new SimpleSubscriptionAggregator(

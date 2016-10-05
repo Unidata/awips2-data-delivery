@@ -72,6 +72,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Jan 20, 2016  5280     dhladky   Added FTP type configuration, added
  *                                  SecureDataChannel overrides.
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
+ * Sep 30, 2016  5762     tjensen   Improve Error Handling
  * 
  * </pre>
  * 
@@ -176,7 +177,9 @@ public class PDAConnectionUtil {
                                 + rootUrl + " provider: " + providerName);
             }
         } catch (Exception e) {
-            logger.error("Couldn't connect to FTPS server: " + rootUrl, e);
+            logger.error("Error retrieving file from FTPS server: " + rootUrl,
+                    e);
+            localFileName = null;
         }
 
         return localFileName;
@@ -266,9 +269,11 @@ public class PDAConnectionUtil {
 
             ftp.logout();
         } catch (FTPConnectionClosedException e) {
-            logger.error("Server closed connection.", e);
+            logger.error("Server closed connection.");
+            throw e;
         } catch (IOException e) {
-            logger.error("Failed to receive file via FTPS.", e);
+            logger.error("Failed to receive file via FTPS.");
+            throw e;
         } finally {
             // If still connected, disconnect.
             if (ftp.isConnected()) {

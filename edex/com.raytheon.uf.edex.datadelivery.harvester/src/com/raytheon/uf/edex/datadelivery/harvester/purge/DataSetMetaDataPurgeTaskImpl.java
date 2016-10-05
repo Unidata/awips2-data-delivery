@@ -244,7 +244,9 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
                             "providerName", provider, "date", retentionTime,
                             batchSize);
                     numIds = ids.size();
-                    purgeMetaData(ids, username);
+                    if (numIds > 0) {
+                        purgeMetaData(ids, username);
+                    }
                     deletes += numIds;
                     doShutDown = EDEXUtil.isShuttingDown();
                 }

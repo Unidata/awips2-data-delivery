@@ -79,6 +79,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Apr 27, 2016  5366     tjensen   Updates for time selection changes
  * Jul 05, 2016  5683     tjensen   Added handling for null returns
  * Aug 17, 2016  5772     rjpeter   Fix time handling.
+ * Oct 03, 2016  5772     tjensen   Set URL for PDA adhoc queries
  * 
  * </pre>
  * 
@@ -101,6 +102,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     private PDATimingSubsetTab timingTabControls;
 
     private final DateFormat dateFormat;
+
+    private DataSetMetaData metaData;
 
     /**
      * Constructor.
@@ -252,7 +255,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         }
 
         Date selectedDate = dateStringToDateMap.get(selection.getDate());
-        DataSetMetaData metaData = retrieveFilteredDataSetMetaData(selectedDate);
+        metaData = retrieveFilteredDataSetMetaData(selectedDate);
         if (metaData == null) {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
                     NO_DATA_FOR_DATE);
@@ -270,14 +273,25 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     }
 
+    /**
+     * Return the {@link Time} object that should be associated with this
+     * subscription. It will either be null for a reoccurring subscription, or
+     * the {@link DataSetMetaData} url if an adhoc query is being performed for
+     * a non-latest date.
+     * 
+     * @return the url to use
+     */
+    public String getSubscriptionUrl() {
+        return (this.metaData == null) ? null : this.metaData.getUrl();
+    }
+
     protected Time handleRecurringDataSpecificTime(Subscription sub) {
         Time time = null;
         SortedSet<ImmutableDate> newestToOldest = retrieveDatesForDataSet(
                 sub.getDataSetName(), sub.getProvider());
 
         if ((newestToOldest != null) && newestToOldest.isEmpty()) {
-            DataSetMetaData metaData = retrieveFilteredDataSetMetaData(newestToOldest
-                    .first());
+            metaData = retrieveFilteredDataSetMetaData(newestToOldest.first());
             if (metaData != null) {
                 time = metaData.getTime();
             }
@@ -317,6 +331,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         Coverage cov = new Coverage();
         cov.setEnvelope(dataSet.getCoverage().getEnvelope());
         setCoverage(sub, cov);
+
+        sub.setUrl(getSubscriptionUrl());
 
         List<Parameter> paramList = new ArrayList<>();
         Map<String, Parameter> paramMap = dataSet.getParameters();

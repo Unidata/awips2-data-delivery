@@ -117,8 +117,7 @@
 
    <pdaDataSetNameMap>
       <parameter>LVTP</parameter>
-      <description>Vertical Temperature Profiles 
-      </description>
+      <description>Vertical Temperature Profiles</description>
    </pdaDataSetNameMap>
 
    <pdaDataSetNameMap>
