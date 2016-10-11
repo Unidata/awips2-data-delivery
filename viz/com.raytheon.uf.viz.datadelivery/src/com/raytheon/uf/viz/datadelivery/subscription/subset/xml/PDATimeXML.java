@@ -21,7 +21,6 @@ package com.raytheon.uf.viz.datadelivery.subscription.subset.xml;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
@@ -35,7 +34,6 @@ import javax.xml.bind.annotation.XmlRootElement;
  * ------------- -------- --------- ------------------
  * Aug 20, 2014  3121     dhladky   Initial creation.
  * Aug 17, 2016  5772     rjpeter   Only support latest time.
- * Oct 06, 2016  5883     tjensen   Fixed for serialization
  * 
  * </pre>
  * 
@@ -44,28 +42,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 public class PDATimeXML extends TimeXML {
-
-    /*
-     * This should always be true for PDA, but needed for serialization to Save
-     * Subsets.
-     */
-    @XmlElement(name = "latestData")
-    protected boolean latestData = true;
-
-    /**
-     * @return the latestData
-     */
-    public boolean isLatestData() {
-        return latestData;
-    }
-
-    /**
-     * @param latestData
-     *            the latestData to set
-     */
-    public void setLatestData(boolean latestData) {
-        this.latestData = latestData;
-    }
 
     @Override
     public String getPreviewString() {
