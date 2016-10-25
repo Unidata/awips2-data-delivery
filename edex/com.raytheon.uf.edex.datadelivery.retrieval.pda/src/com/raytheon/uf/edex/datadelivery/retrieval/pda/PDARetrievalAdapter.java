@@ -20,7 +20,6 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * further licensing information.
  **/
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,6 +56,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Dec 03, 2014  3826     dhladky   PDA test readiness
  * Jan 18, 2016  5260     dhladky   Fixes to errors found in testing.
  * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
+ * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
+ * Sep 30, 2016  5762     tjensen   Improve Error Handling
  * 
  * </pre>
  * 
@@ -67,8 +68,6 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDARetrievalAdapter.class);
-
-    private static final String fileExtension = ".camelLock";
 
     @Override
     public IRetrievalRequestBuilder<Time, Coverage> createRequestMessage(
@@ -87,7 +86,6 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
             IRetrievalRequestBuilder<Time, Coverage> request) {
 
         String localFilePath = null;
-        File directory = null;
         String fileName = null;
 
         if (request.getRequest() != null) {
@@ -99,22 +97,11 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                         .getProviderRetrievalXMl().getConnection(),
                         providerName, request.getRequest());
 
-                // camel embeds the file in a directory of same name, extract.
                 if (localFilePath != null) {
                     statusHandler.handle(Priority.INFO,
                             "Received file from PDA, stored to location: "
                                     + localFilePath);
-                    directory = new File(localFilePath);
-                    if (directory.isDirectory()) {
-                        for (File file : directory.listFiles()) {
-                            if (!file.getName().endsWith(fileExtension)) {
-                                // you will only ever find one plus the file
-                                // with the .camelLock extension
-                                fileName = file.getAbsolutePath();
-                                break;
-                            }
-                        }
-                    }
+                    fileName = localFilePath;
                 }
 
             } catch (Exception e) {
@@ -156,6 +143,7 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         } else {
             statusHandler.handle(Priority.PROBLEM,
                     "FileName for object pulled from PDA server is null!");
+            pr = null;
         }
 
         return pr;

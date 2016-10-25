@@ -60,6 +60,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Jan 18, 2016  5260     dhladky   Testing changes.
  * Jan 20, 2016  5280     dhladky   removed FTPSURL from request URL.
  * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
+ * Sep 01, 2016  5762     tjensen   Improved logging
+ * Oct 06, 2016  5772     tjensen   Fix Adhocs for older times
  * 
  * </pre>
  * 
@@ -96,14 +98,11 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             return Collections.emptyList();
         }
 
-        // TODO since we have no switches this is all meaningless right now
         Time subTime = sub.getTime();
-        // Gets the most recent time, which is kept as the end time.
-        Date endDate = subTime.getEnd();
+
         // create the request start and end times.
-        subTime.setRequestEnd(endDate);
-        Date requestStartDate = new Date(endDate.getTime());
-        subTime.setRequestStart(requestStartDate);
+        subTime.setRequestStart(subTime.getStart());
+        subTime.setRequestEnd(subTime.getEnd());
 
         // With PDA it's one param at a time. so always 0.
         Parameter param = null;
@@ -244,14 +243,15 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         statusHandler.handle(Priority.INFO, "Time of Subset request: "
                 + dataSetTime.toString());
         PDADataSetMetaData pdadsmd = (PDADataSetMetaData) DataDeliveryHandlers
-                .getDataSetMetaDataHandler().getMostRecentDataSetMetaData(
-                        sub.getDataSetName(), sub.getProvider());
+                .getDataSetMetaDataHandler().getByDataSetDate(
+                        sub.getDataSetName(), sub.getProvider(), dataSetTime);
 
         if (pdadsmd != null) {
-            statusHandler.handle(Priority.INFO,
-                    "DataSetMetaData: " + pdadsmd.getDataSetDescription());
-            statusHandler.handle(Priority.INFO,
-                    "MetaDataID: " + pdadsmd.getMetaDataID());
+            statusHandler
+                    .handle(Priority.INFO,
+                            "DataSetMetaData: '" + pdadsmd.getDataSetName()
+                                    + "' MetaDataID: '"
+                                    + pdadsmd.getMetaDataID() + "'");
         } else {
             throw new IllegalArgumentException(
                     "No DataSetMetaData matches query criteria!");

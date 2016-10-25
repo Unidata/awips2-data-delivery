@@ -9,10 +9,15 @@
         <constructor-arg ref="crawlerCommunicationStrategy" />
         <constructor-arg ref="ProviderHandler" />
     </bean>
+    
+    <bean id="dataSetMetaDataDao"
+        class="com.raytheon.uf.edex.datadelivery.harvester.purge.DataSetMetaDataDao">
+        <property name="sessionFactory" ref="metadataSessionFactory" />
+    </bean>
   	
     <!-- Start of DataSetMetaData purge configuration -->
     <bean id="DataSetMetaDataPurgeLauncher" class="com.raytheon.uf.edex.datadelivery.harvester.purge.DataSetMetaDataPurgeLauncher" depends-on="registryInit">
-        <constructor-arg ref="registryObjectDao" />
+        <constructor-arg ref="dataSetMetaDataDao" />
     </bean>
 
     <camelContext id="DataSetMetaDataPurge-context"

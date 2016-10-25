@@ -27,13 +27,15 @@ import com.raytheon.uf.common.registry.ebxml.slots.SlotConverter;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 15, 2012 455        jspinks     Initial creation
- * May 29, 2013 753        dhladky     Updated the way point datasets are sent.
- * Sept 25, 2013 1797      dhladky     separated time and gridded time
- * Oct 10, 2013 1797       bgonzale    Refactored registry Time objects.
- * Aug 20, 2014  3120      dhladky     Added support for General Time objects.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * May 15, 2012  455      jspinks   Initial creation
+ * May 29, 2013  753      dhladky   Updated the way point datasets are sent.
+ * Sep 25, 2013  1797     dhladky   separated time and gridded time
+ * Oct 10, 2013  1797     bgonzale  Refactored registry Time objects.
+ * Aug 20, 2014  3120     dhladky   Added support for General Time objects.
+ * Jul 13, 2016  5752     tjensen   Added implementation for General Time
+ *                                  objects.
  * 
  * </pre>
  * 
@@ -62,11 +64,11 @@ public class TimeSlotConverter implements SlotConverter {
     @Override
     public List<SlotType> getSlots(String slotName, Object slotValue)
             throws IllegalArgumentException {
-        List<SlotType> slots = new ArrayList<SlotType>();
+        List<SlotType> slots = new ArrayList<>();
 
         SlotType slot = new SlotType();
         slot.setName(slotName);
-        List<ValueType> collectionValues = new ArrayList<ValueType>();
+        List<ValueType> collectionValues = new ArrayList<>();
         CollectionValueType cvt = new CollectionValueType();
 
         // Must at least extend Time object
@@ -85,7 +87,7 @@ public class TimeSlotConverter implements SlotConverter {
                     }
                 }
 
-            // Handle special Gridded Times
+                // Handle special Gridded Times
             } else if (slotValue instanceof GriddedTime) {
 
                 GriddedTime t = (GriddedTime) slotValue;
@@ -101,10 +103,10 @@ public class TimeSlotConverter implements SlotConverter {
                         .toUpperCase());
                 Double step = t.getStep();
 
-                // Add One millisecond to handle the case when the step of the
-                // Time
-                // Object
-                // is exactly equal to the end time.
+                /*
+                 * Add One millisecond to handle the case when the step of the
+                 * Time Object is exactly equal to the end time.
+                 */
                 end.add(Calendar.MILLISECOND, 1);
 
                 while (end.after(current)) {
@@ -133,6 +135,16 @@ public class TimeSlotConverter implements SlotConverter {
                         break;
                     }
                 }
+            }
+            // Handle plain Times
+            else {
+                Time t = (Time) slotValue;
+                List<SlotType> stSlots = DateSlotConverter.INSTANCE.getSlots(
+                        slotName, t.getStart());
+                List<SlotType> etSlots = DateSlotConverter.INSTANCE.getSlots(
+                        slotName, t.getEnd());
+                slots.add(stSlots.get(0));
+                slots.add(etSlots.get(0));
             }
         } else {
             throw new IllegalArgumentException("Object of type "

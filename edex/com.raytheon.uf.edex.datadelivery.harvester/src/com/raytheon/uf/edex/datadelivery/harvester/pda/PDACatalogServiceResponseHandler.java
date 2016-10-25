@@ -61,23 +61,23 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 16, 2014 3120       dhladky     Initial creation
- * Nov 10, 2014 3826       dhladky     Added more logging.
- * Apr 21, 2015 4435       dhladky     Connecting to PDA transactions
- * Sep 11, 2015 4881       dhladky     Updates to PDA processing, better tracking.
- * Jan 18, 2016 5260       dhladky     FQDN usage to lessen OGC class collisions.
- * Jan 20, 2016 5280       dhladky     Logging improvement.
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
- * Apr 05, 2016 5424       dhladky     More logging enhancements.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 16, 2014  3120     dhladky   Initial creation
+ * Nov 10, 2014  3826     dhladky   Added more logging.
+ * Apr 21, 2015  4435     dhladky   Connecting to PDA transactions
+ * Sep 11, 2015  4881     dhladky   Updates to PDA processing, better tracking.
+ * Jan 18, 2016  5260     dhladky   FQDN usage to lessen OGC class collisions.
+ * Jan 20, 2016  5280     dhladky   Logging improvement.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Apr 05, 2016  5424     dhladky   More logging enhancements.
+ * Aug 11, 2016  5752     tjensen   Fix bounding box parsing in parseBriefRecord
  * 
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  */
-
 @WebService(name = "PDACatalogServiceResponseHandler", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2")
 @SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
 @XmlSeeAlso({ net.opengis.cat.csw.v_2_0_2.ObjectFactory.class,
@@ -133,6 +133,8 @@ public class PDACatalogServiceResponseHandler {
     private static final String LOWER_CORNER = "LowerCorner";
 
     private static final String UPPER_CORNER = "UpperCorner";
+
+    private static final String CRS = "crs";
 
     /** DEBUG PDA system **/
     private static final String DEBUG = "DEBUG";
@@ -218,8 +220,7 @@ public class PDACatalogServiceResponseHandler {
 
         if (records != null) {
 
-            List<JAXBElement<BriefRecordType>> briefRecords = new ArrayList<JAXBElement<BriefRecordType>>(
-                    0);
+            List<JAXBElement<BriefRecordType>> briefRecords = new ArrayList<>(0);
 
             for (Object o : records) {
                 // We only care about insert messages, we delete
@@ -324,6 +325,7 @@ public class PDACatalogServiceResponseHandler {
         String type = null;
         String lowerCorner = null;
         String upperCorner = null;
+        String crsAttr = null;
 
         // PDA only sends insert and delete, no update, we don't care about
         // delete.
@@ -363,6 +365,11 @@ public class PDACatalogServiceResponseHandler {
                 } else if (element.getLocalName().equals(BOUNDING_BOX)) {
 
                     NodeList nodes = element.getChildNodes();
+                    crsAttr = element.getAttribute(CRS);
+
+                    if (debug) {
+                        statusHandler.info("CRS: " + crsAttr);
+                    }
 
                     for (int j = 0; j < nodes.getLength(); j++) {
 
@@ -378,11 +385,12 @@ public class PDACatalogServiceResponseHandler {
                                                 + lowerCorner);
                                     }
                                 } else {
-                                    statusHandler.warn("LOWER_CORNER is blank!");
+                                    statusHandler
+                                            .warn("LOWER_CORNER is blank!");
                                 }
                             }
                         } else if (node.getLocalName().equals(UPPER_CORNER)) {
-                            
+
                             if (node.getFirstChild() != null) {
                                 if (node.getFirstChild().getNodeValue() != null) {
                                     upperCorner = node.getFirstChild()
@@ -392,14 +400,18 @@ public class PDACatalogServiceResponseHandler {
                                                 + upperCorner);
                                     }
                                 } else {
-                                    statusHandler.warn("UPPER_CORNER is blank!");
+                                    statusHandler
+                                            .warn("UPPER_CORNER is blank!");
                                 }
                             }
                         } else {
                             if (node.getFirstChild() != null) {
                                 if (node.getFirstChild().getNodeValue() != null) {
-                                      statusHandler.info("Extra node: "+node.getLocalName()+" value:"
-                                            + node.getFirstChild().getNodeValue());
+                                    statusHandler.info("Extra node: "
+                                            + node.getLocalName()
+                                            + " value:"
+                                            + node.getFirstChild()
+                                                    .getNodeValue());
                                 }
                             }
                         }
@@ -411,10 +423,9 @@ public class PDACatalogServiceResponseHandler {
             if (identifier != null && title != null && type != null) {
 
                 // identifier builder
-                List<JAXBElement<SimpleLiteral>> idLiterals = new ArrayList<JAXBElement<SimpleLiteral>>(
-                        1);
+                List<JAXBElement<SimpleLiteral>> idLiterals = new ArrayList<>(1);
                 SimpleLiteral idLiteral = new SimpleLiteral();
-                List<String> ids = new ArrayList<String>(1);
+                List<String> ids = new ArrayList<>(1);
                 ids.add(identifier);
                 idLiteral.setContent(ids);
                 JAXBElement<SimpleLiteral> jaxbIdLiteral = literalFactory
@@ -422,10 +433,10 @@ public class PDACatalogServiceResponseHandler {
                 idLiterals.add(jaxbIdLiteral);
 
                 // title builder
-                List<JAXBElement<SimpleLiteral>> titleLiterals = new ArrayList<JAXBElement<SimpleLiteral>>(
+                List<JAXBElement<SimpleLiteral>> titleLiterals = new ArrayList<>(
                         1);
                 SimpleLiteral titleLiteral = new SimpleLiteral();
-                List<String> titles = new ArrayList<String>(1);
+                List<String> titles = new ArrayList<>(1);
                 titles.add(title);
                 titleLiteral.setContent(titles);
                 JAXBElement<SimpleLiteral> jaxbTitleLiteral = literalFactory
@@ -434,43 +445,51 @@ public class PDACatalogServiceResponseHandler {
 
                 // type builder
                 SimpleLiteral typeLiteral = new SimpleLiteral();
-                List<String> types = new ArrayList<String>(1);
+                List<String> types = new ArrayList<>(1);
                 types.add(type);
                 typeLiteral.setContent(types);
 
                 // Bounding Box
-                List<JAXBElement<BoundingBoxType>> boundingBoxes = new ArrayList<JAXBElement<BoundingBoxType>>(
+                List<JAXBElement<BoundingBoxType>> boundingBoxes = new ArrayList<>(
                         1);
                 List<Double> upperVals = null;
                 List<Double> lowerVals = null;
 
                 if (upperCorner != null && lowerCorner != null) {
-                    // These arranged LAT LON!!!!!!!!!!!!!!!
                     String[] uppers = upperCorner.split(SPACE);
                     String[] lowers = lowerCorner.split(SPACE);
                     // uppers
-                    upperVals = new ArrayList<Double>(2);
+                    upperVals = new ArrayList<>(2);
                     upperVals.add(Double.parseDouble(uppers[0]));
                     upperVals.add(Double.parseDouble(uppers[1]));
                     // lowers
-                    lowerVals = new ArrayList<Double>(2);
+                    lowerVals = new ArrayList<>(2);
                     lowerVals.add(Double.parseDouble(lowers[0]));
                     lowerVals.add(Double.parseDouble(lowers[1]));
                 }
+
+                if (crsAttr == null || crsAttr.equals("")) {
+                    crsAttr = serviceConfig.getConstantValue(DEFAULT_CRS);
+                    statusHandler
+                            .warn("Unable to retrieve CRS from bounding box. Using default CRS: "
+                                    + crsAttr);
+                }
+
                 // create the Box
                 BoundingBoxType bbt = new BoundingBoxType();
-                bbt.setCrs(serviceConfig.getConstantValue(DEFAULT_CRS));
+                bbt.setCrs(crsAttr);
 
                 if (upperCorner != null && lowerCorner != null) {
                     bbt.setLowerCorner(lowerVals);
                     bbt.setUpperCorner(upperVals);
                     // 2 dimensions
-                    bbt.setDimensions(BigInteger.valueOf(new Integer(2).intValue()));
+                    bbt.setDimensions(BigInteger.valueOf(new Integer(2)
+                            .intValue()));
                     JAXBElement<BoundingBoxType> jaxbBoundingBox = boundingBoxFactory
                             .createBoundingBox(bbt);
                     boundingBoxes.add(jaxbBoundingBox);
                 }
-                
+
                 // Add everything to the BriefRecordType
                 brt = new BriefRecordType();
                 brt.setBoundingBox(boundingBoxes);

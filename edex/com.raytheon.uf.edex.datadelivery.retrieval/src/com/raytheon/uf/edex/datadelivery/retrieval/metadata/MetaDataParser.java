@@ -55,30 +55,37 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011 218        dhladky      Initial creation
- * May 15, 2012 455        jspinks      Modified for storing object associations in registry.
- * Jun 21, 2012 736        djohnson     Change OPERATION_STATUS to OperationStatus.
- * Aug 02, 2012 955        djohnson     Type-safe registry query/responses.
- * Aug 10, 2012 1022       djohnson     {@link DataSetQuery} requires provider name.
- * Aug 20, 2012 0743       djohnson     Finish making registry type-safe.
- * Sep 14, 2012 1169       djohnson     Use storeOrReplaceRegistryObject.
- * Oct 03, 2012 1241       djohnson     Use registry handler, move unresolved reference handling into handlers themselves.
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Sept 30, 2013 1797      dhladky      Generics
- * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
- * Jun 21, 2014 3120       dhladky      Added more helper methods
- * Jan 20, 2016 5280       dhladky      Increase efficiency of object replication.
- * Feb 16, 2016 5365       dhladky      Refined interface for transaction, getRecords() exclusions.
- * Apr 05, 2016 5424       dhladky      Fixed initial condition for dataset which prevented storage.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2011  218      dhladky   Initial creation
+ * May 15, 2012  455      jspinks   Modified for storing object associations in
+ *                                  registry.
+ * Jun 21, 2012  736      djohnson  Change OPERATION_STATUS to OperationStatus.
+ * Aug 02, 2012  955      djohnson  Type-safe registry query/responses.
+ * Aug 10, 2012  1022     djohnson  {@link DataSetQuery} requires provider name.
+ * Aug 20, 2012  743      djohnson  Finish making registry type-safe.
+ * Sep 14, 2012  1169     djohnson  Use storeOrReplaceRegistryObject.
+ * Oct 03, 2012  1241     djohnson  Use registry handler, move unresolved
+ *                                  reference handling into handlers themselves.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Sep 30, 2013  1797     dhladky   Generics
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Jun 21, 2014  3120     dhladky   Added more helper methods
+ * Jan 20, 2016  5280     dhladky   Increase efficiency of object replication.
+ * Feb 16, 2016  5365     dhladky   Refined interface for transaction,
+ *                                  getRecords() exclusions.
+ * Apr 05, 2016  5424     dhladky   Fixed initial condition for dataset which
+ *                                  prevented storage.
+ * Jul 22, 2016  5752     tjensen   Fix storeDataSet and add additional logging
+ *                                  information
  * 
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  */
-
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public abstract class MetaDataParser<O extends Object> implements
@@ -134,24 +141,28 @@ public abstract class MetaDataParser<O extends Object> implements
 
             boolean store = false;
             // This returns null if no previous dataSet exists.
-            DataSet dataSetToStore = getDataSetToStore(dataSet);
+            DataSet currentDataSet = DataDeliveryHandlers.getDataSetHandler()
+                    .getByNameAndProvider(dataSet.getDataSetName(),
+                            dataSet.getProviderName());
 
-            if (dataSetToStore == null) {
+            if (currentDataSet == null) {
                 store = true;
-                dataSetToStore = dataSet;
             } else {
-                if (!dataSetToStore.equals(dataSet)) {
+                if (!currentDataSet.equals(dataSet)) {
                     store = true;
                 }
             }
 
             if (store) {
-                dataSetName = dataSetToStore.getDataSetName();
+                dataSetName = dataSet.getDataSetName();
                 DataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
-                handler.update(RegistryUtil.registryUser, dataSetToStore);
+                handler.update(RegistryUtil.registryUser, dataSet);
                 statusHandler.info("Dataset [" + dataSetName
                         + "] successfully stored in Registry");
-                storeDataSetName(dataSetToStore);
+                storeDataSetName(dataSet);
+            } else {
+                statusHandler
+                        .info("Matching dataset already exists in Registry. No update will be performed.");
             }
 
         } catch (RegistryHandlerException e) {
@@ -178,8 +189,8 @@ public abstract class MetaDataParser<O extends Object> implements
             // "url" is ID for metaData
             currentMetaData = handler.getById(metaData.getUrl());
         } catch (RegistryHandlerException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, "Unable to lookup metadata ID: "+metaData.getUrl(), e1);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to lookup metadata ID: " + metaData.getUrl(), e1);
         }
 
         if (currentMetaData != null) {
@@ -218,7 +229,7 @@ public abstract class MetaDataParser<O extends Object> implements
         // Now add the parameter Objects so we can associate
         // the DataSetName with parameters..
         dsn.setParameters(dataSetToStore.getParameters());
- 
+
         try {
             DataDeliveryHandlers.getDataSetNameHandler().update(
                     RegistryUtil.registryUser, dsn);
@@ -243,7 +254,7 @@ public abstract class MetaDataParser<O extends Object> implements
         DataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
         Iterator<DataSetMetaData<?>> iter = metaDatas.iterator();
-        
+
         while (iter.hasNext()) {
 
             final DataSetMetaData<?> dsmd = iter.next();

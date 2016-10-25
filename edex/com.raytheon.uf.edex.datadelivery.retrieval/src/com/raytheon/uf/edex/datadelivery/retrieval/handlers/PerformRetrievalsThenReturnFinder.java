@@ -54,18 +54,24 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 01, 2013 1543       djohnson     Initial creation
- * Feb 07, 2013 1543       djohnson     Expose process() for testing.
- * Feb 12, 2013 1543       djohnson     Retrieval responses are now passed further down the chain.
- * Feb 15, 2013 1543       djohnson     Retrieval responses are now xml.
- * Jul 16, 2013 1655       mpduff       Send a system status event based on the response from the provider.
- * Jan 15, 2014 2678       bgonzale     Retrieve RetrievalRequestRecords from a Queue for processing.
- * Jan 30, 2014   2686     dhladky      refactor of retrieval.
- * Sep 17, 2014 2749       ccody        Renamed SystemStatusEvent to DataDeliverySystemStatusEvent
- * Nov 17, 2014 3840       ccody        Only publish System State Events when the state changes
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 01, 2013  1543     djohnson  Initial creation
+ * Feb 07, 2013  1543     djohnson  Expose process() for testing.
+ * Feb 12, 2013  1543     djohnson  Retrieval responses are now passed further
+ *                                  down the chain.
+ * Feb 15, 2013  1543     djohnson  Retrieval responses are now xml.
+ * Jul 16, 2013  1655     mpduff    Send a system status event based on the
+ *                                  response from the provider.
+ * Jan 15, 2014  2678     bgonzale  Retrieve RetrievalRequestRecords from a
+ *                                  Queue for processing.
+ * Jan 30, 2014  2686     dhladky   refactor of retrieval.
+ * Sep 17, 2014  2749     ccody     Renamed SystemStatusEvent to
+ *                                  DataDeliverySystemStatusEvent
+ * Nov 17, 2014  3840     ccody     Only publish System State Events when the
+ *                                  state changes
  * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
+ * Sep 01, 2016  5762     tjensen   Added improved logging
  * 
  * </pre>
  * 
@@ -154,7 +160,7 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
     @VisibleForTesting
     RetrievalResponseXml process(RetrievalRequestRecord requestRecord) {
         requestRecord.setState(State.FAILED);
-        List<RetrievalResponseWrapper> retrievalAttributePluginDataObjects = new ArrayList<RetrievalResponseWrapper>();
+        List<RetrievalResponseWrapper> retrievalAttributePluginDataObjects = new ArrayList<>();
 
         try {
             Retrieval retrieval = requestRecord.getRetrievalObj();
@@ -262,6 +268,10 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
         final State completionState = response.getPayLoad() == null ? State.FAILED
                 : State.COMPLETED;
         requestRecord.setState(completionState);
+        if (completionState == RetrievalRequestRecord.State.FAILED) {
+            statusHandler.warn("Retrieval failed: "
+                    + requestRecord.getId().getSubscriptionName());
+        }
     }
 
 }
