@@ -56,6 +56,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Feb 09, 2016  5324     randerso  Remove CAVE.DO_NOT_BLOCK until DR #5327 is worked
  * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues 
  * Jun 16, 2016  5683     tjensen   Change Cancel to return PDATimeSelection
+ * Aug 17, 2016  5772     rjpeter   Always return selected time.
  * 
  * </pre>
  * 
@@ -98,12 +99,17 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
      * @param dateStringToDateMap
      */
     public PDATimingSelectionDlg(Shell parentShell, PDADataSet dataset,
-            @SuppressWarnings("rawtypes")
-            Subscription subscription, java.util.List<String> dateList) {
+            @SuppressWarnings("rawtypes") Subscription subscription,
+            java.util.List<String> dateList) {
         super(parentShell, SWT.DIALOG_TRIM);
         setText("Select Date");
         this.subscription = subscription;
         this.dateList = dateList;
+
+        if (dateList == null || dateList.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No data is available for data set.");
+        }
     }
 
     /**
@@ -250,6 +256,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
             data.setDate(selection);
         } else {
             data.setLatest(true);
+            data.setDate(dateCycleList.getItem(0));
         }
 
         setReturnValue(data);

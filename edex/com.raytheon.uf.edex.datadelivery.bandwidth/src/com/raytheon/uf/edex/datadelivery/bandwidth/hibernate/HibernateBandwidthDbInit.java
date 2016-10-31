@@ -37,19 +37,23 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttr
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Jul 31, 2012 726         jspinks     Copied and refactored from ebxml registry DbInit
- * Oct 26, 2012 1286        djohnson    Renamed to Hibernate specific.
- * Apr 30, 2013 1960        djohnson    Extend the generalized DbInit.
- * Jun 24, 2013 2106        djohnson    Add {@link BandwidthBucket} to annotated classes.
- * Jul 11, 2013 2106        djohnson    Add {@link SubscriptionRetrievalAttributes}.
- * Jan 08, 2013 2645        bgonzale    Added RegistryBandwidthRecord to configuration annotated class list.
- * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 31, 2012  726      jspinks   Copied and refactored from ebxml registry
+ *                                  DbInit
+ * Oct 26, 2012  1286     djohnson  Renamed to Hibernate specific.
+ * Apr 30, 2013  1960     djohnson  Extend the generalized DbInit.
+ * Jun 24, 2013  2106     djohnson  Add {@link BandwidthBucket} to annotated
+ *                                  classes.
+ * Jul 11, 2013  2106     djohnson  Add {@link SubscriptionRetrievalAttributes}.
+ * Jan 08, 2013  2645     bgonzale  Added RegistryBandwidthRecord to
+ *                                  configuration annotated class list.
+ * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4.
+ * Aug 17, 2016  5771     rjpeter   Auto create DataSetLatency table.
+ * 
  * </pre>
  * 
  * @author jspinks
- * @version 1
  */
 @Transactional
 @Service
@@ -83,6 +87,7 @@ public class HibernateBandwidthDbInit extends DbInit implements
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription.class);
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval.class);
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation.class);
+        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency.class);
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes.class);
         aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.registry.RegistryBandwidthRecord.class);
         return aConfig;

@@ -36,7 +36,6 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.dataplugin.satellite.SatelliteRecord;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -67,14 +66,14 @@ import com.raytheon.uf.edex.plugin.satellite.gini.GiniSatelliteDecoder;
  * May 03, 2016  5599     tjensen   Pass subscription name to GoesrDecoder to
  *                                  override sectorID.
  * May 16, 2016  5599     tjensen   Refresh dataURI after overriding sectorID.
+ * Jul 25, 2016  5686     rjpeter   Fix dataURI of messageData.
  * Jun 27, 2016  5584     nabowle   Netcdf decoder consolidation.
- *
+ * Aug 22, 2016  5843     tjensen   Stop overriding dataURI
+ * Sep 16, 2016  5762     tjensen   Added config value to not delete files
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
-
 public class PDAMetaDataAdapter extends
         AbstractMetadataAdapter<PluginDataObject, Time, Coverage> {
 
@@ -102,6 +101,8 @@ public class PDAMetaDataAdapter extends
     // decoder operating type
     private String type = null;
 
+    private boolean deleteAfterProcess = true;
+
     /** decoder type default **/
     private static final String DEFAULT_TYPE = "DEFAULT_TYPE";
 
@@ -123,6 +124,8 @@ public class PDAMetaDataAdapter extends
          * We need to be able to dynamically switch decoder based on attribute.
          */
         type = getServiceConfig(serviceType).getConstantValue(DEFAULT_TYPE);
+        deleteAfterProcess = Boolean.parseBoolean(getServiceConfig(serviceType)
+                .getConstantValue("DELETE_FILE_AFTER_PROCESSING"));
     }
 
     /**
@@ -151,54 +154,22 @@ public class PDAMetaDataAdapter extends
                 throw new IllegalArgumentException("Unknown type detected. "
                         + type);
             }
-
-            postProcessPdos(pdos, subName);
         } catch (Exception e) {
             statusHandler.error("Couldn't decode PDA data! " + fileName, e);
         } finally {
-            // Done! dispose of this file and it's directory
-            File file = new File(fileName);
-            if (file.exists()) {
-                File dir = new File(file.getParent());
-                if (dir.isDirectory()) {
+            // Done! dispose of this file
+            if (deleteAfterProcess) {
+                File file = new File(fileName);
+                if (file.exists()) {
                     // force delete it, no excuses.
-                    statusHandler
-                            .info("Deleting processed retrieval file directory. "
-                                    + dir.getName());
-                    FileDeleteStrategy.FORCE.delete(dir);
+                    statusHandler.info("Deleting processed retrieval file: "
+                            + file.getName());
+                    FileDeleteStrategy.FORCE.delete(file);
                 }
             }
         }
 
         return pdos;
-    }
-
-    /**
-     * Performs any necessary post processing on decoded pdos before they are
-     * persisted.
-     * 
-     * @param pdos
-     *            Array of decoded pdos to be processed
-     * @param subName
-     *            subscription name
-     */
-    private void postProcessPdos(PluginDataObject[] pdos, String subName) {
-        /*
-         * For all PDOs that are SatelliteRecords, replace the sectorId with the
-         * subscription name so we can tie the record to the subscription.
-         */
-        for (PluginDataObject pdo : pdos) {
-            if (pdo instanceof SatelliteRecord) {
-                SatelliteRecord sr = (SatelliteRecord) pdo;
-                sr.setSectorID(subName);
-                /*
-                 * Set DataURI to null, then call getDataURI to recreate it with
-                 * the new sectorId.
-                 */
-                sr.setDataURI(null);
-                sr.getDataURI();
-            }
-        }
     }
 
     @Override
@@ -286,7 +257,7 @@ public class PDAMetaDataAdapter extends
                             .decode(gsi, headers);
                     // add to main pdo array
                     if (separatorPdos != null) {
-                        for (int i = 0; i < separatorPdos.length - 1; i++) {
+                        for (int i = 0; i < (separatorPdos.length - 1); i++) {
                             pdos.add(separatorPdos[i]);
                         }
                     }

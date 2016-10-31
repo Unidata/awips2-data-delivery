@@ -22,7 +22,6 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.ncf;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
@@ -48,14 +47,16 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 13, 2013 2545       bgonzale    Initial creation
- * Dec 04, 2013 2566       bgonzale    use bandwidthmanager method to retrieve spring files.
- * Jan 14, 2014 2692       dhladky     AdhocSubscription handler
- * Jan 30, 2014 2636       mpduff      Scheduling refactor.
- * Apr 22, 2014 2992       dhladky     Added IdUtil for siteList
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 13, 2013  2545     bgonzale  Initial creation
+ * Dec 04, 2013  2566     bgonzale  use bandwidthmanager method to retrieve
+ *                                  spring files.
+ * Jan 14, 2014  2692     dhladky   AdhocSubscription handler
+ * Jan 30, 2014  2636     mpduff    Scheduling refactor.
+ * Apr 22, 2014  2992     dhladky   Added IdUtil for siteList
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Aug 09, 2016  5771     rjpeter   Update constructor
  * 
  * </pre>
  * 
@@ -92,13 +93,11 @@ public class MonolithicBandwidthManagerCreator<T extends Time, C extends Coverag
                 RegistryIdUtil idUtil,
                 DataSetMetaDataHandler dataSetMetaDataHandler,
                 SubscriptionHandler subscriptionHandler,
-                IAdhocSubscriptionHandler adhocSubscriptionHandler,
                 SendToServerSubscriptionNotificationService subscriptionNotificationService,
                 ISubscriptionFinder findSubscriptionsStrategy) {
             super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
                     idUtil, dataSetMetaDataHandler, subscriptionHandler,
-                    adhocSubscriptionHandler, subscriptionNotificationService,
-                    findSubscriptionsStrategy);
+                    subscriptionNotificationService, findSubscriptionsStrategy);
         }
 
         @Override
@@ -120,14 +119,12 @@ public class MonolithicBandwidthManagerCreator<T extends Time, C extends Coverag
             RegistryIdUtil idUtil,
             DataSetMetaDataHandler dataSetMetaDataHandler,
             SubscriptionHandler subscriptionHandler,
-            IAdhocSubscriptionHandler adhocSubscriptionHandler,
             SendToServerSubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
         return new MonolithicBandwidthManager(dbInit, bandwidthDao,
                 retrievalManager, bandwidthDaoUtil, idUtil,
                 dataSetMetaDataHandler, subscriptionHandler,
-                adhocSubscriptionHandler, subscriptionNotificationService,
-                findSubscriptionsStrategy);
+                subscriptionNotificationService, findSubscriptionsStrategy);
     }
 
 }

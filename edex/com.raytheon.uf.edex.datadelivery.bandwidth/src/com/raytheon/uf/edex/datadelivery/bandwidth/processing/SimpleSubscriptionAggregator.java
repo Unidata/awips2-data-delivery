@@ -45,23 +45,25 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 18, 2012 726        jspinks     Initial creation
- * Nov 09, 2012 1286       djohnson    Rename interface to comply with standards.
- * Nov 20, 2012 1286       djohnson    Change some logging to debug.
- * Jun 13, 2013 2095       djohnson    No need to query the database, we are only receiving new bandwidth subscriptions.
- * Jul 11, 2013 2106       djohnson    aggregate() signature changed.
- * Jan 06, 2014 2636       mpduff      Changed how data set offset is set.
- * Jan 30, 2014 2686       dhladky     refactor of retrieval.
- * Apr 15, 2014 3012       dhladky     help with confusing nomenclature.
- * Jun 09, 2014 3113       mpduff      Use SubscriptionUtil rather than BandwidthUtil.
- * Aug 29, 2014 3446       bphillip    SubscriptionUtil is now a singleton
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 18, 2012  726      jspinks   Initial creation
+ * Nov 09, 2012  1286     djohnson  Rename interface to comply with standards.
+ * Nov 20, 2012  1286     djohnson  Change some logging to debug.
+ * Jun 13, 2013  2095     djohnson  No need to query the database, we are only
+ *                                  receiving new bandwidth subscriptions.
+ * Jul 11, 2013  2106     djohnson  aggregate() signature changed.
+ * Jan 06, 2014  2636     mpduff    Changed how data set offset is set.
+ * Jan 30, 2014  2686     dhladky   refactor of retrieval.
+ * Apr 15, 2014  3012     dhladky   help with confusing nomenclature.
+ * Jun 09, 2014  3113     mpduff    Use SubscriptionUtil rather than
+ *                                  BandwidthUtil.
+ * Aug 29, 2014  3446     bphillip  SubscriptionUtil is now a singleton
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Aug 09, 2016  5771     rjpeter   Get latency for subscription once
  * </pre>
  * 
  * @author jspinks
- * @version 1.0
  */
 public class SimpleSubscriptionAggregator {
 
@@ -95,6 +97,8 @@ public class SimpleSubscriptionAggregator {
          * necessary retrievals without regards to 'sharing' retrievals across
          * subscriptions.
          */
+        Subscription sub = container.subscription;
+        int latency = BandwidthUtil.getSubscriptionLatency(sub);
 
         for (BandwidthSubscription subDao : container.newSubscriptions) {
 
@@ -119,10 +123,7 @@ public class SimpleSubscriptionAggregator {
             subscriptionRetrieval.setEstimatedSize(subDao.getEstimatedSize());
 
             // Create a Retrieval Object for the Subscription
-            Subscription sub = container.subscription;
-
-            subscriptionRetrieval.setSubscriptionLatency(BandwidthUtil
-                    .getSubscriptionLatency(sub));
+            subscriptionRetrieval.setSubscriptionLatency(latency);
 
             int offset = 0;
             try {
@@ -135,8 +136,8 @@ public class SimpleSubscriptionAggregator {
                                 "Unable to retrieve data availability offset, using 0 for the offset.",
                                 e);
             }
-            subscriptionRetrieval.setDataSetAvailablityDelay(offset);
 
+            subscriptionRetrieval.setDataSetAvailablityDelay(offset);
             subscriptionRetrievals.add(subscriptionRetrieval);
 
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {

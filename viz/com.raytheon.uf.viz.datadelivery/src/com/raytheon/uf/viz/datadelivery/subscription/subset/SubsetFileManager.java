@@ -48,6 +48,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.datadelivery.common.xml.AreaXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.DateRangeTimeXML;
+import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.PDATimeXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.PointTimeXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.SpecificDateTimeXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.SubsetXML;
@@ -78,6 +79,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Dec 09, 2015  4834     njensen   updates for API changes to LocalizationFile
  * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
  *                                  to block
+ * Oct 11, 2016  5883     tjensen   Added PDATimeXML to JaxB context.
  * 
  * </pre>
  * 
@@ -137,7 +139,8 @@ public class SubsetFileManager {
     private void createContext() {
         Class[] classes = new Class[] { AreaXML.class, SubsetXML.class,
                 SpecificDateTimeXML.class, DateRangeTimeXML.class,
-                TimeXML.class, VerticalXML.class, PointTimeXML.class };
+                TimeXML.class, VerticalXML.class, PointTimeXML.class,
+                PDATimeXML.class };
 
         try {
             jax = JAXBContext.newInstance(classes);
@@ -170,8 +173,7 @@ public class SubsetFileManager {
                 AREA_PATH + area.getRegionName());
 
         if (areaLocFile.exists()) {
-            String msg = "The file "
-                    + areaLocFile.getFile().getName()
+            String msg = "The file " + areaLocFile.getFile().getName()
                     + " already exists.\n\nWould you like to overwrite the file?";
             int response = DataDeliveryUtils.showYesNoMessage(shell,
                     "File Exists", msg);
@@ -306,8 +308,7 @@ public class SubsetFileManager {
                         + subset.getSubsetName());
 
         if (subsetLocFile.exists()) {
-            String msg = "The file "
-                    + subsetLocFile.getFile().getName()
+            String msg = "The file " + subsetLocFile.getFile().getName()
                     + " already exists.\n\nWould you like to overwrite the file?";
             int response = DataDeliveryUtils.showYesNoMessage(shell,
                     "File Exists", msg);

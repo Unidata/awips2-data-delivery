@@ -34,7 +34,6 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.serialization.SerializationException;
@@ -57,33 +56,37 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2013 1543       djohnson     Initial creation
- * Feb 27, 2013 1644       djohnson     Schedule SBN subscriptions by routing to the NCF bandwidth manager.
- * Mar 11, 2013 1645       djohnson     Add missing Spring file.
- * May 15, 2013 2000       djohnson     Include daos.
- * Jul 10, 2013 2106       djohnson     Dependency inject registry handlers.
- * Oct 2,  2013 1797       dhladky      Generics
- * Oct 28, 2013 2506       bgonzale     SBN (Shared) Scheduled at the central registry.
- *                                      Added subscription notification service to bandwidth manager.
- * Nov 19, 2013 2545       bgonzale     Added registryEventListener method for update events.
- *                                      Added getBandwidthGraphData.
- *                                      Reschedule updated local subscriptions.
- * Nov 27, 2013 2545       mpduff       Get data by network
- * Dec 04, 2013 2566       bgonzale     use bandwidthmanager method to retrieve spring files.
- * Jan 14, 2014 2692       dhladky      AdhocSubscription handler
- * Jan 30, 2014 2636       mpduff       Scheduling refactor.
- * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
- * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
- * Oct 08, 2014 2746       ccody        Relocated registryEventListener to EdexBandwidthManager super class
- * Mar 25, 2015 4329       dhladky      Threaded the graph data requests.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2013  1543     djohnson  Initial creation
+ * Feb 27, 2013  1644     djohnson  Schedule SBN subscriptions by routing to the
+ *                                  NCF bandwidth manager.
+ * Mar 11, 2013  1645     djohnson  Add missing Spring file.
+ * May 15, 2013  2000     djohnson  Include daos.
+ * Jul 10, 2013  2106     djohnson  Dependency inject registry handlers.
+ * Oct 02, 2013  1797     dhladky   Generics
+ * Oct 28, 2013  2506     bgonzale  SBN (Shared) Scheduled at the central
+ *                                  registry. Added subscription notification
+ *                                  service to bandwidth manager.
+ * Nov 19, 2013  2545     bgonzale  Added registryEventListener method for
+ *                                  update events. Added getBandwidthGraphData.
+ *                                  Reschedule updated local subscriptions.
+ * Nov 27, 2013  2545     mpduff    Get data by network
+ * Dec 04, 2013  2566     bgonzale  use bandwidthmanager method to retrieve
+ *                                  spring files.
+ * Jan 14, 2014  2692     dhladky   AdhocSubscription handler
+ * Jan 30, 2014  2636     mpduff    Scheduling refactor.
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Apr 22, 2014  2992     dhladky   Added IdUtil for siteList
+ * Oct 08, 2014  2746     ccody     Relocated registryEventListener to
+ *                                  EdexBandwidthManager super class
+ * Mar 25, 2015  4329     dhladky   Threaded the graph data requests.
+ * Mar 16, 2016  3919     tjensen    Cleanup unneeded interfaces
+ * Aug 09, 2016  5771     rjpeter   Update constructor
  * 
  * </pre>
  * 
  * @author djohnson
- * @version 1.0
  */
 public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
         implements IEdexBandwidthManagerCreator {
@@ -143,13 +146,11 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
                 RegistryIdUtil idUtil,
                 DataSetMetaDataHandler dataSetMetaDataHandler,
                 SubscriptionHandler subscriptionHandler,
-                IAdhocSubscriptionHandler adhocSubscriptionHandler,
                 SendToServerSubscriptionNotificationService subscriptionNotificationService,
                 ISubscriptionFinder findSubscriptionsStrategy) {
             super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
                     idUtil, dataSetMetaDataHandler, subscriptionHandler,
-                    adhocSubscriptionHandler, subscriptionNotificationService,
-                    findSubscriptionsStrategy);
+                    subscriptionNotificationService, findSubscriptionsStrategy);
 
             graphDataExecutor = Executors.newFixedThreadPool(2);
         }
@@ -276,14 +277,12 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
             RegistryIdUtil idUtil,
             DataSetMetaDataHandler dataSetMetaDataHandler,
             SubscriptionHandler subscriptionHandler,
-            IAdhocSubscriptionHandler adhocSubscriptionHandler,
             SendToServerSubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
         return new WfoBandwidthManager<T, C>(dbInit, bandwidthDao,
                 retrievalManager, bandwidthDaoUtil, idUtil,
                 dataSetMetaDataHandler, subscriptionHandler,
-                adhocSubscriptionHandler, subscriptionNotificationService,
-                findSubscriptionsStrategy);
+                subscriptionNotificationService, findSubscriptionsStrategy);
     }
 
     /**
@@ -294,7 +293,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
      */
     static class GraphDataRequestor implements Runnable {
 
-        private String registryName;
+        private final String registryName;
 
         @SuppressWarnings("rawtypes")
         private WfoBandwidthManager wfoBandwidthManager;

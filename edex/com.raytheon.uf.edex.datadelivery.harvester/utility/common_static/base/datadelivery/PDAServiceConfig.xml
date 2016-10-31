@@ -4,8 +4,7 @@
     <dateConfig>
         <format>YYYYMMddHHmmss</format>
     </dateConfig>
-    
-    <constant name="MODE" value="file"/>
+
     <constant name="BLANK" value=""/>
     <!-- Command Channel FTP protocol encryption type. -->
     <constant name="PROTOCOL" value="TLS"/>
@@ -26,7 +25,7 @@
     <!-- Decoder type (temporary, until metadata improves from PDA) -->
     <constant name="DEFAULT_TYPE" value="goesr"/>
     <!--  Default PDA OGC CRS (WGS 84) -->
-    <constant name="DEFAULT_CRS" value="CRS:84"/>
+    <constant name="DEFAULT_CRS" value="urn:ogc:def:crs:EPSG::4326"/>
     <!-- PDA test data is old, when using it, set this to true so times show as current. -->
     <constant name="SIMULATE" value="false"/>
     <!-- PDA data is binary -->
@@ -40,8 +39,10 @@
     <constant name="SUBSET_REQUEST_URL" value="https://140.90.190.159/services/OGC_In_Proxy"/>
     <!-- FTPS retrieval root URL -->
     <constant name="FTPS_REQUEST_URL" value="ftps://140.90.190.155"/>
-    <!-- REMOTE_VERIFICATION, False when you are hitting a load balanced FTP(S) server -->
-    <constant name="REMOTE_VERIFICATION" value="false"/>
+    <!-- REMOTE_VERIFICATION_ENABLED, False when you are hitting a load balanced FTP(S) server -->
+    <constant name="REMOTE_VERIFICATION_ENABLED" value="true"/>
+    <!-- DELETE_FILE_AFTER_PROCESSING, Deletes downloaded file after it has been processed -->
+    <constant name="DELETE_FILE_AFTER_PROCESSING" value="true"/>
     <!-- Disables the secure data channel defaults (execProc=P execPbsz=0). 
          Enabling this means you must manually specific the security protocol
          and Buffer size for the Data Channel in FTPS -->
@@ -58,5 +59,15 @@
     <!-- These are used for ASYNC retrieval requests -->
     <constant name="RETRIEVAL_MODE" value="ASYNC"/>
     <constant name="ASYNC_RESPONSE_HANDLER" value="https://{SITE_ADDR_TO_PDA}:8082/GetCoverageResponseHandler"/>
+
+    <!-- These are used for parsing the PDA data set metadata -->
+    <!-- TODO: Move these to a separate config file. -->
+    <!-- Example: OR_ABI-L2-DMWF-M4C07_G16_s20161932020192_e20161932025000_c20161932032500.nc -->
+    <constant name="RECORD_TITLE_REGEX" value="([A-Z0-9]+_[A-Z0-9]+-[A-Z0-9]+)-(([A-Z0-9]{3,5}?)(C|F|M1|M2)?)(-(M[34](C\d\d)?))?_([A-Z0-9]+)_s([\d]{14})_e([\d]{14})_c([\d]{14})\.[a-zA-Z0-9]+" />
+    <constant name="PARAM_FORMAT" value="$3" />
+    <constant name="RES_FORMAT" value="$4" />
+    <constant name="SAT_FORMAT" value="$8" />
+    <constant name="START_TIME_FORMAT" value="$9" />
+    <constant name="END_TIME_FORMAT" value="$10" />
 
 </serviceConfig>
