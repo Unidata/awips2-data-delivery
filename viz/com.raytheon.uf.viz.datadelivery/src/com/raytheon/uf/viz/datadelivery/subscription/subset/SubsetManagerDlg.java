@@ -66,7 +66,6 @@ import com.raytheon.uf.common.registry.handler.RegistryObjectHandlers;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.viz.core.VizAppTaskExecutor;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.datadelivery.common.xml.AreaXML;
 import com.raytheon.uf.viz.datadelivery.filter.MetaDataManager;
@@ -181,6 +180,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Apr 21, 2015  5482     randerso  Fixed GUI sizing issues
  * Jul 05, 2016  5683     tjensen   Added checks for null on cancel
+ * Nov 08, 2016  5976     bsteffen  Use VizApp for GUI execution.
  * 
  * </pre>
  * 
@@ -553,8 +553,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             if (subDlg != null && !subDlg.isDisposed()) {
                 subDlg.bringToTop();
             } else {
-                subDlg = new CreateSubscriptionDlg(shell, create, dataSet,
-                        new VizAppTaskExecutor());
+                subDlg = new CreateSubscriptionDlg(shell, create, dataSet);
                 subDlg.setSubscription(sub);
                 subDlg.open();
             }

@@ -90,7 +90,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.StringUtil;
-import com.raytheon.uf.viz.core.IGuiThreadTaskExecutor;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.datadelivery.common.ui.ActivePeriodComp;
@@ -162,6 +162,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Feb 01, 2016   5289     tgurney     Add missing minimize button in trim
  * Mar 15, 2016   5482     randerso    Fix GUI sizing issues
  * Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces.
+ * Nov 08, 2016   5976     bsteffen    Use VizApp for GUI execution.
  *
  * </pre>
  * 
@@ -251,8 +252,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     /** The dataset object */
     private final DataSet dataSet;
 
-    /** Task executor thread */
-    private final IGuiThreadTaskExecutor guiThreadTaskExecutor;
 
     /**
      * Constructor.
@@ -266,15 +265,14 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      * @param guiThreadTaskExecutor
      *            The task executor thread
      */
-    public CreateSubscriptionDlg(Shell parent, boolean create, DataSet dataSet,
-            IGuiThreadTaskExecutor guiThreadTaskExecutor) {
+    public CreateSubscriptionDlg(Shell parent, boolean create,
+            DataSet dataSet) {
         // Make blocking so parent shell stays busy until the dialog closes.
         super(parent, SWT.DIALOG_TRIM | SWT.MIN,
                 CAVE.INDEPENDENT_SHELL
                 | CAVE.PERSPECTIVE_INDEPENDENT);
         this.create = create;
         this.dataSet = dataSet;
-        this.guiThreadTaskExecutor = guiThreadTaskExecutor;
 
         if (create) {
             setText("Create Subscription");
@@ -1213,7 +1211,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                             final boolean subscriptionCreated = status.isOK();
 
                             if (!Strings.isNullOrEmpty(status.getMessage())) {
-                                guiThreadTaskExecutor.runAsync(new Runnable() {
+                                VizApp.runAsync(new Runnable() {
                                     @Override
                                     public void run() {
                                         if (!isDisposed()) {

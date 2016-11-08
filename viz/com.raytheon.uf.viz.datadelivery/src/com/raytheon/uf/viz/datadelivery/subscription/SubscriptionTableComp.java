@@ -56,6 +56,8 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandler
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.service.BaseSubscriptionNotificationResponse;
+import com.raytheon.uf.common.jms.notification.NotificationException;
+import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.registry.handler.RegistryObjectHandlers;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -64,8 +66,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
-import com.raytheon.uf.viz.core.notification.NotificationMessage;
-import com.raytheon.uf.viz.core.notification.NotificationMessageContainsType;
+import com.raytheon.uf.viz.datadelivery.comm.NotificationMessageContainsType;
 import com.raytheon.uf.viz.datadelivery.common.ui.IGroupAction;
 import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableComp;
@@ -128,7 +129,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Feb 04, 2015  4047      dhladky      Fixed deleting tableData before job has retrieved replacement.
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * Jun 20, 2016 5676       tjensen      Use showYesNoMessage for prompts that need to block
- * 
+ * Nov 08, 2016  5976      bsteffen     Update notification API.
  * 
  * @version 1.0
  */
@@ -851,7 +852,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                         }
                     }
                 }
-            } catch (com.raytheon.uf.viz.core.notification.NotificationException ne) {
+            } catch (NotificationException ne) {
                 statusHandler
                         .handle(Priority.PROBLEM,
                                 "Unable to retrieve Notification Record from Notification Message.",
@@ -1023,7 +1024,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                         break;
                     }
                 }
-            } catch (com.raytheon.uf.viz.core.notification.NotificationException ne) {
+            } catch (NotificationException ne) {
                 statusHandler
                         .handle(Priority.PROBLEM,
                                 "Unable to retrieve Notification Record from Notification Message.",

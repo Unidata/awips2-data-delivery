@@ -51,12 +51,12 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
+import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.notification.NotificationMessage;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableChange;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableFind;
 import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
