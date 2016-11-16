@@ -1,4 +1,4 @@
-package com.raytheon.uf.common.datadelivery.retrieval.xml;
+package com.raytheon.uf.common.datadelivery.registry;
 
 /**
  * This software was developed and / or modified by Raytheon Company,
@@ -20,23 +20,6 @@ package com.raytheon.uf.common.datadelivery.retrieval.xml;
  * further licensing information.
  **/
 
-/**
- * Dataset naming config class for Service Config
- * 
- * <pre>
- * 
- * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 20 Oct, 2012   1163      dhladky     Initial creation
- * 07 Nov, 2013   2361      njensen      Remove ISerializableObject
- * 
- * </pre>
- * 
- * @author dhladky
- * @version 1.0
- */
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -44,13 +27,28 @@ import javax.xml.bind.annotation.XmlAttribute;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
+/**
+ * Dataset naming config class for Collection
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------
+ * Oct 20, 2012  1163     dhladky   Initial creation
+ * Nov 07, 2013  2361     njensen   Remove ISerializableObject
+ * Nov 09, 2016  5988     tjensen   Remove name
+ * 
+ * </pre>
+ * 
+ * @author dhladky
+ * @version 1.0
+ */
+
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class DataSetNaming {
-
-    @XmlAttribute(name = "name")
-    @DynamicSerializeElement
-    private String name;
 
     @XmlAttribute(name = "separator")
     @DynamicSerializeElement
@@ -68,20 +66,12 @@ public class DataSetNaming {
         return expression;
     }
 
-    public String getName() {
-        return name;
-    }
-
     public String getSeparator() {
         return separator;
     }
 
     public void setExpression(String expression) {
         this.expression = expression;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public void setSeparator(String separator) {

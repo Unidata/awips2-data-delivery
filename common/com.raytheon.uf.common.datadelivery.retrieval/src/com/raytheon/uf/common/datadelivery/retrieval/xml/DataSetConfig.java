@@ -39,10 +39,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 20 Oct, 2012   1163      dhladky     Initial creation
- * 07 Nov, 2013   2361      njensen      Remove ISerializableObject
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------
+ * Oct 20, 2012  1163     dhladky   Initial creation
+ * Nov 07, 2013  2361     njensen   Remove ISerializableObject
+ * Nov 09, 2016  5988     tjensen   Remove DataSetNaming
  * 
  * </pre>
  * 
@@ -55,66 +57,16 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 @DynamicSerialize
 public class DataSetConfig {
 
-    @XmlElements({ @XmlElement(name = "pattern", type = com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern.class) })
-    private List<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern> patterns;
+    @XmlElements({
+            @XmlElement(name = "pattern", type = com.raytheon.uf.common.datadelivery.registry.Pattern.class) })
+    private List<com.raytheon.uf.common.datadelivery.registry.Pattern> patterns;
 
-    @XmlElements({ @XmlElement(name = "dataSetNaming", type = DataSetNaming.class) })
-    private List<DataSetNaming> dataSetNamings;
+    private Map<com.raytheon.uf.common.datadelivery.registry.Pattern, Pattern> patternMap = null;
 
-    private Map<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern, Pattern> patternMap = null;
-
-    private Map<String, com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern> collectionPatternMap = null;
-
-    private Map<String, DataSetNaming> namingPatternMap = null;
+    private Map<String, com.raytheon.uf.common.datadelivery.registry.Pattern> collectionPatternMap = null;
 
     public DataSetConfig() {
 
-    }
-
-    /**
-     * Get the DataSetNaming particular to this collection
-     * 
-     * @param collectionName
-     * @return
-     */
-    public DataSetNaming getDataSetNamingByName(String collectionName) {
-
-        if (namingPatternMap == null) {
-            namingPatternMap = new HashMap<String, DataSetNaming>();
-            for (DataSetNaming ds : getDataSetNamings()) {
-                namingPatternMap.put(ds.getName(), ds);
-            }
-        }
-
-        return namingPatternMap.get(collectionName);
-    }
-
-    /**
-     * Gets the Data set naming info
-     * 
-     * @return
-     */
-    public List<DataSetNaming> getDataSetNamings() {
-        return dataSetNamings;
-    }
-
-    /**
-     * Get the patterns specific to a collection (or general)
-     * 
-     * @param collectionName
-     * @return
-     */
-    public com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern getPatternByName(
-            String collectionName) {
-
-        if (collectionPatternMap == null) {
-            collectionPatternMap = new HashMap<String, com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern>();
-            for (com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern pat : getPatterns()) {
-                collectionPatternMap.put(pat.getName(), pat);
-            }
-        }
-
-        return collectionPatternMap.get(collectionName);
     }
 
     /**
@@ -122,11 +74,11 @@ public class DataSetConfig {
      * 
      * @return
      */
-    public Map<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern, Pattern> getPatternMap() {
+    public Map<com.raytheon.uf.common.datadelivery.registry.Pattern, Pattern> getPatternMap() {
 
         if (patternMap == null) {
-            patternMap = new HashMap<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern, Pattern>();
-            for (com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern pat : getPatterns()) {
+            patternMap = new HashMap<com.raytheon.uf.common.datadelivery.registry.Pattern, Pattern>();
+            for (com.raytheon.uf.common.datadelivery.registry.Pattern pat : getPatterns()) {
                 patternMap.put(pat, Pattern.compile(pat.getRegex()));
             }
         }
@@ -139,17 +91,8 @@ public class DataSetConfig {
      * 
      * @return
      */
-    public List<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern> getPatterns() {
+    public List<com.raytheon.uf.common.datadelivery.registry.Pattern> getPatterns() {
         return patterns;
-    }
-
-    /**
-     * Sets the list of data set naming objects
-     * 
-     * @param dataSetNaming
-     */
-    public void setDataSetNamings(List<DataSetNaming> dataSetNamings) {
-        this.dataSetNamings = dataSetNamings;
     }
 
     /**
@@ -158,7 +101,7 @@ public class DataSetConfig {
      * @param pattern
      */
     public void setPatterns(
-            List<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern> patterns) {
+            List<com.raytheon.uf.common.datadelivery.registry.Pattern> patterns) {
         this.patterns = patterns;
     }
 

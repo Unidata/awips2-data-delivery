@@ -1,4 +1,4 @@
-package com.raytheon.uf.common.datadelivery.retrieval.xml;
+package com.raytheon.uf.common.datadelivery.registry;
 
 /**
  * This software was developed and / or modified by Raytheon Company,
@@ -36,10 +36,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 20 Oct, 2012   1163      dhladky     Initial creation
- * 07 Nov, 2013   2361      njensen      Remove ISerializableObject
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------
+ * Oct 20, 2012  1163     dhladky   Initial creation
+ * Nov 07, 2013  2361     njensen   Remove ISerializableObject
+ * Nov 09, 2016  5988     tjensen   Moved from com.raytheon.uf.common.datadelivery.retrieval.xml
  * 
  * </pre>
  * 
@@ -52,10 +54,6 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class Pattern {
 
     private static final String SEPARATOR = ",";
-
-    @XmlAttribute(name = "name")
-    @DynamicSerializeElement
-    private String name;
 
     @XmlAttribute(name = "dataSetLocation")
     @DynamicSerializeElement
@@ -152,10 +150,6 @@ public class Pattern {
         return value;
     }
 
-    public String getName() {
-        return name;
-    }
-
     public String getRegex() {
         return regex;
     }
@@ -166,10 +160,6 @@ public class Pattern {
 
     public void setDataSetLocation(String dataSetLocation) {
         this.dataSetLocation = dataSetLocation;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public void setRegex(String regex) {
