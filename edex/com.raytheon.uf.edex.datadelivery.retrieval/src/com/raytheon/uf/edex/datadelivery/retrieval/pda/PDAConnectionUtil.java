@@ -73,6 +73,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  *                                  SecureDataChannel overrides.
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
  * Sep 30, 2016  5762     tjensen   Improve Error Handling
+ * Nov 17, 2016  6002     tjensen   Added FTP connection timeouts
  * 
  * </pre>
  * 
@@ -96,8 +97,8 @@ public class PDAConnectionUtil {
 
     /* Private Constructor */
     private PDAConnectionUtil() {
-        serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
-                ServiceType.PDA);
+        serviceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.PDA);
         sc = getSecurityConfiguration();
     }
 
@@ -147,7 +148,8 @@ public class PDAConnectionUtil {
                 userName = localConnection.getUnencryptedUsername();
                 password = localConnection.getUnencryptedPassword();
 
-                String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(remoteFilename);
+                String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(
+                        remoteFilename);
                 // Do this after you separate!
                 rootUrl = serviceConfig.getConstantValue("FTPS_REQUEST_URL");
                 rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
@@ -160,18 +162,18 @@ public class PDAConnectionUtil {
                 logger.info("Local File Name: " + localFileName);
                 int port = new Integer(serviceConfig.getConstantValue("PORT"))
                         .intValue();
-                boolean doBinaryTransfer = Boolean.parseBoolean(serviceConfig
-                        .getConstantValue("BINARY_TRANSFER"));
-                boolean usePassiveMode = Boolean.parseBoolean(serviceConfig
-                        .getConstantValue("PASSIVE_MODE"));
+                boolean doBinaryTransfer = Boolean.parseBoolean(
+                        serviceConfig.getConstantValue("BINARY_TRANSFER"));
+                boolean usePassiveMode = Boolean.parseBoolean(
+                        serviceConfig.getConstantValue("PASSIVE_MODE"));
 
                 FTPSClient ftp = createFtpClient();
                 ftpsRetrieveFile(ftp, userName, password, rootUrl, port,
                         remotePathAndFile[1], remotePathAndFile[0],
                         localFileName, doBinaryTransfer, usePassiveMode);
             } else {
-                logger.error("No local Connection file available! "
-                        + providerName);
+                logger.error(
+                        "No local Connection file available! " + providerName);
                 throw new IllegalArgumentException(
                         "No username and password for FTPS server available! "
                                 + rootUrl + " provider: " + providerName);
@@ -188,8 +190,8 @@ public class PDAConnectionUtil {
     private static void ftpsRetrieveFile(FTPSClient ftp, String userName,
             String password, String rootUrl, int port, String remoteFilename,
             String remoteFilePath, String localFilename,
-            boolean doBinaryTransfer, boolean usePassiveMode) throws Exception,
-            IOException {
+            boolean doBinaryTransfer, boolean usePassiveMode)
+                    throws Exception, IOException {
 
         int reply = 0;
         try (OutputStream output = new FileOutputStream(localFilename)) {
@@ -211,15 +213,16 @@ public class PDAConnectionUtil {
                     .parseBoolean(disableSecureDataChannelDefaults);
             if (isDisableSecureDataChannelDefaults) {
                 ftp.execPROT(serviceConfig.getConstantValue("EXEC_PROT"));
-                ftp.execPBSZ(new Long(serviceConfig
-                        .getConstantValue("EXEC_PBSZ")).longValue());
+                ftp.execPBSZ(
+                        new Long(serviceConfig.getConstantValue("EXEC_PBSZ"))
+                                .longValue());
             }
 
             // Attempt to login
             if (!ftp.login(userName, password)) {
                 ftp.logout();
-                throw new IOException("Unable to login to server as "
-                        + userName);
+                throw new IOException(
+                        "Unable to login to server as " + userName);
             }
 
             // Set transfer type and mode
@@ -293,8 +296,8 @@ public class PDAConnectionUtil {
             for (String file : listNames) {
                 buf.append(file + "\n");
             }
-            logger.debug("Directory Listing for: "
-                    + ftp.printWorkingDirectory() + "\n" + buf.toString());
+            logger.debug("Directory Listing for: " + ftp.printWorkingDirectory()
+                    + "\n" + buf.toString());
         }
     }
 
@@ -302,8 +305,8 @@ public class PDAConnectionUtil {
         FTPSClient client = null;
 
         String protocol = serviceConfig.getConstantValue("PROTOCOL");
-        boolean implict = Boolean.parseBoolean(serviceConfig
-                .getConstantValue("IMPLICIT_SECURITY"));
+        boolean implict = Boolean.parseBoolean(
+                serviceConfig.getConstantValue("IMPLICIT_SECURITY"));
 
         client = new FTPSClient(protocol, implict);
 
@@ -311,8 +314,19 @@ public class PDAConnectionUtil {
 
         setFtpsTrustStore(client);
 
-        client.setRemoteVerificationEnabled(Boolean.parseBoolean(serviceConfig
-                .getConstantValue("REMOTE_VERIFICATION_ENABLED")));
+        client.setRemoteVerificationEnabled(Boolean.parseBoolean(
+                serviceConfig.getConstantValue("REMOTE_VERIFICATION_ENABLED")));
+
+        /*
+         * Set connection timeouts to prevent connections from hanging
+         * infinitely. Connect timeout is specific for establishing the initial
+         * connection. Data timeout is for maintaining the connection during
+         * data transfer.
+         */
+        client.setConnectTimeout(Integer.parseInt(
+                serviceConfig.getConstantValue("FTP_CONNECT_TIMEOUT")) * 1000);
+        client.setDataTimeout(Integer.parseInt(
+                serviceConfig.getConstantValue("FTP_DATA_TIMEOUT")) * 1000);
 
         final FTPClientConfig config;
         config = new FTPClientConfig();
@@ -423,7 +437,8 @@ public class PDAConnectionUtil {
             try {
                 sc = new SecurityConfiguration();
             } catch (IOException ioe) {
-                logger.error("Couldn't access the security configuration!", ioe);
+                logger.error("Couldn't access the security configuration!",
+                        ioe);
             }
         }
 
