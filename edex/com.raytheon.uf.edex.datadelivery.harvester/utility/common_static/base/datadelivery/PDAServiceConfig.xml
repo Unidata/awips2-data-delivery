@@ -41,6 +41,10 @@
     <constant name="FTPS_REQUEST_URL" value="ftps://140.90.190.155"/>
     <!-- REMOTE_VERIFICATION_ENABLED, False when you are hitting a load balanced FTP(S) server -->
     <constant name="REMOTE_VERIFICATION_ENABLED" value="true"/>
+    <!-- FTP_CONNECT_TIMEOUT, maximum time in seconds to wait for a connection response -->
+    <constant name="FTP_CONNECT_TIMEOUT" value="30"/>
+    <!-- FTP_DATA_TIMEOUT, maximum time in seconds to wait for a packet response during a data transfer -->
+    <constant name="FTP_DATA_TIMEOUT" value="120"/>
     <!-- DELETE_FILE_AFTER_PROCESSING, Deletes downloaded file after it has been processed -->
     <constant name="DELETE_FILE_AFTER_PROCESSING" value="true"/>
     <!-- Disables the secure data channel defaults (execProc=P execPbsz=0). 
