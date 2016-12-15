@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.HttpException;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.registry.RegistryException;
 
@@ -43,12 +45,14 @@ import edu.uci.ics.crawler4j.url.WebURL;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 17, 2012 740        djohnson     Initial creation
- * Aug 06, 2012 1022       djohnson     Changed to be a PageFetcher.
- * Aug 30, 2012 1123       djohnson     lastNotificationTimes needs to be static.
- * Sep 11, 2012 1154       djohnson     Provider name is passed in as a constructor parameter.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 17, 2012  740      djohnson  Initial creation
+ * Aug 06, 2012  1022     djohnson  Changed to be a PageFetcher.
+ * Aug 30, 2012  1123     djohnson  lastNotificationTimes needs to be static.
+ * Sep 11, 2012  1154     djohnson  Provider name is passed in as a constructor
+ *                                  parameter.
+ * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * 
  * </pre>
  * 
@@ -57,11 +61,14 @@ import edu.uci.ics.crawler4j.url.WebURL;
  */
 public class CrawlMonitorPageFetcher extends PageFetcher {
 
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(CrawlMonitorPageFetcher.class);
+
     @VisibleForTesting
     public static final String UNABLE_TO_COMMUNICATE_WITH_A_PROVIDER = "Unable to communicate with a provider: ";
 
     @VisibleForTesting
-    public static final Map<String, Long> lastNotificationTimes = new ConcurrentHashMap<String, Long>();
+    public static final Map<String, Long> lastNotificationTimes = new ConcurrentHashMap<>();
 
     /**
      * Get the exception message.
@@ -101,16 +108,13 @@ public class CrawlMonitorPageFetcher extends PageFetcher {
         if (CustomFetchStatus.FatalTransportError == result.getStatusCode()) {
             Long lastNotifiedTime = lastNotificationTimes.get(providerName);
             long currentTimeMillis = TimeUtil.currentTimeMillis();
-            if (lastNotifiedTime == null
-                    || currentTimeMillis - lastNotifiedTime > TimeUtil.MILLIS_PER_HOUR) {
-                getCommunicationStrategy()
-                        .sendException(
-                                new RegistryException(
-                                        getExceptionMessage(providerName),
-                                        new HttpException(
-                                                String.format(
-                                                        "Fatal transport error while fetching %s",
-                                                        webUrl.getURL()))));
+            if (lastNotifiedTime == null || currentTimeMillis
+                    - lastNotifiedTime > TimeUtil.MILLIS_PER_HOUR) {
+                statusHandler.error(getExceptionMessage(providerName),
+                        new RegistryException(getExceptionMessage(providerName),
+                                new HttpException(String.format(
+                                        "Fatal transport error while fetching %s",
+                                        webUrl.getURL()))));
                 lastNotificationTimes.put(providerName, currentTimeMillis);
             }
         }
