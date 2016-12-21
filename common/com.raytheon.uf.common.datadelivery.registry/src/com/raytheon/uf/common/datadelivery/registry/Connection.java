@@ -3,19 +3,19 @@ package com.raytheon.uf.common.datadelivery.registry;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,7 +27,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.datadelivery.registry.Encryption;
 import com.raytheon.uf.common.security.encryption.AESEncryptor;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
@@ -36,9 +35,9 @@ import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * Connection XML
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -51,18 +50,20 @@ import com.raytheon.uf.common.status.UFStatus;
  * 7/10/2014       1717     bphillip    Changed import of relocated AESEncryptor class
  * Aug 19, 2014    3120     dhladky     URL remapping for properties
  * Mar 04, 2016    5388     dhladky     Changed AESEncryptor constructor
+ * Dec 21. 2016    5684     tgurney     Fix URL variable replacement
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 @XmlRootElement(name = "connection")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class Connection implements Serializable {
-    
+
     /** external address from properties **/
-    protected static final String externalAddress = System.getProperty("harvester.external.address");
+    protected static final String externalAddress = System
+            .getProperty("harvester.external.address");
+
     /** external address pattern for replacement **/
     protected static final String externalAddressPattern = "${harvester.external.address}";
 
@@ -70,7 +71,7 @@ public class Connection implements Serializable {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(Connection.class);
-    
+
     private AESEncryptor encryptionProcessor = null;
 
     public Connection() {
@@ -79,7 +80,7 @@ public class Connection implements Serializable {
 
     /**
      * Copy constructor.
-     * 
+     *
      * @param connection
      *            the connection to copy
      */
@@ -105,19 +106,19 @@ public class Connection implements Serializable {
     @DynamicSerializeElement
     private Encryption encryption;
 
-    @XmlElement(name = "url")
     @DynamicSerializeElement
     private String url;
 
+    @XmlElement(name = "url")
     public String getUrl() {
-        if (url != null && url.startsWith(externalAddressPattern)){
+        if (url != null && url.contains(externalAddressPattern)) {
             url = url.replace(externalAddressPattern, externalAddress);
         }
         return url;
     }
 
     public void setUrl(String url) {
-        if (url != null && url.startsWith(externalAddressPattern)){
+        if (url != null && url.contains(externalAddressPattern)) {
             url = url.replace(externalAddressPattern, externalAddress);
         }
         this.url = url;
@@ -134,16 +135,17 @@ public class Connection implements Serializable {
     public String getPassword() {
         return password;
     }
-    
+
     /**
      * Creates encryption object
+     *
      * @return
      */
     public AESEncryptor getEncryptor() {
         if (providerKey != null && encryptionProcessor == null) {
             encryptionProcessor = new AESEncryptor(providerKey);
         }
-        
+
         return encryptionProcessor;
     }
 
@@ -152,14 +154,14 @@ public class Connection implements Serializable {
      * you don't want the key and password ever stored in the same place.
      * providerKey is kept in the metadata database at the WFO. The password is
      * stored encrypted in a connection object file stored in localization. You
-     * 
+     *
      * @param providerKey
      * @return
      */
     public String getUnencryptedPassword() {
 
         if (password != null && providerKey != null) {
-            
+
             try {
                 return getEncryptor().decrypt(password);
             } catch (Exception e) {
@@ -172,8 +174,8 @@ public class Connection implements Serializable {
 
     /**
      * encrypt password with providerKey
-     * 
-     * 
+     *
+     *
      * @param providerKey
      * @return
      */
@@ -198,8 +200,8 @@ public class Connection implements Serializable {
      * providerKey is kept in the metadata database at the WFO. The password is
      * stored encrypted in a connection object file stored in localization. You
      * can only decrypt when they come together in code here.
-     * 
-     * 
+     *
+     *
      * @param providerKey
      * @return
      */
@@ -219,8 +221,8 @@ public class Connection implements Serializable {
 
     /**
      * encrypt userName with providerKey
-     * 
-     * 
+     *
+     *
      * @param providerKey
      * @return
      */
