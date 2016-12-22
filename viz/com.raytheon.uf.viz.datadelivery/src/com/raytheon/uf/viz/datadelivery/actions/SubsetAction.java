@@ -1,23 +1,25 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.viz.datadelivery.actions;
+
+import javax.xml.bind.JAXBException;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -47,11 +49,11 @@ import com.raytheon.viz.ui.dialogs.ListSelectionDlg;
 
 /**
  * Handler for launching the Subset Manager Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 02, 2012            mpduff       Initial creation
@@ -67,11 +69,11 @@ import com.raytheon.viz.ui.dialogs.ListSelectionDlg;
  *                                      in a null check when the dialog is canceled, and removed
  *                                      throwing an exception that will be handled by a message box
  *                                      in the list selection dialog.
- * 
+ * Dec 22, 2016   5923     tgurney      Catch exception on failure to load subset
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class SubsetAction extends AbstractHandler {
@@ -128,12 +130,18 @@ public class SubsetAction extends AbstractHandler {
                                     LocalizationFile locFile = sfm.getFile(
                                             parts[1],
                                             DataType.valueOf(parts[0]));
-                                    SubsetXML subset = SubsetFileManager
-                                            .getInstance().loadSubset(locFile);
+                                    SubsetXML subset;
+                                    try {
+                                        subset = SubsetFileManager.getInstance()
+                                                .loadSubset(locFile);
+                                    } catch (JAXBException e) {
+                                        statusHandler.handle(Priority.ERROR,
+                                                e.getLocalizedMessage(), e);
+                                        return;
+                                    }
 
-                                    DataSet data = MetaDataManager
-                                            .getInstance().getDataSet(
-                                                    subset.getDatasetName(),
+                                    DataSet data = MetaDataManager.getInstance()
+                                            .getDataSet(subset.getDatasetName(),
                                                     subset.getProviderName());
 
                                     if (dlg == null || dlg.isDisposed()) {
@@ -151,8 +159,9 @@ public class SubsetAction extends AbstractHandler {
                                     MessageBox mb = new MessageBox(shell,
                                             SWT.ICON_WARNING | SWT.OK);
                                     mb.setText("Multiple Items");
-                                    mb.setMessage("Multiple items were selected.  Only one item can be processed.\n"
-                                            + "You must relaunch the dialog and select one item to process.");
+                                    mb.setMessage(
+                                            "Multiple items were selected.  Only one item can be processed.\n"
+                                                    + "You must relaunch the dialog and select one item to process.");
                                     mb.open();
                                 }
                             } else {
