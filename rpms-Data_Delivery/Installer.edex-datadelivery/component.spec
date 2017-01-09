@@ -18,6 +18,13 @@ Distribution: N/A
 Vendor: Raytheon
 Packager: %{_build_site}
 
+#######################################################
+# Added since lib/plugins are exported in OSGI format
+#  and lib/dependencies are not resulting in yum being
+#  unable to find FOSS ogsi(*) requirements.
+#######################################################
+AutoReq: no
+
 provides: awips2-edex-datadelivery
 requires: awips2
 requires: awips2-edex-base
@@ -135,10 +142,7 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files
 %defattr(644,awips,fxalpha,755)
-%dir /awips2
-%dir /awips2/edex
 /awips2/edex/*
-%dir /awips2/edex/bin
 %attr(744, -, -) /awips2/edex/bin/centralRegistryProviderCredentials.sh
 
 %attr(744,root,root) /etc/init.d/*
