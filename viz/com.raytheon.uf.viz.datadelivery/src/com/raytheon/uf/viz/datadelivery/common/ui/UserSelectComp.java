@@ -110,6 +110,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Nov 19, 2014  3852      dhladky      Resurrected the unscheduled state.
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * Mar 28, 2016  5482      randerso     Fixed GUI sizing issues
+ * Jan 09, 2017  746       bsteffen     Unique wording for FORCE_APPLY_DEACTIVATED option
  * 
  * </pre>
  * 
@@ -560,10 +561,10 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
             return "Do not update the group definition.";
         case FORCE_APPLY_DEACTIVATED:
             if (singleSubscription) {
-                return "Update the group definition and unschedule "
+                return "Update the group definition and deactivate "
                         + wouldBeUnscheduledSubscriptions.iterator().next();
             }
-            return "Update the group definition and unschedule the subscriptions";
+            return "Update the group definition and leave in a Deactivated status";
         case FORCE_APPLY_UNSCHEDULED:
             if (singleSubscription) {
                 return "Update the group definition and unschedule "

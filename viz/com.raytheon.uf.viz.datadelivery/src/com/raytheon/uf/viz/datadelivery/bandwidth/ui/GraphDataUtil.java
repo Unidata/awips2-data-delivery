@@ -53,6 +53,7 @@ import com.raytheon.uf.viz.core.exception.VizCommunicationException;
  * Oct 03, 2014 2749       ccody        Add clearGraphData method.
  * Feb 03, 2015 4041       dhladky      Restructured to run off UI thread.
  * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
+ * Jan 05, 2017 746        bsteffen     Don't ignore updates if job is running.
  * 
  * </pre>
  * 
@@ -67,12 +68,6 @@ public class GraphDataUtil extends Job {
 
     /** Callback called when the data has been updated */
     private final BandwidthCanvasComp dataUpdatedCB;
-
-    /** Graph data request object */
-    private final GraphDataRequest request = new GraphDataRequest();
-
-    /** Graph data response object */
-    private GraphDataResponse response;
 
     /** Bandwidth graph data */
     private BandwidthGraphData graphData;
@@ -93,11 +88,6 @@ public class GraphDataUtil extends Job {
      * schedule a retrieval
      */
     public void scheduleRetrieval() {
-
-        if (this.getState() == Job.RUNNING || this.getState() == Job.SLEEPING
-                || this.getState() == Job.WAITING) {
-            return;
-        }
         this.schedule();
     }
 
@@ -105,8 +95,7 @@ public class GraphDataUtil extends Job {
      * Perform a data retrieval on the UI thread.
      */
     private void retrieveData() {
-
-        response = sendRequest(request);
+        GraphDataResponse response = sendRequest(new GraphDataRequest());
 
         if (response != null) {
             graphData = response.getGraphData();
@@ -157,7 +146,6 @@ public class GraphDataUtil extends Job {
 
     @Override
     protected IStatus run(IProgressMonitor monitor) {
-
         retrieveData();
 
         if (dataUpdatedCB != null) {
