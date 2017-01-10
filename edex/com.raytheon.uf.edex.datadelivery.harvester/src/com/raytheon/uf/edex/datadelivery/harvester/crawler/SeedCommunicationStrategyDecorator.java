@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,17 +40,18 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 4 Oct,   2012 1038       dhladky     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------
+ * Oct 04, 2012  1038     dhladky   Initial creation
+ * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * 
  * </pre>
  * 
  * @author dhladky
  * @version 1.0
  */
-public class SeedCommunicationStrategyDecorator implements
-        CommunicationStrategy {
+public class SeedCommunicationStrategyDecorator
+        implements CommunicationStrategy {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SeedCommunicationStrategyDecorator.class);
@@ -72,14 +72,6 @@ public class SeedCommunicationStrategyDecorator implements
         this.taskExecutor = taskExecutor;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Throwable> getErrors() {
-        return decorated.getErrors();
-    }
-
     // do nothing
     @Override
     public ProviderCollectionLinkStore getNextLinkStore() {
@@ -92,19 +84,6 @@ public class SeedCommunicationStrategyDecorator implements
             CrawlAgent agent) {
 
         decorated.processCollections(hconfig, collections, provider, agent);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void sendException(final Exception e) {
-        taskExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                decorated.sendException(e);
-            }
-        });
     }
 
     // do nothing
@@ -126,10 +105,9 @@ public class SeedCommunicationStrategyDecorator implements
                 taskExecutor.awaitTermination(SHUTDOWN_TIMEOUT_IN_MINUTES,
                         TimeUnit.MINUTES);
             } catch (InterruptedException e) {
-                statusHandler
-                        .handle(Priority.WARN,
-                                "Timeout occurred waiting for tasks to finish processing!",
-                                e);
+                statusHandler.handle(Priority.WARN,
+                        "Timeout occurred waiting for tasks to finish processing!",
+                        e);
             }
         }
     }

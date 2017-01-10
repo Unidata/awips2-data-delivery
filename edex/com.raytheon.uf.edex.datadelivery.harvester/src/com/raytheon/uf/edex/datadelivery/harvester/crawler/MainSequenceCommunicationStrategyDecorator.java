@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,17 +41,18 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 30, 2012 1022       djohnson     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------
+ * Jul 30, 2012  1022     djohnson  Initial creation
+ * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public class MainSequenceCommunicationStrategyDecorator implements
-        CommunicationStrategy {
+public class MainSequenceCommunicationStrategyDecorator
+        implements CommunicationStrategy {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MainSequenceCommunicationStrategyDecorator.class);
@@ -78,14 +78,6 @@ public class MainSequenceCommunicationStrategyDecorator implements
      * {@inheritDoc}
      */
     @Override
-    public List<Throwable> getErrors() {
-        return decorated.getErrors();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public ProviderCollectionLinkStore getNextLinkStore() {
         return decorated.getNextLinkStore();
     }
@@ -95,19 +87,6 @@ public class MainSequenceCommunicationStrategyDecorator implements
             Map<String, ProtoCollection> collections, Provider provider,
             CrawlAgent agent) {
         // do nothing
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void sendException(final Exception e) {
-        taskExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                decorated.sendException(e);
-            }
-        });
     }
 
     /**
@@ -137,10 +116,9 @@ public class MainSequenceCommunicationStrategyDecorator implements
                 taskExecutor.awaitTermination(SHUTDOWN_TIMEOUT_IN_MINUTES,
                         TimeUnit.MINUTES);
             } catch (InterruptedException e) {
-                statusHandler
-                        .handle(Priority.WARN,
-                                "Timeout occurred waiting for tasks to finish processing!",
-                                e);
+                statusHandler.handle(Priority.WARN,
+                        "Timeout occurred waiting for tasks to finish processing!",
+                        e);
             }
         }
     }

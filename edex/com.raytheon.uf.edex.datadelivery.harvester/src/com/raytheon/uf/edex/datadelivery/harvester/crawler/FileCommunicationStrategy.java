@@ -21,17 +21,20 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 import javax.xml.bind.JAXBException;
+
+import org.apache.commons.io.filefilter.AgeFileFilter;
+import org.apache.commons.io.filefilter.FileFilterUtils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
@@ -46,17 +49,13 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.serialization.ExceptionWrapper;
 import com.raytheon.uf.common.serialization.JAXBManager;
-import com.raytheon.uf.common.serialization.SerializableExceptionWrapper;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.common.util.file.FilenameFilters;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
@@ -70,14 +69,20 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 17, 2012 740        djohnson     Initial creation
- * Aug 06, 2012 1022       djohnson     Add shutdown(), write out millis with filename to prevent overwriting.
- * Sep 10, 2012 1154       djohnson     Use JAXB instead of thrift, allowing introspection of links, return files in ascending order.
- * Mar 14, 2013 1794       djohnson     Consolidate common FilenameFilter implementations.
- * Oct 28, 2013 2361       dhladky      Fixed up JAXBManager.
- * Sep 10, 2014 3581       ccody        Remove references to SerializationUtil for JAXB operations.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 17, 2012  740      djohnson  Initial creation
+ * Aug 06, 2012  1022     djohnson  Add shutdown(), write out millis with
+ *                                  filename to prevent overwriting.
+ * Sep 10, 2012  1154     djohnson  Use JAXB instead of thrift, allowing
+ *                                  introspection of links, return files in
+ *                                  ascending order.
+ * Mar 14, 2013  1794     djohnson  Consolidate common FilenameFilter
+ *                                  implementations.
+ * Oct 28, 2013  2361     dhladky   Fixed up JAXBManager.
+ * Sep 10, 2014  3581     ccody     Remove references to SerializationUtil for
+ *                                  JAXB operations.
+ * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * 
  * </pre>
  * 
@@ -89,18 +94,14 @@ class FileCommunicationStrategy implements CommunicationStrategy {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(FileCommunicationStrategy.class);
 
-    private static final String BINARY_EXTENSION = ".bin";
-
     private static final String XML_EXTENSION = ".xml";
 
     private static final Pattern DASH_PATTERN = Pattern.compile("-");
 
     /** Path to crawler links directory. */
-    private static final String LINKS_DIR = StringUtil.join(new String[] {
-            "datadelivery", "harvester", "links" }, File.separatorChar);
-
-    private static final String ERRORS_DIR = StringUtil.join(new String[] {
-            "datadelivery", "harvester", "errors" }, File.separatorChar);
+    private static final String LINKS_DIR = StringUtil.join(
+            new String[] { "datadelivery", "harvester", "links" },
+            File.separatorChar);
 
     protected static final String CONFIG_FILE_PREFIX = StringUtil.join(
             new String[] { "datadelivery", "harvester" }, File.separatorChar);
@@ -112,14 +113,9 @@ class FileCommunicationStrategy implements CommunicationStrategy {
      */
     private final File linksDir;
 
-    /**
-     * The directory where errors are stored for the harvester to pick up.
-     */
-    private final File errorsDir;
-
     /** JAXBManager Class for marshaling and unmarshaling objects */
     private JAXBManager jaxbManager = null;
-    
+
     /**
      * Constructor.
      */
@@ -129,39 +125,6 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                 LocalizationLevel.CONFIGURED);
         LocalizationFile lf = pm.getLocalizationFile(lc, LINKS_DIR);
         linksDir = lf.getFile();
-
-        lf = pm.getLocalizationFile(lc, ERRORS_DIR);
-        errorsDir = lf.getFile();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Throwable> getErrors() {
-        List<Throwable> throwables = new ArrayList<Throwable>();
-
-        File[] errorFiles = readErrorsDirectory();
-
-        if (!CollectionUtil.isNullOrEmpty(errorFiles)) {
-            for (File errorFile : errorFiles) {
-                try {
-                    Throwable t = ExceptionWrapper
-                            .unwrapThrowable(SerializationUtil
-                                    .transformFromThrift(
-                                            SerializableExceptionWrapper.class,
-                                            FileUtil.file2bytes(errorFile)));
-                    throwables.add(t);
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            e.getLocalizedMessage(), e);
-                } finally {
-                    errorFile.delete();
-                }
-            }
-        }
-
-        return throwables;
     }
 
     /**
@@ -171,6 +134,7 @@ class FileCommunicationStrategy implements CommunicationStrategy {
     // TODO: Use cluster lock if data delivery every clustered, currently single
     // threaded to avoid file contention
     public synchronized ProviderCollectionLinkStore getNextLinkStore() {
+        removeOldLinks();
         File[] files = readLinksDirectory();
 
         if (!CollectionUtil.isNullOrEmpty(files)) {
@@ -215,9 +179,33 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         return null;
     }
 
+    /**
+     * Purge any links that have been in the directory for more than a set time
+     * period. These are likely OBE at this point and we shouldn't waste time
+     * trying to process them.
+     */
+    private void removeOldLinks() {
+        if (linksDir.isDirectory()) {
+            // TODO: Should this be configurable?
+            int daysToKeepLinks = 7;
+            File[] obeFiles = FileFilterUtils.filter(new AgeFileFilter(
+                    Date.from(LocalDate.now().minusDays(daysToKeepLinks)
+                            .atStartOfDay(ZoneId.of("GMT")).toInstant())),
+
+                    linksDir);
+            for (File obe : obeFiles) {
+                statusHandler.info("Link File '" + obe.getName()
+                        + "' is older than " + daysToKeepLinks
+                        + " day old and will be deleted. Success? "
+                        + obe.delete());
+            }
+        }
+    }
+
     private void marshalAndWriteToFile(File destinationFile, LinkStore links)
             throws IOException, JAXBException, SerializationException {
-        getJaxbManager().marshalToXmlFile(links, destinationFile.getAbsolutePath());
+        getJaxbManager().marshalToXmlFile(links,
+                destinationFile.getAbsolutePath());
     }
 
     @Override
@@ -225,7 +213,7 @@ class FileCommunicationStrategy implements CommunicationStrategy {
             Map<String, ProtoCollection> collections, Provider provider,
             CrawlAgent agent) {
 
-        ArrayList<Collection> newCollections = new ArrayList<Collection>();
+        ArrayList<Collection> newCollections = new ArrayList<>();
         // start processing the proto collections into real collections
         for (Entry<String, ProtoCollection> entry : collections.entrySet()) {
             try {
@@ -237,8 +225,8 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                 coll.setFirstDate(pc.getFirstDateFormatted());
                 // TODO: figure a default data type and projection
                 // strategy other than just the first one.
-                coll.setDataType(provider.getProviderType().get(0)
-                        .getDataType());
+                coll.setDataType(
+                        provider.getProviderType().get(0).getDataType());
                 coll.setProjection(provider.getProjection().get(0).getType());
                 coll.setPeriodicity(pc.getPeriodicity());
                 coll.setUrlKey(pc.getUrlKey());
@@ -247,12 +235,12 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                     coll.setIgnore(false);
                 }
                 newCollections.add(coll);
-                statusHandler.info("adding new Collection: "
-                        + pc.getCollectionName());
+                statusHandler.info(
+                        "adding new Collection: " + pc.getCollectionName());
                 // announce
             } catch (Exception e) {
-                statusHandler.error("Error parsing proto-collections "
-                        + e.getMessage());
+                statusHandler.error(
+                        "Error parsing proto-collections " + e.getMessage());
             }
         }
 
@@ -270,7 +258,7 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         if (!newCollections.isEmpty()) {
 
             if (agent.getCollection() != null) {
-                ArrayList<Collection> replace = new ArrayList<Collection>();
+                ArrayList<Collection> replace = new ArrayList<>();
                 // compare and process against existing collections
                 for (Collection newCollection : newCollections) {
                     for (Collection collection : agent.getCollection()) {
@@ -278,18 +266,18 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                                 .equals(collection.getName())) {
                             // preserve parameter lookups
                             if (collection.getParameterLookup() != null) {
-                                newCollection.setParameterLookup(collection
-                                        .getParameterLookup());
+                                newCollection.setParameterLookup(
+                                        collection.getParameterLookup());
                             }
                             // preserve level lookups
                             if (collection.getLevelLookup() != null) {
-                                newCollection.setLevelLookup(collection
-                                        .getLevelLookup());
+                                newCollection.setLevelLookup(
+                                        collection.getLevelLookup());
                             }
                             // other ancillary things
                             newCollection.setIgnore(collection.isIgnore());
-                            newCollection.setProjection(collection
-                                    .getProjection());
+                            newCollection
+                                    .setProjection(collection.getProjection());
                             newCollection.setDataType(collection.getDataType());
                             replace.add(collection);
                         }
@@ -309,14 +297,10 @@ class FileCommunicationStrategy implements CommunicationStrategy {
 
     }
 
-    private File[] readErrorsDirectory() {
-        return readFilesInDir(errorsDir, BINARY_EXTENSION);
-    }
-
     private File[] readFilesInDir(final File dir, final String fileExtension) {
         if (dir.isDirectory()) {
-            File[] files = dir.listFiles(FilenameFilters
-                    .byFileExtension(fileExtension));
+            File[] files = dir
+                    .listFiles(FilenameFilters.byFileExtension(fileExtension));
 
             // order the files in time order
             Arrays.sort(files, new Comparator<File>() {
@@ -346,10 +330,12 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         LinkStore links = null;
 
         try {
-            links = (LinkStore) getJaxbManager().unmarshalFromXmlFile(LinkStore.class, file);
+            links = (LinkStore) getJaxbManager()
+                    .unmarshalFromXmlFile(LinkStore.class, file);
             statusHandler.info("Read linkStore for " + file);
-        } catch (JAXBException  | SerializationException e) {
-            statusHandler.handle(Priority.PROBLEM, "Error unmarshalling file " + file.getAbsolutePath(), e);
+        } catch (JAXBException | SerializationException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error unmarshalling file " + file.getAbsolutePath(), e);
         }
 
         return links;
@@ -377,34 +363,12 @@ class FileCommunicationStrategy implements CommunicationStrategy {
 
         try {
             HarvesterConfigurationManager.setHarvesterFile(hconfig, file);
-            lf.save();
+            lf.openOutputStream().save();
         } catch (Exception e) {
-            statusHandler
-                    .error("Unable to recreate the "
-                            + provider
+            statusHandler.error(
+                    "Unable to recreate the " + provider
                             + "-harvester.xml configuration! Save of new collections failed",
-                            e);
-        } 
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void sendException(Exception e) {
-        statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
-        try {
-            serializeAndWriteToFile(new File(errorsDir, UUID.randomUUID()
-                    .toString() + BINARY_EXTENSION),
-                    ExceptionWrapper.wrapThrowable(e));
-        } catch (IOException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Unable to write out the exception to the errors directory!",
-                            e1);
-        } catch (SerializationException e1) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unable to serialize the exception!", e1);
+                    e);
         }
     }
 
@@ -422,12 +386,12 @@ class FileCommunicationStrategy implements CommunicationStrategy {
 
         try {
             if (!links.getLinks().isEmpty()) {
-                File destinationFile = new File(linksDir, providerName
-                        + CrawlMetaDataHandler.DASH
-                        + collectionName
-                        + CrawlMetaDataHandler.DASH
-                        + providerCollectionLinkStore.getLinkStore()
-                                .getCreationTime() + XML_EXTENSION);
+                File destinationFile = new File(linksDir,
+                        providerName + CrawlMetaDataHandler.DASH
+                                + collectionName + CrawlMetaDataHandler.DASH
+                                + providerCollectionLinkStore.getLinkStore()
+                                        .getCreationTime()
+                                + XML_EXTENSION);
 
                 // create dirs if not there
                 destinationFile.getParentFile().mkdirs();
@@ -439,15 +403,10 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                         + links.getLinkKeys().size());
             }
 
-        } catch (JAXBException | SerializationException |IOException e) {
-            sendException(e);
+        } catch (JAXBException | SerializationException | IOException e) {
+            statusHandler.error("Error writing to linkStore: " + providerName
+                    + " : " + collectionName, e);
         }
-    }
-
-    private void serializeAndWriteToFile(File destinationFile, Object object)
-            throws IOException, SerializationException {
-        FileUtil.bytes2File(SerializationUtil.transformToThrift(object),
-                destinationFile);
     }
 
     /**
@@ -456,7 +415,7 @@ class FileCommunicationStrategy implements CommunicationStrategy {
     @Override
     public void shutdown() {
     }
-    
+
     /**
      * Create or get JAXB Manager to marshal and unmarshal JAXB objects
      * 
@@ -469,6 +428,5 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         }
         return this.jaxbManager;
     }
-    
-    
+
 }
