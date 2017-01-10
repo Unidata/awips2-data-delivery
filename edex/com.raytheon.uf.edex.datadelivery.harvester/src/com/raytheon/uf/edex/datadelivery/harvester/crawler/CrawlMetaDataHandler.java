@@ -22,11 +22,16 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.commons.io.filefilter.AgeFileFilter;
+import org.apache.commons.io.filefilter.FileFilterUtils;
 
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
@@ -150,8 +155,13 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
 
     private File getPreviousRunsFile(String providerName, String collectionName,
             String dateString) {
+        File providerDir = new File(
+                timesDir.getAbsolutePath() + File.pathSeparator + providerName);
+        if (!providerDir.exists()) {
+            providerDir.mkdirs();
+        }
 
-        return new File(timesDir, providerName + DASH + collectionName + DASH
+        return new File(providerDir, providerName + DASH + collectionName + DASH
                 + dateString + ".bin");
     }
 
@@ -164,6 +174,9 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
 
         statusHandler.info("Checking for new Crawl MetaData.....");
         hconfigs = readConfigs();
+
+        // Clean up old Previous runs
+        removeOldRuns();
 
         ProviderCollectionLinkStore providerCollectionLinkStore = null;
 
@@ -282,6 +295,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
      */
     private void writePreviousRun(Set<String> previousRun,
             String collectionName, String providerName, String dateString) {
+        // Clean up any files from old runs.
 
         try {
             File file = getPreviousRunsFile(providerName, collectionName,
@@ -300,5 +314,49 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
         statusHandler
                 .info("Wrote URLs: " + providerName + " : " + collectionName
                         + " : " + dateString + " size: " + previousRun.size());
+    }
+
+    /**
+     * Purge any previous run files that have been in the directory for more
+     * than a set time period. These are likely OBE at this point and we don't
+     * need to clutter our disk space up with them any more.
+     */
+    private void removeOldRuns() {
+        if (timesDir.isDirectory()) {
+            for (File subDir : timesDir.listFiles()) {
+                if (subDir.isDirectory()) {
+                    String dirName = subDir.getName();
+                    HarvesterConfig hc = hconfigs.get(dirName);
+                    if (hc != null) {
+                        int daysToKeepLinks = Integer
+                                .parseInt(hc.getRetention());
+                        File[] obeFiles = FileFilterUtils
+                                .filter(new AgeFileFilter(Date.from(LocalDate
+                                        .now().minusDays(daysToKeepLinks)
+                                        .atStartOfDay(ZoneId.of("GMT"))
+                                        .toInstant())), timesDir);
+                        int deletedFiles = 0;
+                        for (File obe : obeFiles) {
+                            if (obe.delete()) {
+                                ++deletedFiles;
+                            } else {
+                                statusHandler.warn("Processed File '"
+                                        + obe.getName()
+                                        + "' failed attempt to delete!");
+                            }
+                        }
+                        statusHandler.info("Found and deleted " + deletedFiles
+                                + " Processed files in directory '" + dirName
+                                + "' that were more than " + daysToKeepLinks
+                                + " day old");
+                    } else {
+                        statusHandler
+                                .warn("No harvester config found for previous runs subdir '"
+                                        + dirName
+                                        + "'. Directory will not be cleaned. ");
+                    }
+                }
+            }
+        }
     }
 }

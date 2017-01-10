@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- 
+    This file is for parameters that need explicitly overridden by a defined 
+    GrADs name and cannot be set properly by matching the description. This 
+    could be due to ambiguous descriptions or different definitions needed for 
+    different datasets. Any parameter matching a mapping in this file will 
+    ignore parsing of the definition in and use the AWIPS name in this mapping 
+    as the parameter name.
+ -->
+<ParameterLookup>
+    <parameterMapping AWIPS="LCDC" GrADs="tcdclcll"/>
+    <parameterMapping AWIPS="MCDC" GrADs="tcdcmcll"/>
+    <parameterMapping AWIPS="HCDC" GrADs="tcdchcll"/>
+    
+    <!-- Vague description on these 2 cause them to map to 'T' -->
+    <parameterMapping AWIPS="MxT" GrADs="tmpmax2m"/>
+    <parameterMapping AWIPS="MnT" GrADs="tmpmin2m"/>
+</ParameterLookup>

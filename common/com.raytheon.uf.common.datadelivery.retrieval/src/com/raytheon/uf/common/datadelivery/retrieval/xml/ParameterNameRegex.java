@@ -20,6 +20,8 @@
 
 package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
+import java.util.regex.Pattern;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -28,49 +30,56 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Parameter XML Object.
+ * 
+ * Parameter Name Regex XML object
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 1, 2012             jpiatt      Initial creation.
- * 07 Nov, 2013   2361     njensen      Remove ISerializableObject
- * 
+ * Dec 2, 2016  5988       tjensen     Initial creation
+ *
  * </pre>
- * 
- * @author jpiatt
- * @version 1.0
+ *
+ * @author tjensen
  */
 
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class ParameterConfig {
-
-    @XmlAttribute(name = "GrADs")
-    @DynamicSerializeElement
-    private String grads;
+public class ParameterNameRegex {
 
     @XmlAttribute(name = "AWIPS")
     @DynamicSerializeElement
     private String awips;
 
+    @XmlAttribute(name = "pattern")
+    @DynamicSerializeElement
+    private String regex;
+
+    private Pattern pattern;
+
     public String getAwips() {
         return awips;
-    }
-
-    public String getGrads() {
-        return grads;
     }
 
     public void setAwips(String awips) {
         this.awips = awips;
     }
 
-    public void setGrads(String grads) {
-        this.grads = grads;
+    public String getRegex() {
+        return regex;
     }
 
+    public void setRegex(String regex) {
+        this.regex = regex;
+    }
+
+    public Pattern getPattern() {
+        if (pattern == null) {
+            pattern = Pattern.compile("^" + getRegex());
+        }
+        return pattern;
+    }
 }

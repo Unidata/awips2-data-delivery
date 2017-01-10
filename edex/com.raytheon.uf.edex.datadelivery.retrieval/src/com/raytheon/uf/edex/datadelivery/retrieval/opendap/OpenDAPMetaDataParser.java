@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
@@ -47,8 +49,10 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterMapping;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterRegexes;
 import com.raytheon.uf.common.gridcoverage.Corner;
 import com.raytheon.uf.common.gridcoverage.GridCoverage;
 import com.raytheon.uf.common.gridcoverage.exception.GridCoverageException;
@@ -113,6 +117,7 @@ import opendap.dap.NoSuchAttributeException;
  *                                     Dataset when present.
  * Feb 16, 2016  5365        dhladky   Interface change.
  * Nov 09, 2016  5988        tjensen   Update for Friendly naming for NOMADS
+ * Jan 05, 2017  5988        tjensen   Updated for new parameter lookups and regexes
  * 
  * </pre>
  * 
@@ -234,12 +239,11 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         // the provider metadata yet
         gridCoverage.setSpacingUnit(serviceConfig.getConstantValue("DEGREE"));
         gridCoverage.setFirstGridPointCorner(Corner.LowerLeft);
-        ParameterLookup plx = LookupManager.getInstance()
-                .getParameters(collectionName);
-        // keep track of any new params you run across
-        ArrayList<Parameter> newParams = new ArrayList<Parameter>();
 
-        Map<String, Parameter> parameters = new HashMap<String, Parameter>();
+        // keep track of any new params you run across
+        ArrayList<Parameter> newParams = new ArrayList<>();
+
+        Map<String, Parameter> parameters = new HashMap<>();
         final String timecon = serviceConfig.getConstantValue("TIME");
         final String size = serviceConfig.getConstantValue("SIZE");
         final String minimum = serviceConfig.getConstantValue("MINIMUM");
@@ -411,30 +415,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     Parameter parm = new Parameter();
                     parm.setDataType(dataSet.getDataSetType());
 
-                    if (plx != null) {
-                        ParameterConfig paramLookUp = plx
-                                .getParameterByProviderName(name);
-                        if (paramLookUp != null) {
-                            parm.setName(paramLookUp.getAwips());
-                            parm.setProviderName(paramLookUp.getGrads());
-                        }
-                    }
-
-                    // UNKNOWN PARAMETER!!!!!!
-                    // Add it to the list used for lookup
-                    if (parm.getName() == null
-                            || parm.getProviderName() == null) {
-                        parm.setName(name);
-                        parm.setProviderName(name);
-                        newParams.add(parm);
-                    }
-
-                    // Rename the parameter using the AWIPS name if diff from
-                    // the provider
-                    if (!name.equals(parm.getName())) {
-                        name = parm.getName();
-                    }
-
                     // UNKNOWN DESCRIPTION
                     String description = "unknown description";
                     try {
@@ -445,10 +425,24 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                         statusHandler.handle(Priority.PROBLEM,
                                 "Invalid DAP description block! " + name);
                     }
+                    // Clean up description stuff
+                    description = description.replaceAll("^[* ]+", "");
 
                     parm.setDefinition(description);
                     parm.setUnits(OpenDAPParseUtility.getInstance()
                             .parseUnits(description));
+
+                    // Check for an AWIPS name
+                    String newName = parseParamName(name,
+                            dataSet.getDataSetName(), description);
+                    parm.setName(newName);
+                    parm.setProviderName(name);
+
+                    // Rename the parameter using the AWIPS name if diff from
+                    // the provider
+                    if (!name.equals(parm.getName())) {
+                        name = parm.getName();
+                    }
 
                     try {
                         parm.setMissingValue(OpenDAPParseUtility.getInstance()
@@ -483,12 +477,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             }
         }
 
-        // If necessary, update the parameter lookups
-        if (!newParams.isEmpty()) {
-            LookupManager.getInstance().modifyParamLookups(collectionName,
-                    newParams);
-        }
-
         String nameAndDescription = link.getName() + "_Coverage_"
                 + gridCoverage.getNx() + "_X_" + gridCoverage.getNy() + "_Y_"
                 + gridCoverage.getProjectionType();
@@ -503,6 +491,68 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         griddedCoverage.setGridCoverage(gridCoverage);
 
         return parameters;
+    }
+
+    private String parseParamName(String name, String dataSetName,
+            String description) {
+        ParameterLookup plx = LookupManager.getInstance().getParameters();
+
+        // Default paramName to grads name
+        String paramName = name;
+        boolean matched = false;
+
+        /*
+         * Check for mapping of specific grads names to see if we match one of
+         * those. Some grads mappings only apply to specific datasets, so check
+         * that as well.
+         */
+        ParameterMapping specificMap = plx.getParameterByProviderName(name);
+        if (specificMap != null) {
+            List<String> dataSets = specificMap.getDataSets();
+            if (dataSets == null || dataSets.contains(dataSetName)) {
+                paramName = specificMap.getAwips();
+                matched = true;
+            }
+        }
+
+        // Else, check the long name to see if we have a regex for it.
+        if (!matched) {
+            ParameterRegexes prx = LookupManager.getInstance()
+                    .getParameterRegexes();
+
+            if (prx != null) {
+                /*
+                 * Loop over known surface descriptions. If a match is found at
+                 * the beginning of the string, remove it from the description
+                 * string and exit the loop.
+                 */
+                Matcher m = null;
+                String tempDescription = description;
+                for (Pattern p : prx.getLevelPatterns()) {
+                    m = p.matcher(tempDescription);
+                    if (m.find()) {
+                        tempDescription = m.replaceFirst("");
+                        tempDescription = tempDescription.replaceAll("^ +", "");
+                        break;
+                    }
+                }
+
+                /*
+                 * Loop over known regexes for descriptions. If a match is found
+                 * at the begining of the string, set the param name to the name
+                 * for that regex.
+                 */
+                for (ParameterNameRegex nameRegex : prx.getNameRegexes()) {
+                    m = nameRegex.getPattern().matcher(tempDescription);
+                    if (m.find()) {
+                        paramName = nameRegex.getAwips();
+                        break;
+                    }
+                }
+            }
+        }
+
+        return paramName;
     }
 
     /**

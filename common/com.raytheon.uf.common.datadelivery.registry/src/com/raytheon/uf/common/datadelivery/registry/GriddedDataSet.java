@@ -51,15 +51,16 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public abstract class GriddedDataSet extends DataSet<GriddedTime, GriddedCoverage> {
+public abstract class GriddedDataSet
+        extends DataSet<GriddedTime, GriddedCoverage> {
 
     @XmlElement
     @DynamicSerializeElement
-    protected Set<Integer> cycles = new HashSet<Integer>();
+    protected Set<Integer> cycles = new HashSet<>();
 
     @XmlElement
     @DynamicSerializeElement
-    protected Set<Integer> forecastHours = new HashSet<Integer>();
+    protected Set<Integer> forecastHours = new HashSet<>();
 
     @DynamicSerializeElement
     @XmlElement
@@ -124,5 +125,44 @@ public abstract class GriddedDataSet extends DataSet<GriddedTime, GriddedCoverag
                 }
             }
         }
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((cycles == null) ? 0 : cycles.hashCode());
+        result = prime * result
+                + ((ensemble == null) ? 0 : ensemble.hashCode());
+        result = prime * result
+                + ((forecastHours == null) ? 0 : forecastHours.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        GriddedDataSet other = (GriddedDataSet) obj;
+        if (cycles == null) {
+            if (other.cycles != null)
+                return false;
+        } else if (!cycles.equals(other.cycles))
+            return false;
+        if (ensemble == null) {
+            if (other.ensemble != null)
+                return false;
+        } else if (!ensemble.equals(other.ensemble))
+            return false;
+        if (forecastHours == null) {
+            if (other.forecastHours != null)
+                return false;
+        } else if (!forecastHours.equals(other.forecastHours))
+            return false;
+        return true;
     }
 }

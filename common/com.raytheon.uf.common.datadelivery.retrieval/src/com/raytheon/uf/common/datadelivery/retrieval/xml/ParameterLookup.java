@@ -40,11 +40,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 1, 2012             jpiatt      Initial creation.
- * Oct 20, 2012  1163      dhladky     speed it up
- * Nov 07, 2013  2361      njensen     Remove ISerializableObject
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------
+ * Mar 01, 2012           jpiatt    Initial creation.
+ * Oct 20, 2012  1163     dhladky   speed it up
+ * Nov 07, 2013  2361     njensen   Remove ISerializableObject
+ * Jan 05, 2017  5988     tjensen   Updated for new parameter lookups
  * 
  * </pre>
  * 
@@ -57,29 +58,30 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @DynamicSerialize
 public class ParameterLookup {
 
-    @XmlElements({ @XmlElement(name = "parameterConfig", type = ParameterConfig.class) })
+    @XmlElements({
+            @XmlElement(name = "parameterMapping", type = ParameterMapping.class) })
     @DynamicSerializeElement
-    private List<ParameterConfig> parameters;
+    private List<ParameterMapping> parameterMappings;
 
     /**
      * Map of the entries by provider name
      */
-    private Map<String, ParameterConfig> providerParameters = null;
+    private Map<String, ParameterMapping> providerParameters = null;
 
     /**
      * Map of the entries by awips name
      */
-    private Map<String, ParameterConfig> awipsParameters = null;
+    private Map<String, ParameterMapping> awipsParameters = null;
 
     /**
      * Creates the awips map for speed
      */
     private void createAwipsMap() {
         if (awipsParameters == null) {
-            awipsParameters = new HashMap<String, ParameterConfig>();
-            List<ParameterConfig> configs = getParameters();
+            awipsParameters = new HashMap<>();
+            List<ParameterMapping> configs = getParameterMappings();
             if (configs != null) {
-                for (ParameterConfig parm : configs) {
+                for (ParameterMapping parm : configs) {
                     awipsParameters.put(parm.getAwips(), parm);
                 }
             }
@@ -91,10 +93,10 @@ public class ParameterLookup {
      */
     private void createProviderMap() {
         if (providerParameters == null) {
-            providerParameters = new HashMap<String, ParameterConfig>();
-            List<ParameterConfig> configs = getParameters();
+            providerParameters = new HashMap<>();
+            List<ParameterMapping> configs = getParameterMappings();
             if (configs != null) {
-                for (ParameterConfig parm : configs) {
+                for (ParameterMapping parm : configs) {
                     providerParameters.put(parm.getGrads(), parm);
                 }
             }
@@ -107,7 +109,7 @@ public class ParameterLookup {
      * @param awipsName
      * @return
      */
-    public ParameterConfig getParameterByAwipsName(String awipsName) {
+    public ParameterMapping getParameterByAwipsName(String awipsName) {
         if (awipsParameters == null) {
             createAwipsMap();
         }
@@ -121,7 +123,7 @@ public class ParameterLookup {
      * @param awipsName
      * @return
      */
-    public ParameterConfig getParameterByProviderName(String providerName) {
+    public ParameterMapping getParameterByProviderName(String providerName) {
 
         if (providerParameters == null) {
             createProviderMap();
@@ -130,13 +132,12 @@ public class ParameterLookup {
         return providerParameters.get(providerName);
     }
 
-    public List<ParameterConfig> getParameters() {
-        return parameters;
+    public List<ParameterMapping> getParameterMappings() {
+        return parameterMappings;
     }
 
-    public void setParameters(List<ParameterConfig> parameters) {
-        this.parameters = parameters;
-
+    public void setParameterMappings(List<ParameterMapping> parameterMappings) {
+        this.parameterMappings = parameterMappings;
     }
 
 }

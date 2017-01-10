@@ -57,10 +57,10 @@ public class Ensemble implements Serializable {
 
     public Ensemble(Ensemble other) {
         if (other.members != null) {
-            members = new ArrayList<String>(other.members);
+            members = new ArrayList<>(other.members);
         }
         if (other.selectedMembers != null) {
-            selectedMembers = new ArrayList<String>(other.selectedMembers);
+            selectedMembers = new ArrayList<>(other.selectedMembers);
         }
     }
 
@@ -149,8 +149,8 @@ public class Ensemble implements Serializable {
         if (indexes == null) {
             return Arrays.asList(new Ensemble(this));
         }
-        List<Ensemble> result = new ArrayList<Ensemble>();
-        List<String> selected = new ArrayList<String>(selectedMembers.size());
+        List<Ensemble> result = new ArrayList<>();
+        List<String> selected = new ArrayList<>(selectedMembers.size());
         int start = indexes[0];
         int end = start - 1;
         for (int index : indexes) {
@@ -159,7 +159,7 @@ public class Ensemble implements Serializable {
                 // Either we have run out of consecutive indexes or we have the
                 // max consecutive. so split off and start the next one.
                 Ensemble e = new Ensemble(this);
-                e.setSelectedMembers(new ArrayList<String>(selected));
+                e.setSelectedMembers(new ArrayList<>(selected));
                 selected.clear();
                 result.add(e);
                 start = index;
@@ -192,6 +192,31 @@ public class Ensemble implements Serializable {
         }
         Arrays.sort(indexes);
         return indexes;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((members == null) ? 0 : members.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Ensemble other = (Ensemble) obj;
+        if (members == null) {
+            if (other.members != null)
+                return false;
+        } else if (!members.equals(other.members))
+            return false;
+        return true;
     }
 
 }
