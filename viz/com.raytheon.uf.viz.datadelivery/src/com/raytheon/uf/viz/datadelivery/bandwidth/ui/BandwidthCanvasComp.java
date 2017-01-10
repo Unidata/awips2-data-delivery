@@ -103,7 +103,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  SOFTWARE HISTORY
  *  
  *  Date         Ticket#    Engineer    Description
- *  ------------ ---------- ----------- --------------------------
+ *  ------------- ---------- ----------- --------------------------
  *  Nov 6, 2012    1269     lvenable    Initial creation.
  *  Dec 13, 2012   1269     lvenable    Fixes and updates.
  *  Jan 07, 2013   1451     djohnson    Use TimeUtil.newGmtCalendar().
@@ -131,6 +131,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null 
  *  Jun 09, 2015   4047     dhladky     BUG graph blocked CAVE on initial startup, fixed.
  *  Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces
+ *  Jan 10, 2017   746      bsteffen    Do not ignore frequent updates.
  * 
  * </pre>
  * 
@@ -222,9 +223,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     private long updateIntervalMils = 0L;
 
     /** Last graph update time */
-    private long lastUpdateTime = 0L;
-
-    /** Last graph update time */
     Timer activeUpdateTimer = null;
 
     /** the query job **/
@@ -313,10 +311,9 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         this.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
 
         generateCanvasSettings();
-        lastUpdateTime = System.currentTimeMillis();
 
         imageMgr = new BandwidthImageMgr(parentComp, canvasSettingsMap, bgd,
-                lastUpdateTime);
+                System.currentTimeMillis());
         subscriptionNames = imageMgr.getSubscriptionNames();
 
         getAllCanvasImages();
@@ -454,50 +451,38 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         }
 
         boolean isUpdateable = false;
-        // Remove possible duplicate Notification Messages
-        Object obj = null;
-        Object payloadObj = null;
 
-        NotificationMessage notificationMessage = null;
-        NotificationRecord notificationRecord = null;
-        int notificationRecordListSize = notificationMessages.length;
-        for (int i = 0; ((isUpdateable == false) && (i < notificationRecordListSize)); i++) {
-            obj = notificationMessages[i];
-            if (obj instanceof NotificationMessage) {
-                notificationMessage = (NotificationMessage) obj;
-                try {
-                    payloadObj = notificationMessage.getMessagePayload();
-                } catch (NotificationException ne) {
-                    statusHandler.error(
-                            "Error Extracting data from Notification Message: \n"
-                                    + notificationMessage.toString(), ne);
-                    payloadObj = null;
-                }
-                if (payloadObj != null) {
-                    if (payloadObj instanceof NotificationRecord) {
-                        notificationRecord = (NotificationRecord) payloadObj;
-                        if (lastNotificationRecord != null) {
-                            boolean areEquivalent = lastNotificationRecord
-                                    .areFunctionallyEquivalent(notificationRecord);
-                            if (areEquivalent == true) {
-                                // This is a repeated NotificationRecord. Do not
-                                // update.
-                                isUpdateable = false;
-                            } else {
-                                isUpdateable = checkNotificationRecord(notificationRecord);
-                            }
-                        } else {
-                            isUpdateable = checkNotificationRecord(notificationRecord);
-                        }
-                        lastNotificationRecord = notificationRecord;
-                    } else if (payloadObj instanceof SubscriptionNotificationResponse) {
-                        isUpdateable = checkNotificationRecord(notificationRecord);
+        for (NotificationMessage notificationMessage : notificationMessages) {
+            Object payloadObj = null;
+            try {
+                payloadObj = notificationMessage.getMessagePayload();
+            } catch (NotificationException ne) {
+                statusHandler
+                        .error("Error Extracting data from Notification Message: \n"
+                                + notificationMessage.toString(), ne);
+            }
+            if (payloadObj instanceof NotificationRecord) {
+                NotificationRecord notificationRecord = (NotificationRecord) payloadObj;
+                if (lastNotificationRecord != null) {
+                    boolean areEquivalent = lastNotificationRecord
+                            .areFunctionallyEquivalent(notificationRecord);
+                    if (!areEquivalent) {
+                        isUpdateable = checkNotificationRecord(
+                                notificationRecord);
                     }
+                } else {
+                    isUpdateable = checkNotificationRecord(notificationRecord);
                 }
+                lastNotificationRecord = notificationRecord;
+            } else if (payloadObj instanceof SubscriptionNotificationResponse) {
+                isUpdateable = true;
+            }
+            if (isUpdateable) {
+                break;
             }
         }
 
-        return (isUpdateable);
+        return isUpdateable;
     }
 
     /**
@@ -515,40 +500,32 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      */
     private boolean checkNotificationRecord(
             NotificationRecord notificationRecord) {
+        if (notificationRecord == null) {
+            return false;
+        }
+
         boolean isUpdateable = false;
 
-        if (notificationRecord != null) {
-            Integer priority = notificationRecord.getPriority();
-            String category = notificationRecord.getCategory();
-            if ((priority != null) && (priority < 2)) {
-                isUpdateable = true;
-            } else if (category != null
-                    && category
-                            .equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
-                String notificationMessage = notificationRecord.getMessage();
-                if ((notificationMessage != null)
-                        && (notificationMessage.isEmpty() == false)) {
-                    notificationMessage = notificationMessage.toUpperCase();
-                    if (notificationMessage
-                            .contains(DataDeliveryUtils.ACTIVATED)
-                            || notificationMessage
-                                    .contains(DataDeliveryUtils.DEACTIVATED)
-                            || notificationMessage
-                                    .contains(DataDeliveryUtils.CREATED)
-                            || notificationMessage
-                                    .contains(DataDeliveryUtils.DELETED)) {
-
-                        isUpdateable = true;
-                    } else if (notificationMessage
-                            .contains(DataDeliveryUtils.UPDATED)) {
-                        /*
-                         * special case of updated, prevent from spamming the
-                         * BWM
-                         */
-                        if ((System.currentTimeMillis() - lastUpdateTime) > updateIntervalMils) {
-                            isUpdateable = true;
-                        }
-                    }
+        Integer priority = notificationRecord.getPriority();
+        String category = notificationRecord.getCategory();
+        if ((priority != null) && (priority < 2)) {
+            isUpdateable = true;
+        } else if (category != null
+                && category.equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
+            String notificationMessage = notificationRecord.getMessage();
+            if ((notificationMessage != null)
+                    && (notificationMessage.isEmpty() == false)) {
+                notificationMessage = notificationMessage.toUpperCase();
+                if (notificationMessage.contains(DataDeliveryUtils.ACTIVATED)
+                        || notificationMessage
+                                .contains(DataDeliveryUtils.DEACTIVATED)
+                        || notificationMessage
+                                .contains(DataDeliveryUtils.CREATED)
+                        || notificationMessage
+                                .contains(DataDeliveryUtils.DELETED)
+                        || notificationMessage
+                                .contains(DataDeliveryUtils.UPDATED)) {
+                    isUpdateable = true;
                 }
             }
         }
@@ -1729,11 +1706,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 if (isDisposed()) {
                     return;
                 }
-
-                statusHandler.info("Time elapsed from last BUG update: "
-                        + (System.currentTimeMillis() - lastUpdateTime) + " ms");
-                lastUpdateTime = System.currentTimeMillis();
-                imageMgr.setCurrentTimeMillis(lastUpdateTime);
 
                 try {
                     BandwidthGraphData tempData = graphDataUtil.getGraphData();
