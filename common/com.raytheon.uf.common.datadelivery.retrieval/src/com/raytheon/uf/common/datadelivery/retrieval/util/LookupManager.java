@@ -22,8 +22,12 @@ package com.raytheon.uf.common.datadelivery.retrieval.util;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,7 +37,10 @@ import javax.xml.bind.JAXBException;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformationLookup;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.LevelLookup;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLevelRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterMapping;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterRegexes;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitLookup;
 import com.raytheon.uf.common.localization.ILocalizationFile;
@@ -157,9 +164,13 @@ public class LookupManager {
         return instance;
     }
 
-    private ParameterLookup parameters;
+    private Map<String, ParameterMapping> parameters = new HashMap<>(1);
 
-    private ParameterRegexes regexes;
+    private Map<String, ParameterNameRegex> paramNameRegexes = new LinkedHashMap<>(
+            1);
+
+    private Map<String, ParameterLevelRegex> paramLevelRegexes = new LinkedHashMap<>(
+            1);
 
     private final Map<String, LevelLookup> levels = new HashMap<>(1);
 
@@ -257,10 +268,8 @@ public class LookupManager {
      */
     private ILocalizationFile getLocalizationFile(String fileName) {
         ILocalizationFile lf = null;
-        IPathManager pm = PathManagerFactory.getPathManager();
-        Map<LocalizationLevel, LocalizationFile> files = pm
-                .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
-                        fileName);
+        Map<LocalizationLevel, LocalizationFile> files = getLocalizationFiles(
+                fileName);
 
         if (files.containsKey(LocalizationLevel.SITE)) {
             lf = files.get(LocalizationLevel.SITE);
@@ -271,21 +280,30 @@ public class LookupManager {
         return lf;
     }
 
+    private Map<LocalizationLevel, LocalizationFile> getLocalizationFiles(
+            String fileName) {
+        IPathManager pm = PathManagerFactory.getPathManager();
+        Map<LocalizationLevel, LocalizationFile> files = pm
+                .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
+                        fileName);
+        return files;
+    }
+
     /**
      * Gets the Model parameters
      * 
-     * @param modelName
      * @return
      */
-    public ParameterRegexes getParameterRegexes() {
+    @SuppressWarnings("unchecked")
+    public void loadParameterRegexes() {
         ILocalizationFile file = null;
         String fileName = getRegexFileName();
 
         try {
             file = getLocalizationFile(fileName);
         } catch (Exception e) {
-            statusHandler
-                    .error(" Failed to Parameter Lookup table: " + fileName, e);
+            statusHandler.error(
+                    " Failed to find Parameter Lookup table: " + fileName, e);
         }
 
         if (file != null) {
@@ -294,9 +312,31 @@ public class LookupManager {
                  * If regexes is null or the timestamp on the file has changed
                  * since we last read it, read the parameters from the file.
                  */
-                if (regexes == null
+                if (paramNameRegexes.isEmpty()
                         || !file.getTimeStamp().equals(regexFileTime)) {
-                    regexes = readParameterRegexes(file);
+                    ParameterRegexes tmpRegex = null;
+                    Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                            fileName);
+
+                    Map<String, ParameterNameRegex> newParamNameRegexes = new LinkedHashMap<>(
+                            1);
+                    Map<String, ParameterLevelRegex> newParamLevelRegexes = new LinkedHashMap<>(
+                            1);
+
+                    if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                        tmpRegex = readParameterRegexes(
+                                locFiles.get(LocalizationLevel.BASE));
+                        populateParameterRegexes(tmpRegex, newParamNameRegexes,
+                                newParamLevelRegexes);
+                    }
+                    if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                        tmpRegex = readParameterRegexes(
+                                locFiles.get(LocalizationLevel.SITE));
+                        populateParameterRegexes(tmpRegex, newParamNameRegexes,
+                                newParamLevelRegexes);
+                    }
+                    paramNameRegexes = sortByValue(newParamNameRegexes);
+                    paramLevelRegexes = sortByValue(newParamLevelRegexes);
                     regexFileTime = file.getTimeStamp();
                 }
             } catch (Exception e) {
@@ -306,8 +346,44 @@ public class LookupManager {
                         e);
             }
         }
+    }
 
-        return regexes;
+    public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(
+            Map<K, V> map) {
+        List<Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
+        Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
+            @Override
+            public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
+                return (o1.getValue()).compareTo(o2.getValue());
+            }
+        });
+
+        Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, V> entry : list) {
+            result.put(entry.getKey(), entry.getValue());
+        }
+        return result;
+    }
+
+    private void populateParameterRegexes(ParameterRegexes tmpRegex,
+            Map<String, ParameterNameRegex> newParamNameRegexes,
+            Map<String, ParameterLevelRegex> newParamLevelRegexes) {
+        for (ParameterNameRegex nameRegex : tmpRegex.getNameRegexes()) {
+            newParamNameRegexes.put(nameRegex.getId(), nameRegex);
+        }
+        for (ParameterLevelRegex levelRegex : tmpRegex.getLevelRegexes()) {
+            newParamLevelRegexes.put(levelRegex.getId(), levelRegex);
+        }
+    }
+
+    public Map<String, ParameterNameRegex> getParamNameRegexes() {
+        loadParameterRegexes();
+        return paramNameRegexes;
+    }
+
+    public Map<String, ParameterLevelRegex> getParamLevelRegexes() {
+        loadParameterRegexes();
+        return paramLevelRegexes;
     }
 
     /**
@@ -316,7 +392,7 @@ public class LookupManager {
      * @param modelName
      * @return
      */
-    public ParameterLookup getParameters() {
+    public Map<String, ParameterMapping> getParameters() {
         ILocalizationFile file = null;
         String fileName = getParamFileName();
 
@@ -333,11 +409,30 @@ public class LookupManager {
                  * If regexes is null or the timestamp on the file has changed
                  * since we last read it, read the parameters from the file.
                  */
-                if (parameters == null
+                if (parameters.isEmpty()
                         || !file.getTimeStamp().equals(paramFileTime)) {
-                    parameters = readParameterXml(file);
+                    ParameterLookup tmpLookup = null;
+                    Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                            fileName);
+                    if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                        tmpLookup = readParameterXml(
+                                locFiles.get(LocalizationLevel.BASE));
+                        for (ParameterMapping mapping : tmpLookup
+                                .getParameterMappings()) {
+                            parameters.put(mapping.getId(), mapping);
+                        }
+                    }
+                    if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                        tmpLookup = readParameterXml(
+                                locFiles.get(LocalizationLevel.SITE));
+                        for (ParameterMapping mapping : tmpLookup
+                                .getParameterMappings()) {
+                            parameters.put(mapping.getId(), mapping);
+                        }
+                    }
                     paramFileTime = file.getTimeStamp();
                 }
+
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Failed to Read Parameter Lookup from file: "
@@ -347,6 +442,7 @@ public class LookupManager {
         }
 
         return parameters;
+
     }
 
     /**
@@ -359,16 +455,33 @@ public class LookupManager {
         DataSetInformation dsi = null;
 
         if (dataSetInformations.isEmpty()) {
-            DataSetInformationLookup dataSetInformationLookup = getDataSetInformationLookupFromFile();
+            try {
+                DataSetInformationLookup tmpSetInformationLookup = null;
+                String fileName = getDataSetInformationFileName();
+                Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                        fileName);
 
-            if (dataSetInformationLookup == null) {
-                dataSetInformationLookup = new DataSetInformationLookup();
-            }
-
-            for (DataSetInformation dataSetinfo : dataSetInformationLookup
-                    .getDataSetInformations()) {
-                dataSetInformations.put(dataSetinfo.getModelName(),
-                        dataSetinfo);
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    tmpSetInformationLookup = readDataSetInformationXml(
+                            locFiles.get(LocalizationLevel.BASE));
+                    for (DataSetInformation dataSetinfo : tmpSetInformationLookup
+                            .getDataSetInformations()) {
+                        dataSetInformations.put(dataSetinfo.getModelName(),
+                                dataSetinfo);
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    tmpSetInformationLookup = readDataSetInformationXml(
+                            locFiles.get(LocalizationLevel.SITE));
+                    for (DataSetInformation dataSetinfo : tmpSetInformationLookup
+                            .getDataSetInformations()) {
+                        dataSetInformations.put(dataSetinfo.getModelName(),
+                                dataSetinfo);
+                    }
+                }
+            } catch (Exception e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Failed to read Data Set Lookup from file.", e);
             }
         }
 

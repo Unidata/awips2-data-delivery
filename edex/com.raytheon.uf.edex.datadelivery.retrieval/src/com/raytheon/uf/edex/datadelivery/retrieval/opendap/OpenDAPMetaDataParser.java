@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
@@ -49,10 +48,9 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLevelRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterMapping;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterRegexes;
 import com.raytheon.uf.common.gridcoverage.Corner;
 import com.raytheon.uf.common.gridcoverage.GridCoverage;
 import com.raytheon.uf.common.gridcoverage.exception.GridCoverageException;
@@ -239,9 +237,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         // the provider metadata yet
         gridCoverage.setSpacingUnit(serviceConfig.getConstantValue("DEGREE"));
         gridCoverage.setFirstGridPointCorner(Corner.LowerLeft);
-
-        // keep track of any new params you run across
-        ArrayList<Parameter> newParams = new ArrayList<>();
 
         Map<String, Parameter> parameters = new HashMap<>();
         final String timecon = serviceConfig.getConstantValue("TIME");
@@ -495,7 +490,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
     private String parseParamName(String name, String dataSetName,
             String description) {
-        ParameterLookup plx = LookupManager.getInstance().getParameters();
+        Map<String, ParameterMapping> plx = LookupManager.getInstance()
+                .getParameters();
 
         // Default paramName to grads name
         String paramName = name;
@@ -506,21 +502,27 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
          * those. Some grads mappings only apply to specific datasets, so check
          * that as well.
          */
-        ParameterMapping specificMap = plx.getParameterByProviderName(name);
-        if (specificMap != null) {
-            List<String> dataSets = specificMap.getDataSets();
-            if (dataSets == null || dataSets.contains(dataSetName)) {
-                paramName = specificMap.getAwips();
-                matched = true;
+        for (String key : plx.keySet()) {
+            ParameterMapping specificMap = plx.get(key);
+            if (specificMap.getGrads().equals(name)) {
+                List<String> dataSets = specificMap.getDataSets();
+                if (dataSets == null || dataSets.contains(dataSetName)) {
+                    paramName = specificMap.getAwips();
+                    matched = true;
+                    break;
+                }
             }
         }
 
         // Else, check the long name to see if we have a regex for it.
         if (!matched) {
-            ParameterRegexes prx = LookupManager.getInstance()
-                    .getParameterRegexes();
 
-            if (prx != null) {
+            Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
+                    .getParamLevelRegexes();
+            Map<String, ParameterNameRegex> pnr = LookupManager.getInstance()
+                    .getParamNameRegexes();
+
+            if (plr != null && pnr != null) {
                 /*
                  * Loop over known surface descriptions. If a match is found at
                  * the beginning of the string, remove it from the description
@@ -528,8 +530,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                  */
                 Matcher m = null;
                 String tempDescription = description;
-                for (Pattern p : prx.getLevelPatterns()) {
-                    m = p.matcher(tempDescription);
+                for (String key : plr.keySet()) {
+                    m = plr.get(key).getPattern().matcher(tempDescription);
                     if (m.find()) {
                         tempDescription = m.replaceFirst("");
                         tempDescription = tempDescription.replaceAll("^ +", "");
@@ -542,7 +544,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                  * at the begining of the string, set the param name to the name
                  * for that regex.
                  */
-                for (ParameterNameRegex nameRegex : prx.getNameRegexes()) {
+                for (String key : pnr.keySet()) {
+                    ParameterNameRegex nameRegex = pnr.get(key);
                     m = nameRegex.getPattern().matcher(tempDescription);
                     if (m.find()) {
                         paramName = nameRegex.getAwips();
@@ -728,9 +731,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             LinkStore store, Collection collection, String dataDateFormat)
                     throws NoSuchAttributeException {
 
-        final Map<OpenDapGriddedDataSet, List<DataSetMetaData<?>>> metaDatas = new HashMap<OpenDapGriddedDataSet, List<DataSetMetaData<?>>>();
+        final Map<OpenDapGriddedDataSet, List<DataSetMetaData<?>>> metaDatas = new HashMap<>();
 
-        Set<String> linkKeys = new TreeSet<String>(store.getLinkKeys());
+        Set<String> linkKeys = new TreeSet<>(store.getLinkKeys());
 
         if (CollectionUtil.isNullOrEmpty(linkKeys)) {
             return null;
@@ -783,7 +786,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             dataSet.setTime(dataSetTime);
             gdsmd.setDate(new ImmutableDate(dataSetTime.getStart()));
 
-            List<Integer> forecastHoursAsInteger = new ArrayList<Integer>();
+            List<Integer> forecastHoursAsInteger = new ArrayList<>();
             for (String forecastHour : gdsmd.getTime().getFcstHours()) {
                 try {
                     forecastHoursAsInteger.add(Integer.parseInt(forecastHour));
@@ -795,7 +798,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             dataSet.getForecastHours().addAll(forecastHoursAsInteger);
 
             // The opendap specific info
-            Map<String, String> cyclesToUrls = new HashMap<String, String>();
+            Map<String, String> cyclesToUrls = new HashMap<>();
             String cycle = vals.get(1);
             cyclesToUrls.put(cycle, gdsmd.getUrl());
 
@@ -849,14 +852,14 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             List<DataSetMetaData<?>> toStore = metaDatas.get(dataSet);
 
             if (toStore == null) {
-                toStore = new ArrayList<DataSetMetaData<?>>();
+                toStore = new ArrayList<>();
                 metaDatas.put(dataSet, toStore);
             }
 
             toStore.add(gdsmd);
         }
 
-        List<DataSetMetaData<?>> parsedMetadatas = new ArrayList<DataSetMetaData<?>>();
+        List<DataSetMetaData<?>> parsedMetadatas = new ArrayList<>();
         for (DataSet<GriddedTime, GriddedCoverage> dataSet : metaDatas
                 .keySet()) {
             List<DataSetMetaData<?>> dataSetMetaDatas = metaDatas.get(dataSet);

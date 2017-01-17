@@ -20,80 +20,49 @@
 
 package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
-import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElements;
-import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * 
- * Parameter Mapping XML object
+ * Parameter Level Regex XML object
  * 
  * <pre>
  *
  * SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
- * Dec 02, 2016  5988         tjensen   Initial creation
- * 
+ *
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Dec 2, 2016  5988       tjensen     Initial creation
+ *
  * </pre>
  *
  * @author tjensen
  */
 
-@XmlRootElement(name = "ParameterMapping")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class ParameterMapping {
+public class ParameterLevelRegex implements Comparable {
 
     @XmlAttribute(name = "id")
     @DynamicSerializeElement
     private String id;
 
-    @XmlAttribute(name = "GrADs")
+    @XmlAttribute(name = "order")
     @DynamicSerializeElement
-    private String grads;
+    private String order;
 
-    @XmlAttribute(name = "AWIPS")
+    @XmlAttribute(name = "pattern")
     @DynamicSerializeElement
-    private String awips;
+    private String regex;
 
-    /**  */
-    @XmlElements({ @XmlElement(name = "dataSet", type = String.class) })
-    @DynamicSerializeElement
-    private List<String> dataSets;
-
-    public String getGrads() {
-        return grads;
-    }
-
-    public void setGrads(String grads) {
-        this.grads = grads;
-    }
-
-    public String getAwips() {
-        return awips;
-    }
-
-    public void setAwips(String awips) {
-        this.awips = awips;
-    }
-
-    public List<String> getDataSets() {
-        return dataSets;
-    }
-
-    public void setDataSets(List<String> dataSets) {
-        this.dataSets = dataSets;
-    }
+    private Pattern pattern;
 
     public String getId() {
         return id;
@@ -101,5 +70,41 @@ public class ParameterMapping {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getRegex() {
+        return regex;
+    }
+
+    public void setRegex(String regex) {
+        this.regex = regex;
+    }
+
+    public Pattern getPattern() {
+        if (pattern == null) {
+            pattern = Pattern.compile("^" + getRegex());
+        }
+        return pattern;
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof ParameterLevelRegex) {
+            ParameterLevelRegex other = (ParameterLevelRegex) o;
+            int orderDiff = order.compareTo(other.getOrder());
+            if (orderDiff != 0) {
+                return orderDiff;
+            }
+            return id.compareTo(other.getId());
+        }
+        return 1;
+    }
+
+    public String getOrder() {
+        return order;
+    }
+
+    public void setOrder(String order) {
+        this.order = order;
     }
 }

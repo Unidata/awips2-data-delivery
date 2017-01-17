@@ -56,9 +56,10 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class ParameterRegexes {
 
     /**  */
-    @XmlElements({ @XmlElement(name = "levelRegex", type = String.class) })
+    @XmlElements({
+            @XmlElement(name = "levelRegex", type = ParameterLevelRegex.class) })
     @DynamicSerializeElement
-    private List<String> levelRegexes;
+    private List<ParameterLevelRegex> levelRegexes;
 
     @XmlElements({
             @XmlElement(name = "nameRegex", type = ParameterNameRegex.class) })
@@ -67,11 +68,11 @@ public class ParameterRegexes {
 
     private List<Pattern> levelPatterns;
 
-    public List<String> getLevelRegexes() {
+    public List<ParameterLevelRegex> getLevelRegexes() {
         return levelRegexes;
     }
 
-    public void setLevelRegexes(List<String> levelRegexes) {
+    public void setLevelRegexes(List<ParameterLevelRegex> levelRegexes) {
         this.levelRegexes = levelRegexes;
     }
 
@@ -87,8 +88,8 @@ public class ParameterRegexes {
 
         if (levelPatterns == null) {
             levelPatterns = new ArrayList<>();
-            for (String levelRegex : getLevelRegexes()) {
-                levelPatterns.add(Pattern.compile("^" + levelRegex));
+            for (ParameterLevelRegex levelRegex : getLevelRegexes()) {
+                levelPatterns.add(levelRegex.getPattern());
             }
         }
         return levelPatterns;

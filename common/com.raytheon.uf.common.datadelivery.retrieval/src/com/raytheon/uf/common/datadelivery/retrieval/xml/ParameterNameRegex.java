@@ -48,7 +48,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class ParameterNameRegex {
+public class ParameterNameRegex implements Comparable {
 
     @XmlAttribute(name = "AWIPS")
     @DynamicSerializeElement
@@ -57,6 +57,22 @@ public class ParameterNameRegex {
     @XmlAttribute(name = "pattern")
     @DynamicSerializeElement
     private String regex;
+
+    @XmlAttribute(name = "id")
+    @DynamicSerializeElement
+    private String id;
+
+    @XmlAttribute(name = "order")
+    @DynamicSerializeElement
+    private String order;
+
+    public String getOrder() {
+        return order;
+    }
+
+    public void setOrder(String order) {
+        this.order = order;
+    }
 
     private Pattern pattern;
 
@@ -81,5 +97,25 @@ public class ParameterNameRegex {
             pattern = Pattern.compile("^" + getRegex());
         }
         return pattern;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public int compareTo(Object o) {
+        if (o instanceof ParameterNameRegex) {
+            ParameterNameRegex other = (ParameterNameRegex) o;
+            int orderDiff = order.compareTo(other.getOrder());
+            if (orderDiff != 0) {
+                return orderDiff;
+            }
+            return id.compareTo(other.getId());
+        }
+        return 1;
     }
 }

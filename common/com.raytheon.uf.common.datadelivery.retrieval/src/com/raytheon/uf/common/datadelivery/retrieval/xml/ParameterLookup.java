@@ -20,9 +20,7 @@
 
 package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -63,74 +61,6 @@ public class ParameterLookup {
     @DynamicSerializeElement
     private List<ParameterMapping> parameterMappings;
 
-    /**
-     * Map of the entries by provider name
-     */
-    private Map<String, ParameterMapping> providerParameters = null;
-
-    /**
-     * Map of the entries by awips name
-     */
-    private Map<String, ParameterMapping> awipsParameters = null;
-
-    /**
-     * Creates the awips map for speed
-     */
-    private void createAwipsMap() {
-        if (awipsParameters == null) {
-            awipsParameters = new HashMap<>();
-            List<ParameterMapping> configs = getParameterMappings();
-            if (configs != null) {
-                for (ParameterMapping parm : configs) {
-                    awipsParameters.put(parm.getAwips(), parm);
-                }
-            }
-        }
-    }
-
-    /**
-     * Creates the provider map for speed
-     */
-    private void createProviderMap() {
-        if (providerParameters == null) {
-            providerParameters = new HashMap<>();
-            List<ParameterMapping> configs = getParameterMappings();
-            if (configs != null) {
-                for (ParameterMapping parm : configs) {
-                    providerParameters.put(parm.getGrads(), parm);
-                }
-            }
-        }
-    }
-
-    /**
-     * Gets the parameter by the AWIPS name
-     * 
-     * @param awipsName
-     * @return
-     */
-    public ParameterMapping getParameterByAwipsName(String awipsName) {
-        if (awipsParameters == null) {
-            createAwipsMap();
-        }
-
-        return awipsParameters.get(awipsName);
-    }
-
-    /**
-     * Gets the parameter by the provider name
-     * 
-     * @param awipsName
-     * @return
-     */
-    public ParameterMapping getParameterByProviderName(String providerName) {
-
-        if (providerParameters == null) {
-            createProviderMap();
-        }
-
-        return providerParameters.get(providerName);
-    }
 
     public List<ParameterMapping> getParameterMappings() {
         return parameterMappings;

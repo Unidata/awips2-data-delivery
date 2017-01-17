@@ -1,91 +1,113 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
+        pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
+        
+        U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
+        This_software_product_contains_export-restricted_data_whose
+        export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
+        to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
+        an_export_license_or_other_authorization.
+        
+        Contractor_Name:________Raytheon_Company
+        Contractor_Address:_____6825_Pine_Street,_Suite_340
+        ________________________Mail_Stop_B8
+        ________________________Omaha,_NE_68106
+        ________________________402.291.0100
+        
+        See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
+        further_licensing_information.
+    -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <ParameterRegexes>
     <!-- List of patterns to match to the beginning of the description and removed. -->
     <!-- Note: Search is in order, so longer or more specific patterns should go first. -->
-    <levelRegex>\((\d+ )+(\d+..)( \d+)+\) </levelRegex>
-    <levelRegex>\d+ hybrid level (- \d+ hybrid level)? </levelRegex>
-    <levelRegex>\d+ in sequence none </levelRegex>
-    <levelRegex>\d+ k (isentropic )?level </levelRegex>
-    <levelRegex>\d+ m above mean sea level </levelRegex>
-    <levelRegex>\d+ m underground </levelRegex>
-    <levelRegex>\d+(\.\d+)? sigma level </levelRegex>
-    <levelRegex>\d+(\.\d+)?(-\d+(\.\d+)?)? m(b)? below ground </levelRegex>
-    <levelRegex>\d+(\.\d+)?(-\d+(\.\d+)?)? m(b)?( above ground)? </levelRegex>
-    <levelRegex>\d+(\.\d+)?-\d+(\.\d+)? sigma layer </levelRegex>
-    <levelRegex>\d+c isotherm </levelRegex>
-    <levelRegex>boundary layer cloud layer </levelRegex>
-    <levelRegex>(((deep)|(grid scale)|(high)|(low)|(middle)|(shallow)) )?(convective )?cloud ((bottom)|(top)|(base)|(ceiling)|(layer))( level)? </levelRegex>
-    <levelRegex>convective cloud layer </levelRegex>
-    <levelRegex>entire atmosphere( \(considered as a single layer\)) </levelRegex>
-    <levelRegex>entire ocean( \(considered as a single layer\)) </levelRegex>
-    <levelRegex>equilibrium level </levelRegex>
-    <levelRegex>((highest top)|(lowest bottom)) level of supercooled liquid water layer </levelRegex>
-    <levelRegex>highest tropospheric freezing level </levelRegex>
-    <levelRegex>level of adiabatic condensation from sfc </levelRegex>
-    <levelRegex>lowest level of the wet bulb zero </levelRegex>
-    <levelRegex>max wind </levelRegex>
-    <levelRegex>mean sea level </levelRegex>
-    <levelRegex>planetary boundary layer </levelRegex>
-    <levelRegex>pv=-?\d+(\.\d+)?e-?\d+ \(km\^2\/kg\/s\) </levelRegex>
-    <levelRegex>top of atmosphere </levelRegex>
-    <levelRegex>tropopause </levelRegex>
-    <levelRegex>surface( none)? </levelRegex>
+    <levelRegex order="1.0" id="numbers" pattern="\((\d+ )+(\d+..)( \d+)+\) "/>
+    <levelRegex order="2.0" id="hybridLevel" pattern="\d+ hybrid level (- \d+ hybrid level)? "/>
+    <levelRegex order="3.0" id="sequence" pattern="\d+ in sequence none "/>
+    <levelRegex order="4.0" id="kLevel" pattern="\d+ k (isentropic )?level "/>
+    <levelRegex order="5.0" id="aboveMeanSeaLevel" pattern="\d+ m above mean sea level "/>
+    <levelRegex order="6.0" id="mUnderground" pattern="\d+ m underground "/>
+    <levelRegex order="7.0" id="sigmaLevel" pattern="\d+(\.\d+)? sigma level "/>
+    <levelRegex order="8.0" id="belowGround" pattern="\d+(\.\d+)?(-\d+(\.\d+)?)? m(b)? below ground "/>
+    <levelRegex order="9.0" id="aboveGround" pattern="\d+(\.\d+)?(-\d+(\.\d+)?)? m(b)?( above ground)? "/>
+    <levelRegex order="10.0" id="sigmaLayer" pattern="\d+(\.\d+)?-\d+(\.\d+)? sigma layer "/>
+    <levelRegex order="11.0" id="cIsotherm" pattern="\d+c isotherm "/>
+    <levelRegex order="12.0" id="boundaryLayerCloudLayer" pattern="boundary layer cloud layer "/>
+    <levelRegex order="13.0" id="cloudLevels" pattern="(((deep)|(grid scale)|(high)|(low)|(middle)|(shallow)) )?(convective )?cloud ((bottom)|(top)|(base)|(ceiling)|(layer))( level)? "/>
+    <levelRegex order="14.0" id="entireAtmosphere" pattern="entire atmosphere( \(considered as a single layer\)) "/>
+    <levelRegex order="15.0" id="entireOcean" pattern="entire ocean( \(considered as a single layer\)) "/>
+    <levelRegex order="16.0" id="equilibriumLevel" pattern="equilibrium level "/>
+    <levelRegex order="17.0" id="supercooledWater" pattern="((highest top)|(lowest bottom)) level of supercooled liquid water layer "/>
+    <levelRegex order="18.0" id="troposphericFreezingLevel" pattern="highest tropospheric freezing level "/>
+    <levelRegex order="19.0" id="adiabaticCondensation" pattern="level of adiabatic condensation from sfc "/>
+    <levelRegex order="20.0" id="wetBulbZero" pattern="lowest level of the wet bulb zero "/>
+    <levelRegex order="21.0" id="maxWind" pattern="max wind "/>
+    <levelRegex order="22.0" id="meanSeaLevel" pattern="mean sea level "/>
+    <levelRegex order="23.0" id="planetaryBoundary" pattern="planetary boundary layer "/>
+    <levelRegex order="24.0" id="pv" pattern="pv=-?\d+(\.\d+)?e-?\d+ \(km\^2\/kg\/s\) "/>
+    <levelRegex order="25.0" id="topOfAtmosphere" pattern="top of atmosphere "/>
+    <levelRegex order="26.0" id="tropopause" pattern="tropopause "/>
+    <levelRegex order="27.0" id="surface" pattern="surface( none)? "/>
 
     <!-- List of patterns to match to a description after the level information has been stripped. -->
-    <nameRegex AWIPS='AV' pattern='absolute vorticity'/>
-    <nameRegex AWIPS='CPRAT' pattern='convective precipitation rate'/>
-    <nameRegex AWIPS='CP' pattern='convective precipitation'/>
-    <nameRegex AWIPS='TP' pattern=' total precipitation'/>
-    <nameRegex AWIPS='CAPE' pattern='convective available potential energy'/>
-    <nameRegex AWIPS='CFRZR' pattern='categorical freezing rain'/>
-    <nameRegex AWIPS='CICEP' pattern='categorical ice pellets'/>
-    <nameRegex AWIPS='CIn' pattern='convective inhibition'/>
-    <nameRegex AWIPS='CRAIN' pattern='categorical rain'/>
-    <nameRegex AWIPS='CSNOW' pattern='cloud mixing ratio'/>
-    <nameRegex AWIPS='DpT' pattern='dew point temperature'/>
-    <nameRegex AWIPS='GVV' pattern='vertical velocity \(geometric\)'/>
-    <nameRegex AWIPS='PoT' pattern='pseudo-adiabatic potential temperature \(or equivalent potential temperature\)'/>
-    <nameRegex AWIPS='GH' pattern='geopotential height'/>
-    <nameRegex AWIPS='Heli' pattern='storm relative helicity'/>
-    <nameRegex AWIPS='ICETK' pattern='sea_ice_thickness'/>
-    <nameRegex AWIPS='ICETK' pattern='ice thickness'/>
-    <nameRegex AWIPS='SLI' pattern='surface lifted index'/>
-    <nameRegex AWIPS='MSG' pattern='montgomery stream function'/>
-    <nameRegex AWIPS='EMSP' pattern='mslp \(eta model reduction\)'/>
-    <nameRegex AWIPS='MMSP' pattern='mslp \(maps system reduction\)'/>
-    <nameRegex AWIPS='LgSP' pattern='large-scale precipitation \(non-convective\)'/>
-    <nameRegex AWIPS='WGH' pattern='5-wave geopotential height'/>
-    <nameRegex AWIPS='PR' pattern='precipitation rate'/>
-    <nameRegex AWIPS='PMSL' pattern='pressure reduced to msl'/>
-    <nameRegex AWIPS='PW' pattern='precipitable water'/>
-    <nameRegex AWIPS='RH' pattern='relative humidity'/>
-    <nameRegex AWIPS='SnD' pattern='snow depth'/>
-    <nameRegex AWIPS='SH' pattern='specific humidity'/>
-    <nameRegex AWIPS='TCC' pattern='total cloud cover'/>
-    <nameRegex AWIPS='uW' pattern='u-component of wind'/>
-    <nameRegex AWIPS='uV' pattern='v-component of wind'/>
-    <nameRegex AWIPS='Vis' pattern='visibility'/>
-    <nameRegex AWIPS='PVV' pattern='vertical velocity \(pressure\)'/>
-    <nameRegex AWIPS='WEASD' pattern='water equivalent of accumulated snow depth'/>
-    <nameRegex AWIPS='VSS' pattern='vertical speed shear'/>
-    <nameRegex AWIPS='CNWAT' pattern='plant canopy surface water'/>
-    <nameRegex AWIPS='ICEC' pattern='sea_ice_area_fraction'/>
-    <nameRegex AWIPS='ICEC' pattern='ice cover'/>    
-    <nameRegex AWIPS='MSTAV' pattern='moisture availability'/>
-    <nameRegex AWIPS='BLI' pattern='best \(4 layer\) lifted index'/>
-    <nameRegex AWIPS='REFC' pattern='composite reflectivity'/>
-    <nameRegex AWIPS='REFD' pattern='reflectivity'/>
-    <nameRegex AWIPS='SFEXC' pattern='exchange coefficient'/>
-    <nameRegex AWIPS='VSTM' pattern='v-component storm motion'/>
-    <nameRegex AWIPS='HTSGW' pattern='significant height of combined wind waves and swell'/>
-    <nameRegex AWIPS='WD' pattern='wind direction \(from which blowing\)'/>
-    <nameRegex AWIPS='WVDIR' pattern='direction of wind waves'/>
-    <nameRegex AWIPS='WS' pattern='wind speed'/>
-    <nameRegex AWIPS='WVPER' pattern='mean period of wind waves'/>
-    <nameRegex AWIPS='PERPW' pattern='primary wave mean period'/>
-    <nameRegex AWIPS='PERPW' pattern='secondary wave mean period'/>
-    <nameRegex AWIPS='DIRPW' pattern='primary wave direction'/>
-    <nameRegex AWIPS='DIRSW' pattern='secondary wave direction'/>
-    <nameRegex AWIPS='T' pattern='temperature'/>
-    <nameRegex AWIPS='P' pattern='pressure'/>
+    <nameRegex order="1.0" id="absVort" AWIPS="AV" pattern="absolute vorticity"/>
+    <nameRegex order="2.0" id="convPrecipRate" AWIPS="CPRAT" pattern="convective precipitation rate"/>
+    <nameRegex order="3.0" id="convPrecip" AWIPS="CP" pattern="convective precipitation"/>
+    <nameRegex order="4.0" id="totPrecip" AWIPS="TP" pattern=" total precipitation"/>
+    <nameRegex order="5.0" id="cape" AWIPS="CAPE" pattern="convective available potential energy"/>
+    <nameRegex order="6.0" id="catFrzRain" AWIPS="CFRZR" pattern="categorical freezing rain"/>
+    <nameRegex order="7.0" id="catIcePlts" AWIPS="CICEP" pattern="categorical ice pellets"/>
+    <nameRegex order="8.0" id="convIn" AWIPS="CIn" pattern="convective inhibition"/>
+    <nameRegex order="9.0" id="catRain" AWIPS="CRAIN" pattern="categorical rain"/>
+    <nameRegex order="10.0" id="cldMixRat" AWIPS="CSNOW" pattern="cloud mixing ratio"/>
+    <nameRegex order="11.0" id="dewPtTemp" AWIPS="DpT" pattern="dew point temperature"/>
+    <nameRegex order="12.0" id="vertVeloG" AWIPS="GVV" pattern="vertical velocity \(geometric\)"/>
+    <nameRegex order="13.0" id="pot" AWIPS="PoT" pattern="pseudo-adiabatic potential temperature \(or equivalent potential temperature\)"/>
+    <nameRegex order="14.0" id="geoPotHt" AWIPS="GH" pattern="geopotential height"/>
+    <nameRegex order="15.0" id="stormRelHeli" AWIPS="Heli" pattern="storm relative helicity"/>
+    <nameRegex order="16.0" id="seaIceThick" AWIPS="ICETK" pattern="sea_ice_thickness"/>
+    <nameRegex order="17.0" id="iceThick" AWIPS="ICETK" pattern="ice thickness"/>
+    <nameRegex order="18.0" id="surfLiftIn" AWIPS="SLI" pattern="surface lifted index"/>
+    <nameRegex order="19.0" id="montStrFunc" AWIPS="MSG" pattern="montgomery stream function"/>
+    <nameRegex order="20.0" id="mslpEMR" AWIPS="EMSP" pattern="mslp \(eta model reduction\)"/>
+    <nameRegex order="21.0" id="mslpMSR" AWIPS="MMSP" pattern="mslp \(maps system reduction\)"/>
+    <nameRegex order="22.0" id="lgScPrecip" AWIPS="LgSP" pattern="large-scale precipitation \(non-convective\)"/>
+    <nameRegex order="23.0" id="5WaveGeoHt" AWIPS="WGH" pattern="5-wave geopotential height"/>
+    <nameRegex order="24.0" id="precipRate" AWIPS="PR" pattern="precipitation rate"/>
+    <nameRegex order="25.0" id="presRedToMSL" AWIPS="PMSL" pattern="pressure reduced to msl"/>
+    <nameRegex order="26.0" id="precipWater" AWIPS="PW" pattern="precipitable water"/>
+    <nameRegex order="27.0" id="relHumid" AWIPS="RH" pattern="relative humidity"/>
+    <nameRegex order="28.0" id="snowDepth" AWIPS="SnD" pattern="snow depth"/>
+    <nameRegex order="29.0" id="specHum" AWIPS="SH" pattern="specific humidity"/>
+    <nameRegex order="30.0" id="totCldCov" AWIPS="TCC" pattern="total cloud cover"/>
+    <nameRegex order="31.0" id="uWind" AWIPS="uW" pattern="u-component of wind"/>
+    <nameRegex order="32.0" id="vWind" AWIPS="uV" pattern="v-component of wind"/>
+    <nameRegex order="33.0" id="vertVeloP" AWIPS="PVV" pattern="vertical velocity \(pressure\)"/>
+    <nameRegex order="34.0" id="weasd" AWIPS="WEASD" pattern="water equivalent of accumulated snow depth"/>
+    <nameRegex order="35.0" id="vertSpShear" AWIPS="VSS" pattern="vertical speed shear"/>
+    <nameRegex order="36.0" id="plantCanSurfWat" AWIPS="CNWAT" pattern="plant canopy surface water"/>
+    <nameRegex order="37.0" id="seaIceAreaFrac" AWIPS="ICEC" pattern="sea_ice_area_fraction"/>
+    <nameRegex order="38.0" id="iceCov" AWIPS="ICEC" pattern="ice cover"/>
+    <nameRegex order="39.0" id="moistAvail" AWIPS="MSTAV" pattern="moisture availability"/>
+    <nameRegex order="40.0" id="bestLiftIn" AWIPS="BLI" pattern="best \(4 layer\) lifted index"/>
+    <nameRegex order="41.0" id="compRefl" AWIPS="REFC" pattern="composite reflectivity"/>
+    <nameRegex order="42.0" id="exCoeff" AWIPS="SFEXC" pattern="exchange coefficient"/>
+    <nameRegex order="43.0" id="vStormMotion" AWIPS="VSTM" pattern="v-component storm motion"/>
+    <nameRegex order="44.0" id="sigHtComWindWaves" AWIPS="HTSGW" pattern="significant height of combined wind waves and swell"/>
+    <nameRegex order="45.0" id="windDir" AWIPS="WD" pattern="wind direction \(from which blowing\)"/>
+    <nameRegex order="46.0" id="dirWindWaves" AWIPS="WVDIR" pattern="direction of wind waves"/>
+    <nameRegex order="47.0" id="windSp" AWIPS="WS" pattern="wind speed"/>
+    <nameRegex order="48.0" id="meanPerWindWaves" AWIPS="WVPER" pattern="mean period of wind waves"/>
+    <nameRegex order="49.0" id="priWaveMeanPer" AWIPS="PERPW" pattern="primary wave mean period"/>
+    <nameRegex order="50.0" id="secWaveMeanPer" AWIPS="PERPW" pattern="secondary wave mean period"/>
+    <nameRegex order="51.0" id="priWaveDir" AWIPS="DIRPW" pattern="primary wave direction"/>
+    <nameRegex order="52.0" id="secWaveDir" AWIPS="DIRSW" pattern="secondary wave direction"/>
+    <nameRegex order="53.0" id="vis" AWIPS="Vis" pattern="visibility"/>
+    <nameRegex order="54.0" id="refl" AWIPS="REFD" pattern="reflectivity"/>
+    <nameRegex order="55.0" id="temp" AWIPS="T" pattern="temperature"/>
+    <nameRegex order="56.0" id="pressure" AWIPS="P" pattern="pressure"/>
 </ParameterRegexes>
