@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -778,6 +779,10 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     serviceConfig.getConstantValue("BLANK")));
             dataSet.setParameters(getParameters(das, dataSet, gdsmd, link,
                     collection, dataDateFormat));
+            for (Entry<String, Parameter> parm : dataSet.getParameters()
+                    .entrySet()) {
+                storeParameter(parm.getValue());
+            }
             GriddedTime dataSetTime = gdsmd.getTime();
             if (dataSetTime == null) {
                 throw new IllegalStateException(
