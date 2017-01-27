@@ -1,5 +1,7 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
+import java.io.File;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -39,7 +41,13 @@ import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.MetaDataPattern;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.PDAMetaDataConfig;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.PatternGroup;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
@@ -55,6 +63,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADataSetNameMapSet;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADescriptionMap;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADescriptionMapSet;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAParameterExclusions;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAShortNameMap;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAShortNameMapSet;
 
 /**
  * Extract File Name based info for MetaData from PDA
@@ -76,6 +86,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAParameterExclusions;
  * Aug 18, 2016  5752     tjensen   Fix initSatMapping
  * Aug 25, 2016  5752     tjensen   Remove Create Time
  * Sep 01, 2016  5752     tjensen   Exclude data older than retention period
+ * Jan 27, 2017  6089     tjensen   Update to work with pipe delimited metadata
  * 
  * </pre>
  * 
@@ -83,8 +94,14 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAParameterExclusions;
  * @version 1.0
  */
 
-public class PDAFileMetaDataExtractor extends
-        PDAMetaDataExtractor<String, String> {
+public class PDAFileMetaDataExtractor
+        extends PDAMetaDataExtractor<String, String> {
+
+    private static final String HARVESTER_PATH = "datadelivery"
+            + File.separatorChar + "harvester" + File.separatorChar;
+
+    private static final String MAPPING_PATH = "datadelivery"
+            + File.separatorChar + "mappings" + File.separatorChar;
 
     private static final String PDA_PROVIDER = "PDA";
 
@@ -101,6 +118,10 @@ public class PDAFileMetaDataExtractor extends
     private Map<String, String> resolutionMapping = null;
 
     private Map<String, String> satelliteMapping = null;
+
+    private Map<String, PDAShortNameMap> shortNameMapping = null;
+
+    private Map<String, MetaDataPattern> metaDataPatterns = new HashMap<>(1);
 
     private Set<String> excludeList = null;
 
@@ -128,165 +149,295 @@ public class PDAFileMetaDataExtractor extends
     }
 
     private void initMappings() {
-        LocalizationContext commonStaticBase = PathManagerFactory
-                .getPathManager().getContext(
-                        LocalizationContext.LocalizationType.COMMON_STATIC,
-                        LocalizationContext.LocalizationLevel.BASE);
-
-        LocalizationContext commonStaticSite = PathManagerFactory
-                .getPathManager().getContext(
-                        LocalizationContext.LocalizationType.COMMON_STATIC,
-                        LocalizationContext.LocalizationLevel.SITE);
-
         statusHandler.info("Initializing DataSet Name mapping...");
-        initNameMapping(commonStaticBase, commonStaticSite);
+        initNameMapping();
 
         statusHandler.info("Initializing Resolution mapping...");
-        initResMapping(commonStaticBase, commonStaticSite);
+        initResMapping();
 
         statusHandler.info("Initializing Satellite mapping...");
-        initSatMapping(commonStaticBase, commonStaticSite);
+        initSatMapping();
 
         statusHandler.info("Initializing Exclusion list...");
-        initExclusionList(commonStaticBase, commonStaticSite);
+        initExclusionList();
 
         statusHandler.info("Initializing Harvester Configs...");
-        initHarvesterConfigs(commonStaticBase, commonStaticSite);
+        initHarvesterConfigs();
+
+        statusHandler.info("Initializing Short Name mappings...");
+        initShortNameMapping();
     }
 
-    private void initNameMapping(LocalizationContext commonStaticBase,
-            LocalizationContext commonStaticSite) {
-        LocalizationFile[] mappingFiles = PathManagerFactory.getPathManager()
-                .listFiles(
-                        new LocalizationContext[] { commonStaticBase,
-                                commonStaticSite }, "datadelivery/mappings",
-                        new String[] { "DataNameMappings.xml" }, true, true);
+    private void initNameMapping() {
+        String fileName = MAPPING_PATH + "DataNameMappings.xml";
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
 
         PDADataSetNameMapSet nameMapSet = new PDADataSetNameMapSet();
-
-        for (LocalizationFile mappingFile : mappingFiles) {
-            try (InputStream inputStream = mappingFile.openInputStream()) {
-                JAXBManager jaxb = new JAXBManager(PDADataSetNameMapSet.class);
-                PDADataSetNameMapSet fileSet = (PDADataSetNameMapSet) jaxb
-                        .unmarshalFromInputStream(inputStream);
-                nameMapSet.addMaps(fileSet.getMaps());
-            } catch (LocalizationException | IOException
-                    | SerializationException | JAXBException e) {
-                statusHandler.error(
-                        "Unable to unmarshal DataSet name mapping file:"
-                                + mappingFile, e);
+        try {
+            JAXBManager jaxb = new JAXBManager(PDADataSetNameMapSet.class);
+            if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
+                PDADataSetNameMapSet fileSet = readDataSetNameMap(jaxb, file);
+                if (fileSet != null) {
+                    nameMapSet.addMaps(fileSet.getMaps());
+                }
             }
+            if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
+                PDADataSetNameMapSet fileSet = readDataSetNameMap(jaxb, file);
+                if (fileSet != null) {
+                    nameMapSet.addMaps(fileSet.getMaps());
+                }
+            }
+        } catch (JAXBException | SerializationException | IOException
+                | LocalizationException e) {
+            statusHandler.error("Unable to initialize DataSet name mapping", e);
         }
 
         addNameMappings(nameMapSet);
     }
 
-    private void initResMapping(LocalizationContext commonStaticBase,
-            LocalizationContext commonStaticSite) {
-        LocalizationFile[] mappingFiles = PathManagerFactory.getPathManager()
-                .listFiles(
-                        new LocalizationContext[] { commonStaticBase,
-                                commonStaticSite }, "datadelivery/mappings",
-                        new String[] { "ResolutionMappings.xml" }, true, true);
+    private PDADataSetNameMapSet readDataSetNameMap(JAXBManager jaxb,
+            LocalizationFile file) throws SerializationException, IOException,
+                    LocalizationException {
+        PDADataSetNameMapSet fileSet = null;
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                fileSet = (PDADataSetNameMapSet) jaxb
+                        .unmarshalFromInputStream(is);
+            }
+        }
+        return fileSet;
+    }
+
+    private Map<LocalizationLevel, LocalizationFile> getLocalizationFiles(
+            String fileName) {
+        IPathManager pm = PathManagerFactory.getPathManager();
+        Map<LocalizationLevel, LocalizationFile> files = pm
+                .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
+                        fileName);
+        return files;
+    }
+
+    private void initResMapping() {
+        String fileName = MAPPING_PATH + "ResolutionMappings.xml";
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
 
         PDADescriptionMapSet resMapSet = new PDADescriptionMapSet();
-
-        for (LocalizationFile mappingFile : mappingFiles) {
-            try (InputStream inputStream = mappingFile.openInputStream()) {
-                JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
-                PDADescriptionMapSet fileSet = (PDADescriptionMapSet) jaxb
-                        .unmarshalFromInputStream(inputStream);
-                resMapSet.addMaps(fileSet.getMaps());
-            } catch (LocalizationException | IOException
-                    | SerializationException | JAXBException e) {
-                statusHandler.error(
-                        "Unable to unmarshal DataSet name mapping file:"
-                                + mappingFile, e);
+        try {
+            JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
+            if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
+                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
+                if (fileSet != null) {
+                    resMapSet.addMaps(fileSet.getMaps());
+                }
             }
+            if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
+                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
+                if (fileSet != null) {
+                    resMapSet.addMaps(fileSet.getMaps());
+                }
+            }
+        } catch (JAXBException | SerializationException | IOException
+                | LocalizationException e) {
+            statusHandler.error("Unable to initialize resolution mapping", e);
         }
 
         addResMappings(resMapSet);
     }
 
-    private void initSatMapping(LocalizationContext commonStaticBase,
-            LocalizationContext commonStaticSite) {
-        LocalizationFile[] mappingFiles = PathManagerFactory.getPathManager()
-                .listFiles(
-                        new LocalizationContext[] { commonStaticBase,
-                                commonStaticSite }, "datadelivery/mappings",
-                        new String[] { "SatelliteMappings.xml" }, true, true);
+    private PDADescriptionMapSet readDescriptionMap(JAXBManager jaxb,
+            LocalizationFile file) throws IOException, LocalizationException,
+                    SerializationException {
+        PDADescriptionMapSet fileSet = null;
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                fileSet = (PDADescriptionMapSet) jaxb
+                        .unmarshalFromInputStream(is);
+            }
+        }
+        return fileSet;
+    }
+
+    private void initSatMapping() {
+        String fileName = MAPPING_PATH + "SatelliteMappings.xml";
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
 
         PDADescriptionMapSet satMapSet = new PDADescriptionMapSet();
-
-        for (LocalizationFile mappingFile : mappingFiles) {
-            try (InputStream inputStream = mappingFile.openInputStream()) {
-                JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
-                PDADescriptionMapSet fileSet = (PDADescriptionMapSet) jaxb
-                        .unmarshalFromInputStream(inputStream);
-                satMapSet.addMaps(fileSet.getMaps());
-            } catch (LocalizationException | IOException
-                    | SerializationException | JAXBException e) {
-                statusHandler.error(
-                        "Unable to unmarshal DataSet name mapping file:"
-                                + mappingFile, e);
+        try {
+            JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
+            if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
+                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
+                if (fileSet != null) {
+                    satMapSet.addMaps(fileSet.getMaps());
+                }
             }
+            if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
+                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
+                if (fileSet != null) {
+                    satMapSet.addMaps(fileSet.getMaps());
+                }
+            }
+        } catch (JAXBException | SerializationException | IOException
+                | LocalizationException e) {
+            statusHandler.error("Unable to initialize satellite mapping", e);
         }
 
         addSatMappings(satMapSet);
     }
 
-    private void initExclusionList(LocalizationContext commonStaticBase,
-            LocalizationContext commonStaticSite) {
-        LocalizationFile[] mappingFiles = PathManagerFactory.getPathManager()
-                .listFiles(
-                        new LocalizationContext[] { commonStaticBase,
-                                commonStaticSite }, "datadelivery/mappings",
-                        new String[] { "ParameterExclusions.xml" }, true, true);
+    private void initExclusionList() {
+        String fileName = MAPPING_PATH + "ParameterExclusions.xml";
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
 
-        for (LocalizationFile mappingFile : mappingFiles) {
-            try (InputStream inputStream = mappingFile.openInputStream()) {
-                JAXBManager jaxb = new JAXBManager(PDAParameterExclusions.class);
-                PDAParameterExclusions fileSet = (PDAParameterExclusions) jaxb
-                        .unmarshalFromInputStream(inputStream);
-                excludeList.addAll(fileSet.getParameterExclusions());
-            } catch (LocalizationException | IOException
-                    | SerializationException | JAXBException e) {
-                statusHandler.error(
-                        "Unable to unmarshal DataSet name mapping file:"
-                                + mappingFile, e);
+        try {
+            JAXBManager jaxb = new JAXBManager(PDAParameterExclusions.class);
+            if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
+                PDAParameterExclusions fileSet = readParamExclusions(jaxb,
+                        file);
+                if (fileSet != null) {
+                    excludeList.addAll(fileSet.getParameterExclusions());
+                }
             }
+            if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
+                PDAParameterExclusions fileSet = readParamExclusions(jaxb,
+                        file);
+                if (fileSet != null) {
+                    excludeList.addAll(fileSet.getParameterExclusions());
+                }
+            }
+        } catch (JAXBException | SerializationException | IOException
+                | LocalizationException e) {
+            statusHandler.error("Unable to initialize parameter exclusions", e);
         }
+
     }
 
-    private void initHarvesterConfigs(LocalizationContext commonStaticBase,
-            LocalizationContext commonStaticSite) {
-        LocalizationFile[] mappingFiles = PathManagerFactory.getPathManager()
-                .listFiles(
-                        new LocalizationContext[] { commonStaticBase,
-                                commonStaticSite }, "datadelivery/harvester",
-                        new String[] { "PDA-Harvester.xml" }, true, true);
-
-        for (LocalizationFile mappingFile : mappingFiles) {
-            try (InputStream inputStream = mappingFile.openInputStream()) {
-                JAXBManager jaxb = new JAXBManager(HarvesterConfig.class);
-                HarvesterConfig fileSet = (HarvesterConfig) jaxb
-                        .unmarshalFromInputStream(inputStream);
-                dataSetMetadataRetention.put(fileSet.getProvider().getName(),
-                        fileSet.getRetention());
-                dataSetMetadataDateFormat.put(fileSet.getProvider().getName(),
-                        fileSet.getAgent().getDateFormat());
-            } catch (LocalizationException | IOException
-                    | SerializationException | JAXBException e) {
-                statusHandler.error(
-                        "Unable to unmarshal DataSet name mapping file:"
-                                + mappingFile, e);
+    private PDAParameterExclusions readParamExclusions(JAXBManager jaxb,
+            LocalizationFile file) throws IOException, LocalizationException,
+                    SerializationException {
+        PDAParameterExclusions fileSet = null;
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                fileSet = (PDAParameterExclusions) jaxb
+                        .unmarshalFromInputStream(is);
             }
         }
+        return fileSet;
+    }
+
+    private void initHarvesterConfigs() {
+        String fileName = HARVESTER_PATH + "PDA-Harvester.xml";
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
+
+        try {
+            JAXBManager jaxb = new JAXBManager(HarvesterConfig.class);
+            if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
+                HarvesterConfig fileSet = readHarvesterConfig(jaxb, file);
+                if (fileSet != null) {
+                    dataSetMetadataRetention.put(
+                            fileSet.getProvider().getName(),
+                            fileSet.getRetention());
+                    dataSetMetadataDateFormat.put(
+                            fileSet.getProvider().getName(),
+                            fileSet.getAgent().getDateFormat());
+                }
+            }
+            if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
+                HarvesterConfig fileSet = readHarvesterConfig(jaxb, file);
+                if (fileSet != null) {
+                    dataSetMetadataRetention.put(
+                            fileSet.getProvider().getName(),
+                            fileSet.getRetention());
+                    dataSetMetadataDateFormat.put(
+                            fileSet.getProvider().getName(),
+                            fileSet.getAgent().getDateFormat());
+                }
+            }
+        } catch (JAXBException | SerializationException | IOException
+                | LocalizationException e) {
+            statusHandler.error("Unable to initialize harvester configs", e);
+        }
+
+    }
+
+    private HarvesterConfig readHarvesterConfig(JAXBManager jaxb,
+            LocalizationFile file) throws IOException, LocalizationException,
+                    SerializationException {
+        HarvesterConfig fileSet = null;
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                fileSet = (HarvesterConfig) jaxb.unmarshalFromInputStream(is);
+            }
+        }
+        return fileSet;
+    }
+
+    private void initShortNameMapping() {
+        String fileName = MAPPING_PATH + "ShortNameMappings.xml";
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
+
+        PDAShortNameMapSet snMapSet = new PDAShortNameMapSet();
+        try {
+            JAXBManager jaxb = new JAXBManager(PDAShortNameMapSet.class);
+            if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
+                PDAShortNameMapSet fileSet = readShortNameMap(jaxb, file);
+                if (fileSet != null) {
+                    snMapSet.addMaps(fileSet.getMaps());
+                }
+            }
+            if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
+                PDAShortNameMapSet fileSet = readShortNameMap(jaxb, file);
+                if (fileSet != null) {
+                    snMapSet.addMaps(fileSet.getMaps());
+                }
+            }
+        } catch (JAXBException | SerializationException | IOException
+                | LocalizationException e) {
+            statusHandler.error("Unable to initialize DataSet name mapping", e);
+        }
+
+        addShortNameMappings(snMapSet);
+    }
+
+    private PDAShortNameMapSet readShortNameMap(JAXBManager jaxb,
+            LocalizationFile file) throws IOException, LocalizationException,
+                    SerializationException {
+        PDAShortNameMapSet fileSet = null;
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                fileSet = (PDAShortNameMapSet) jaxb
+                        .unmarshalFromInputStream(is);
+            }
+        }
+        return fileSet;
     }
 
     private void addNameMappings(PDADataSetNameMapSet nameMapSet) {
         for (PDADataSetNameMap map : nameMapSet.getMaps()) {
             dataSetNameMapping.put(map.getParameter(), map.getDescription());
+        }
+    }
+
+    private void addShortNameMappings(PDAShortNameMapSet nameMapSet) {
+        for (PDAShortNameMap map : nameMapSet.getMaps()) {
+            shortNameMapping.put(map.getId(), map);
         }
     }
 
@@ -302,6 +453,102 @@ public class PDAFileMetaDataExtractor extends
         }
     }
 
+    public Map<String, String> extractMetaData(Object metadataId)
+            throws Exception {
+        String metadataIdStr = (String) metadataId;
+        Map<String, String> paramMap = new HashMap<>(16);
+        MetaDataPattern mdp = getMetaDataPattern("RECORD_ID");
+        Pattern idPattern = mdp.getPattern();
+        Map<String, PatternGroup> mdpGroups = mdp.getGroupMap();
+        String snFormat = mdpGroups.get("SHORT_NAME_FORMAT").getValue();
+        String sTimeFormat = mdpGroups.get("START_TIME_FORMAT").getValue();
+        String eTimeFormat = mdpGroups.get("END_TIME_FORMAT").getValue();
+        String cTimeFormat = mdpGroups.get("CREATE_TIME_FORMAT").getValue();
+        String rTimeFormat = mdpGroups.get("RECEIVED_TIME_FORMAT").getValue();
+        String satFormat = mdpGroups.get("SAT_FORMAT").getValue();
+        String polyFormat = mdpGroups.get("POLYGON_FORMAT").getValue();
+        String resFormat = mdpGroups.get("RES_FORMAT").getValue();
+        String urnFormat = mdpGroups.get("URN_FORMAT").getValue();
+
+        String idFormat = mdpGroups.get("ID_FORMAT").getValue();
+        String instFormat = mdpGroups.get("INSTRUMENT_FORMAT").getValue();
+        String modeFormat = mdpGroups.get("MODE_FORMAT").getValue();
+        String bdFormat = mdpGroups.get("BIT_DEPTH_FORMAT").getValue();
+        String fNameFormat = mdpGroups.get("FILE_NAME_FORMAT").getValue();
+        String ffFormat = mdpGroups.get("FILE_FORMAT_FORMAT").getValue();
+
+        // Make sure the filename matches the expected pattern before parsing
+        Matcher titleMatcher = idPattern.matcher(metadataIdStr);
+        if (titleMatcher.matches()) {
+            String sat = metadataIdStr.replaceAll(idPattern.pattern(),
+                    satFormat);
+            String startTime = metadataIdStr.replaceAll(idPattern.pattern(),
+                    sTimeFormat);
+            String endTime = metadataIdStr.replaceAll(idPattern.pattern(),
+                    eTimeFormat);
+            String createTime = metadataIdStr.replaceAll(idPattern.pattern(),
+                    cTimeFormat);
+            String receiveTime = metadataIdStr.replaceAll(idPattern.pattern(),
+                    rTimeFormat);
+            String res = metadataIdStr.replaceAll(idPattern.pattern(),
+                    resFormat);
+            String polygon = metadataIdStr.replaceAll(idPattern.pattern(),
+                    polyFormat);
+            String crs = metadataIdStr.replaceAll(idPattern.pattern(),
+                    urnFormat);
+
+            /*
+             * The only time that is guaranteed to be provided is the received
+             * time. If start time is not available, first try the create time.
+             * If not, fall back to received time
+             */
+            if (startTime == null || startTime.equals("")) {
+                if (createTime == null || createTime.equals("")) {
+                    startTime = receiveTime;
+                } else {
+                    startTime = createTime;
+                }
+            }
+            /*
+             * If end time is not provided, set it to equal the start time.
+             */
+            if (endTime == null || endTime.equals("")) {
+                endTime = startTime;
+            }
+
+            String param = parseParamFromShortName(
+                    metadataIdStr.replaceAll(idPattern.pattern(), snFormat));
+            String dataSetName = createDataSetName(param, res, sat);
+            String ignoreData = checkForIgnore(param, startTime, endTime);
+
+            paramMap.put("collectionName", sat);
+            paramMap.put("startTime", startTime);
+            paramMap.put("endTime", endTime);
+            paramMap.put("paramName", param);
+            paramMap.put("dataSetName", dataSetName);
+            paramMap.put("polygonPoints", polygon);
+            paramMap.put("crs", crs);
+            paramMap.put("ignoreData", ignoreData);
+        }
+        return paramMap;
+    }
+
+    private String parseParamFromShortName(String shortName) {
+        // default param to just be the short name
+        String param = shortName;
+
+        for (PDAShortNameMap snm : shortNameMapping.values()) {
+            Pattern snPattern = snm.getPattern();
+            Matcher snMatcher = snPattern.matcher(shortName);
+            if (snMatcher.matches()) {
+                param = shortName.replaceAll(snPattern.pattern(),
+                        snm.getParamGroup());
+            }
+
+        }
+        return param;
+    }
+
     /**
      * Reads in a file name and extracts metadata from the name.
      * 
@@ -309,25 +556,25 @@ public class PDAFileMetaDataExtractor extends
      *            String object containing the file name
      * @return Map of metadata values
      */
-    public Map<String, String> extractMetaData(Object file) throws Exception {
+    public Map<String, String> extractMetaDataFromTitle(String fileName)
+            throws Exception {
 
         // starting point for the parsing
         Map<String, String> paramMap = new HashMap<>(6);
-        String fileName = (String) file;
         statusHandler.info("Extracting MetaData from: " + fileName);
 
         /*
          * Pull in regex and grouping from the PDA service config file in case
          * PDA changes the format in the future.
          */
-        Pattern titlePattern = Pattern.compile(serviceConfig
-                .getConstantValue("RECORD_TITLE_REGEX"));
-        String paramFormat = serviceConfig.getConstantValue("PARAM_FORMAT");
-        String resFormat = serviceConfig.getConstantValue("RES_FORMAT");
-        String satFormat = serviceConfig.getConstantValue("SAT_FORMAT");
-        String sTimeFormat = serviceConfig
-                .getConstantValue("START_TIME_FORMAT");
-        String eTimeFormat = serviceConfig.getConstantValue("END_TIME_FORMAT");
+        MetaDataPattern mdp = getMetaDataPattern("RECORD_TITLE");
+        Pattern titlePattern = mdp.getPattern();
+        Map<String, PatternGroup> mdpGroups = mdp.getGroupMap();
+        String paramFormat = mdpGroups.get("PARAM_FORMAT").getValue();
+        String resFormat = mdpGroups.get("RES_FORMAT").getValue();
+        String satFormat = mdpGroups.get("SAT_FORMAT").getValue();
+        String sTimeFormat = mdpGroups.get("START_TIME_FORMAT").getValue();
+        String eTimeFormat = mdpGroups.get("END_TIME_FORMAT").getValue();
 
         // Make sure the filename matches the expected pattern before parsing
         Matcher titleMatcher = titlePattern.matcher(fileName);
@@ -343,13 +590,7 @@ public class PDAFileMetaDataExtractor extends
 
             String dataSetName = createDataSetName(param, res, sat);
             String collectionName = createCollectionName(sat);
-            boolean excludeParam = checkExcludeList(param);
-            boolean oldData = checkRetention(startTime, endTime);
-
-            String ignoreData = "false";
-            if (excludeParam || oldData) {
-                ignoreData = "true";
-            }
+            String ignoreData = checkForIgnore(param, startTime, endTime);
 
             paramMap.put("collectionName", collectionName);
             paramMap.put("paramName", param);
@@ -364,8 +605,8 @@ public class PDAFileMetaDataExtractor extends
                 }
             }
         } else {
-            statusHandler.error(
-                    "Couldn't create parameter mappings from file!", fileName);
+            statusHandler.error("Couldn't create parameter mappings from file!",
+                    fileName);
             throw new MetaDataExtractionException("File name '" + fileName
                     + "' does not match the expected pattern: '"
                     + serviceConfig.getConstantValue("RECORD_TITLE_REGEX")
@@ -375,10 +616,22 @@ public class PDAFileMetaDataExtractor extends
         return paramMap;
     }
 
+    private String checkForIgnore(String param, String startTime,
+            String endTime) {
+        boolean excludeParam = checkExcludeList(param);
+        boolean oldData = checkRetention(startTime, endTime);
+
+        String ignoreData = "false";
+        if (excludeParam || oldData) {
+            ignoreData = "true";
+        }
+        return ignoreData;
+    }
+
     private boolean checkRetention(String startTime, String endTime) {
         boolean oldDate = false;
-        Number retention = Double.valueOf(dataSetMetadataRetention
-                .get(PDA_PROVIDER));
+        Number retention = Double
+                .valueOf(dataSetMetadataRetention.get(PDA_PROVIDER));
 
         if (retention != null) {
 
@@ -428,7 +681,8 @@ public class PDAFileMetaDataExtractor extends
         } catch (ParseException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Couldn't parse start/end time from format: "
-                            + dataSetMetadataDateFormat.get(PDA_PROVIDER), e);
+                            + dataSetMetadataDateFormat.get(PDA_PROVIDER),
+                    e);
         }
 
         return time;
@@ -481,6 +735,68 @@ public class PDAFileMetaDataExtractor extends
         // No implementation in PDA file extractor
     }
 
+    public MetaDataPattern getMetaDataPattern(String name) {
+        if (metaDataPatterns.isEmpty()) {
+            String fileName = HARVESTER_PATH + "PDAMetaDataConfig.xml";
+
+            try {
+                Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                        fileName);
+                PDAMetaDataConfig tmpConfig = null;
+                Map<String, MetaDataPattern> newMetaDataPatterns = new HashMap<>(
+                        1);
+
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    tmpConfig = readMetaDataConfig(
+                            locFiles.get(LocalizationLevel.BASE));
+                    for (MetaDataPattern mdp : tmpConfig
+                            .getMetaDataPatterns()) {
+                        newMetaDataPatterns.put(mdp.getName(), mdp);
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    tmpConfig = readMetaDataConfig(
+                            locFiles.get(LocalizationLevel.SITE));
+                    for (MetaDataPattern mdp : tmpConfig
+                            .getMetaDataPatterns()) {
+                        newMetaDataPatterns.put(mdp.getName(), mdp);
+                    }
+                }
+                metaDataPatterns = newMetaDataPatterns;
+
+            } catch (Exception e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Failed to Read Parameter Lookup from file: "
+                                + fileName,
+                        e);
+            }
+        }
+
+        return metaDataPatterns.get(name);
+    }
+
+    /**
+     * Read MetaData Patterns
+     * 
+     * @param file
+     * @return
+     * @throws Exception
+     */
+    private PDAMetaDataConfig readMetaDataConfig(ILocalizationFile file)
+            throws Exception {
+        PDAMetaDataConfig configXml = null;
+        JAXBManager jaxb = new JAXBManager(PDAMetaDataConfig.class);
+
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                configXml = (PDAMetaDataConfig) jaxb
+                        .unmarshalFromInputStream(is);
+            }
+        }
+
+        return configXml;
+    }
+
     /**
      * Test Practice parsing
      * 
@@ -489,7 +805,8 @@ public class PDAFileMetaDataExtractor extends
     public static void main(String[] args) {
         PDAFileMetaDataExtractor pfmde = PDAFileMetaDataExtractor.getInstance();
         try {
-            Map<String, String> results = pfmde.extractMetaData(args[0]);
+            Map<String, String> results = pfmde
+                    .extractMetaDataFromTitle(args[0]);
 
             for (Entry<String, String> entry : results.entrySet()) {
                 statusHandler.info("Param: " + entry.getKey() + ": Value: "
@@ -511,5 +828,4 @@ public class PDAFileMetaDataExtractor extends
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
         }
     }
-
 }
