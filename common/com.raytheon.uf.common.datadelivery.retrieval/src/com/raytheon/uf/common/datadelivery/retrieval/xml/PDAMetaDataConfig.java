@@ -54,7 +54,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class PDAMetaDataConfig {
 
     @XmlElements({
-            @XmlElement(name = "metaDataPattern", type = ParameterMapping.class) })
+            @XmlElement(name = "metaDataPattern", type = MetaDataPattern.class) })
     @DynamicSerializeElement
     private List<MetaDataPattern> metaDataPatterns;
 

@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
+import com.raytheon.uf.common.datadelivery.registry.Utils;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
@@ -33,10 +34,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 20 Oct, 2012   1163      dhladky     Initial creation
- * 07 Nov, 2013   2361      njensen      Remove ISerializableObject
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * 20 Oct, 2012  1163     dhladky   Initial creation
+ * 07 Nov, 2013  2361     njensen   Remove ISerializableObject
+ * Feb 03, 2017  6089     tjensen   Updated to support system properties
  * 
  * </pre>
  * 
@@ -73,6 +76,6 @@ public class Constant {
     }
 
     public void setValue(String value) {
-        this.value = value;
+        this.value = Utils.resolveSystemProperties(value);
     }
 }

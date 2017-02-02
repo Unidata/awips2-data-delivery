@@ -62,6 +62,10 @@ public class MetaDataPattern {
     @DynamicSerializeElement
     protected String regex;
 
+    @XmlElement(name = "dateFormat", type = String.class)
+    @DynamicSerializeElement
+    protected String dateFormat;
+
     private Pattern pattern;
 
     @XmlElements({ @XmlElement(name = "group", type = PatternGroup.class) })
@@ -103,13 +107,22 @@ public class MetaDataPattern {
     }
 
     public Map<String, PatternGroup> getGroupMap() {
-        if (groupMap == null || groupMap.isEmpty()) {
+        if ((groupMap == null) || groupMap.isEmpty()) {
             Map<String, PatternGroup> newMap = new HashMap<>();
             for (PatternGroup pg : getGroups()) {
                 newMap.put(pg.getName(), pg);
             }
+            groupMap = newMap;
         }
         return groupMap;
+    }
+
+    public String getDateFormat() {
+        return dateFormat;
+    }
+
+    public void setDateFormat(String dateFormat) {
+        this.dateFormat = dateFormat;
     }
 
 }

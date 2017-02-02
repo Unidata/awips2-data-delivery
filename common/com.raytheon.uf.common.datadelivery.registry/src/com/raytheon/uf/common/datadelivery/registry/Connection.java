@@ -27,7 +27,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.datadelivery.registry.Encryption;
 import com.raytheon.uf.common.security.encryption.AESEncryptor;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
@@ -40,17 +39,23 @@ import com.raytheon.uf.common.status.UFStatus;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 17, 2011    191      dhladky     Initial creation
- * Jun 28, 2012    819      djohnson    Remove proxy information.
- * Jul 24, 2012    955      djohnson    Add copy constructor.
- * Jun 11, 2013    1763     dhladky     Added AESEncryptor type
- * Jun 17, 2013    2106     djohnson    Check for encryption to not be null, getPassword() must be left alone for dynamic serialize.
- * Aug 08, 2013    2108     mpduff      Serialize the provider key.
- * 7/10/2014       1717     bphillip    Changed import of relocated AESEncryptor class
- * Aug 19, 2014    3120     dhladky     URL remapping for properties
- * Mar 04, 2016    5388     dhladky     Changed AESEncryptor constructor
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 17, 2011  191      dhladky   Initial creation
+ * Jun 28, 2012  819      djohnson  Remove proxy information.
+ * Jul 24, 2012  955      djohnson  Add copy constructor.
+ * Jun 11, 2013  1763     dhladky   Added AESEncryptor type
+ * Jun 17, 2013  2106     djohnson  Check for encryption to not be null,
+ *                                  getPassword() must be left alone for dynamic
+ *                                  serialize.
+ * Aug 08, 2013  2108     mpduff    Serialize the provider key.
+ * Jul 10, 2014  1717     bphillip  Changed import of relocated AESEncryptor
+ *                                  class
+ * Aug 19, 2014  3120     dhladky   URL remapping for properties
+ * Mar 04, 2016  5388     dhladky   Changed AESEncryptor constructor
+ * Feb 03, 2017  6089     tjensen   Updated to support generic system properties
+ * 
  * </pre>
  * 
  * @author dhladky
@@ -60,17 +65,12 @@ import com.raytheon.uf.common.status.UFStatus;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class Connection implements Serializable {
-    
-    /** external address from properties **/
-    protected static final String externalAddress = System.getProperty("harvester.external.address");
-    /** external address pattern for replacement **/
-    protected static final String externalAddressPattern = "${harvester.external.address}";
 
     private static final long serialVersionUID = 8223819912383198409L;
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(Connection.class);
-    
+
     private AESEncryptor encryptionProcessor = null;
 
     public Connection() {
@@ -110,17 +110,11 @@ public class Connection implements Serializable {
     private String url;
 
     public String getUrl() {
-        if (url != null && url.startsWith(externalAddressPattern)){
-            url = url.replace(externalAddressPattern, externalAddress);
-        }
         return url;
     }
 
     public void setUrl(String url) {
-        if (url != null && url.startsWith(externalAddressPattern)){
-            url = url.replace(externalAddressPattern, externalAddress);
-        }
-        this.url = url;
+        this.url = Utils.resolveSystemProperties(url);
     }
 
     public String getUserName() {
@@ -134,16 +128,17 @@ public class Connection implements Serializable {
     public String getPassword() {
         return password;
     }
-    
+
     /**
      * Creates encryption object
+     * 
      * @return
      */
     public AESEncryptor getEncryptor() {
         if (providerKey != null && encryptionProcessor == null) {
             encryptionProcessor = new AESEncryptor(providerKey);
         }
-        
+
         return encryptionProcessor;
     }
 
@@ -159,7 +154,7 @@ public class Connection implements Serializable {
     public String getUnencryptedPassword() {
 
         if (password != null && providerKey != null) {
-            
+
             try {
                 return getEncryptor().decrypt(password);
             } catch (Exception e) {

@@ -48,6 +48,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.MetaDataPattern;
 import com.raytheon.uf.common.dataplugin.exception.MalformedDataException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -184,131 +185,139 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                 .getInstance();
 
         // Check to see if pipe delimited id pattern is used.
-        Pattern p_id = extractor.getMetaDataPattern("RECORD_ID").getPattern();
-        Matcher m = p_id.matcher(metaDataID);
-        if (m.matches()) {
-            try {
-                paramMap = extractor.extractMetaData(metaDataID);
-            } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "MetaData extraction error, " + metaDataID, e);
-                // failure return
-                return;
-            }
-
-            // Lookup for coverage information
-            String polygonPoints = paramMap.get("polygonPoints");
-            String crs = paramMap.get("crs");
-            if (polygonPoints != null && !polygonPoints.equals("")
-                    && crs != null && !crs.equals("")) {
+        MetaDataPattern mdp = extractor.getMetaDataPattern("RECORD_ID");
+        if (mdp != null) {
+            Pattern p_id = mdp.getPattern();
+            Matcher m = p_id.matcher(metaDataID);
+            if (m.matches()) {
                 try {
-                    coverage = getCoverage(polygonPoints, crs);
-                } catch (MalformedDataException e) {
-                    statusHandler.error("Invalid Polygon data", e);
+                    paramMap = extractor.extractMetaData(metaDataID);
+                } catch (Exception e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "MetaData extraction error, " + metaDataID, e);
+                    // failure return
+                    return;
+                }
+
+                // Lookup for coverage information
+                String polygonPoints = paramMap.get("polygonPoints");
+                String crs = paramMap.get("crs");
+                if (polygonPoints != null && !polygonPoints.equals("")
+                        && crs != null && !crs.equals("")) {
+                    try {
+                        coverage = getCoverage(polygonPoints, crs);
+                    } catch (MalformedDataException e) {
+                        statusHandler.error("Invalid Polygon data", e);
+                    }
+                } else {
+                    statusHandler.warn("Geometry missing for dataset '"
+                            + paramMap.get(DATASET_NAME) + "'");
                 }
             } else {
-                statusHandler.warn("Geometry missing for dataset '"
-                        + paramMap.get(DATASET_NAME) + "'");
+                // If not, extract the metadata from the title
+                try {
+                    paramMap = extractor
+                            .extractMetaDataFromTitle(relativeDataURL);
+                } catch (MetaDataExtractionException e) {
+                    // Don't need to print a stack trace for this.
+                    statusHandler.error("MetaData extraction error on "
+                            + relativeDataURL + ". Caused by: "
+                            + e.getLocalizedMessage());
+                    // failure return
+                    return;
+                } catch (Exception e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "MetaData extraction error, " + relativeDataURL, e);
+                    // failure return
+                    return;
+                }
+
+                // Lookup for coverage information
+                if (!record.getBoundingBox().isEmpty()) {
+                    coverage = getCoverage(
+                            record.getBoundingBox().get(0).getValue());
+                } else {
+                    statusHandler.warn("Bounding box is empty for dataset '"
+                            + paramMap.get(DATASET_NAME) + "'");
+                }
             }
-        } else {
-            // If not, extract the metadata from the title
-            try {
-                paramMap = extractor.extractMetaDataFromTitle(relativeDataURL);
-            } catch (MetaDataExtractionException e) {
-                // Don't need to print a stack trace for this.
+
+            // Common regardless of extraction method
+            if ("true".equals(paramMap.get("ignoreData"))) {
                 statusHandler
-                        .error("MetaData extraction error on " + relativeDataURL
-                                + ". Caused by: " + e.getLocalizedMessage());
-                // failure return
+                        .info("Skipping DataSet '" + paramMap.get(DATASET_NAME)
+                                + "' due to parameter being in exclusion list");
                 return;
-            } catch (Exception e) {
+            }
+            setDefaultParams(paramMap);
+
+            // use real time parsed from file
+            time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
+
+            try {
+                idate = new ImmutableDate(
+                        time.parseDate(paramMap.get(START_TIME)));
+            } catch (ParseException e) {
                 statusHandler.handle(Priority.PROBLEM,
-                        "MetaData extraction error, " + relativeDataURL, e);
-                // failure return
-                return;
+                        "Couldn't parse dataTime, " + relativeDataURL, e);
             }
 
-            // Lookup for coverage information
-            if (!record.getBoundingBox().isEmpty()) {
-                coverage = getCoverage(
-                        record.getBoundingBox().get(0).getValue());
+            /**
+             * This portion of the MetaData parser is only used when a coverage
+             * exists.
+             */
+            if (coverage != null) {
+
+                statusHandler.info("Preparing to store DataSet: "
+                        + paramMap.get(DATASET_NAME));
+                PDADataSet pdaDataSet = new PDADataSet();
+                pdaDataSet.setCollectionName(paramMap.get(COLLECTION_NAME));
+                pdaDataSet.setDataSetName(paramMap.get(DATASET_NAME));
+                pdaDataSet.setProviderName(provider.getName());
+                pdaDataSet.setDataSetType(DataType.PDA);
+                pdaDataSet.setTime(time);
+                pdaDataSet.setArrivalTime(arrivalTime.getTime());
+                // there is only one parameter per briefRecord at this point
+                Map<String, Parameter> parameters = getParameters(
+                        paramMap.get(PARAM_NAME), paramMap.get(COLLECTION_NAME),
+                        provider.getName(), paramMap.get(UNITS),
+                        paramMap.get(FILL_VALUE), paramMap.get(MISSING_VALUE));
+                pdaDataSet.setParameters(parameters);
+                // set the coverage
+                pdaDataSet.setCoverage(coverage);
+                // Store the parameter, data Set name, data Set
+                for (Entry<String, Parameter> parm : parameters.entrySet()) {
+                    storeParameter(parm.getValue());
+                }
+
+                storeDataSet(pdaDataSet);
             } else {
-                statusHandler.warn("Bounding box is empty for dataset '"
-                        + paramMap.get(DATASET_NAME) + "'");
-            }
-        }
-
-        // Common regardless of extraction method
-        if ("true".equals(paramMap.get("ignoreData"))) {
-            statusHandler.info("Skipping DataSet '" + paramMap.get(DATASET_NAME)
-                    + "' due to parameter being in exclusion list");
-            return;
-        }
-        setDefaultParams(paramMap);
-
-        // use real time parsed from file
-        time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
-
-        try {
-            idate = new ImmutableDate(time.parseDate(paramMap.get(START_TIME)));
-        } catch (ParseException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't parse dataTime, " + relativeDataURL, e);
-        }
-
-        /**
-         * This portion of the MetaData parser is only used when a coverage
-         * exists.
-         */
-        if (coverage != null) {
-
-            statusHandler.info("Preparing to store DataSet: "
-                    + paramMap.get(DATASET_NAME));
-            PDADataSet pdaDataSet = new PDADataSet();
-            pdaDataSet.setCollectionName(paramMap.get(COLLECTION_NAME));
-            pdaDataSet.setDataSetName(paramMap.get(DATASET_NAME));
-            pdaDataSet.setProviderName(provider.getName());
-            pdaDataSet.setDataSetType(DataType.PDA);
-            pdaDataSet.setTime(time);
-            pdaDataSet.setArrivalTime(arrivalTime.getTime());
-            // there is only one parameter per briefRecord at this point
-            Map<String, Parameter> parameters = getParameters(
-                    paramMap.get(PARAM_NAME), paramMap.get(COLLECTION_NAME),
-                    provider.getName(), paramMap.get(UNITS),
-                    paramMap.get(FILL_VALUE), paramMap.get(MISSING_VALUE));
-            pdaDataSet.setParameters(parameters);
-            // set the coverage
-            pdaDataSet.setCoverage(coverage);
-            // Store the parameter, data Set name, data Set
-            for (Entry<String, Parameter> parm : parameters.entrySet()) {
-                storeParameter(parm.getValue());
+                statusHandler.warn(
+                        "Coverage is null for: " + paramMap.get(DATASET_NAME));
             }
 
-            storeDataSet(pdaDataSet);
-        } else {
-            statusHandler.warn(
-                    "Coverage is null for: " + paramMap.get(DATASET_NAME));
-        }
+            /*
+             * This portion of the code is only used when processing a
+             * Transaction.
+             */
+            if (isMetaData) {
 
-        /*
-         * This portion of the code is only used when processing a Transaction.
-         */
-        if (isMetaData) {
+                PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
+                pdadsmd.setMetaDataID(metaDataID);
+                pdadsmd.setArrivalTime(arrivalTime.getTime());
+                pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
+                        paramMap.get(COLLECTION_NAME),
+                        time.getStart().getTime()));
+                pdadsmd.setTime(time);
+                pdadsmd.setDataSetName(paramMap.get(DATASET_NAME));
+                pdadsmd.setDataSetDescription(metaDataID + " " + DATASET_NAME);
+                pdadsmd.setDate(idate);
+                pdadsmd.setProviderName(provider.getName());
+                // In PDA's case it's actually a file name
+                pdadsmd.setUrl(metaDataURL);
 
-            PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
-            pdadsmd.setMetaDataID(metaDataID);
-            pdadsmd.setArrivalTime(arrivalTime.getTime());
-            pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
-                    paramMap.get(COLLECTION_NAME), time.getStart().getTime()));
-            pdadsmd.setTime(time);
-            pdadsmd.setDataSetName(paramMap.get(DATASET_NAME));
-            pdadsmd.setDataSetDescription(metaDataID + " " + DATASET_NAME);
-            pdadsmd.setDate(idate);
-            pdadsmd.setProviderName(provider.getName());
-            // In PDA's case it's actually a file name
-            pdadsmd.setUrl(metaDataURL);
-
-            storeMetaData(pdadsmd);
+                storeMetaData(pdadsmd);
+            }
         }
     }
 

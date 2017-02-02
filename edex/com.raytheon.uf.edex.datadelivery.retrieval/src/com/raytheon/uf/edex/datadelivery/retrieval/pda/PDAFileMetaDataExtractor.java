@@ -26,10 +26,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -97,11 +100,53 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAShortNameMapSet;
 public class PDAFileMetaDataExtractor
         extends PDAMetaDataExtractor<String, String> {
 
+    private static final String PARAM_FORMAT = "PARAM_FORMAT";
+
+    private static final String RECORD_TITLE = "RECORD_TITLE";
+
+    private static final String URN_FORMAT = "URN_FORMAT";
+
+    private static final String RES_FORMAT = "RES_FORMAT";
+
+    private static final String POLYGON_FORMAT = "POLYGON_FORMAT";
+
+    private static final String SAT_FORMAT = "SAT_FORMAT";
+
+    private static final String RECEIVED_TIME_FORMAT = "RECEIVED_TIME_FORMAT";
+
+    private static final String CREATE_TIME_FORMAT = "CREATE_TIME_FORMAT";
+
+    private static final String END_TIME_FORMAT = "END_TIME_FORMAT";
+
+    private static final String START_TIME_FORMAT = "START_TIME_FORMAT";
+
+    private static final String SHORT_NAME_FORMAT = "SHORT_NAME_FORMAT";
+
+    private static final String RECORD_ID = "RECORD_ID";
+
     private static final String HARVESTER_PATH = "datadelivery"
             + File.separatorChar + "harvester" + File.separatorChar;
 
+    private static final String HARVESTER_CONFIG_PATH = HARVESTER_PATH
+            + "PDA-Harvester.xml";
+
     private static final String MAPPING_PATH = "datadelivery"
             + File.separatorChar + "mappings" + File.separatorChar;
+
+    private static final String SHORT_NAME_PATH = MAPPING_PATH
+            + "ShortNameMappings.xml";
+
+    private static final String PARAMETER_EXCLUSION_PATH = MAPPING_PATH
+            + "ParameterExclusions.xml";
+
+    private static final String SATELLITE_PATH = MAPPING_PATH
+            + "SatelliteMappings.xml";
+
+    private static final String DATA_NAME_PATH = MAPPING_PATH
+            + "DataNameMappings.xml";
+
+    private static final String RESOLUTION_PATH = MAPPING_PATH
+            + "ResolutionMappings.xml";
 
     private static final String PDA_PROVIDER = "PDA";
 
@@ -113,89 +158,128 @@ public class PDAFileMetaDataExtractor
 
     private static PDAFileMetaDataExtractor instance;
 
-    private Map<String, String> dataSetNameMapping = null;
+    private Map<String, String> dataSetNameMapping = new HashMap<>(1);
 
-    private Map<String, String> resolutionMapping = null;
+    private Map<String, String> resolutionMapping = new HashMap<>(1);
 
-    private Map<String, String> satelliteMapping = null;
+    private Map<String, String> satelliteMapping = new HashMap<>(1);
 
-    private Map<String, PDAShortNameMap> shortNameMapping = null;
+    private Map<String, PDAShortNameMap> shortNameMapping = new HashMap<>(1);
 
     private Map<String, MetaDataPattern> metaDataPatterns = new HashMap<>(1);
 
-    private Set<String> excludeList = null;
+    private Set<String> excludeList = new HashSet<>(1);
 
-    private Map<String, String> dataSetMetadataRetention = null;
+    private Map<String, String> dataSetMetadataRetention = new HashMap<>(1);
 
-    private Map<String, String> dataSetMetadataDateFormat = null;
+    private Map<String, String> dataSetMetadataDateFormat = new HashMap<>(1);
+
+    private Date dataSetMappingFileTime;
+
+    private Date resolutionMappingFileTime;
+
+    private Date shortNameMappingFileTime;
+
+    private Date excludeListFileTime;
+
+    private Date harvesterConfigFileTime;
+
+    private Date satelliteMappingFileTime;
+
+    private Date metaDataPatternFileTime;
+
+    private long lastInitTime;
 
     public static synchronized PDAFileMetaDataExtractor getInstance() {
         if (instance == null) {
             instance = new PDAFileMetaDataExtractor();
         }
+
         return instance;
     }
 
     private PDAFileMetaDataExtractor() {
         super();
-        dataSetNameMapping = new HashMap<>();
-        resolutionMapping = new HashMap<>();
-        satelliteMapping = new HashMap<>();
-        excludeList = new HashSet<>();
-        dataSetMetadataDateFormat = new HashMap<>();
-        dataSetMetadataRetention = new HashMap<>();
-
-        initMappings();
     }
 
     private void initMappings() {
-        statusHandler.info("Initializing DataSet Name mapping...");
         initNameMapping();
-
-        statusHandler.info("Initializing Resolution mapping...");
         initResMapping();
-
-        statusHandler.info("Initializing Satellite mapping...");
         initSatMapping();
-
-        statusHandler.info("Initializing Exclusion list...");
         initExclusionList();
-
-        statusHandler.info("Initializing Harvester Configs...");
         initHarvesterConfigs();
-
-        statusHandler.info("Initializing Short Name mappings...");
         initShortNameMapping();
+
+        lastInitTime = System.currentTimeMillis();
+    }
+
+    private void checkDoInit() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastInitTime > (TimeUtil.MILLIS_PER_MINUTE * 5)
+                || dataSetNameMapping.isEmpty()
+                || dataSetMetadataDateFormat.isEmpty()
+                || dataSetMetadataRetention.isEmpty() || excludeList.isEmpty()
+                || resolutionMapping.isEmpty() || satelliteMapping.isEmpty()
+                || shortNameMapping.isEmpty()) {
+            initMappings();
+        }
     }
 
     private void initNameMapping() {
-        String fileName = MAPPING_PATH + "DataNameMappings.xml";
+        String fileName = DATA_NAME_PATH;
         Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
                 fileName);
-
-        PDADataSetNameMapSet nameMapSet = new PDADataSetNameMapSet();
-        try {
-            JAXBManager jaxb = new JAXBManager(PDADataSetNameMapSet.class);
-            if (locFiles.containsKey(LocalizationLevel.BASE)) {
-                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
-                PDADataSetNameMapSet fileSet = readDataSetNameMap(jaxb, file);
-                if (fileSet != null) {
-                    nameMapSet.addMaps(fileSet.getMaps());
-                }
-            }
+        boolean update = false;
+        if (dataSetNameMapping.isEmpty()) {
+            statusHandler.info("Data Name Mapping is not populated");
+            update = true;
+        } else {
             if (locFiles.containsKey(LocalizationLevel.SITE)) {
                 LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
-                PDADataSetNameMapSet fileSet = readDataSetNameMap(jaxb, file);
-                if (fileSet != null) {
-                    nameMapSet.addMaps(fileSet.getMaps());
+                if (!file.getTimeStamp().equals(dataSetMappingFileTime)) {
+                    statusHandler
+                            .info("Data Name Mapping file has been modified.");
+                    update = true;
                 }
             }
-        } catch (JAXBException | SerializationException | IOException
-                | LocalizationException e) {
-            statusHandler.error("Unable to initialize DataSet name mapping", e);
         }
 
-        addNameMappings(nameMapSet);
+        if (update) {
+            statusHandler.info("Initializing DataSet Name mapping...");
+            PDADataSetNameMapSet nameMapSet = new PDADataSetNameMapSet();
+            try {
+                JAXBManager jaxb = new JAXBManager(PDADataSetNameMapSet.class);
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.BASE);
+                    PDADataSetNameMapSet fileSet = readDataSetNameMap(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        nameMapSet.addMaps(fileSet.getMaps());
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.SITE);
+                    PDADataSetNameMapSet fileSet = readDataSetNameMap(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        nameMapSet.addMaps(fileSet.getMaps());
+                    }
+                    dataSetMappingFileTime = file.getTimeStamp();
+                }
+                Map<String, String> newDataSetNameMapping = new HashMap<>(1);
+                for (PDADataSetNameMap map : nameMapSet.getMaps()) {
+                    newDataSetNameMapping.put(map.getParameter(),
+                            map.getDescription());
+                }
+                dataSetNameMapping = newDataSetNameMapping;
+            } catch (JAXBException | SerializationException | IOException
+                    | LocalizationException e) {
+                statusHandler.error("Unable to initialize DataSet name mapping",
+                        e);
+            }
+        }
     }
 
     private PDADataSetNameMapSet readDataSetNameMap(JAXBManager jaxb,
@@ -221,33 +305,60 @@ public class PDAFileMetaDataExtractor
     }
 
     private void initResMapping() {
-        String fileName = MAPPING_PATH + "ResolutionMappings.xml";
+        String fileName = RESOLUTION_PATH;
         Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
                 fileName);
 
-        PDADescriptionMapSet resMapSet = new PDADescriptionMapSet();
-        try {
-            JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
-            if (locFiles.containsKey(LocalizationLevel.BASE)) {
-                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
-                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
-                if (fileSet != null) {
-                    resMapSet.addMaps(fileSet.getMaps());
-                }
-            }
+        boolean update = false;
+        if (resolutionMapping.isEmpty()) {
+            statusHandler.info("Resolution Mapping is not populated");
+            update = true;
+        } else {
             if (locFiles.containsKey(LocalizationLevel.SITE)) {
                 LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
-                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
-                if (fileSet != null) {
-                    resMapSet.addMaps(fileSet.getMaps());
+                if (!file.getTimeStamp().equals(resolutionMappingFileTime)) {
+                    statusHandler
+                            .info("Resolution Mapping file has been modified.");
+                    update = true;
                 }
             }
-        } catch (JAXBException | SerializationException | IOException
-                | LocalizationException e) {
-            statusHandler.error("Unable to initialize resolution mapping", e);
         }
 
-        addResMappings(resMapSet);
+        if (update) {
+            statusHandler.info("Initializing Resolution mapping...");
+            PDADescriptionMapSet resMapSet = new PDADescriptionMapSet();
+            try {
+                JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.BASE);
+                    PDADescriptionMapSet fileSet = readDescriptionMap(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        resMapSet.addMaps(fileSet.getMaps());
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.SITE);
+                    PDADescriptionMapSet fileSet = readDescriptionMap(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        resMapSet.addMaps(fileSet.getMaps());
+                    }
+                    resolutionMappingFileTime = file.getTimeStamp();
+                }
+                Map<String, String> newResolutionMap = new HashMap<>(1);
+                for (PDADescriptionMap map : resMapSet.getMaps()) {
+                    newResolutionMap.put(map.getKey(), map.getDescription());
+                }
+                resolutionMapping = newResolutionMap;
+            } catch (JAXBException | SerializationException | IOException
+                    | LocalizationException e) {
+                statusHandler.error("Unable to initialize resolution mapping",
+                        e);
+            }
+        }
     }
 
     private PDADescriptionMapSet readDescriptionMap(JAXBManager jaxb,
@@ -264,61 +375,112 @@ public class PDAFileMetaDataExtractor
     }
 
     private void initSatMapping() {
-        String fileName = MAPPING_PATH + "SatelliteMappings.xml";
+        String fileName = SATELLITE_PATH;
         Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
                 fileName);
 
-        PDADescriptionMapSet satMapSet = new PDADescriptionMapSet();
-        try {
-            JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
-            if (locFiles.containsKey(LocalizationLevel.BASE)) {
-                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
-                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
-                if (fileSet != null) {
-                    satMapSet.addMaps(fileSet.getMaps());
-                }
-            }
+        boolean update = false;
+        if (satelliteMapping.isEmpty()) {
+            statusHandler.info("Satellite Mapping is not populated");
+            update = true;
+        } else {
             if (locFiles.containsKey(LocalizationLevel.SITE)) {
                 LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
-                PDADescriptionMapSet fileSet = readDescriptionMap(jaxb, file);
-                if (fileSet != null) {
-                    satMapSet.addMaps(fileSet.getMaps());
+                if (!file.getTimeStamp().equals(satelliteMappingFileTime)) {
+                    statusHandler
+                            .info("Satellite Mapping file has been modified.");
+                    update = true;
                 }
             }
-        } catch (JAXBException | SerializationException | IOException
-                | LocalizationException e) {
-            statusHandler.error("Unable to initialize satellite mapping", e);
         }
-
-        addSatMappings(satMapSet);
+        if (update) {
+            statusHandler.info("Initializing Satellite mapping...");
+            PDADescriptionMapSet satMapSet = new PDADescriptionMapSet();
+            try {
+                JAXBManager jaxb = new JAXBManager(PDADescriptionMapSet.class);
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.BASE);
+                    PDADescriptionMapSet fileSet = readDescriptionMap(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        satMapSet.addMaps(fileSet.getMaps());
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.SITE);
+                    PDADescriptionMapSet fileSet = readDescriptionMap(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        satMapSet.addMaps(fileSet.getMaps());
+                    }
+                    satelliteMappingFileTime = file.getTimeStamp();
+                }
+                Map<String, String> newSatelliteMap = new HashMap<>(1);
+                for (PDADescriptionMap map : satMapSet.getMaps()) {
+                    newSatelliteMap.put(map.getKey(), map.getDescription());
+                }
+                satelliteMapping = newSatelliteMap;
+            } catch (JAXBException | SerializationException | IOException
+                    | LocalizationException e) {
+                statusHandler.error("Unable to initialize satellite mapping",
+                        e);
+            }
+        }
     }
 
     private void initExclusionList() {
-        String fileName = MAPPING_PATH + "ParameterExclusions.xml";
+        String fileName = PARAMETER_EXCLUSION_PATH;
         Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
                 fileName);
 
-        try {
-            JAXBManager jaxb = new JAXBManager(PDAParameterExclusions.class);
-            if (locFiles.containsKey(LocalizationLevel.BASE)) {
-                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
-                PDAParameterExclusions fileSet = readParamExclusions(jaxb,
-                        file);
-                if (fileSet != null) {
-                    excludeList.addAll(fileSet.getParameterExclusions());
-                }
-            }
+        boolean update = false;
+        if (excludeList.isEmpty()) {
+            statusHandler.info("Parameter Exclusion List is not populated");
+            update = true;
+        } else {
             if (locFiles.containsKey(LocalizationLevel.SITE)) {
                 LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
-                PDAParameterExclusions fileSet = readParamExclusions(jaxb,
-                        file);
-                if (fileSet != null) {
-                    excludeList.addAll(fileSet.getParameterExclusions());
+                if (!file.getTimeStamp().equals(excludeListFileTime)) {
+                    statusHandler.info(
+                            "Parameter Exclusion List file has been modified.");
+                    update = true;
                 }
             }
-        } catch (JAXBException | SerializationException | IOException
-                | LocalizationException e) {
-            statusHandler.error("Unable to initialize parameter exclusions", e);
+        }
+
+        if (update) {
+            statusHandler.info("Initializing Exclusion list...");
+            try {
+                Set<String> newExcludeList = new HashSet<>(1);
+                JAXBManager jaxb = new JAXBManager(
+                        PDAParameterExclusions.class);
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.BASE);
+                    PDAParameterExclusions fileSet = readParamExclusions(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        newExcludeList.addAll(fileSet.getParameterExclusions());
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.SITE);
+                    PDAParameterExclusions fileSet = readParamExclusions(jaxb,
+                            file);
+                    if (fileSet != null) {
+                        newExcludeList.addAll(fileSet.getParameterExclusions());
+                    }
+                    excludeListFileTime = file.getTimeStamp();
+                }
+                excludeList = newExcludeList;
+            } catch (JAXBException | SerializationException | IOException
+                    | LocalizationException e) {
+                statusHandler.error("Unable to initialize parameter exclusions",
+                        e);
+            }
         }
 
     }
@@ -337,39 +499,68 @@ public class PDAFileMetaDataExtractor
     }
 
     private void initHarvesterConfigs() {
-        String fileName = HARVESTER_PATH + "PDA-Harvester.xml";
+        String fileName = HARVESTER_CONFIG_PATH;
         Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
                 fileName);
 
-        try {
-            JAXBManager jaxb = new JAXBManager(HarvesterConfig.class);
-            if (locFiles.containsKey(LocalizationLevel.BASE)) {
-                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
-                HarvesterConfig fileSet = readHarvesterConfig(jaxb, file);
-                if (fileSet != null) {
-                    dataSetMetadataRetention.put(
-                            fileSet.getProvider().getName(),
-                            fileSet.getRetention());
-                    dataSetMetadataDateFormat.put(
-                            fileSet.getProvider().getName(),
-                            fileSet.getAgent().getDateFormat());
-                }
-            }
+        boolean update = false;
+        if (dataSetMetadataRetention.isEmpty()
+                || dataSetMetadataDateFormat.isEmpty()) {
+            statusHandler.info("Harvester Config values are not populated");
+            update = true;
+        } else {
             if (locFiles.containsKey(LocalizationLevel.SITE)) {
                 LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
-                HarvesterConfig fileSet = readHarvesterConfig(jaxb, file);
-                if (fileSet != null) {
-                    dataSetMetadataRetention.put(
-                            fileSet.getProvider().getName(),
-                            fileSet.getRetention());
-                    dataSetMetadataDateFormat.put(
-                            fileSet.getProvider().getName(),
-                            fileSet.getAgent().getDateFormat());
+                if (!file.getTimeStamp().equals(harvesterConfigFileTime)) {
+                    statusHandler
+                            .info("Harvester Config file has been modified.");
+                    update = true;
                 }
             }
-        } catch (JAXBException | SerializationException | IOException
-                | LocalizationException e) {
-            statusHandler.error("Unable to initialize harvester configs", e);
+        }
+
+        if (update) {
+            statusHandler.info("Initializing Harvester Configs...");
+            try {
+                Map<String, String> newDataSetMetadataRetention = new HashMap<>(
+                        1);
+                Map<String, String> newDataSetMetadataDateFormat = new HashMap<>(
+                        1);
+                JAXBManager jaxb = new JAXBManager(HarvesterConfig.class);
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.BASE);
+                    HarvesterConfig fileSet = readHarvesterConfig(jaxb, file);
+                    if (fileSet != null) {
+                        newDataSetMetadataRetention.put(
+                                fileSet.getProvider().getName(),
+                                fileSet.getRetention());
+                        newDataSetMetadataDateFormat.put(
+                                fileSet.getProvider().getName(),
+                                fileSet.getAgent().getDateFormat());
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.SITE);
+                    HarvesterConfig fileSet = readHarvesterConfig(jaxb, file);
+                    if (fileSet != null) {
+                        newDataSetMetadataRetention.put(
+                                fileSet.getProvider().getName(),
+                                fileSet.getRetention());
+                        newDataSetMetadataDateFormat.put(
+                                fileSet.getProvider().getName(),
+                                fileSet.getAgent().getDateFormat());
+                    }
+                    harvesterConfigFileTime = file.getTimeStamp();
+                }
+                dataSetMetadataRetention = newDataSetMetadataRetention;
+                dataSetMetadataDateFormat = newDataSetMetadataDateFormat;
+            } catch (JAXBException | SerializationException | IOException
+                    | LocalizationException e) {
+                statusHandler.error("Unable to initialize harvester configs",
+                        e);
+            }
         }
 
     }
@@ -387,33 +578,59 @@ public class PDAFileMetaDataExtractor
     }
 
     private void initShortNameMapping() {
-        String fileName = MAPPING_PATH + "ShortNameMappings.xml";
+        String fileName = SHORT_NAME_PATH;
         Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
                 fileName);
 
-        PDAShortNameMapSet snMapSet = new PDAShortNameMapSet();
-        try {
-            JAXBManager jaxb = new JAXBManager(PDAShortNameMapSet.class);
-            if (locFiles.containsKey(LocalizationLevel.BASE)) {
-                LocalizationFile file = locFiles.get(LocalizationLevel.BASE);
-                PDAShortNameMapSet fileSet = readShortNameMap(jaxb, file);
-                if (fileSet != null) {
-                    snMapSet.addMaps(fileSet.getMaps());
-                }
-            }
+        boolean update = false;
+        if (shortNameMapping.isEmpty()) {
+            statusHandler.info("Short Name Mapping is not populated");
+            update = true;
+        } else {
             if (locFiles.containsKey(LocalizationLevel.SITE)) {
                 LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
-                PDAShortNameMapSet fileSet = readShortNameMap(jaxb, file);
-                if (fileSet != null) {
-                    snMapSet.addMaps(fileSet.getMaps());
+                if (!file.getTimeStamp().equals(shortNameMappingFileTime)) {
+                    statusHandler
+                            .info("Short Name Mapping file has been modified.");
+                    update = true;
                 }
             }
-        } catch (JAXBException | SerializationException | IOException
-                | LocalizationException e) {
-            statusHandler.error("Unable to initialize DataSet name mapping", e);
         }
 
-        addShortNameMappings(snMapSet);
+        if (update) {
+            statusHandler.info("Initializing Short Name mappings...");
+            Map<String, PDAShortNameMap> newShortNameMap = new HashMap<>(1);
+            PDAShortNameMapSet snMapSet = new PDAShortNameMapSet();
+            try {
+                JAXBManager jaxb = new JAXBManager(PDAShortNameMapSet.class);
+                if (locFiles.containsKey(LocalizationLevel.BASE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.BASE);
+                    PDAShortNameMapSet fileSet = readShortNameMap(jaxb, file);
+                    if (fileSet != null) {
+                        snMapSet.addMaps(fileSet.getMaps());
+                    }
+                }
+                if (locFiles.containsKey(LocalizationLevel.SITE)) {
+                    LocalizationFile file = locFiles
+                            .get(LocalizationLevel.SITE);
+                    PDAShortNameMapSet fileSet = readShortNameMap(jaxb, file);
+                    if (fileSet != null) {
+                        snMapSet.addMaps(fileSet.getMaps());
+                    }
+                    shortNameMappingFileTime = file.getTimeStamp();
+                }
+                for (PDAShortNameMap map : snMapSet.getMaps()) {
+                    newShortNameMap.put(map.getId(), map);
+                }
+                shortNameMapping = newShortNameMap;
+            } catch (JAXBException | SerializationException | IOException
+                    | LocalizationException e) {
+                statusHandler.error("Unable to initialize DataSet name mapping",
+                        e);
+            }
+        }
+
     }
 
     private PDAShortNameMapSet readShortNameMap(JAXBManager jaxb,
@@ -429,107 +646,94 @@ public class PDAFileMetaDataExtractor
         return fileSet;
     }
 
-    private void addNameMappings(PDADataSetNameMapSet nameMapSet) {
-        for (PDADataSetNameMap map : nameMapSet.getMaps()) {
-            dataSetNameMapping.put(map.getParameter(), map.getDescription());
-        }
-    }
-
-    private void addShortNameMappings(PDAShortNameMapSet nameMapSet) {
-        for (PDAShortNameMap map : nameMapSet.getMaps()) {
-            shortNameMapping.put(map.getId(), map);
-        }
-    }
-
-    private void addResMappings(PDADescriptionMapSet resMapSet) {
-        for (PDADescriptionMap map : resMapSet.getMaps()) {
-            resolutionMapping.put(map.getKey(), map.getDescription());
-        }
-    }
-
-    private void addSatMappings(PDADescriptionMapSet satMapSet) {
-        for (PDADescriptionMap map : satMapSet.getMaps()) {
-            satelliteMapping.put(map.getKey(), map.getDescription());
-        }
-    }
-
     public Map<String, String> extractMetaData(Object metadataId)
             throws Exception {
+        checkDoInit();
+
         String metadataIdStr = (String) metadataId;
-        Map<String, String> paramMap = new HashMap<>(16);
-        MetaDataPattern mdp = getMetaDataPattern("RECORD_ID");
-        Pattern idPattern = mdp.getPattern();
-        Map<String, PatternGroup> mdpGroups = mdp.getGroupMap();
-        String snFormat = mdpGroups.get("SHORT_NAME_FORMAT").getValue();
-        String sTimeFormat = mdpGroups.get("START_TIME_FORMAT").getValue();
-        String eTimeFormat = mdpGroups.get("END_TIME_FORMAT").getValue();
-        String cTimeFormat = mdpGroups.get("CREATE_TIME_FORMAT").getValue();
-        String rTimeFormat = mdpGroups.get("RECEIVED_TIME_FORMAT").getValue();
-        String satFormat = mdpGroups.get("SAT_FORMAT").getValue();
-        String polyFormat = mdpGroups.get("POLYGON_FORMAT").getValue();
-        String resFormat = mdpGroups.get("RES_FORMAT").getValue();
-        String urnFormat = mdpGroups.get("URN_FORMAT").getValue();
+        Map<String, String> paramMap = new HashMap<>(8);
+        MetaDataPattern mdp = getMetaDataPattern(RECORD_ID);
+        if (mdp != null) {
+            Pattern idPattern = mdp.getPattern();
+            Map<String, PatternGroup> mdpGroups = mdp.getGroupMap();
+            String snFormat = mdpGroups.get(SHORT_NAME_FORMAT).getValue();
+            String sTimeFormat = mdpGroups.get(START_TIME_FORMAT).getValue();
+            String eTimeFormat = mdpGroups.get(END_TIME_FORMAT).getValue();
+            String cTimeFormat = mdpGroups.get(CREATE_TIME_FORMAT).getValue();
+            String rTimeFormat = mdpGroups.get(RECEIVED_TIME_FORMAT).getValue();
+            String satFormat = mdpGroups.get(SAT_FORMAT).getValue();
+            String polyFormat = mdpGroups.get(POLYGON_FORMAT).getValue();
+            String resFormat = mdpGroups.get(RES_FORMAT).getValue();
+            String urnFormat = mdpGroups.get(URN_FORMAT).getValue();
 
-        String idFormat = mdpGroups.get("ID_FORMAT").getValue();
-        String instFormat = mdpGroups.get("INSTRUMENT_FORMAT").getValue();
-        String modeFormat = mdpGroups.get("MODE_FORMAT").getValue();
-        String bdFormat = mdpGroups.get("BIT_DEPTH_FORMAT").getValue();
-        String fNameFormat = mdpGroups.get("FILE_NAME_FORMAT").getValue();
-        String ffFormat = mdpGroups.get("FILE_FORMAT_FORMAT").getValue();
+            // Make sure the filename matches the expected pattern before
+            // parsing
+            Matcher titleMatcher = idPattern.matcher(metadataIdStr);
+            if (titleMatcher.matches()) {
+                String sat = metadataIdStr.replaceAll(idPattern.pattern(),
+                        satFormat);
+                String startTime = metadataIdStr.replaceAll(idPattern.pattern(),
+                        sTimeFormat);
+                String endTime = metadataIdStr.replaceAll(idPattern.pattern(),
+                        eTimeFormat);
+                String createTime = metadataIdStr
+                        .replaceAll(idPattern.pattern(), cTimeFormat);
+                String receiveTime = metadataIdStr
+                        .replaceAll(idPattern.pattern(), rTimeFormat);
+                String res = metadataIdStr.replaceAll(idPattern.pattern(),
+                        resFormat);
+                String polygon = metadataIdStr.replaceAll(idPattern.pattern(),
+                        polyFormat);
+                String crs = metadataIdStr.replaceAll(idPattern.pattern(),
+                        urnFormat);
 
-        // Make sure the filename matches the expected pattern before parsing
-        Matcher titleMatcher = idPattern.matcher(metadataIdStr);
-        if (titleMatcher.matches()) {
-            String sat = metadataIdStr.replaceAll(idPattern.pattern(),
-                    satFormat);
-            String startTime = metadataIdStr.replaceAll(idPattern.pattern(),
-                    sTimeFormat);
-            String endTime = metadataIdStr.replaceAll(idPattern.pattern(),
-                    eTimeFormat);
-            String createTime = metadataIdStr.replaceAll(idPattern.pattern(),
-                    cTimeFormat);
-            String receiveTime = metadataIdStr.replaceAll(idPattern.pattern(),
-                    rTimeFormat);
-            String res = metadataIdStr.replaceAll(idPattern.pattern(),
-                    resFormat);
-            String polygon = metadataIdStr.replaceAll(idPattern.pattern(),
-                    polyFormat);
-            String crs = metadataIdStr.replaceAll(idPattern.pattern(),
-                    urnFormat);
-
-            /*
-             * The only time that is guaranteed to be provided is the received
-             * time. If start time is not available, first try the create time.
-             * If not, fall back to received time
-             */
-            if (startTime == null || startTime.equals("")) {
-                if (createTime == null || createTime.equals("")) {
-                    startTime = receiveTime;
-                } else {
-                    startTime = createTime;
+                /*
+                 * The only time that is guaranteed to be provided is the
+                 * received time. If start time is not available, first try the
+                 * create time. If not, fall back to received time
+                 */
+                if (startTime == null || startTime.equals("")) {
+                    if (createTime == null || createTime.equals("")) {
+                        startTime = receiveTime;
+                    } else {
+                        startTime = createTime;
+                    }
                 }
-            }
-            /*
-             * If end time is not provided, set it to equal the start time.
-             */
-            if (endTime == null || endTime.equals("")) {
-                endTime = startTime;
-            }
+                /*
+                 * If end time is not provided, set it to equal the start time.
+                 */
+                if (endTime == null || endTime.equals("")) {
+                    endTime = startTime;
+                }
+                String param = parseParamFromShortName(metadataIdStr
+                        .replaceAll(idPattern.pattern(), snFormat));
 
-            String param = parseParamFromShortName(
-                    metadataIdStr.replaceAll(idPattern.pattern(), snFormat));
-            String dataSetName = createDataSetName(param, res, sat);
-            String ignoreData = checkForIgnore(param, startTime, endTime);
+                boolean validParams = validateParamData(param, res, sat,
+                        startTime, endTime, mdp.getDateFormat());
+                String ignoreData = "false";
+                if (validParams) {
+                    String dataSetName = createDataSetName(param, res, sat);
+                    ignoreData = checkForIgnore(param, startTime, endTime);
 
-            paramMap.put("collectionName", sat);
-            paramMap.put("startTime", startTime);
-            paramMap.put("endTime", endTime);
-            paramMap.put("paramName", param);
-            paramMap.put("dataSetName", dataSetName);
-            paramMap.put("polygonPoints", polygon);
-            paramMap.put("crs", crs);
-            paramMap.put("ignoreData", ignoreData);
+                    paramMap.put("collectionName", sat);
+                    paramMap.put("startTime", startTime);
+                    paramMap.put("endTime", endTime);
+                    paramMap.put("paramName", param);
+                    paramMap.put("dataSetName", dataSetName);
+                    paramMap.put("crs", crs);
+                } else {
+                    ignoreData = "true";
+                }
+                // polygonPoints validated as part of getCoverage() in the
+                // parser.
+                paramMap.put("polygonPoints", polygon);
+                paramMap.put("ignoreData", ignoreData);
+            }
+        } else {
+            paramMap.put("ignoreData", "true");
+            paramMap.put("polygonPoints", "");
         }
+
         return paramMap;
     }
 
@@ -558,6 +762,7 @@ public class PDAFileMetaDataExtractor
      */
     public Map<String, String> extractMetaDataFromTitle(String fileName)
             throws Exception {
+        checkDoInit();
 
         // starting point for the parsing
         Map<String, String> paramMap = new HashMap<>(6);
@@ -567,53 +772,118 @@ public class PDAFileMetaDataExtractor
          * Pull in regex and grouping from the PDA service config file in case
          * PDA changes the format in the future.
          */
-        MetaDataPattern mdp = getMetaDataPattern("RECORD_TITLE");
-        Pattern titlePattern = mdp.getPattern();
-        Map<String, PatternGroup> mdpGroups = mdp.getGroupMap();
-        String paramFormat = mdpGroups.get("PARAM_FORMAT").getValue();
-        String resFormat = mdpGroups.get("RES_FORMAT").getValue();
-        String satFormat = mdpGroups.get("SAT_FORMAT").getValue();
-        String sTimeFormat = mdpGroups.get("START_TIME_FORMAT").getValue();
-        String eTimeFormat = mdpGroups.get("END_TIME_FORMAT").getValue();
+        MetaDataPattern mdp = getMetaDataPattern(RECORD_TITLE);
+        if (mdp != null) {
+            Pattern titlePattern = mdp.getPattern();
+            Map<String, PatternGroup> mdpGroups = mdp.getGroupMap();
+            String paramFormat = mdpGroups.get(PARAM_FORMAT).getValue();
+            String resFormat = mdpGroups.get(RES_FORMAT).getValue();
+            String satFormat = mdpGroups.get(SAT_FORMAT).getValue();
+            String sTimeFormat = mdpGroups.get(START_TIME_FORMAT).getValue();
+            String eTimeFormat = mdpGroups.get(END_TIME_FORMAT).getValue();
 
-        // Make sure the filename matches the expected pattern before parsing
-        Matcher titleMatcher = titlePattern.matcher(fileName);
-        if (titleMatcher.matches()) {
-            String res = fileName.replaceAll(titlePattern.pattern(), resFormat);
-            String sat = fileName.replaceAll(titlePattern.pattern(), satFormat);
-            String param = fileName.replaceAll(titlePattern.pattern(),
-                    paramFormat);
-            String startTime = fileName.replaceAll(titlePattern.pattern(),
-                    sTimeFormat);
-            String endTime = fileName.replaceAll(titlePattern.pattern(),
-                    eTimeFormat);
+            // Make sure the filename matches the expected pattern before
+            // parsing
+            Matcher titleMatcher = titlePattern.matcher(fileName);
+            if (titleMatcher.matches()) {
+                String res = fileName.replaceAll(titlePattern.pattern(),
+                        resFormat);
+                String sat = fileName.replaceAll(titlePattern.pattern(),
+                        satFormat);
+                String param = fileName.replaceAll(titlePattern.pattern(),
+                        paramFormat);
+                String startTime = fileName.replaceAll(titlePattern.pattern(),
+                        sTimeFormat);
+                String endTime = fileName.replaceAll(titlePattern.pattern(),
+                        eTimeFormat);
 
-            String dataSetName = createDataSetName(param, res, sat);
-            String collectionName = createCollectionName(sat);
-            String ignoreData = checkForIgnore(param, startTime, endTime);
+                boolean validParams = validateParamData(param, res, sat,
+                        startTime, endTime, mdp.getDateFormat());
+                String ignoreData = "false";
+                if (validParams) {
+                    String dataSetName = createDataSetName(param, res, sat);
+                    String collectionName = createCollectionName(sat);
+                    ignoreData = checkForIgnore(param, startTime, endTime);
 
-            paramMap.put("collectionName", collectionName);
-            paramMap.put("paramName", param);
-            paramMap.put("startTime", startTime);
-
-            paramMap.put("endTime", endTime);
-            paramMap.put("dataSetName", dataSetName);
-            paramMap.put("ignoreData", ignoreData);
-            if (debug) {
-                for (String key : paramMap.keySet()) {
-                    statusHandler.info(key + ": " + paramMap.get(key));
+                    paramMap.put("collectionName", collectionName);
+                    paramMap.put("paramName", param);
+                    paramMap.put("startTime", startTime);
+                    paramMap.put("endTime", endTime);
+                    paramMap.put("dataSetName", dataSetName);
+                } else {
+                    ignoreData = "true";
                 }
+                paramMap.put("ignoreData", ignoreData);
+                if (debug) {
+                    for (String key : paramMap.keySet()) {
+                        statusHandler.info(key + ": " + paramMap.get(key));
+                    }
+                }
+            } else {
+                statusHandler.error(
+                        "Couldn't create parameter mappings from file!",
+                        fileName);
+                throw new MetaDataExtractionException("File name '" + fileName
+                        + "' does not match the expected pattern: '"
+                        + mdp.getRegex() + "'");
             }
         } else {
-            statusHandler.error("Couldn't create parameter mappings from file!",
-                    fileName);
-            throw new MetaDataExtractionException("File name '" + fileName
-                    + "' does not match the expected pattern: '"
-                    + serviceConfig.getConstantValue("RECORD_TITLE_REGEX")
-                    + "'");
+            paramMap.put("ignoreData", "true");
         }
 
         return paramMap;
+    }
+
+    private boolean validateParamData(String param, String res, String sat,
+            String startTime, String endTime, String dateFormat) {
+        boolean valid = true;
+        List<String> invalidParams = new ArrayList<>();
+        if (param == null || "".equals(param)) {
+            valid = false;
+            invalidParams.add("No param found. ");
+        }
+        if (res == null || "".equals(res)) {
+            valid = false;
+            invalidParams.add("No res found. ");
+        }
+        if (sat == null || "".equals(sat)) {
+            valid = false;
+            invalidParams.add("No sat found. ");
+        }
+        if (startTime == null || "".equals(startTime)) {
+            valid = false;
+            invalidParams.add("No startTime found. ");
+        }
+        if (endTime == null || "".equals(endTime)) {
+            valid = false;
+            invalidParams.add("No endTime found. ");
+        }
+
+        if (startTime != null && !"".equals(startTime) && endTime != null
+                || !"".equals(endTime)) {
+            Time time = new Time();
+            time.setFormat(dateFormat);
+
+            try {
+                time.setStartDate(startTime);
+                time.setEndDate(endTime);
+            } catch (ParseException e) {
+                valid = false;
+                invalidParams.add("Couldn't parse start/end time from format: "
+                        + dateFormat);
+            }
+        }
+
+        if (invalidParams.size() > 0) {
+            String issues = "";
+            for (String issue : invalidParams) {
+                issues = issues.concat(issue);
+            }
+            statusHandler
+                    .error("Unable to pull proper parameters from metadata: "
+                            + issues);
+        }
+        return valid;
     }
 
     private String checkForIgnore(String param, String startTime,
@@ -736,12 +1006,19 @@ public class PDAFileMetaDataExtractor
     }
 
     public MetaDataPattern getMetaDataPattern(String name) {
-        if (metaDataPatterns.isEmpty()) {
-            String fileName = HARVESTER_PATH + "PDAMetaDataConfig.xml";
+        String fileName = MAPPING_PATH + "PDAMetaDataConfig.xml";
+
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
+        Date siteUpdateTime = null;
+        if (locFiles.containsKey(LocalizationLevel.SITE)) {
+            LocalizationFile file = locFiles.get(LocalizationLevel.SITE);
+            siteUpdateTime = file.getTimeStamp();
+        }
+        if (metaDataPatterns.isEmpty() || (siteUpdateTime != null
+                && !siteUpdateTime.equals(metaDataPatternFileTime))) {
 
             try {
-                Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
-                        fileName);
                 PDAMetaDataConfig tmpConfig = null;
                 Map<String, MetaDataPattern> newMetaDataPatterns = new HashMap<>(
                         1);
@@ -761,8 +1038,11 @@ public class PDAFileMetaDataExtractor
                             .getMetaDataPatterns()) {
                         newMetaDataPatterns.put(mdp.getName(), mdp);
                     }
+                    metaDataPatternFileTime = siteUpdateTime;
                 }
-                metaDataPatterns = newMetaDataPatterns;
+                if (validateMetaDataPatterns(newMetaDataPatterns)) {
+                    metaDataPatterns = newMetaDataPatterns;
+                }
 
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
@@ -773,6 +1053,77 @@ public class PDAFileMetaDataExtractor
         }
 
         return metaDataPatterns.get(name);
+    }
+
+    private boolean validateMetaDataPatterns(
+            Map<String, MetaDataPattern> mdpMap) {
+        boolean valid = true;
+
+        String errors = "";
+        if (mdpMap != null && !mdpMap.isEmpty()) {
+            MetaDataPattern titleMdp = mdpMap.get(RECORD_TITLE);
+            if (titleMdp != null) {
+                Map<String, PatternGroup> mdpGroups = titleMdp.getGroupMap();
+                if (mdpGroups != null && !mdpGroups.isEmpty()) {
+                    List<String> reqGroups = Arrays.asList(PARAM_FORMAT,
+                            RES_FORMAT, SAT_FORMAT, START_TIME_FORMAT,
+                            END_TIME_FORMAT);
+                    for (String group : reqGroups) {
+                        if (mdpGroups.get(group) == null) {
+                            valid = false;
+                            errors.concat("'" + group + "' group needed for '"
+                                    + RECORD_TITLE + "' pattern. ");
+                        }
+                    }
+                } else {
+                    valid = false;
+                    errors.concat("No groups found for '" + RECORD_TITLE
+                            + "' pattern. ");
+                }
+            } else {
+                valid = false;
+                errors.concat("A '" + RECORD_TITLE
+                        + "' pattern is required and missing. ");
+            }
+
+            MetaDataPattern idMdp = mdpMap.get(RECORD_ID);
+            if (idMdp != null) {
+                Map<String, PatternGroup> mdpGroups = idMdp.getGroupMap();
+                if (mdpGroups != null && !mdpGroups.isEmpty()) {
+                    List<String> reqGroups = Arrays.asList(SHORT_NAME_FORMAT,
+                            START_TIME_FORMAT, END_TIME_FORMAT,
+                            CREATE_TIME_FORMAT, RECEIVED_TIME_FORMAT,
+                            SAT_FORMAT, POLYGON_FORMAT, RES_FORMAT, URN_FORMAT);
+                    for (String group : reqGroups) {
+                        if (mdpGroups.get(group) == null) {
+                            valid = false;
+                            errors.concat("'" + group + "' group needed for '"
+                                    + RECORD_ID + "' pattern. ");
+                        }
+                    }
+                } else {
+                    valid = false;
+                    errors.concat("No groups found for '" + RECORD_ID
+                            + "' pattern. ");
+                }
+            } else {
+                valid = false;
+                errors.concat("A '" + RECORD_ID
+                        + "' pattern is required and missing. ");
+            }
+
+        } else {
+            valid = false;
+            errors.concat(
+                    "No meta data patterns were found in the configuration files. ");
+        }
+        if (!valid) {
+            statusHandler
+                    .error("Meta Data Patterns information found to be invalid: "
+                            + errors);
+            statusHandler.error("PDA meta data will not be able to be parsed!");
+        }
+        return valid;
     }
 
     /**
