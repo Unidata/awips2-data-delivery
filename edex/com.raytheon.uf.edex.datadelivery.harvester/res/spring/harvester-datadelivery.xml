@@ -3,6 +3,10 @@
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
   http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
+    <!-- Empty bean that is used to depend on registry initialization. Any 
+        beans that must wait for the registry to initialize should wait on this bean. -->
+    <bean id="registryInit" class="java.lang.String" depends-on="DbInit" />
+
     <bean id="crawlerCommunicationStrategy" class="com.raytheon.uf.edex.datadelivery.harvester.crawler.FileCommunicationStrategy" />
 
     <bean id="CrawlMetaDataProcessor" class="com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlMetaDataHandler" depends-on="registryInit">
