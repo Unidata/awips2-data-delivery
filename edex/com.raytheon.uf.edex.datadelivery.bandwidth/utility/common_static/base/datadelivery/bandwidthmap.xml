@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an absolute override file, indicating that a higher priority 
+        version of the file will completely replace a lower priority version
+        of the file. 
+    -->
 <!-- bandwidth is specified in kilobytes/second (kB/s) -->
 <bandwidthMap>
     <route planDays="2" network="OPSNET" defaultBandwidth="768" bucketSizeMinutes="3" />
     <!-- TODO: What is the bandwidth allocated on the SBN for data delivery? -->
     <route planDays="2" network="SBN" defaultBandwidth="768" bucketSizeMinutes="3" />
-    <extendedLatencyFactor factor="25"/>
+    <extendedLatencyFactor factor="25" />
 </bandwidthMap>

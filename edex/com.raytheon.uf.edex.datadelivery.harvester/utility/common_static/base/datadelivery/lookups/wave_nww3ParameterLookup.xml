@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an absolute override file, indicating that a higher priority 
+        version of the file will completely replace a lower priority version
+        of the file. 
+    -->
 <ParameterLookup>
-    <parameterConfig AWIPS="HTSGW" GrADs="htsgwsfc"/>
-    <parameterConfig AWIPS="WD" GrADs="wdirsfc"/>
-    <parameterConfig AWIPS="WVDIR" GrADs="wvdirsfc"/>
-    <parameterConfig AWIPS="WS" GrADs="windsfc"/>
-    <parameterConfig AWIPS="uW" GrADs="ugrdsfc"/>
-    <parameterConfig AWIPS="DIRSW" GrADs="dirswsfc"/>
-    <parameterConfig AWIPS="WVPER" GrADs="wvpersfc"/>
-    <parameterConfig AWIPS="PERSW" GrADs="perswsfc"/>
-    <parameterConfig AWIPS="vW" GrADs="vgrdsfc"/>
-    <parameterConfig AWIPS="PERPW" GrADs="perpwsfc"/>
-    <parameterConfig AWIPS="DIRPW" GrADs="dirpwsfc"/>
+    <parameterConfig AWIPS="HTSGW" GrADs="htsgwsfc" />
+    <parameterConfig AWIPS="WD" GrADs="wdirsfc" />
+    <parameterConfig AWIPS="WVDIR" GrADs="wvdirsfc" />
+    <parameterConfig AWIPS="WS" GrADs="windsfc" />
+    <parameterConfig AWIPS="uW" GrADs="ugrdsfc" />
+    <parameterConfig AWIPS="DIRSW" GrADs="dirswsfc" />
+    <parameterConfig AWIPS="WVPER" GrADs="wvpersfc" />
+    <parameterConfig AWIPS="PERSW" GrADs="perswsfc" />
+    <parameterConfig AWIPS="vW" GrADs="vgrdsfc" />
+    <parameterConfig AWIPS="PERPW" GrADs="perpwsfc" />
+    <parameterConfig AWIPS="DIRPW" GrADs="dirpwsfc" />
 </ParameterLookup>

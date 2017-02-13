@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- This is a base file that is not intended to be overridden. -->
 <pluginRouteList>
-	<pluginRoute name="grid" value="direct-vm:persistIndexAlert" />
+    <pluginRoute name="grid" value="direct-vm:persistIndexAlert" />
 </pluginRouteList>

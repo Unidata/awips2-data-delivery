@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an absolute override file, indicating that a higher priority 
+        version of the file will completely replace a lower priority version
+        of the file. 
+    -->
 <ParameterLookup>
-    <parameterConfig AWIPS="tmp2m" GrADs="tmp2m"/>
-    <parameterConfig AWIPS="P" GrADs="pressfc"/>
-    <parameterConfig AWIPS="vgrd10m" GrADs="vgrd10m"/>
-    <parameterConfig AWIPS="ugrd10m" GrADs="ugrd10m"/>
+    <parameterConfig AWIPS="tmp2m" GrADs="tmp2m" />
+    <parameterConfig AWIPS="P" GrADs="pressfc" />
+    <parameterConfig AWIPS="vgrd10m" GrADs="vgrd10m" />
+    <parameterConfig AWIPS="ugrd10m" GrADs="ugrd10m" />
 </ParameterLookup>

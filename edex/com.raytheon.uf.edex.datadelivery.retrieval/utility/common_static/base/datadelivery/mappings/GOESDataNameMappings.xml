@@ -1,130 +1,114 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
-     pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
-     U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
-     This_software_product_contains_export-restricted_data_whose
-     export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
-     to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
-     an_export_license_or_other_authorization.
-     Contractor_Name:________Raytheon_Company
-     Contractor_Address:_____6825_Pine_Street,_Suite_340
-     ________________________Mail_Stop_B8
-     ________________________Omaha,_NE_68106
-     ________________________402.291.0100
-     See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
-     further_licensing_information. -->
-
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
+        pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
+        
+        U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
+        This_software_product_contains_export-restricted_data_whose
+        export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
+        to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
+        an_export_license_or_other_authorization.
+        
+        Contractor_Name:________Raytheon_Company
+        Contractor_Address:_____6825_Pine_Street,_Suite_340
+        ________________________Mail_Stop_B8
+        ________________________Omaha,_NE_68106
+        ________________________402.291.0100
+        
+        See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
+        further_licensing_information.
+    -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <pdaDataSetNameMapSet>
-   <pdaDataSetNameMap>
-      <parameter>ADP</parameter>
-      <description>Aerosol Detection</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>AOD</parameter>
-      <description>Aerosol Optical Depth</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>ACM</parameter>
-      <description>Clear Sky Mask</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>COD</parameter>
-      <description>Cloud Optical Depth</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>CPS</parameter>
-      <description>Cloud Particle Size</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>ACHA</parameter>
-      <description>Cloud Top Height</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>ACTP</parameter>
-      <description>Cloud Top Phase</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>CTP</parameter>
-      <description>Cloud Top Pressure</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>ACHT</parameter>
-      <description>Cloud Top Temperature</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>DMW</parameter>
-      <description>Winds</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>DSI</parameter>
-      <description>Stability Indices</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>FDC</parameter>
-      <description>Active Fires</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>HIE</parameter>
-      <description>Tropical Cyclones</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>LST</parameter>
-      <description>Land Surface Temperature</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>LCFA</parameter>
-      <description>Lightning Detection</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>RRQPE</parameter>
-      <description>Precipitation Estimates</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>SST</parameter>
-      <description>Sea Surface Temperature</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>FSC</parameter>
-      <description>Snow Cover</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>TPW</parameter>
-      <description>Total Precipitable Water</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>LVMP</parameter>
-      <description>Vertical Moisture Profiles</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>LVTP</parameter>
-      <description>Vertical Temperature Profiles</description>
-   </pdaDataSetNameMap>
-
-   <pdaDataSetNameMap>
-      <parameter>VAA</parameter>
-      <description>Volcanic Ash</description>
-   </pdaDataSetNameMap>
-
+    <pdaDataSetNameMap>
+        <parameter>ADP</parameter>
+        <description>Aerosol Detection</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>AOD</parameter>
+        <description>Aerosol Optical Depth</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>ACM</parameter>
+        <description>Clear Sky Mask</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>COD</parameter>
+        <description>Cloud Optical Depth</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>CPS</parameter>
+        <description>Cloud Particle Size</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>ACHA</parameter>
+        <description>Cloud Top Height</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>ACTP</parameter>
+        <description>Cloud Top Phase</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>CTP</parameter>
+        <description>Cloud Top Pressure</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>ACHT</parameter>
+        <description>Cloud Top Temperature</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>DMW</parameter>
+        <description>Winds</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>DSI</parameter>
+        <description>Stability Indices</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>FDC</parameter>
+        <description>Active Fires</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>HIE</parameter>
+        <description>Tropical Cyclones</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>LST</parameter>
+        <description>Land Surface Temperature</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>LCFA</parameter>
+        <description>Lightning Detection</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>RRQPE</parameter>
+        <description>Precipitation Estimates</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>SST</parameter>
+        <description>Sea Surface Temperature</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>FSC</parameter>
+        <description>Snow Cover</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>TPW</parameter>
+        <description>Total Precipitable Water</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>LVMP</parameter>
+        <description>Vertical Moisture Profiles</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>LVTP</parameter>
+        <description>Vertical Temperature Profiles</description>
+    </pdaDataSetNameMap>
+    <pdaDataSetNameMap>
+        <parameter>VAA</parameter>
+        <description>Volcanic Ash</description>
+    </pdaDataSetNameMap>
 </pdaDataSetNameMapSet>
-
-

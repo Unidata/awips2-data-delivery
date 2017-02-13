@@ -1,4 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an absolute override file, indicating that a higher priority 
+        version of the file will completely replace a lower priority version
+        of the file. 
+    -->
 <gridSubscriptionOverlapConfig>
     <!-- Each value is represented by a percent, 0-100 -->
     <maxAllowedParameterDuplication>65</maxAllowedParameterDuplication>
