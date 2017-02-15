@@ -68,7 +68,7 @@ public class Constant {
     }
 
     public String getValue() {
-        return value;
+        return Utils.resolveSystemProperties(value);
     }
 
     public void setName(String name) {

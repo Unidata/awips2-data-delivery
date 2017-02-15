@@ -83,7 +83,7 @@ public class PDAAgent extends Agent {
     }
 
     public String getResponseHandler() {
-        return responseHandler;
+        return Utils.resolveSystemProperties(responseHandler);
     }
 
     public void setResponseHandler(String responseHandler) {
@@ -91,7 +91,7 @@ public class PDAAgent extends Agent {
     }
 
     public String getCswURL() {
-        return cswURL;
+        return Utils.resolveSystemProperties(cswURL);
     }
 
     public void setCswURL(String cswURL) {

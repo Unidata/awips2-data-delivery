@@ -24,6 +24,7 @@ import java.io.File;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -59,7 +60,6 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADataSetNameMap;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.PDADataSetNameMapSet;
@@ -172,8 +172,6 @@ public class PDAFileMetaDataExtractor
 
     private Map<String, String> dataSetMetadataRetention = new HashMap<>(1);
 
-    private Map<String, String> dataSetMetadataDateFormat = new HashMap<>(1);
-
     private Date dataSetMappingFileTime;
 
     private Date resolutionMappingFileTime;
@@ -217,7 +215,6 @@ public class PDAFileMetaDataExtractor
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastInitTime > (TimeUtil.MILLIS_PER_MINUTE * 5)
                 || dataSetNameMapping.isEmpty()
-                || dataSetMetadataDateFormat.isEmpty()
                 || dataSetMetadataRetention.isEmpty() || excludeList.isEmpty()
                 || resolutionMapping.isEmpty() || satelliteMapping.isEmpty()
                 || shortNameMapping.isEmpty()) {
@@ -504,8 +501,7 @@ public class PDAFileMetaDataExtractor
                 fileName);
 
         boolean update = false;
-        if (dataSetMetadataRetention.isEmpty()
-                || dataSetMetadataDateFormat.isEmpty()) {
+        if (dataSetMetadataRetention.isEmpty()) {
             statusHandler.info("Harvester Config values are not populated");
             update = true;
         } else {
@@ -524,8 +520,6 @@ public class PDAFileMetaDataExtractor
             try {
                 Map<String, String> newDataSetMetadataRetention = new HashMap<>(
                         1);
-                Map<String, String> newDataSetMetadataDateFormat = new HashMap<>(
-                        1);
                 JAXBManager jaxb = new JAXBManager(HarvesterConfig.class);
                 if (locFiles.containsKey(LocalizationLevel.BASE)) {
                     LocalizationFile file = locFiles
@@ -535,9 +529,6 @@ public class PDAFileMetaDataExtractor
                         newDataSetMetadataRetention.put(
                                 fileSet.getProvider().getName(),
                                 fileSet.getRetention());
-                        newDataSetMetadataDateFormat.put(
-                                fileSet.getProvider().getName(),
-                                fileSet.getAgent().getDateFormat());
                     }
                 }
                 if (locFiles.containsKey(LocalizationLevel.SITE)) {
@@ -548,14 +539,10 @@ public class PDAFileMetaDataExtractor
                         newDataSetMetadataRetention.put(
                                 fileSet.getProvider().getName(),
                                 fileSet.getRetention());
-                        newDataSetMetadataDateFormat.put(
-                                fileSet.getProvider().getName(),
-                                fileSet.getAgent().getDateFormat());
                     }
                     harvesterConfigFileTime = file.getTimeStamp();
                 }
                 dataSetMetadataRetention = newDataSetMetadataRetention;
-                dataSetMetadataDateFormat = newDataSetMetadataDateFormat;
             } catch (JAXBException | SerializationException | IOException
                     | LocalizationException e) {
                 statusHandler.error("Unable to initialize harvester configs",
@@ -713,7 +700,8 @@ public class PDAFileMetaDataExtractor
                 String ignoreData = "false";
                 if (validParams) {
                     String dataSetName = createDataSetName(param, res, sat);
-                    ignoreData = checkForIgnore(param, startTime, endTime);
+                    ignoreData = checkForIgnore(param, startTime,
+                            mdp.getDateFormat());
 
                     paramMap.put("collectionName", sat);
                     paramMap.put("startTime", startTime);
@@ -803,7 +791,8 @@ public class PDAFileMetaDataExtractor
                 if (validParams) {
                     String dataSetName = createDataSetName(param, res, sat);
                     String collectionName = createCollectionName(sat);
-                    ignoreData = checkForIgnore(param, startTime, endTime);
+                    ignoreData = checkForIgnore(param, startTime,
+                            mdp.getDateFormat());
 
                     paramMap.put("collectionName", collectionName);
                     paramMap.put("paramName", param);
@@ -887,9 +876,9 @@ public class PDAFileMetaDataExtractor
     }
 
     private String checkForIgnore(String param, String startTime,
-            String endTime) {
+            String dateFormat) {
         boolean excludeParam = checkExcludeList(param);
-        boolean oldData = checkRetention(startTime, endTime);
+        boolean oldData = checkRetention(startTime, dateFormat);
 
         String ignoreData = "false";
         if (excludeParam || oldData) {
@@ -898,7 +887,7 @@ public class PDAFileMetaDataExtractor
         return ignoreData;
     }
 
-    private boolean checkRetention(String startTime, String endTime) {
+    private boolean checkRetention(String startTime, String dateFormat) {
         boolean oldDate = false;
         Number retention = Double
                 .valueOf(dataSetMetadataRetention.get(PDA_PROVIDER));
@@ -920,12 +909,18 @@ public class PDAFileMetaDataExtractor
                 Calendar thresholdTime = TimeUtil.newGmtCalendar();
                 thresholdTime.add(Calendar.HOUR_OF_DAY, retention.intValue());
 
-                Time time = getTime(startTime, endTime);
-                ImmutableDate date;
+                DateFormat formatter = new SimpleDateFormat(dateFormat);
+
                 try {
-                    date = new ImmutableDate(time.parseDate(startTime));
+                    Date date = formatter.parse(startTime);
 
                     if (thresholdTime.getTimeInMillis() >= date.getTime()) {
+                        statusHandler.warn("Excluding metadata due to time of "
+                                + date.getTime()
+                                + " being older than retention time of "
+                                + thresholdTime.getTimeInMillis()
+                                + " (Date format: " + dateFormat + ")");
+                        ;
                         oldDate = true;
                     }
                 } catch (ParseException e) {
@@ -940,24 +935,6 @@ public class PDAFileMetaDataExtractor
         return oldDate;
     }
 
-    private Time getTime(String startTime, String endTime) {
-
-        Time time = new Time();
-        time.setFormat(dataSetMetadataDateFormat.get(PDA_PROVIDER));
-
-        try {
-            time.setStartDate(startTime);
-            time.setEndDate(endTime);
-        } catch (ParseException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't parse start/end time from format: "
-                            + dataSetMetadataDateFormat.get(PDA_PROVIDER),
-                    e);
-        }
-
-        return time;
-    }
-
     private String createCollectionName(String sat) {
         String collectionName = satelliteMapping.get(sat);
         if (collectionName == null) {
@@ -969,6 +946,8 @@ public class PDAFileMetaDataExtractor
     private boolean checkExcludeList(String shortName) {
         boolean ignoreData = false;
         if (excludeList.contains(shortName)) {
+            statusHandler.warn("Excluding metadata due to '" + shortName
+                    + "' being on the exclusion list.");
             ignoreData = true;
         }
         return ignoreData;

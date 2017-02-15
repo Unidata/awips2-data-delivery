@@ -244,9 +244,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
             // Common regardless of extraction method
             if ("true".equals(paramMap.get("ignoreData"))) {
-                statusHandler
-                        .info("Skipping DataSet '" + paramMap.get(DATASET_NAME)
-                                + "' due to parameter being in exclusion list");
+                statusHandler.info("Skipping DataSet '"
+                        + paramMap.get(DATASET_NAME) + "'");
                 return;
             }
             setDefaultParams(paramMap);

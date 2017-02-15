@@ -22,7 +22,7 @@
 		<dateFormat>YYYYMMddHHmmss</dateFormat>
 		<!-- CSW (catalog service) return URL, Will be the external URL of the 
 			NCF central registry when running in production -->
-		<responseHandler>https://${retrieval.pda.response.natip}:8082/PDAHarvesterResponseHandler</responseHandler>
+		<responseHandler>https://${retrieval.pda.response.external.ip}:8082/PDAHarvesterResponseHandler</responseHandler>
 		<!-- CSW (catalog service) URL -->
 		<cswURL>https://${retrieval.pda.https.ip}/services/OGC_In_Proxy</cswURL>
 		<!-- Call getRecords only once a day, We get most metadata from transactions -->

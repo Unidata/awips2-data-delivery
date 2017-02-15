@@ -41,7 +41,7 @@ import com.vividsolutions.jts.geom.Polygon;
 public class Utils {
 
     private static final java.util.regex.Pattern propertyPattern = java.util.regex.Pattern
-            .compile(".*(\\$\\{([a-zA-Z0-9.-]+)\\}).*");
+            .compile("\\$\\{([a-zA-Z0-9.-]+)\\}");
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(Utils.class);
@@ -146,32 +146,31 @@ public class Utils {
      */
     public static String resolveSystemProperties(String inputString) {
         String rval = inputString;
-        Matcher m = propertyPattern.matcher(rval);
+        if (rval != null && !"".equals(rval)) {
 
-        if (m.matches()) {
-            String propPlaceholder = m.group(1);
-            String propName = m.group(2);
+            StringBuffer sb = new StringBuffer();
+            Matcher m = propertyPattern.matcher(rval);
 
-            String sysProperty = System.getProperty(propName);
-            if (sysProperty != null) {
-                rval = rval.replace(propPlaceholder, sysProperty);
-            } else {
-                String envVar = System.getenv(propName);
-                if (envVar != null) {
-                    rval = rval.replace(propPlaceholder, envVar);
+            while (m.find()) {
+                String propName = m.group(1);
+
+                String sysProperty = System.getProperty(propName);
+                if (sysProperty != null) {
+                    m.appendReplacement(sb, sysProperty);
                 } else {
-                    statusHandler
-                            .error("Unable to resolve value of system property '"
-                                    + propName + "' from '" + rval + "'");
-                    rval = rval.replace(propPlaceholder, propName);
+                    String envVar = System.getenv(propName);
+                    if (envVar != null) {
+                        m.appendReplacement(sb, envVar);
+                    } else {
+                        statusHandler
+                                .error("Unable to resolve value of system property '"
+                                        + propName + "' from '" + rval + "'");
+                        m.appendReplacement(sb, propName);
+                    }
                 }
             }
-
-            /*
-             * Recursively call again in case there is another property needing
-             * replaced. Only happens if we previously had a match.
-             */
-            rval = resolveSystemProperties(rval);
+            m.appendTail(sb);
+            rval = sb.toString();
         }
 
         return rval;

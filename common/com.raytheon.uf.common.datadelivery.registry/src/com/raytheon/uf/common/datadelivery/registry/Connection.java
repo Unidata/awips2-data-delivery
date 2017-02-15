@@ -110,7 +110,7 @@ public class Connection implements Serializable {
     private String url;
 
     public String getUrl() {
-        return url;
+        return Utils.resolveSystemProperties(url);
     }
 
     public void setUrl(String url) {
