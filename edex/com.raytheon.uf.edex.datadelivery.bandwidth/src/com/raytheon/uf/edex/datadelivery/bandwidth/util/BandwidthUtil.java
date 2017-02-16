@@ -29,27 +29,31 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 26, 2012 726        jspinks     Initial creation
- * Oct 10, 2012 0726       djohnson    Add bandwidthManagementEnabled, some more utility methods,
- *                                     use availability delay to determine which starting hours to schedule.
- * Nov 09, 2012 1286       djohnson    Separate DAO utility methods from general utility.
- * Dec 11, 2012 1403       djohnson    No longer valid to run without bandwidth management.
- * Feb 14, 2013 1595       djohnson    Use subscription rescheduling strategy.
- * Jun 13, 2013 2095       djohnson    Point subscriptions don't check for dataset updates on aggregation.
- * Jun 25, 2013 2106       djohnson    CheapClone was cheap in ease, not performance.
- * Jul 11, 2013 2106       djohnson    Use SubscriptionPriority enum.
- * Oct 30, 2013 2448       dhladky     Moved methods to TimeUtil.
- * Dec 20, 2013  2636      mpduff      Changed dataset delay to offset.
- * Jan 08, 2014 2615       bgonzale    Moved Calendar min and max methods to TimeUtil.
- * Apr 09, 2014 3012       dhladky     GMT Calendar use.
- * Jun 09, 2014 3113       mpduff      Moved getDataSetAvailablityOffset to SubscriptionUtil.
- * Nov 03, 2014 2414       dhladky     Refactored and moved some BWM methods.
- * May 27, 2015  4531      dhladky     Remove excessive Calendar references. GMT standard the rest.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------------------------------
+ * Jul 26, 2012  726      jspinks   Initial creation
+ * Oct 10, 2012  726      djohnson  Add bandwidthManagementEnabled, some more utility methods, use
+ *                                  availability delay to determine which starting hours to
+ *                                  schedule.
+ * Nov 09, 2012  1286     djohnson  Separate DAO utility methods from general utility.
+ * Dec 11, 2012  1403     djohnson  No longer valid to run without bandwidth management.
+ * Feb 14, 2013  1595     djohnson  Use subscription rescheduling strategy.
+ * Jun 13, 2013  2095     djohnson  Point subscriptions don't check for dataset updates on
+ *                                  aggregation.
+ * Jun 25, 2013  2106     djohnson  CheapClone was cheap in ease, not performance.
+ * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority enum.
+ * Oct 30, 2013  2448     dhladky   Moved methods to TimeUtil.
+ * Dec 20, 2013  2636     mpduff    Changed dataset delay to offset.
+ * Jan 08, 2014  2615     bgonzale  Moved Calendar min and max methods to TimeUtil.
+ * Apr 09, 2014  3012     dhladky   GMT Calendar use.
+ * Jun 09, 2014  3113     mpduff    Moved getDataSetAvailablityOffset to SubscriptionUtil.
+ * Nov 03, 2014  2414     dhladky   Refactored and moved some BWM methods.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references. GMT standard the rest.
+ * Feb 16, 2017  5899     rjpeter   Removed excessive logging.
+ * 
  * </pre>
  * 
- * @version 1.0
  */
 public class BandwidthUtil {
 
@@ -57,7 +61,7 @@ public class BandwidthUtil {
 
     public static final long DEFAULT_IDENTIFIER = -1L;
 
-    public static final int[] MONTHS_OF_YEAR = { Calendar.JANUARY,
+    protected static final int[] MONTHS_OF_YEAR = { Calendar.JANUARY,
             Calendar.FEBRUARY, Calendar.MARCH, Calendar.APRIL, Calendar.MAY,
             Calendar.JUNE, Calendar.JULY, Calendar.AUGUST, Calendar.SEPTEMBER,
             Calendar.OCTOBER, Calendar.NOVEMBER, Calendar.DECEMBER };
@@ -166,10 +170,12 @@ public class BandwidthUtil {
         dao.setEstimatedSize(subscription.getDataSetSize());
         dao.setRoute(subscription.getRoute());
         dao.setBaseReferenceTime(baseReferenceTime);
-        dao.setCycle(TimeUtil.newGmtCalendar(baseReferenceTime).get(Calendar.HOUR_OF_DAY));
+        dao.setCycle(TimeUtil.newGmtCalendar(baseReferenceTime)
+                .get(Calendar.HOUR_OF_DAY));
         dao.setPriority(subscription.getPriority());
         dao.setRegistryId(subscription.getId());
-        dao.setCheckForDataSetUpdate(subscription.getDataSetType() != DataType.POINT);
+        dao.setCheckForDataSetUpdate(
+                subscription.getDataSetType() != DataType.POINT);
         return dao;
     }
 
@@ -300,7 +306,7 @@ public class BandwidthUtil {
      * @return list of spring files configured for the given mode
      */
     public static String[] getSpringFileNamesForMode(String modeName) {
-        List<String> fileList = new ArrayList<String>();
+        List<String> fileList = new ArrayList<>();
         try {
             EDEXModesUtil.extractSpringXmlFiles(fileList, modeName);
         } catch (Exception e) {
@@ -313,10 +319,10 @@ public class BandwidthUtil {
         for (String fileName : fileList) {
             String name = RES_PATTERN.matcher(fileName).replaceFirst("");
             name = JarUtil.getResResourcePath(name);
-            result[i++] = name;
-            statusHandler.info("Spring file added: " + name + " for mode "
-                    + modeName);
+            result[i] = name;
+            i++;
         }
+
         return result;
     }
 
@@ -335,7 +341,7 @@ public class BandwidthUtil {
         Map<String, Subscription<T, C>> requestMap = null;
 
         if (list != null) {
-            requestMap = new HashMap<String, Subscription<T, C>>(list.size());
+            requestMap = new HashMap<>(list.size());
 
             for (Subscription<T, C> sub : list) {
                 requestMap.put(sub.getId(), sub);
