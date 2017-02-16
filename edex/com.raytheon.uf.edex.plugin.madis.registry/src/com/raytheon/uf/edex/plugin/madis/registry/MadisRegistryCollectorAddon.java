@@ -44,67 +44,51 @@ import com.raytheon.uf.edex.plugin.madis.ogc.MadisLayer;
  * Sept 2, 2013 #2098      dhladky      Improved time management.
  * Sept 9, 2013 #2351      dhladky      Speed improvements
  * Jan 13, 2014 #2679      dhladky      multiple ingest layers for a single request window.
- * jan 22, 2014 2713       dhladky     Calendar conversion.
+ * Jan 22, 2014 #2713      dhladky      Calendar conversion.
+ * Feb 16, 2017 #6111      njensen      Replaced tabs with spaces
  *
  * </pre>
  *
  * @author bclement
- * @version 1.0	
  */
 public class MadisRegistryCollectorAddon extends
-		WfsRegistryCollectorAddon<MadisDimension, MadisLayer, MadisRecord>
-		implements PluginIngestFilter {
+        WfsRegistryCollectorAddon<MadisDimension, MadisLayer, MadisRecord>
+        implements PluginIngestFilter {
 
-	/**
-	 * @param layerNames
-	 */
-	public MadisRegistryCollectorAddon() {
+    /**
+     * Constructor
+     */
+    public MadisRegistryCollectorAddon() {
 
-	    super();
-	    OGCAgent agent = getAgent();
-	    
-		for (ConfigLayer clayer: agent.getLayers()) {
-		    MadisLayer layer = new MadisLayer();
-		    layer.setName(clayer.getName());
-		    layers.put(clayer.getName(), layer);
-		    initializeLayer(layer);
-		}
-	}
+        super();
+        OGCAgent agent = getAgent();
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon#getTime(com
-	 * .raytheon.uf.common.dataplugin.PluginDataObject)
-	 */
-	@Override
-	protected Date getTime(MadisRecord record) {
-		Date time = record.getTimeObs().getTime();
-		return time;
-	}
+        for (ConfigLayer clayer : agent.getLayers()) {
+            MadisLayer layer = new MadisLayer();
+            layer.setName(clayer.getName());
+            layers.put(clayer.getName(), layer);
+            initializeLayer(layer);
+        }
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.raytheon.uf.edex.ogc.registry.WfsRegistryCollectorAddon#copy(com.
-	 * raytheon.uf.edex.ogc.common.db.SimpleLayer)
-	 */
-	@Override
-	protected MadisLayer copy(MadisLayer layer) {
-		return new MadisLayer(layer);
-	}
+    @Override
+    protected Date getTime(MadisRecord record) {
+        Date time = record.getTimeObs().getTime();
+        return time;
+    }
+
+    @Override
+    protected MadisLayer copy(MadisLayer layer) {
+        return new MadisLayer(layer);
+    }
 
     @Override
     public SurfaceObsLocation getSpatial(MadisRecord record) {
-        
+
         if (record.getLocation() != null) {
             return record.getLocation();
         }
         return null;
     }
-
-	
 
 }

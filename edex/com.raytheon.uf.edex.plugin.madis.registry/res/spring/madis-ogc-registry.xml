@@ -29,11 +29,10 @@
 		depends-on="registerDataDeliveryHandlers, registerRequestRegistryRouter, registerMadisPlugin">
 	</bean>
 
-	<bean id="madisRegistryAddonProvider"
-		class="com.raytheon.uf.edex.ogc.registry.RegistryCollectorAddonProvider"
-		depends-on="madisRegistryAddon">
-		<constructor-arg ref="madisRegistryAddon" />
-	</bean>
+    <bean id="madisRegistryAddonProvider"
+        class="com.raytheon.uf.edex.ogc.registry.RegistryCollectorAddonProvider">
+        <constructor-arg ref="madisRegistryAddon" />
+    </bean>
 
 	<bean id="madisWfsTypeModifier"
 		class="com.raytheon.uf.edex.ogc.registry.RegistryFeatureTypeModifier" />
