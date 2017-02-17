@@ -21,7 +21,8 @@
     <!-- 
         This is an incremental override file, indicating that the files
         at different localization levels will be combined. 
+        Note: Only base and site level files are read in.
     -->
 <pdaShortNameMapSet>
-   <pdaShortNameMap id="GOES" pattern="([A-Z0-9]+-[A-Z0-9]+)-([A-Z0-9]{3,5}?)(C|F|M|M1|M2)" group="$2"/>
+   <pdaShortNameMap id="GOES" pattern="([A-Z0-9]+-[A-Z0-9]+)-([A-Z0-9]{3,5}?)(C|F|M|M1|M2)" paramGroup="$2" resGroup="$3"/>
 </pdaShortNameMapSet>

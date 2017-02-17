@@ -191,12 +191,20 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             Matcher m = p_id.matcher(metaDataID);
             if (m.matches()) {
                 try {
+                    statusHandler
+                            .info("Extracting metadata from metadataID...");
                     paramMap = extractor.extractMetaData(metaDataID);
                 } catch (Exception e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "MetaData extraction error, " + metaDataID, e);
                     // failure return
                     return;
+                }
+
+                // Only store the metadata Id itself, not the whole field
+                String newId = paramMap.get("metadataId");
+                if (newId != null && !"".equals(newId)) {
+                    metaDataID = newId;
                 }
 
                 // Lookup for coverage information
@@ -216,6 +224,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             } else {
                 // If not, extract the metadata from the title
                 try {
+                    statusHandler.info("Extracting metadata from title...");
                     paramMap = extractor
                             .extractMetaDataFromTitle(relativeDataURL);
                 } catch (MetaDataExtractionException e) {
