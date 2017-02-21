@@ -104,6 +104,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Oct 15, 2014  3664      ccody        Added notification for scheduling status of subscriptions changes
  * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
+ * Feb 21, 2017  746       bsteffen     Do not deactivate after increasing latency.
  * 
  * </pre>
  * 
@@ -115,10 +116,10 @@ public class SubscriptionService implements ISubscriptionService {
     private static final String PENDING_SUBSCRIPTION_AWAITING_APPROVAL = "The subscription is awaiting approval.\n\n"
             + "A notification message will be generated upon approval.";
 
-    private final String OVERLAPPING_SUBSCRIPTIONS = "The following subscriptions overlap with this one "
+    private static final String OVERLAPPING_SUBSCRIPTIONS = "The following subscriptions overlap with this one "
             + "and are candidates for a shared subscription: ";
 
-    private final String DUPLICATE_SUBSCRIPTIONS = "This subscription is completely fulfilled by ";
+    private static final String DUPLICATE_SUBSCRIPTIONS = "This subscription is completely fulfilled by ";
 
     /**
      * Implementation of {@link IDisplayForceApplyPrompt} that uses an SWT
@@ -172,7 +173,7 @@ public class SubscriptionService implements ISubscriptionService {
             .getHandler(SubscriptionService.class);
 
     @VisibleForTesting
-    final String TITLE = "Subscription";
+    public static final String TITLE = "Subscription";
 
     private final SendToServerSubscriptionNotificationService notificationService;
 
@@ -413,9 +414,9 @@ public class SubscriptionService implements ISubscriptionService {
 
             @Override
             public String call() throws RegistryHandlerException {
-                final SortedSet<String> alreadyPending = new TreeSet<String>();
-                final SortedSet<String> pendingCreated = new TreeSet<String>();
-                final SortedSet<String> unableToUpdate = new TreeSet<String>();
+                final SortedSet<String> alreadyPending = new TreeSet<>();
+                final SortedSet<String> pendingCreated = new TreeSet<>();
+                final SortedSet<String> unableToUpdate = new TreeSet<>();
                 final StringBuilder successMessage = new StringBuilder(
                         "The subscriptions have been updated.");
 
@@ -633,6 +634,18 @@ public class SubscriptionService implements ISubscriptionService {
                                     subscription, notificationSB.toString(),
                                     username);
 
+                    // Intentional fall-through
+                case FORCE_APPLY_UNSCHEDULED:
+                    // Have to make sure we set them to BE UNSCHEDULED. We don't
+                    // want the bandwidth manager scheduling it.... YET.
+                    for (Subscription temp : subscriptions) {
+                        temp.setUnscheduled(true);
+                    }
+                    String successMessageUnscheduled = action.call();
+
+                    return getForceApplyMessage(subscriptions,
+                            successMessageUnscheduled, username);
+
                 case FORCE_APPLY_DEACTIVATED:
                     // Have to make sure we set them to NOT BE UNSCHEDULED, let
                     // the bandwidth manager decide they can't be scheduled
@@ -644,16 +657,6 @@ public class SubscriptionService implements ISubscriptionService {
 
                     return getForceApplyMessage(subscriptions,
                             successMessageDeactivate, username);
-                case FORCE_APPLY_UNSCHEDULED:
-                    // Have to make sure we set them to BE UNSCHEDULED. We don't
-                    // want the bandwidth manager scheduling it.... YET.
-                    for (Subscription temp : subscriptions) {
-                        temp.setUnscheduled(true);
-                    }
-                    String successMessageUnscheduled = action.call();
-
-                    return getForceApplyMessage(subscriptions,
-                            successMessageUnscheduled, username);
                 case CANCEL:
                     return new SubscriptionServiceResult(true);
                 case EDIT_SUBSCRIPTIONS:
@@ -855,9 +858,10 @@ public class SubscriptionService implements ISubscriptionService {
             // PDA, general data type subscriptions
         } else if (subTime instanceof Time) {
             return subscription.getLatencyInMinutes();
-        } else
+        } else {
             throw new IllegalArgumentException(subTime.getClass()
                     + " Not yet implemented!");
+        }
     }
 
     /**
@@ -889,9 +893,9 @@ public class SubscriptionService implements ISubscriptionService {
         StringBuilder sb = new StringBuilder(successMessage);
         getUnscheduledSubscriptionsPortion(sb, unscheduled);
 
-        if ((unscheduled != null) && (unscheduled.isEmpty() == false)) {
+        if ((unscheduled != null) && !unscheduled.isEmpty()) {
 
-            Map<String, Subscription> allSubscriptionMap = new HashMap<String, Subscription>();
+            Map<String, Subscription> allSubscriptionMap = new HashMap<>();
             String name = null;
             for (Subscription sub : subscriptions) {
                 name = sub.getName();

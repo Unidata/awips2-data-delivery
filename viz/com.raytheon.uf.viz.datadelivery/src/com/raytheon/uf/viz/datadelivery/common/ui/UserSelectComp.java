@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.swt.SWT;
@@ -111,6 +112,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * Mar 28, 2016  5482      randerso     Fixed GUI sizing issues
  * Jan 09, 2017  746       bsteffen     Unique wording for FORCE_APPLY_DEACTIVATED option
+ * Feb 21, 2017  746       bsteffen     Set request envelope when area changes.
  * 
  * </pre>
  * 
@@ -124,14 +126,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(UserSelectComp.class);
 
-    /** User information composite. */
-    private Composite userComp;
-
     /** Group Name combo box. */
     private Combo userNameCombo;
-
-    /** User info group. */
-    private Group userNameInfo;
 
     /** Dual List Object */
     private DualList dualList;
@@ -140,19 +136,16 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
     private final String currentUser = LocalizationManager.getInstance()
             .getCurrentUser();
 
-    /** User array */
-    private String[] userArr;
-
     /** User Name array list */
-    private final List<String> nameArr = new ArrayList<String>();
+    private final List<String> nameArr = new ArrayList<>();
 
     /** DualListConfig object */
     private DualListConfig dualConfig;
 
     /** map to hold user subscriptions */
-    private final Map<String, Map<String, Subscription<T, C>>> userMap = new HashMap<String, Map<String, Subscription<T, C>>>();
+    private final Map<String, Map<String, Subscription<T, C>>> userMap = new HashMap<>();
 
-    private final Set<String> initiallySelectedSubscriptions = new HashSet<String>();
+    private final Set<String> initiallySelectedSubscriptions = new HashSet<>();
 
     /** Keeps track of UserName in selection combo **/
     private String previousUserNameComboSelection = "";
@@ -202,12 +195,12 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         GridLayout gl = new GridLayout(1, false);
 
-        userNameInfo = new Group(this, SWT.NONE);
+        Group userNameInfo = new Group(this, SWT.NONE);
         userNameInfo.setLayout(gl);
         userNameInfo.setLayoutData(gd);
         userNameInfo.setText("  User Information  ");
 
-        userComp = new Composite(userNameInfo, SWT.NONE);
+        Composite userComp = new Composite(userNameInfo, SWT.NONE);
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         gl = new GridLayout(2, false);
         userComp.setLayoutData(gd);
@@ -246,7 +239,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
     private void handleUserSelect() {
 
         // Must handle "First Time" selected
-        if (previousUserNameComboSelection.equals("")) {
+        if ("".equals(previousUserNameComboSelection)) {
             previousUserNameComboSelection = userNameCombo.getText();
         }
 
@@ -273,8 +266,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
                     e);
         }
 
-        ArrayList<String> fullList = new ArrayList<String>();
-        Map<String, Subscription<T, C>> hMap = new HashMap<String, Subscription<T, C>>();
+        ArrayList<String> fullList = new ArrayList<>();
+        Map<String, Subscription<T, C>> hMap = new HashMap<>();
 
         for (Subscription<T, C> subscription : results) {
 
@@ -311,8 +304,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         Set<String> differences = Sets.symmetricDifference(
                 selectedSubscriptionNames, initiallySelectedSubscriptions);
 
-        Set<Subscription<T, C>> addedToGroup = new HashSet<Subscription<T, C>>();
-        Set<Subscription<T, C>> removedFromGroup = new HashSet<Subscription<T, C>>();
+        Set<Subscription<T, C>> addedToGroup = new HashSet<>();
+        Set<Subscription<T, C>> removedFromGroup = new HashSet<>();
 
         for (String subscriptionName : differences) {
             final Subscription<T, C> subscription = ownerSubs
@@ -356,7 +349,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections
                 .emptySet();
         try {
-            groupSubscriptionsForUpdate = new HashSet<Subscription<T, C>>(
+            groupSubscriptionsForUpdate = new HashSet<>(
                     (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers
                             .getSubscriptionHandler().getByGroupName(groupName));
 
@@ -439,7 +432,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
                 sizeUtils = DataSizeUtils.getInstance(dataset, subscription);
 
                 Coverage cov = new GriddedCoverage();
-                cov.setEnvelope(groupDefinition.getEnvelope());
+                cov.setEnvelope(dataset.getCoverage().getEnvelope());
+                cov.setRequestEnvelope(groupDefinition.getEnvelope());
 
                 subscription.setCoverage((C) cov);
             }
@@ -454,7 +448,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         try {
 
             @SuppressWarnings("rawtypes")
-            List<Subscription> pendingSubscriptionList = new ArrayList<Subscription>(
+            List<Subscription> pendingSubscriptionList = new ArrayList<>(
                     Sets.union(groupSubscriptions, removeFromGroupSubscriptions));
             final SubscriptionServiceResult result = DataDeliveryServices
                     .getSubscriptionService().updateWithPendingCheck(
@@ -491,7 +485,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
         populateUserSubscriptions(currentUser);
 
-        userArr = nameArr.toArray(new String[nameArr.size()]);
+        String[] userArr = nameArr.toArray(new String[nameArr.size()]);
         userNameCombo.setItems(userArr);
         userNameCombo.select(0);
     }
@@ -524,9 +518,10 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         Map<String, Subscription<T, C>> sMap = userMap.get(userNameCombo
                 .getText());
 
-        for (String subscriptionName : sMap.keySet()) {
+        for (Entry<String, Subscription<T, C>> entry : sMap.entrySet()) {
 
-            Subscription<T, C> sub = sMap.get(subscriptionName);
+            String subscriptionName = entry.getKey();
+            Subscription<T, C> sub = entry.getValue();
 
             if (groupName.equals(sub.getGroupName())) {
                 initiallySelectedSubscriptions.add(subscriptionName);
