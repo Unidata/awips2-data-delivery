@@ -1,3 +1,5 @@
+package com.raytheon.uf.edex.datadelivery.retrieval.util;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -17,60 +19,79 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-
-package com.raytheon.uf.common.datadelivery.retrieval.xml;
+import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
-import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Parameter XML Object.
+ * 
+ * Short Name Map object
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 1, 2012             jpiatt      Initial creation.
- * 07 Nov, 2013   2361     njensen      Remove ISerializableObject
- * 
+ * Jan 26, 2017 6089       tjensen     Initial creation
+ *
  * </pre>
- * 
- * @author jpiatt
- * @version 1.0
+ *
+ * @author tjensen
  */
 
 @XmlAccessorType(XmlAccessType.NONE)
-@DynamicSerialize
-public class ParameterConfig {
-
-    @XmlAttribute(name = "GrADs")
+public class PDAShortNameMap {
+    @XmlAttribute(name = "id")
     @DynamicSerializeElement
-    private String grads;
+    private String id;
 
-    @XmlAttribute(name = "AWIPS")
+    @XmlAttribute(name = "pattern")
     @DynamicSerializeElement
-    private String awips;
+    private String regex;
 
-    public String getAwips() {
-        return awips;
+    @XmlAttribute(name = "paramGroup")
+    @DynamicSerializeElement
+    private String paramGroup;
+
+    private Pattern pattern;
+
+    public String getId() {
+        return id;
     }
 
-    public String getGrads() {
-        return grads;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public void setAwips(String awips) {
-        this.awips = awips;
+    public String getRegex() {
+        return regex;
     }
 
-    public void setGrads(String grads) {
-        this.grads = grads;
+    public void setRegex(String regex) {
+        this.regex = regex;
     }
 
+    public String getParamGroup() {
+        return paramGroup;
+    }
+
+    public void setParamGroup(String paramGroup) {
+        this.paramGroup = paramGroup;
+    }
+
+    public Pattern getPattern() {
+        if (pattern == null) {
+            pattern = Pattern.compile(regex);
+        }
+        return pattern;
+    }
+
+    public void setPattern(Pattern pattern) {
+        this.pattern = pattern;
+    }
 }

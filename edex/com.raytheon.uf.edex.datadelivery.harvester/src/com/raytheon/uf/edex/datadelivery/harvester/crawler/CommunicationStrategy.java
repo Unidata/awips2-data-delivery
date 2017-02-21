@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
-import java.util.List;
 import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
@@ -35,9 +34,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 17, 2012 1022       djohnson     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------
+ * Jul 17, 2012  1022     djohnson  Initial creation
+ * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * 
  * </pre>
  * 
@@ -45,13 +45,6 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * @version 1.0
  */
 public interface CommunicationStrategy {
-
-    /**
-     * Retrieve errors encountered by the Crawler.
-     * 
-     * @return the errors
-     */
-    List<Throwable> getErrors();
 
     /**
      * Retrieve next available link store.
@@ -63,14 +56,6 @@ public interface CommunicationStrategy {
     void processCollections(HarvesterConfig hconfig,
             Map<String, ProtoCollection> collections, Provider provider,
             CrawlAgent agent);
-
-    /**
-     * Communicate any exceptions that occured.
-     * 
-     * @param e
-     *            the exception
-     */
-    void sendException(Exception e);
 
     /**
      * Send the link store.

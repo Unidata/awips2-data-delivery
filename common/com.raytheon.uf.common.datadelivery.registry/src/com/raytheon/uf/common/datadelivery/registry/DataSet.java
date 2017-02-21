@@ -33,17 +33,22 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 28, 2011 218        dhladky      Initial creation
- * Aug 02, 2012 955        djohnson     Renamed to DataSet.
- * Aug 10, 2012 1022       djohnson     Move grid specific code to {@link GriddedDataSet}.
- * Aug 22, 2012 0743       djohnson     Store data type as an enum.
- * Sep 07, 2012 1102       djohnson     Remove invalid {@code @XmlRootElement}.
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Dec 18, 2013 2636       mpduff       Add a data availability delay for the dataset.
- * jan 23, 2013   2584     dhladky      Versions.
- * Jun 09, 2014   3113     mpduff       Version 1.1 - Add arrivalTime.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 28, 2011  218      dhladky   Initial creation
+ * Aug 02, 2012  955      djohnson  Renamed to DataSet.
+ * Aug 10, 2012  1022     djohnson  Move grid specific code to {@link
+ *                                  GriddedDataSet}.
+ * Aug 22, 2012  743      djohnson  Store data type as an enum.
+ * Sep 07, 2012  1102     djohnson  Remove invalid {@code @XmlRootElement}.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Dec 18, 2013  2636     mpduff    Add a data availability delay for the
+ *                                  dataset.
+ * Jan 23, 2013  2584     dhladky   Versions.
+ * Jun 09, 2014  3113     mpduff    Version 1.1 - Add arrivalTime.
+ * Nov 16, 2016  5988     tjensen   Added Parameters to equals comparison
  * 
  * </pre>
  * 
@@ -214,6 +219,7 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
             eqBuilder.append(this.getCollectionName(),
                     other.getCollectionName());
             eqBuilder.append(this.getDataSetName(), other.getDataSetName());
+            eqBuilder.append(this.getParameters(), other.getParameters());
             return eqBuilder.isEquals();
         }
         return super.equals(obj);

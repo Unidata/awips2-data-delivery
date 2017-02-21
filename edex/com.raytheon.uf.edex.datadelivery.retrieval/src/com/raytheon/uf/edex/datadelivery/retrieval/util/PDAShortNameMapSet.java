@@ -30,42 +30,40 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * 
- * A JAXBable set of {@link PDADescriptionMap}s.
+ * Short Name Map Set object
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 11, 2016 5752       tjensen     Initial creation
- * Aug 18, 2016 5752       tjensen     Use correct xml tags
- * 
+ * Jan 26, 2017 6089       tjensen     Initial creation
+ *
  * </pre>
- * 
+ *
  * @author tjensen
- * @version 1.0
  */
-@XmlRootElement(name = "pdaDescriptionMapSet")
-@XmlAccessorType(XmlAccessType.NONE)
-public class PDADescriptionMapSet {
 
-    /**
+@XmlRootElement(name = "pdaShortNameMapSet")
+@XmlAccessorType(XmlAccessType.NONE)
+public class PDAShortNameMapSet {
+    /*
      * List of Resolution Mappings from the XML.
      */
     @XmlElements({
-            @XmlElement(name = "pdaDescriptionMap", type = PDADescriptionMap.class) })
-    private ArrayList<PDADescriptionMap> maps;
+            @XmlElement(name = "pdaShortNameMap", type = PDAShortNameMap.class) })
+    private ArrayList<PDAShortNameMap> maps;
 
-    public ArrayList<PDADescriptionMap> getMaps() {
+    public ArrayList<PDAShortNameMap> getMaps() {
         return maps;
     }
 
-    public void setMaps(ArrayList<PDADescriptionMap> maps) {
+    public void setMaps(ArrayList<PDAShortNameMap> maps) {
         this.maps = maps;
     }
 
-    public void addMaps(Collection<PDADescriptionMap> mapsToAdd) {
+    public void addMaps(Collection<PDAShortNameMap> mapsToAdd) {
         if (this.maps == null) {
             this.maps = new ArrayList<>();
         }

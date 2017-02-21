@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
+        pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
+        
+        U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
+        This_software_product_contains_export-restricted_data_whose
+        export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
+        to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
+        an_export_license_or_other_authorization.
+        
+        Contractor_Name:________Raytheon_Company
+        Contractor_Address:_____6825_Pine_Street,_Suite_340
+        ________________________Mail_Stop_B8
+        ________________________Omaha,_NE_68106
+        ________________________402.291.0100
+        
+        See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
+        further_licensing_information.
+    -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<pdaMetaDataPattern>
+    <metaDataPattern name="RECORD_TITLE">
+        <!-- These are used for parsing the PDA data set metadata from a title -->
+        <!-- Example: OR_ABI-L2-DMWF-M4C07_G16_s20161932020192_e20161932025000_c20161932032500.nc -->
+        <regex>([A-Z0-9]+_[A-Z0-9]+-[A-Z0-9]+)-(([A-Z0-9]{3,5}?)(C|F|M1|M2)?)(-(M[34](C\d\d)?))?_([A-Z0-9]+)_s([\d]{14})_e([\d]{14})_c([\d]{14})\.[a-zA-Z0-9]+</regex>
+        <!-- Ex:    20141231606593 -->
+        <dateFormat>YYYYDDDHHmmsss</dateFormat>
+        <group name="PARAM_FORMAT" value="$3" />
+        <group name="RES_FORMAT" value="$4" />
+        <group name="SAT_FORMAT" value="$8" />
+        <group name="START_TIME_FORMAT" value="$9" />
+        <group name="END_TIME_FORMAT" value="$10" />
+    </metaDataPattern>
+
+    <metaDataPattern name="RECORD_ID">
+        <!-- These are used for parsing the PDA data set metadata from the id field -->
+        <!-- The identifier is a pipe delimited string with various pieces of metadata info. 
+             Descriptions of what should be contained in each section is included below for each 
+             group using BNF and the subset of the pattern that is for that specific section.-->
+        <!-- Example: 38948622|ABI-L2-CMIPM|2015-02-19T03:10:45|2015-02-19T03:10:52|2015-02-19T03:10:56|2017-01-13T10:43:07|GOES-16|ABI|11|3|crs:EPSG::4326|(-83.253320 51.973484,-83.253320 36.712950,-67.513280 36.712950,-67.513280 51.973484,-83.253320 51.973484)|12|2.00|OR_ABI-L2-CMIPM2-M3C11_G16_s20170130943092_e20150500310528_c20150500310564.nc|NetCDF4 -->
+        <!--   <id>   | <shortName>       | <dataAcqStart>                                 | <dataAcqEnd>                                   | <dataCreateTime>                               | <fileReceivedTime>                             | <spacecraftList>                     | <instrumentList>                     | <channelList>                        | <modeList>                           | <urn>              | <polygonList>                                                    | <bD> | <resolution>      | <fileName>                        | <fileFormat> -->
+        <regex>(\d+)?\|([0-9a-zA-Z-_+]+)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_:+]+)?\|(\(-?\d{2}.\d{6} -?\d{2}.\d{6}(,-?\d{2}.\d{6} -?\d{2}.\d{6})*\))*\|(\d*)\|(\d{1,2}.\d{1,2})?\|([0-9a-zA-Z-_+]+.[0-9a-zA-Z-_+]+)?\|([0-9a-zA-Z-_+]+)?</regex>
+        <!-- Ex:    2015-02-19T03:10:45 -->
+        <dateFormat>YYYY-MM-dd'T'HH:mm:ss</dateFormat>
+        <!-- <InventoryID> ::= [0-9]+ == 1 or more digits -->
+        <!-- Pattern: (\d+)? -->
+        <group name="ID_FORMAT" value="$1" />
+        <!-- <shortName> ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_+]+)? -->
+        <group name="SHORT_NAME_FORMAT" value="$2" />
+        <!-- <dataAcqStart> ::= <dateString>|"" -->
+        <!-- <dateString>   ::= <YYYY>"-"<MON>"-"<DD>"T"<HH>":"<MM>":"<SS>"."<mmm> -->
+        <!-- Pattern: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)? -->
+        <group name="START_TIME_FORMAT" value="$3" />
+        <!-- <dataAcqEnd> ::= <dateString>|"" -->
+        <!-- <dateString> ::= <YYYY>"-"<MON>"-"<DD>"T"<HH>":"<MM>":"<SS>"."<mmm> -->
+        <!-- Pattern: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)? -->
+        <group name="END_TIME_FORMAT" value="$5" />
+        <!-- <dataCreateTime> ::= <dateString>|"" -->
+        <!-- <dateString>     ::= <YYYY>"-"<MON>"-"<DD>"T"<HH>":"<MM>":"<SS>"."<mmm> -->
+        <!-- Pattern: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)? -->
+        <group name="CREATE_TIME_FORMAT" value="$7" />
+        <!-- <dataReceivedTime> ::= <dateString>|"" -->
+        <!-- <dateString>       ::= <YYYY>"-"<MON>"-"<DD>"T"<HH>":"<MM>":"<SS>"."<mmm> -->
+        <!-- Pattern: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)? -->
+        <group name="RECEIVED_TIME_FORMAT" value="$9" />
+        <!-- <spacecraftList> ::= <spacecraftList>","<spacecraft>|<spacecraft>|"" -->
+        <!-- <spacecraft>     ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_+]+(,\|[0-9a-zA-Z-_+]+)*)? -->
+        <group name="SAT_FORMAT" value="$11" />
+        <!-- <instrumentList> ::= <instrumentList>","<instrument>|<instrument>|"" -->
+        <!-- <instrument>     ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_+]+(,\|[0-9a-zA-Z-_+]+)*)? -->
+        <group name="INSTRUMENT_FORMAT" value="$13" />
+        <!-- <channelList> ::= <channelList>","<channel>|<channel>|"" -->
+        <!-- <channel>     ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_+]+(,\|[0-9a-zA-Z-_+]+)*)? -->
+        <group name="CHANNEL_FORMAT" value="$15" />
+        <!-- <modeList> ::= <modeList>","<mode>|<mode>|"" -->
+        <!-- <mode>     ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_+]+(,\|[0-9a-zA-Z-_+]+)*)? -->
+        <group name="MODE_FORMAT" value="$17" />
+        <!-- <urn> ::= [0-9a-zA-Z-_:+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_:+]+)? -->
+        <group name="URN_FORMAT" value="$19" />
+        <!-- <polygonList>      ::= <polygonList>”(“<polygonPointList>”)”|”(“<polygonPointList>”)”|”” -->
+        <!-- <polygonPointList> ::= <polygonPointList>","<polygonPoint>|<polygonPoint> -->
+        <!-- <polygonPoint>     ::= <latPoint><whitespace><lonPoint> -->
+        <!-- <latPoint>         ::= [-]{0,1}[0-9]{1,2}"."[0-9]{1,6} == range -90.0 to 90.0 (sign is optional) -->
+        <!-- <lonPoint>         ::= [-]{0,1}[0-9]{1,3}"."[0-9]{1,6} == range -180.0 to 180.0 (sign is optional) -->
+        <!-- Pattern: (\(-?\d{2}.\d{6} -?\d{2}.\d{6}(,-?\d{2}.\d{6} -?\d{2}.\d{6})*\))* -->
+        <group name="POLYGON_FORMAT" value="$20" />
+        <!-- <bitDepth> ::= [0-9]*|””  == number of bits per pixel - zero or more digits -->
+        <!-- Pattern: (\d*) -->
+        <group name="BIT_DEPTH_FORMAT" value="$22" />
+        <!-- <resolution> ::= [0-9]{1,2}"."[0-9]{1,2}|”” == expressed in km -->
+        <!-- Pattern: (\d{1,2}.\d{1,2})? -->
+        <group name="RES_FORMAT" value="$23" />
+        <!-- <fileName>   ::= <stringType>"."<stringType>|"" -->
+        <!-- <stringType> ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_+]+.[0-9a-zA-Z-_+]+)? -->
+        <group name="FILE_NAME_FORMAT" value="$24" />
+        <!-- <fileFormat> ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->
+        <!-- Pattern: ([0-9a-zA-Z-_+]+)? -->
+        <group name="FILE_FORMAT_FORMAT" value="$25" />
+    </metaDataPattern>
+</pdaMetaDataPattern>

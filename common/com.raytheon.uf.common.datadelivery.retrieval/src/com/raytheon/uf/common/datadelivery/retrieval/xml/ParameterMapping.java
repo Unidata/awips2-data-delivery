@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -32,42 +33,73 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Parameter Lookup XML Object.
+ * 
+ * Parameter Mapping XML object
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------
- * Mar 01, 2012           jpiatt    Initial creation.
- * Oct 20, 2012  1163     dhladky   speed it up
- * Nov 07, 2013  2361     njensen   Remove ISerializableObject
- * Jan 05, 2017  5988     tjensen   Updated for new parameter lookups
+ * ------------- -------- --------- -----------------
+ * Dec 02, 2016  5988         tjensen   Initial creation
  * 
  * </pre>
- * 
- * @author jpiatt
- * @version 1.0
+ *
+ * @author tjensen
  */
 
-@XmlRootElement(name = "ParameterLookup")
+@XmlRootElement(name = "ParameterMapping")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class ParameterLookup {
+public class ParameterMapping {
 
-    @XmlElements({
-            @XmlElement(name = "parameterMapping", type = ParameterMapping.class) })
+    @XmlAttribute(name = "id")
     @DynamicSerializeElement
-    private List<ParameterMapping> parameterMappings;
+    private String id;
 
+    @XmlAttribute(name = "GrADs")
+    @DynamicSerializeElement
+    private String grads;
 
-    public List<ParameterMapping> getParameterMappings() {
-        return parameterMappings;
+    @XmlAttribute(name = "AWIPS")
+    @DynamicSerializeElement
+    private String awips;
+
+    /**  */
+    @XmlElements({ @XmlElement(name = "dataSet", type = String.class) })
+    @DynamicSerializeElement
+    private List<String> dataSets;
+
+    public String getGrads() {
+        return grads;
     }
 
-    public void setParameterMappings(List<ParameterMapping> parameterMappings) {
-        this.parameterMappings = parameterMappings;
+    public void setGrads(String grads) {
+        this.grads = grads;
     }
 
+    public String getAwips() {
+        return awips;
+    }
+
+    public void setAwips(String awips) {
+        this.awips = awips;
+    }
+
+    public List<String> getDataSets() {
+        return dataSets;
+    }
+
+    public void setDataSets(List<String> dataSets) {
+        this.dataSets = dataSets;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 }

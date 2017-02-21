@@ -58,15 +58,13 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class ServiceConfig {
-    
+
     /**
      * RETRIEVAL_MODE
      */
     @XmlEnum
     public enum RETRIEVAL_MODE {
-        @XmlEnumValue("SYNC")
-        SYNC, @XmlEnumValue("ASYNC")
-        ASYNC
+        @XmlEnumValue("SYNC") SYNC, @XmlEnumValue("ASYNC") ASYNC
     }
 
     private static final String ALTERNATE_NAMING_SCHEMA = "ALTERNATE_NAMING_SCHEMA";

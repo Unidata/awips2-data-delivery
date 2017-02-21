@@ -20,7 +20,9 @@
 
 package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -32,42 +34,64 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Parameter Lookup XML Object.
+ * 
+ * Parameter Regexes XML object
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------
- * Mar 01, 2012           jpiatt    Initial creation.
- * Oct 20, 2012  1163     dhladky   speed it up
- * Nov 07, 2013  2361     njensen   Remove ISerializableObject
- * Jan 05, 2017  5988     tjensen   Updated for new parameter lookups
+ * ------------- -------- --------- -----------------
+ * Dec 02, 2016  5988     tjensen   Initial creation
  * 
  * </pre>
- * 
- * @author jpiatt
- * @version 1.0
+ *
+ * @author tjensen
  */
 
-@XmlRootElement(name = "ParameterLookup")
+@XmlRootElement(name = "ParameterRegexes")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class ParameterLookup {
+public class ParameterRegexes {
+
+    /**  */
+    @XmlElements({
+            @XmlElement(name = "levelRegex", type = ParameterLevelRegex.class) })
+    @DynamicSerializeElement
+    private List<ParameterLevelRegex> levelRegexes;
 
     @XmlElements({
-            @XmlElement(name = "parameterMapping", type = ParameterMapping.class) })
+            @XmlElement(name = "nameRegex", type = ParameterNameRegex.class) })
     @DynamicSerializeElement
-    private List<ParameterMapping> parameterMappings;
+    private List<ParameterNameRegex> nameRegexes;
 
+    private List<Pattern> levelPatterns;
 
-    public List<ParameterMapping> getParameterMappings() {
-        return parameterMappings;
+    public List<ParameterLevelRegex> getLevelRegexes() {
+        return levelRegexes;
     }
 
-    public void setParameterMappings(List<ParameterMapping> parameterMappings) {
-        this.parameterMappings = parameterMappings;
+    public void setLevelRegexes(List<ParameterLevelRegex> levelRegexes) {
+        this.levelRegexes = levelRegexes;
     }
 
+    public List<ParameterNameRegex> getNameRegexes() {
+        return nameRegexes;
+    }
+
+    public void setNameRegexes(List<ParameterNameRegex> nameRegexes) {
+        this.nameRegexes = nameRegexes;
+    }
+
+    public List<Pattern> getLevelPatterns() {
+
+        if (levelPatterns == null) {
+            levelPatterns = new ArrayList<>();
+            for (ParameterLevelRegex levelRegex : getLevelRegexes()) {
+                levelPatterns.add(levelRegex.getPattern());
+            }
+        }
+        return levelPatterns;
+    }
 }

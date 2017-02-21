@@ -12,7 +12,7 @@
 		</projection>
 		<connection>
 		    <!-- PDA FTPS server name -->
-			<url>ftps://pda.espds.noaa.gov</url>
+			<url>ftps://${retrieval.pda.ftps.ip}</url>
 		</connection>
 	</provider>	
     <!-- default 6 hours of DataSetMetaData retention for PDA-->
@@ -22,9 +22,9 @@
 		<dateFormat>YYYYMMddHHmmss</dateFormat>
 		<!-- CSW (catalog service) return URL, Will be the external URL of the 
 			NCF central registry when running in production -->
-		<responseHandler>https://${harvester.external.address}:8082/PDAHarvesterResponseHandler</responseHandler>
+		<responseHandler>https://${retrieval.pda.response.external.ip}:8082/PDAHarvesterResponseHandler</responseHandler>
 		<!-- CSW (catalog service) URL -->
-		<cswURL>https://pda.espds.noaa.gov</cswURL>
+		<cswURL>https://${retrieval.pda.https.ip}/services/OGC_In_Proxy</cswURL>
 		<!-- Call getRecords only once a day, We get most metadata from transactions -->
 		<mainScan>0 0 0 * * ?</mainScan>
 	</agent>

@@ -1,5 +1,25 @@
 package com.raytheon.uf.common.datadelivery.registry;
 
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -27,11 +47,16 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 12 Sept, 2012   1038      dhladky     Initial creation
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Jan 07, 2013 1451       djohnson    Use TimeUtil.newGmtCalendar().
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 12, 2012  1038     dhladky   Initial creation
+ * Oct 04, 2012           dhladky   Initial creation of Periodicity
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Jan 07, 2013  1451     djohnson  Use TimeUtil.newGmtCalendar().
+ * Nov 09, 2016  5988     tjensen   Add pattern and dataSetNaming overrides to
+ *                                  collection
  * 
  * </pre>
  * 
@@ -44,31 +69,15 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 @DynamicSerialize
 public class Collection {
 
-    /**
-     * Periodicity
-     * 
-     * <pre>
-     * 
-     * SOFTWARE HISTORY
-     * 
-     * Date         Ticket#    Engineer    Description
-     * ------------ ---------- ----------- --------------------------
-     * Oct 4, 2012            dhladky     Initial creation
-     * 
-     * </pre>
-     * 
-     * @author dhladky
-     * @version 1.0
-     */
     @XmlEnum
     public enum Periodicity {
-        @XmlEnumValue("day")
-        DAY(Calendar.DAY_OF_YEAR), @XmlEnumValue("hour")
-        HOUR(Calendar.HOUR), @XmlEnumValue("week")
-        WEEK(Calendar.WEEK_OF_YEAR), @XmlEnumValue("month")
-        MONTH(Calendar.MONTH), @XmlEnumValue("year")
-        YEAR(Calendar.YEAR), @XmlEnumValue("none")
-        NONE(0);
+        @XmlEnumValue("day") DAY(
+                Calendar.DAY_OF_YEAR), @XmlEnumValue("hour") HOUR(
+                        Calendar.HOUR), @XmlEnumValue("week") WEEK(
+                                Calendar.WEEK_OF_YEAR), @XmlEnumValue("month") MONTH(
+                                        Calendar.MONTH), @XmlEnumValue("year") YEAR(
+                                                Calendar.YEAR), @XmlEnumValue("none") NONE(
+                                                        0);
 
         private final int calendarField;
 
@@ -131,6 +140,14 @@ public class Collection {
     @XmlElement(name = "periodicity", required = true)
     @DynamicSerializeElement
     private Periodicity periodicity;
+
+    @XmlElement(name = "pattern")
+    @DynamicSerializeElement
+    private com.raytheon.uf.common.datadelivery.registry.Pattern pattern;
+
+    @XmlElement(name = "dataSetNaming")
+    @DynamicSerializeElement
+    private DataSetNaming dataSetNaming;
 
     public Collection() {
 
@@ -409,6 +426,23 @@ public class Collection {
         this.urlKey = urlKey;
     }
 
+    public com.raytheon.uf.common.datadelivery.registry.Pattern getPattern() {
+        return pattern;
+    }
+
+    public void setPattern(
+            com.raytheon.uf.common.datadelivery.registry.Pattern pattern) {
+        this.pattern = pattern;
+    }
+
+    public DataSetNaming getDataSetNaming() {
+        return dataSetNaming;
+    }
+
+    public void setDataSetNaming(DataSetNaming dataSetNaming) {
+        this.dataSetNaming = dataSetNaming;
+    }
+
     /**
      * Update the time objects if necessary
      * 
@@ -449,8 +483,9 @@ public class Collection {
                 }
 
             } catch (ParseException e1) {
-                statusHandler.error("Un-able to parse and update time: "
-                        + e1.getMessage());
+                statusHandler.error(
+                        "Un-able to parse and update time: " + e1.getMessage(),
+                        e1);
             }
         }
     }

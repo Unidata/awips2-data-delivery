@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.util;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,56 +17,58 @@ package com.raytheon.uf.edex.datadelivery.retrieval.util;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-import java.util.ArrayList;
-import java.util.Collection;
+package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElements;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * 
- * A JAXBable set of {@link PDADescriptionMap}s.
+ * Pattern Group object
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 11, 2016 5752       tjensen     Initial creation
- * Aug 18, 2016 5752       tjensen     Use correct xml tags
- * 
+ * Jan 23, 2017 6089       tjensen     Initial creation
+ *
  * </pre>
- * 
+ *
  * @author tjensen
- * @version 1.0
  */
-@XmlRootElement(name = "pdaDescriptionMapSet")
+@XmlRootElement(name = "group")
 @XmlAccessorType(XmlAccessType.NONE)
-public class PDADescriptionMapSet {
+@DynamicSerialize
+public class PatternGroup {
 
-    /**
-     * List of Resolution Mappings from the XML.
-     */
-    @XmlElements({
-            @XmlElement(name = "pdaDescriptionMap", type = PDADescriptionMap.class) })
-    private ArrayList<PDADescriptionMap> maps;
+    @XmlAttribute(name = "name")
+    @DynamicSerializeElement
+    private String name;
 
-    public ArrayList<PDADescriptionMap> getMaps() {
-        return maps;
+    @XmlAttribute(name = "value")
+    @DynamicSerializeElement
+    private String value;
+
+    public String getName() {
+        return name;
     }
 
-    public void setMaps(ArrayList<PDADescriptionMap> maps) {
-        this.maps = maps;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void addMaps(Collection<PDADescriptionMap> mapsToAdd) {
-        if (this.maps == null) {
-            this.maps = new ArrayList<>();
-        }
-        this.maps.addAll(mapsToAdd);
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
     }
 }

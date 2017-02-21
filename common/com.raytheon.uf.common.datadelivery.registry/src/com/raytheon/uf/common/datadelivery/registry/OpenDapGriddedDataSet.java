@@ -61,16 +61,16 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class OpenDapGriddedDataSet extends GriddedDataSet {
 
     public OpenDapGriddedDataSet() {
-        
+
     }
-    
+
     @DynamicSerializeElement
     @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
-    private Map<Integer, String> cyclesToUrls = new HashMap<Integer, String>();
+    private Map<Integer, String> cyclesToUrls = new HashMap<>();
 
     @DynamicSerializeElement
     @XmlElement
-    private LinkedList<Integer> cycleUpdate = new LinkedList<Integer>();
+    private LinkedList<Integer> cycleUpdate = new LinkedList<>();
 
     /**
      * @return the cyclesToUrls
@@ -169,4 +169,36 @@ public class OpenDapGriddedDataSet extends GriddedDataSet {
         return ServiceType.OPENDAP;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result
+                + ((cycleUpdate == null) ? 0 : cycleUpdate.hashCode());
+        result = prime * result
+                + ((cyclesToUrls == null) ? 0 : cyclesToUrls.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        OpenDapGriddedDataSet other = (OpenDapGriddedDataSet) obj;
+        if (cycleUpdate == null) {
+            if (other.cycleUpdate != null)
+                return false;
+        } else if (!cycleUpdate.equals(other.cycleUpdate))
+            return false;
+        if (cyclesToUrls == null) {
+            if (other.cyclesToUrls != null)
+                return false;
+        } else if (!cyclesToUrls.equals(other.cyclesToUrls))
+            return false;
+        return true;
+    }
 }

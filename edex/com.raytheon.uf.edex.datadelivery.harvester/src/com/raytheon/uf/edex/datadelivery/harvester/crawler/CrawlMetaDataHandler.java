@@ -22,13 +22,16 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import opendap.dap.DAS;
+import org.apache.commons.io.filefilter.AgeFileFilter;
+import org.apache.commons.io.filefilter.FileFilterUtils;
 
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
@@ -38,7 +41,6 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Utils;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
-import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -50,7 +52,6 @@ import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.StringUtil;
-import com.raytheon.uf.edex.datadelivery.harvester.HarvesterEvent;
 import com.raytheon.uf.edex.datadelivery.harvester.MetaDataHandler;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
@@ -60,29 +61,38 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 
+import opendap.dap.DAS;
+
 /**
  * Harvest MetaData
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011 0218       dhladky     Initial creation
- * Jul 17, 2012 0749       djohnson    Break out the use of files to communicate as a strategy.
- * Jul 24, 2012 0955       djohnson    Use the Abstract Factory Pattern to simplify service specific access.
- * Aug 30, 2012 1123       djohnson    Rename CrawlerEvent to HarvesterEvent.
- * Sept 12,2012 1038       dhladky     Reconfigured config.
- * Oct 03, 2012 1241       djohnson    Use registry handler.
- * Nov 09, 2012 1263       dhladky     Changed to Site Level
- * Feb 05, 2013 1580       mpduff      EventBus refactor.
- * 3/18/2013    1802       bphillip    Modified to insert provider object after database is initialized
- * Jun 24, 2013 2106       djohnson    Accepts ProviderHandler as a constructor argument.
- * Oct 28, 2013 2361       dhladky     Fixed up JAXBManager.
- * Mar 31, 2014 2889       dhladky     Added username for notification center tracking.
- * Jul 08, 2014 3120       dhladky     More generics
- * Apr 12, 2015 4400       dhladky     Upgrade to DAP2 for harvesting.
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2011  218      dhladky   Initial creation
+ * Jul 17, 2012  749      djohnson  Break out the use of files to communicate as
+ *                                  a strategy.
+ * Jul 24, 2012  955      djohnson  Use the Abstract Factory Pattern to simplify
+ *                                  service specific access.
+ * Aug 30, 2012  1123     djohnson  Rename CrawlerEvent to HarvesterEvent.
+ * Sep 12, 2012  1038     dhladky   Reconfigured config.
+ * Oct 03, 2012  1241     djohnson  Use registry handler.
+ * Nov 09, 2012  1263     dhladky   Changed to Site Level
+ * Feb 05, 2013  1580     mpduff    EventBus refactor.
+ * Mar 18, 2013  1802     bphillip  Modified to insert provider object after
+ *                                  database is initialized
+ * Jun 24, 2013  2106     djohnson  Accepts ProviderHandler as a constructor
+ *                                  argument.
+ * Oct 28, 2013  2361     dhladky   Fixed up JAXBManager.
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Jul 08, 2014  3120     dhladky   More generics
+ * Apr 12, 2015  4400     dhladky   Upgrade to DAP2 for harvesting.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * 
  * </pre>
  * 
@@ -95,8 +105,9 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
     public static final String DASH = "-";
 
     /** Path to crawler links directory. */
-    private static final String PROCESSED_DIR = StringUtil.join(new String[] {
-            "datadelivery", "harvester", "processed" }, File.separatorChar);
+    private static final String PROCESSED_DIR = StringUtil.join(
+            new String[] { "datadelivery", "harvester", "processed" },
+            File.separatorChar);
 
     private final CommunicationStrategy communicationStrategy;
 
@@ -121,7 +132,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
             String providerName, String dateString) {
 
         // default if it is brand new
-        Set<String> previousRun = new HashSet<String>();
+        Set<String> previousRun = new HashSet<>();
 
         try {
             File file = getPreviousRunsFile(providerName, collectionName,
@@ -142,19 +153,16 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
         return previousRun;
     }
 
-    private File getPreviousRunsFile(String providerName,
-            String collectionName, String dateString) {
-
-        return new File(timesDir, providerName + DASH + collectionName + DASH
-                + dateString + ".bin");
-    }
-
-    public void handleErrors() {
-        List<Throwable> errors = communicationStrategy.getErrors();
-
-        for (Throwable throwable : errors) {
-            EventBus.publish(new HarvesterEvent(throwable.getMessage()));
+    private File getPreviousRunsFile(String providerName, String collectionName,
+            String dateString) {
+        File providerDir = new File(
+                timesDir.getAbsolutePath() + File.pathSeparator + providerName);
+        if (!providerDir.exists()) {
+            providerDir.mkdirs();
         }
+
+        return new File(providerDir, providerName + DASH + collectionName + DASH
+                + dateString + ".bin");
     }
 
     /**
@@ -167,7 +175,8 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
         statusHandler.info("Checking for new Crawl MetaData.....");
         hconfigs = readConfigs();
 
-        handleErrors();
+        // Clean up old Previous runs
+        removeOldRuns();
 
         ProviderCollectionLinkStore providerCollectionLinkStore = null;
 
@@ -177,16 +186,16 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                     .getCollectionName();
             String providerName = providerCollectionLinkStore.getProviderName();
             LinkStore store = providerCollectionLinkStore.getLinkStore();
-            Set<String> previousRun = getPreviousRun(collectionName,
-                    providerName, store.getDateString());
+            if (store != null && hconfigs != null) {
+                Set<String> previousRun = getPreviousRun(collectionName,
+                        providerName, store.getDateString());
 
-            if (hconfigs != null) {
                 HarvesterConfig hc = hconfigs.get(providerName);
                 CrawlAgent agent = (CrawlAgent) hc.getAgent();
                 Collection collection = agent
                         .getCollectionByName(collectionName);
 
-                if (store != null && collection != null) {
+                if (collection != null) {
 
                     Provider provider = hc.getProvider();
                     IServiceFactory<String, DAS, GriddedTime, GriddedCoverage> serviceFactory = ServiceTypeFactory
@@ -199,7 +208,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                     store.getLinkKeys().removeAll(previousRun);
 
                     // extract metadata, process each link
-                    List<String> removes = new ArrayList<String>();
+                    List<String> removes = new ArrayList<>();
 
                     for (String linkKey : store.getLinkKeys()) {
                         Link link = store.getLink(linkKey);
@@ -208,14 +217,10 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                             link.setLinks(mde.extractMetaData(url));
                             mde.setDataDate();
                         } catch (Exception e) {
-                            final String userFriendly = String
-                                    .format("Unable to retrieve metadata for dataset group %s: %s.",
-                                            collectionName, url);
+                            final String userFriendly = String.format(
+                                    "Unable to retrieve metadata for dataset group %s: %s.",
+                                    collectionName, url);
                             statusHandler.error(userFriendly, e);
-
-                            communicationStrategy
-                                    .sendException(new RuntimeException(
-                                            userFriendly, e));
 
                             // If we can't extract it, we can't parse it, so
                             // remove
@@ -257,16 +262,12 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                                     dataDateFormat);
                             previousRun.addAll(store.getLinkKeys());
                         } catch (Exception e) {
-                            final String userFriendly = String
-                                    .format("Unable to parse metadata for dataset group %s.",
-                                            collectionName);
+                            final String userFriendly = String.format(
+                                    "Unable to parse metadata for dataset group %s.",
+                                    collectionName);
 
-                            statusHandler.handle(Priority.PROBLEM,
-                                    userFriendly, e);
-
-                            communicationStrategy
-                                    .sendException(new RuntimeException(
-                                            userFriendly, e));
+                            statusHandler.handle(Priority.PROBLEM, userFriendly,
+                                    e);
                         }
 
                         writePreviousRun(previousRun, collectionName,
@@ -277,10 +278,12 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                                 + store.getDateString());
                     }
                 } else {
-                    statusHandler
-                            .handle(Priority.ERROR,
-                                    "Collection and or store are null, please check your configuration!");
+                    statusHandler.handle(Priority.ERROR,
+                            "Collection is null, please check your configuration!");
                 }
+            } else {
+                statusHandler.handle(Priority.ERROR,
+                        "Harvester Config and or store are null, please check your configuration!");
             }
         }
     }
@@ -292,13 +295,15 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
      */
     private void writePreviousRun(Set<String> previousRun,
             String collectionName, String providerName, String dateString) {
+        // Clean up any files from old runs.
 
         try {
             File file = getPreviousRunsFile(providerName, collectionName,
                     dateString);
 
             FileUtil.bytes2File(
-                    SerializationUtil.transformToThrift(previousRun), file);
+                    SerializationUtil.transformToThrift(previousRun), file,
+                    false);
 
         } catch (SerializationException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
@@ -306,8 +311,52 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
 
-        statusHandler.info("Wrote URLs: " + providerName + " : "
-                + collectionName + " : " + dateString + " size: "
-                + previousRun.size());
+        statusHandler
+                .info("Wrote URLs: " + providerName + " : " + collectionName
+                        + " : " + dateString + " size: " + previousRun.size());
+    }
+
+    /**
+     * Purge any previous run files that have been in the directory for more
+     * than a set time period. These are likely OBE at this point and we don't
+     * need to clutter our disk space up with them any more.
+     */
+    private void removeOldRuns() {
+        if (timesDir.isDirectory()) {
+            for (File subDir : timesDir.listFiles()) {
+                if (subDir.isDirectory()) {
+                    String dirName = subDir.getName();
+                    HarvesterConfig hc = hconfigs.get(dirName);
+                    if (hc != null) {
+                        int daysToKeepLinks = Integer
+                                .parseInt(hc.getRetention());
+                        File[] obeFiles = FileFilterUtils
+                                .filter(new AgeFileFilter(Date.from(LocalDate
+                                        .now().minusDays(daysToKeepLinks)
+                                        .atStartOfDay(ZoneId.of("GMT"))
+                                        .toInstant())), timesDir);
+                        int deletedFiles = 0;
+                        for (File obe : obeFiles) {
+                            if (obe.delete()) {
+                                ++deletedFiles;
+                            } else {
+                                statusHandler.warn("Processed File '"
+                                        + obe.getName()
+                                        + "' failed attempt to delete!");
+                            }
+                        }
+                        statusHandler.info("Found and deleted " + deletedFiles
+                                + " Processed files in directory '" + dirName
+                                + "' that were more than " + daysToKeepLinks
+                                + " day old");
+                    } else {
+                        statusHandler
+                                .warn("No harvester config found for previous runs subdir '"
+                                        + dirName
+                                        + "'. Directory will not be cleaned. ");
+                    }
+                }
+            }
+        }
     }
 }

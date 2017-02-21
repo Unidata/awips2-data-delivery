@@ -1,5 +1,25 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,13 +28,13 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.raytheon.uf.common.datadelivery.registry.Collection;
+import com.raytheon.uf.common.datadelivery.registry.DataSetNaming;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Constant;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfig;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetNaming;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitLookup;
@@ -36,20 +56,27 @@ import opendap.dap.PrimitiveVector;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011    218      dhladky     Initial creation
- * Jul 24, 2012    955      djohnson    Use {@link Pattern}s, simplify logic.
- * Aug 09, 2012    1022     djohnson    Handle correct parsing of wave model dataset names.
- * Aug 31, 2012    1125     djohnson    Rename getCollectionAndCycle() to getDataSetNameAndCycle(), 
- *                                      gens related datasets prepend collection name.
- * Sep 06, 2012    1125     djohnson    Also prepend naefs collection names.
- * Oct 28, 2012    1163     dhladky     Largely did away with this Class in lieu of configfile.
- * Nov 09, 2012    1163     dhladky     Made pre-load for service config
- * Nov 19, 2012    1166     djohnson    Clean up JAXB representation of registry objects.
- * Jan 08, 2013    1466     dhladky     NCOM dataset name parsing fix.
- * Jan 18, 2013    1513     dhladky     Level Lookup improvements.
- * Oct 24, 2013    2454     dhladky     NOMADS change to ensemble configuration.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2011  218      dhladky   Initial creation
+ * Jul 24, 2012  955      djohnson  Use {@link Pattern}s, simplify logic.
+ * Aug 09, 2012  1022     djohnson  Handle correct parsing of wave model dataset
+ *                                  names.
+ * Aug 31, 2012  1125     djohnson  Rename getCollectionAndCycle() to
+ *                                  getDataSetNameAndCycle(), gens related
+ *                                  datasets prepend collection name.
+ * Sep 06, 2012  1125     djohnson  Also prepend naefs collection names.
+ * Oct 28, 2012  1163     dhladky   Largely did away with this Class in lieu of
+ *                                  configfile.
+ * Nov 09, 2012  1163     dhladky   Made pre-load for service config
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Jan 08, 2013  1466     dhladky   NCOM dataset name parsing fix.
+ * Jan 18, 2013  1513     dhladky   Level Lookup improvements.
+ * Oct 24, 2013  2454     dhladky   NOMADS change to ensemble configuration.
+ * Nov 09, 2016  5988     tjensen   Update for Friendly naming for NOMADS
+ * 
  * </pre>
  * 
  * @author dhladky
@@ -74,8 +101,8 @@ public final class OpenDAPParseUtility {
 
     /* Private Constructor */
     private OpenDAPParseUtility() {
-        serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
-                ServiceType.OPENDAP);
+        serviceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.OPENDAP);
     }
 
     /**
@@ -95,12 +122,12 @@ public final class OpenDAPParseUtility {
      * 
      * @param linkKey
      *            the linkKey
-     * @param collectionName
+     * @param collection
      *            the collection name
      * @return the dataset name and cycle
      */
     public List<String> getDataSetNameAndCycle(String linkKey,
-            String collectionName) throws Exception {
+            Collection collection) throws Exception {
         String datasetName = null;
         String cycle = null;
         String numCycle = null;
@@ -108,39 +135,37 @@ public final class OpenDAPParseUtility {
         if (serviceConfig.getDataSetConfig() != null) {
             // cycle defaults to none
             cycle = serviceConfig.getConstantValue("NONE");
-            DataSetConfig dsc = serviceConfig.getDataSetConfig();
-            Map<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern, Pattern> patterns = dsc
-                    .getPatternMap();
 
-            for (Entry<com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern, Pattern> entry : patterns
-                    .entrySet()) {
-
-                com.raytheon.uf.common.datadelivery.retrieval.xml.Pattern pat = entry
-                        .getKey();
-
-                // special processing
-                if (pat.getName().equals(collectionName)) {
-                    Pattern innerPattern = Pattern.compile(pat.getRegex());
-                    String[] chunks = innerPattern.split(linkKey);
-                    // special RTOFS
-                    if (pat.getDataSetLocationAt(0) == 0
-                            && pat.getCycleLocationAt(0) == 1
-                            && chunks.length == 2) {
-                        datasetName = chunks[0];
-                        cycle = chunks[1];
-                        break;
-                        // Special for NCOM, no cycle
-                    } else if (pat.getDataSetLocationAt(0) == 1
-                            && chunks.length == 3) {
-                        datasetName = chunks[1];
-                        break;
-                    } else {
-                        // most often used
-                        datasetName = linkKey;
-                        break;
-                        // there is no cycle;
-                    }
+            // special processing
+            if (collection.getPattern() != null) {
+                com.raytheon.uf.common.datadelivery.registry.Pattern pat = collection
+                        .getPattern();
+                Pattern innerPattern = Pattern.compile(pat.getRegex());
+                String[] chunks = innerPattern.split(linkKey);
+                // special RTOFS
+                if (pat.getDataSetLocationAt(0) == 0
+                        && pat.getCycleLocationAt(0) == 1
+                        && chunks.length == 2) {
+                    datasetName = chunks[0];
+                    cycle = chunks[1];
+                    // Special for NCOM, no cycle
+                } else if (pat.getDataSetLocationAt(0) == 1
+                        && chunks.length == 3) {
+                    datasetName = chunks[1];
                 } else {
+                    // most often used
+                    datasetName = linkKey;
+                    // there is no cycle;
+                }
+            } else {
+                Map<com.raytheon.uf.common.datadelivery.registry.Pattern, Pattern> patterns = serviceConfig
+                        .getDataSetConfig().getPatternMap();
+                for (Entry<com.raytheon.uf.common.datadelivery.registry.Pattern, Pattern> entry : patterns
+                        .entrySet()) {
+
+                    com.raytheon.uf.common.datadelivery.registry.Pattern pat = entry
+                            .getKey();
+
                     // non specific pattern processing
                     Matcher m = entry.getValue().matcher(linkKey);
                     if (m.find()) {
@@ -176,46 +201,45 @@ public final class OpenDAPParseUtility {
 
             // Fall back to the default, collectionName
             if (datasetName == null) {
-                datasetName = collectionName;
+                datasetName = collection.getName();
             }
 
-            // the dataset names are the same for the following related
-            // collections,
-            // so prepend with the collection name.
-            if (dsc.getDataSetNamings() != null) {
-
-                DataSetNaming dsn = dsc.getDataSetNamingByName(collectionName);
+            /*
+             * The dataset names are the same for the following related
+             * collections, so prepend with the collection name.
+             */
+            if (collection.getDataSetNaming() != null) {
+                DataSetNaming dsn = collection.getDataSetNaming();
 
                 if (dsn != null) {
 
-                    Constant constant = serviceConfig.getNamingSchema(dsn
-                            .getExpression());
+                    Constant constant = serviceConfig
+                            .getNamingSchema(dsn.getExpression());
 
                     if (constant != null) {
                         if (dsn.getExpression()
-                                .equals(serviceConfig
-                                        .getConstantValue("ALTERNATE_NAMING_SCHEMA1"))) {
-                            datasetName = collectionName + dsn.getSeparator()
-                                    + datasetName;
-                        } else if (dsn
-                                .getExpression()
-                                .equals(serviceConfig
-                                        .getConstantValue("ALTERNATE_NAMING_SCHEMA2"))) {
-                            datasetName = collectionName;
+                                .equals(serviceConfig.getConstantValue(
+                                        "ALTERNATE_NAMING_SCHEMA1"))) {
+                            datasetName = collection.getName()
+                                    + dsn.getSeparator() + datasetName;
+                        } else if (dsn.getExpression()
+                                .equals(serviceConfig.getConstantValue(
+                                        "ALTERNATE_NAMING_SCHEMA2"))) {
+                            datasetName = collection.getName();
                         } else {
-                            statusHandler
-                                    .handle(Priority.INFO,
-                                            dsn.getExpression()
-                                                    + "Is not a known OPENDAP Alternate naming schema. "
-                                                    + collectionName);
+                            statusHandler.handle(Priority.INFO,
+                                    dsn.getExpression()
+                                            + "Is not a known OPENDAP Alternate naming schema. "
+                                            + collection);
                         }
                     }
                 }
             }
 
             try {
-                numCycle = Integer.valueOf(
-                        cycle.substring(0, cycle.length() - 1)).toString();
+                numCycle = Integer
+                        .valueOf(cycle.substring(0, cycle.length() - 1))
+                        .toString();
             } catch (NumberFormatException nfe) {
                 // Not a problem, just not a numeric cycle
             }
@@ -248,8 +272,8 @@ public final class OpenDAPParseUtility {
      * @return
      */
     public String parseDate(String date) {
-        return trim(getZPattern().matcher(date).replaceAll(
-                serviceConfig.getConstantValue("BLANK")));
+        return trim(getZPattern().matcher(date)
+                .replaceAll(serviceConfig.getConstantValue("BLANK")));
     }
 
     /**
@@ -264,19 +288,25 @@ public final class OpenDAPParseUtility {
 
         Ensemble ens = new Ensemble();
 
-        // Ensemble members used to be listed under the attribute "grads_name".
-        // Somewhere along the way, GRADS/NOMADS stopped doing that to identify
-        // it's ensembles.
-        // Both methods are listed, the original and the new as a fall back.
+        /*
+         * Ensemble members used to be listed under the attribute "grads_name".
+         * Somewhere along the way, GRADS/NOMADS stopped doing that to identify
+         * it's ensembles. Both methods are listed, the original and the new as
+         * a fall back.
+         */
 
-        if (table.getAttribute(serviceConfig.getConstantValue("NAME")) != null) {
-            String name = trim(table.getAttribute(
-                    serviceConfig.getConstantValue("NAME")).getValueAt(0));
+        if (table
+                .getAttribute(serviceConfig.getConstantValue("NAME")) != null) {
+            String name = trim(
+                    table.getAttribute(serviceConfig.getConstantValue("NAME"))
+                            .getValueAt(0));
             String[] members = COMMA_PATTERN.split(name);
             ens.setMembers(Arrays.asList(members));
-        } else if (table.getAttribute(serviceConfig.getConstantValue("SIZE")) != null) {
-            int size = Integer.parseInt(trim(table.getAttribute(
-                    serviceConfig.getConstantValue("SIZE")).getValueAt(0)));
+        } else if (table
+                .getAttribute(serviceConfig.getConstantValue("SIZE")) != null) {
+            int size = Integer.parseInt(trim(
+                    table.getAttribute(serviceConfig.getConstantValue("SIZE"))
+                            .getValueAt(0)));
             List<String> members = new ArrayList<String>(size);
             if (size > 0) {
                 for (Integer i = 0; i < size; i++) {
@@ -358,8 +388,8 @@ public final class OpenDAPParseUtility {
      */
     public String trim(String val) {
 
-        return QUOTES_PATTERN.matcher(val).replaceAll(
-                serviceConfig.getConstantValue("BLANK"));
+        return QUOTES_PATTERN.matcher(val)
+                .replaceAll(serviceConfig.getConstantValue("BLANK"));
     }
 
     /**
@@ -374,8 +404,8 @@ public final class OpenDAPParseUtility {
         List<Double> levels = null;
 
         try {
-            DConnect connect = OpenDAPConnectionUtil.getDConnectDAP2(url + "?"
-                    + lev);
+            DConnect connect = OpenDAPConnectionUtil
+                    .getDConnectDAP2(url + "?" + lev);
             DataDDS data = connect.getData(null);
             DArray array = (DArray) data.getVariable(lev);
             PrimitiveVector pm = array.getPrimitiveVector();

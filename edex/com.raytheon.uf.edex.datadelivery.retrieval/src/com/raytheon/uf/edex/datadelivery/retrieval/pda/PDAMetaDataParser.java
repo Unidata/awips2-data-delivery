@@ -22,15 +22,17 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.opengis.geometry.DirectPosition;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
@@ -46,6 +48,8 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.MetaDataPattern;
+import com.raytheon.uf.common.dataplugin.exception.MalformedDataException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -55,6 +59,13 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
 import com.raytheon.uf.edex.ogc.common.OgcException;
 import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
+
+import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
 
 /**
  * Parse PDA metadata
@@ -79,6 +90,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  getCoverage
  * Aug 25, 2016  5752     tjensen   Change MetaData date to use start instead of
  *                                  create
+ * Jan 27, 2017  6089     tjensen   Update to work with pipe delimited metadata
  * 
  * </pre>
  * 
@@ -118,8 +130,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     private String dateFormat = null;
 
     public PDAMetaDataParser() {
-        serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
-                ServiceType.PDA);
+        serviceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.PDA);
         // debugging MetaData parsing.
         String debugVal = serviceConfig.getConstantValue(DEBUG);
         debug = Boolean.valueOf(debugVal);
@@ -130,8 +142,10 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
      */
     @Override
     public List<DataSetMetaData<?>> parseMetaData(Provider provider,
-            BriefRecordType record, Collection collection, String dataDateFormat) {
-        throw new UnsupportedOperationException("Not implemented for this type");
+            BriefRecordType record, Collection collection,
+            String dataDateFormat) {
+        throw new UnsupportedOperationException(
+                "Not implemented for this type");
     }
 
     @Override
@@ -139,7 +153,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             BriefRecordType record, boolean isMetaData) {
 
         Map<String, String> paramMap = null;
-        PDAMetaDataExtractor<?, String> extractor = null;
 
         Date arrivalTime = TimeUtil.newGmtCalendar().getTime();
         // Geo coverage of information
@@ -154,6 +167,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         // physical path relative to root provider URL
         String relativeDataURL = record.getTitle().get(0).getValue()
                 .getContent().get(0);
+
         // metadata URL is the full URL path, (not relative) to the file
         // tack on the root provider URL from the provider connection.
         String metaDataURL = provider.getConnection().getUrl() + "/"
@@ -164,80 +178,87 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             statusHandler.info("relativeURL: " + relativeDataURL);
             statusHandler.info("metaDataURL: " + metaDataURL);
         }
-        // append the
         // set date formatter
         setDateFormat(dateFormat);
 
-        extractor = PDAFileMetaDataExtractor.getInstance();
+        PDAFileMetaDataExtractor extractor = PDAFileMetaDataExtractor
+                .getInstance();
 
-        try {
-            paramMap = extractor.extractMetaData(relativeDataURL);
-            // these aren't satisfied with the file format parsing, use
-            // defaults and pray
-            paramMap.put(FILL_VALUE,
-                    serviceConfig.getConstantValue("FILL_VALUE"));
-            paramMap.put(MISSING_VALUE,
-                    serviceConfig.getConstantValue("MISSING_VALUE"));
-            paramMap.put(UNITS, serviceConfig.getConstantValue("UNITS"));
-            paramMap.put(FORMAT,
-                    serviceConfig.getConstantValue("DEFAULT_FORMAT"));
-
-        } catch (MetaDataExtractionException e) {
-            // Don't need to print a stack trace for this.
-            statusHandler.error("MetaData extraction error on "
-                    + relativeDataURL + ". Caused by: "
-                    + e.getLocalizedMessage());
-            // failure return
-            return;
-        } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "MetaData extraction error, " + relativeDataURL, e);
-            // failure return
-            return;
-        }
-        if ("false".equals(paramMap.get("ignoreData"))) {
-
-            // set the time object
-            /*
-             * If you are using "canned" data, it doesn't work with the
-             * subscription creation system based on a 48 hour window of
-             * retrievals. Setup a simulated, recent time that does.
-             */
-            if (serviceConfig.getConstantValue("SIMULATE").equals("true")) {
-                // make up a recent time
-                long currtime = TimeUtil.currentTimeMillis();
-                // make it 5 minutes old
-                long etime = currtime - (1000 * 60 * 5);
-                // make it 10 minutes old
-                long stime = currtime - (1000 * 60 * 10);
-
-                time = new Time();
-                time.setFormat(getDateFormat());
-                time.setStart(new Date(stime));
-                time.setEnd(new Date(etime));
-
-                idate = new ImmutableDate(time.getStart());
-
-            } else {
-                // use real time parsed from file
-                time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
-
+        // Check to see if pipe delimited id pattern is used.
+        MetaDataPattern mdp = extractor.getMetaDataPattern("RECORD_ID");
+        if (mdp != null) {
+            Pattern p_id = mdp.getPattern();
+            Matcher m = p_id.matcher(metaDataID);
+            if (m.matches()) {
                 try {
-                    idate = new ImmutableDate(time.parseDate(paramMap
-                            .get(START_TIME)));
-                } catch (ParseException e) {
+                    paramMap = extractor.extractMetaData(metaDataID);
+                } catch (Exception e) {
                     statusHandler.handle(Priority.PROBLEM,
-                            "Couldn't parse dataTime, " + relativeDataURL, e);
+                            "MetaData extraction error, " + metaDataID, e);
+                    // failure return
+                    return;
+                }
+
+                // Lookup for coverage information
+                String polygonPoints = paramMap.get("polygonPoints");
+                String crs = paramMap.get("crs");
+                if (polygonPoints != null && !polygonPoints.equals("")
+                        && crs != null && !crs.equals("")) {
+                    try {
+                        coverage = getCoverage(polygonPoints, crs);
+                    } catch (MalformedDataException e) {
+                        statusHandler.error("Invalid Polygon data", e);
+                    }
+                } else {
+                    statusHandler.warn("Geometry missing for dataset '"
+                            + paramMap.get(DATASET_NAME) + "'");
+                }
+            } else {
+                // If not, extract the metadata from the title
+                try {
+                    paramMap = extractor
+                            .extractMetaDataFromTitle(relativeDataURL);
+                } catch (MetaDataExtractionException e) {
+                    // Don't need to print a stack trace for this.
+                    statusHandler.error("MetaData extraction error on "
+                            + relativeDataURL + ". Caused by: "
+                            + e.getLocalizedMessage());
+                    // failure return
+                    return;
+                } catch (Exception e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "MetaData extraction error, " + relativeDataURL, e);
+                    // failure return
+                    return;
+                }
+
+                // Lookup for coverage information
+                if (!record.getBoundingBox().isEmpty()) {
+                    coverage = getCoverage(
+                            record.getBoundingBox().get(0).getValue());
+                } else {
+                    statusHandler.warn("Bounding box is empty for dataset '"
+                            + paramMap.get(DATASET_NAME) + "'");
                 }
             }
 
-            // Lookup for coverage information
-            if (!record.getBoundingBox().isEmpty()) {
-                coverage = getCoverage(record.getBoundingBox().get(0)
-                        .getValue());
-            } else {
-                statusHandler.warn("Bounding box is empty for dataset '"
+            // Common regardless of extraction method
+            if ("true".equals(paramMap.get("ignoreData"))) {
+                statusHandler.info("Skipping DataSet '"
                         + paramMap.get(DATASET_NAME) + "'");
+                return;
+            }
+            setDefaultParams(paramMap);
+
+            // use real time parsed from file
+            time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
+
+            try {
+                idate = new ImmutableDate(
+                        time.parseDate(paramMap.get(START_TIME)));
+            } catch (ParseException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Couldn't parse dataTime, " + relativeDataURL, e);
             }
 
             /**
@@ -257,10 +278,9 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                 pdaDataSet.setArrivalTime(arrivalTime.getTime());
                 // there is only one parameter per briefRecord at this point
                 Map<String, Parameter> parameters = getParameters(
-                        paramMap.get(PARAM_NAME),
-                        paramMap.get(COLLECTION_NAME), provider.getName(),
-                        paramMap.get(UNITS), paramMap.get(FILL_VALUE),
-                        paramMap.get(MISSING_VALUE));
+                        paramMap.get(PARAM_NAME), paramMap.get(COLLECTION_NAME),
+                        provider.getName(), paramMap.get(UNITS),
+                        paramMap.get(FILL_VALUE), paramMap.get(MISSING_VALUE));
                 pdaDataSet.setParameters(parameters);
                 // set the coverage
                 pdaDataSet.setCoverage(coverage);
@@ -271,8 +291,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
                 storeDataSet(pdaDataSet);
             } else {
-                statusHandler.warn("Coverage is null for: "
-                        + paramMap.get(DATASET_NAME));
+                statusHandler.warn(
+                        "Coverage is null for: " + paramMap.get(DATASET_NAME));
             }
 
             /*
@@ -285,8 +305,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                 pdadsmd.setMetaDataID(metaDataID);
                 pdadsmd.setArrivalTime(arrivalTime.getTime());
                 pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
-                        paramMap.get(COLLECTION_NAME), time.getStart()
-                                .getTime()));
+                        paramMap.get(COLLECTION_NAME),
+                        time.getStart().getTime()));
                 pdadsmd.setTime(time);
                 pdadsmd.setDataSetName(paramMap.get(DATASET_NAME));
                 pdadsmd.setDataSetDescription(metaDataID + " " + DATASET_NAME);
@@ -297,11 +317,98 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
                 storeMetaData(pdadsmd);
             }
-        } else {
-            statusHandler.info("Skipping DataSet '"
-                    + paramMap.get(DATASET_NAME)
-                    + "' due to parameter being in exclusion list");
         }
+    }
+
+    private void setDefaultParams(Map<String, String> paramMap) {
+        // these aren't satisfied with the file format parsing, use
+        // defaults and pray
+        paramMap.put(FILL_VALUE, serviceConfig.getConstantValue("FILL_VALUE"));
+        paramMap.put(MISSING_VALUE,
+                serviceConfig.getConstantValue("MISSING_VALUE"));
+        paramMap.put(UNITS, serviceConfig.getConstantValue("UNITS"));
+        paramMap.put(FORMAT, serviceConfig.getConstantValue("DEFAULT_FORMAT"));
+    }
+
+    private Coverage getCoverage(String polygonPoints, String crs)
+            throws MalformedDataException {
+        Coverage coverage = new Coverage();
+        GeometryFactory factory = new GeometryFactory();
+
+        // Trim the leading and trailing parens, then split on parens
+        polygonPoints = polygonPoints.replaceAll("^\\(", "");
+        polygonPoints = polygonPoints.replaceAll("\\)$", "");
+
+        /*
+         * String should contain list of points for one or more polygon. Split
+         * the string first by polygon delimited with ")(", then by coordinate
+         * delimited with ",", then to lat and lon delimited by spaces. Then
+         * work in reverse to build Coordinates from the lat and lon, then
+         * Polygons from the Coordinates.
+         */
+        String[] polyList = polygonPoints.split("\\)\\(");
+        Polygon[] polys = new Polygon[polyList.length];
+        int p = 0;
+
+        for (String polyCoords : polyList) {
+            String[] polyPoints = polyCoords.split(",");
+            if (polyPoints.length < 3) {
+                throw new MalformedDataException(
+                        "Invalid number of coordinates received for a polygon. Minimum 3 required; received: "
+                                + polygonPoints);
+            }
+
+            List<Coordinate> coorsList = new ArrayList<>();
+            for (String point : polyPoints) {
+                String[] coord = point.split(" ");
+                coorsList.add(new Coordinate(Double.parseDouble(coord[0]),
+                        Double.parseDouble(coord[1])));
+            }
+            // Check to make sure the polygon is closed. If not, close it.
+            if (!coorsList.get(0).equals(coorsList.get(coorsList.size() - 1))) {
+                statusHandler
+                        .info("Polygon not closed. Adding closing point to polygon points list: "
+                                + polygonPoints);
+                coorsList.add(coorsList.get(0));
+            }
+            Coordinate[] coors = (Coordinate[]) coorsList.toArray();
+            LinearRing lr = factory.createLinearRing(coors);
+            polys[p] = factory.createPolygon(lr, null);
+            p++;
+        }
+
+        if (polyList.length > 1) {
+            statusHandler.warn("Encountered metadata with multiple polygons ("
+                    + polyList.length + ") making up its Geometry! "
+                    + "Envelope used will be the envelope containing all polygons.");
+        }
+
+        /*
+         * Combine all Polygons into a MultiPolyon, then get the envelope
+         * containing the polygons. Use the upper and lower corners of that
+         * envelope and the crs to create a ReferencedEnvelope for the Coverage
+         * area.
+         */
+        MultiPolygon multiPoly = new MultiPolygon(polys, factory);
+        Geometry envelope = multiPoly.getEnvelope();
+        Coordinate[] corners = envelope.getCoordinates();
+        statusHandler
+                .info("Envelope Coods: (" + corners[0].x + "," + corners[0].y
+                        + ") to (" + corners[2].x + "," + corners[2].y + ")");
+
+        List<Double> lc = Arrays.asList(corners[0].x, corners[0].y);
+        List<Double> uc = Arrays.asList(corners[2].x, corners[2].y);
+        DirectPosition min = BoundingBoxUtil.convert(lc);
+        DirectPosition max = BoundingBoxUtil.convert(uc);
+
+        try {
+            coverage.setEnvelope(BoundingBoxUtil.convert2D(min, max, crs));
+        } catch (OgcException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Couldn't determine BoundingBox envelope!", e);
+        }
+
+        return coverage;
     }
 
     /**
@@ -328,8 +435,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                         + boundingBoxType.getUpperCorner().get(1) + " size: "
                         + boundingBoxType.getUpperCorner().size());
                 statusHandler.info("CRS: " + boundingBoxType.getCrs());
-                statusHandler.info("Dimensions: "
-                        + boundingBoxType.getDimensions());
+                statusHandler
+                        .info("Dimensions: " + boundingBoxType.getDimensions());
             }
 
             envelope = BoundingBoxUtil.convert2D(boundingBoxType);
@@ -397,8 +504,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
         // missing value
         if (missingValue == null) {
-            parm.setMissingValue(serviceConfig
-                    .getConstantValue("MISSING_VALUE"));
+            parm.setMissingValue(
+                    serviceConfig.getConstantValue("MISSING_VALUE"));
         } else {
             parm.setMissingValue(missingValue);
         }
