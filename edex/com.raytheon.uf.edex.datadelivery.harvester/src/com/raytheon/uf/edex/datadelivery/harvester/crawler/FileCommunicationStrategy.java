@@ -83,6 +83,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * Sep 10, 2014  3581     ccody     Remove references to SerializationUtil for
  *                                  JAXB operations.
  * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
+ * Feb 27, 2017  5988     tjensen   Fix issue with file save for new config
  * 
  * </pre>
  * 
@@ -363,7 +364,7 @@ class FileCommunicationStrategy implements CommunicationStrategy {
 
         try {
             HarvesterConfigurationManager.setHarvesterFile(hconfig, file);
-            lf.openOutputStream().save();
+            lf.save();
         } catch (Exception e) {
             statusHandler.error(
                     "Unable to recreate the " + provider
