@@ -778,7 +778,7 @@ public class PDAFileMetaDataExtractor
         statusHandler.info("Extracting MetaData from: " + fileName);
 
         /*
-         * Pull in regex and grouping from the PDA service config file in case
+         * Pull in regex and grouping from the PDA metadata config file in case
          * PDA changes the format in the future.
          */
         MetaDataPattern mdp = getMetaDataPattern(RECORD_TITLE);
@@ -899,7 +899,12 @@ public class PDAFileMetaDataExtractor
     private String checkForIgnore(String param, String startTime,
             String dateFormat) {
         boolean excludeParam = checkExcludeList(param);
-        boolean oldData = checkRetention(startTime, dateFormat);
+
+        boolean oldData = false;
+        if (Boolean.parseBoolean(
+                serviceConfig.getConstantValue("CHECK_DATA_RETENTION_TIME"))) {
+            oldData = checkRetention(startTime, dateFormat);
+        }
 
         String ignoreData = "false";
         if (excludeParam || oldData) {
@@ -941,7 +946,6 @@ public class PDAFileMetaDataExtractor
                                 + " being older than retention time of "
                                 + thresholdTime.getTimeInMillis()
                                 + " (Date format: " + dateFormat + ")");
-                        ;
                         oldDate = true;
                     }
                 } catch (ParseException e) {

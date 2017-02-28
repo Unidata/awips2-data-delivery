@@ -370,8 +370,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             List<Coordinate> coorsList = new ArrayList<>();
             for (String point : polyPoints) {
                 String[] coord = point.split(" ");
-                coorsList.add(new Coordinate(Double.parseDouble(coord[0]),
-                        Double.parseDouble(coord[1])));
+                coorsList.add(new Coordinate(Double.parseDouble(coord[1]),
+                        Double.parseDouble(coord[0])));
             }
             // Check to make sure the polygon is closed. If not, close it.
             if (!coorsList.get(0).equals(coorsList.get(coorsList.size() - 1))) {
@@ -380,7 +380,14 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                                 + polygonPoints);
                 coorsList.add(coorsList.get(0));
             }
-            Coordinate[] coors = (Coordinate[]) coorsList.toArray();
+            /*
+             * coorsList.toArray() is unable to cast objects to Coordinates, so
+             * do it manually.
+             */
+            Coordinate[] coors = new Coordinate[coorsList.size()];
+            for (int c = 0; c < coors.length; c++) {
+                coors[c] = coorsList.get(c);
+            }
             LinearRing lr = factory.createLinearRing(coors);
             polys[p] = factory.createPolygon(lr, null);
             p++;
