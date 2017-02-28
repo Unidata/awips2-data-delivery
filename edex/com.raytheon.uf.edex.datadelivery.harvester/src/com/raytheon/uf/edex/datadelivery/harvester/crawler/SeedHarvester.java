@@ -25,9 +25,11 @@ import edu.uci.ics.crawler4j.url.WebURL;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 4, 2012  1038       dhladky     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Oct 04, 2012  1038     dhladky   Initial creation
+ * Feb 28, 2017  5988     tjensen   Improve logging
  * 
  * </pre>
  * 
@@ -94,7 +96,8 @@ public class SeedHarvester extends WebCrawler {
      * @return
      */
     private ProtoCollection createNewCollection(String seedUrl, String slimurl,
-            SimpleDateFormat sdf, String dateParse, String[] chunks, int depth) {
+            SimpleDateFormat sdf, String dateParse, String[] chunks,
+            int depth) {
         // brand new collection, we need to find urlKey
         // here too...
         ProtoCollection coll = new ProtoCollection(seedUrl, slimurl);
@@ -131,7 +134,7 @@ public class SeedHarvester extends WebCrawler {
     @Override
     public boolean shouldVisit(WebURL url) {
         String href = url.getURL();
-        // System.out.println("Checking url: " + href);
+        statusHandler.info("Checking url: " + href);
 
         // Compare with Collections we know about
         if (KNOWN_FILTERS != null && KNOWN_FILTERS.size() > 0) {
@@ -140,7 +143,7 @@ public class SeedHarvester extends WebCrawler {
                     // URL contains a Collection we already know of
                     if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                         statusHandler
-                                .debug("Refusing to traverse, KNOWN pattern: "
+                                .info("Refusing to traverse, KNOWN pattern: "
                                         + pat.toString() + " " + href);
                     }
                     return false;
@@ -155,7 +158,7 @@ public class SeedHarvester extends WebCrawler {
                     // URL contains a (name)collection we wish to ignore
                     if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                         statusHandler
-                                .debug("Refusing to traverse, IGNORE pattern: "
+                                .info("Refusing to traverse, IGNORE pattern: "
                                         + pat.toString() + " " + href);
                     }
                     return false;
@@ -167,6 +170,9 @@ public class SeedHarvester extends WebCrawler {
             // We want everything here that applies
             return true;
         }
+
+        statusHandler.info("Refusing to traverse, does not start with: "
+                + topurl + " " + href);
 
         return false;
     }
@@ -213,13 +219,15 @@ public class SeedHarvester extends WebCrawler {
 
         String url = page.getWebURL().getURL();
 
+        statusHandler.info("Visit URL: " + url);
+
         if (page.getParseData() instanceof HtmlParseData) {
 
             if (FILTERS.matcher(url).find()) {
 
                 // first hack off the provider root URL
                 String slimurl = url.replaceAll(topurl, "");
-                // System.out.println("Found new URL: " + slimurl);
+                statusHandler.info("Found new URL: " + slimurl);
                 // carve up this url
                 String[] chunks = OpenDapSeedScanUtilities.breakupUrl(slimurl);
                 String chunk0 = chunks[0];
@@ -243,14 +251,15 @@ public class SeedHarvester extends WebCrawler {
                         // chunks of the URL.
                         // check to see if we already have a ProtoCollection
                         if (seedUrl == null) {
-                            seedUrl = OpenDapSeedScanUtilities.getUrlAtDepth(
-                                    depth - 1, slimurl);
+                            seedUrl = OpenDapSeedScanUtilities
+                                    .getUrlAtDepth(depth - 1, slimurl);
                         }
 
                         synchronized (links) {
 
                             if (links.containsKey(seedUrl)) {
-                                updateCollection(seedUrl, depth, sdf, dateParse);
+                                updateCollection(seedUrl, depth, sdf,
+                                        dateParse);
                             } else {
                                 ProtoCollection coll = createNewCollection(
                                         seedUrl, slimurl, sdf, dateParse,
@@ -282,6 +291,9 @@ public class SeedHarvester extends WebCrawler {
                         }
                     }
                 }
+            } else {
+                statusHandler.info(
+                        "URL does not contain pattern : " + FILTERS.pattern());
             }
         }
     }

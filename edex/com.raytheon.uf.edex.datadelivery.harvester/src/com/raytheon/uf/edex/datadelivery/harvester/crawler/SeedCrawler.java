@@ -78,8 +78,8 @@ public class SeedCrawler extends Crawler {
             }
         };
 
-        runIfLockCanBeAcquired(runWithinLock, configFileLockDir, providerName
-                + "-seed");
+        runIfLockCanBeAcquired(runWithinLock, configFileLockDir,
+                providerName + "-seed");
     }
 
     /**
@@ -90,12 +90,11 @@ public class SeedCrawler extends Crawler {
      *            the configuration file
      */
     public SeedCrawler(HarvesterConfig config) {
-        this(
-                config,
+        this(config,
                 new SeedCommunicationStrategyDecorator(
-                        (CommunicationStrategy) EDEXUtil
-                                .getESBComponent(COMMUNICATION_STRATEGY_BEAN_NAME),
-                        Executors.newSingleThreadExecutor(THREAD_FACTORY)));
+                        (CommunicationStrategy) EDEXUtil.getESBComponent(
+                                COMMUNICATION_STRATEGY_BEAN_NAME),
+                Executors.newSingleThreadExecutor(THREAD_FACTORY)));
     }
 
     /**
@@ -113,10 +112,10 @@ public class SeedCrawler extends Crawler {
 
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
             if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
-                statusHandler.debug(String.format(
-                        "proxy host:[%s]  proxy port: [%s]",
-                        ProxyConfiguration.getHttpProxyHost(),
-                        ProxyConfiguration.getHttpProxyPortString()));
+                statusHandler.debug(
+                        String.format("proxy host:[%s]  proxy port: [%s]",
+                                ProxyConfiguration.getHttpProxyHost(),
+                                ProxyConfiguration.getHttpProxyPortString()));
             } else {
                 statusHandler.debug("No proxy information configured.");
             }
@@ -221,12 +220,14 @@ public class SeedCrawler extends Crawler {
         webCrawlers.add(new SeedHarvester(searchUrl, agent.getSearchKey(),
                 collections, knownCollections, agent.getIgnore()));
 
+        statusHandler.info("Starting crawl...");
         // start the crawling, blocks thread till finished
         crawlcontroller.start(webCrawlers, webCrawlers.size());
         crawlcontroller.Shutdown();
+        statusHandler.info("Finished crawl...");
 
-        communicationStrategy.processCollections(hconfig, collections,
-                provider, agent);
+        communicationStrategy.processCollections(hconfig, collections, provider,
+                agent);
 
     }
 

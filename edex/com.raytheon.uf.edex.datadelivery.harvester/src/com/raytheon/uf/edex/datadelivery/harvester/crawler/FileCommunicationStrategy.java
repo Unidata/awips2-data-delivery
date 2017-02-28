@@ -217,8 +217,8 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         ArrayList<Collection> newCollections = new ArrayList<>();
         // start processing the proto collections into real collections
         for (Entry<String, ProtoCollection> entry : collections.entrySet()) {
+            ProtoCollection pc = entry.getValue();
             try {
-                ProtoCollection pc = entry.getValue();
                 // make first date, find greatest depth dates
                 Collection coll = new Collection(pc.getCollectionName(),
                         pc.getSeedUrl(), pc.getDateFormatString());
@@ -240,8 +240,9 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                         "adding new Collection: " + pc.getCollectionName());
                 // announce
             } catch (Exception e) {
-                statusHandler.error(
-                        "Error parsing proto-collections " + e.getMessage());
+                statusHandler.error("Error parsing proto-collection '"
+                        + pc.getCollectionName() + "' from "
+                        + provider.getName(), e);
             }
         }
 
