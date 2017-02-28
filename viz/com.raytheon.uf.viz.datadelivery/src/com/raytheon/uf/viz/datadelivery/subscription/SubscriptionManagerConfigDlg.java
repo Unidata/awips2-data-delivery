@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -41,27 +41,29 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 
 /**
  * Subscription Manager Configuration Dialog
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 11, 2012            mpduff     Initial creation
- * Jun 07, 2012   687      lvenable   Table data refactor.
- * Jan 03, 2013  1437      bgonzale   Removed xml attribute, use SubscriptionConfigurationManager
- *                                    instead.  Added configuration file management controls to
- *                                    this dialog.
- * Sep 04, 2013  2314      mpduff     Load/save config dialog now non-blocking.
- * Nov 06, 2013  2358      mpduff     Removed configuration file management from this dialog.
- * May 17, 2015  4047      dhladky    verified non-blocking.
- * Feb 01, 2016  5289      tgurney    Add missing minimize button in trim
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 11, 2012           mpduff    Initial creation
+ * Jun 07, 2012  687      lvenable  Table data refactor.
+ * Jan 03, 2013  1437     bgonzale  Removed xml attribute, use
+ *                                  SubscriptionConfigurationManager instead.
+ *                                  Added configuration file management controls
+ *                                  to this dialog.
+ * Sep 04, 2013  2314     mpduff    Load/save config dialog now non-blocking.
+ * Nov 06, 2013  2358     mpduff    Removed configuration file management from
+ *                                  this dialog.
+ * May 17, 2015  4047     dhladky   verified non-blocking.
+ * Feb 01, 2016  5289     tgurney   Add missing minimize button in trim
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class SubscriptionManagerConfigDlg extends CaveSWTDialog {
@@ -81,14 +83,15 @@ public class SubscriptionManagerConfigDlg extends CaveSWTDialog {
 
     /**
      * Initialization Constructor.
-     * 
+     *
      * @param parentShell
      * @param callback
      */
-    public SubscriptionManagerConfigDlg(Shell parentShell, ITableChange callback) {
+    public SubscriptionManagerConfigDlg(Shell parentShell,
+            ITableChange callback) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.MIN,
                 CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
-        
+
         setText("Subscription Manager Configuration");
         this.callback = callback;
         configManager = SubscriptionConfigurationManager.getInstance();
@@ -96,7 +99,7 @@ public class SubscriptionManagerConfigDlg extends CaveSWTDialog {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
      * .eclipse.swt.widgets.Shell)
@@ -125,8 +128,8 @@ public class SubscriptionManagerConfigDlg extends CaveSWTDialog {
         dualConfig = new DualListConfig();
         dualConfig.setAvailableListLabel("Hidden Columns:");
         dualConfig.setSelectedListLabel("Visible Columns:");
-        dualConfig.setListHeight(250);
-        dualConfig.setListWidth(170);
+        dualConfig.setVisibleItems(20);
+        dualConfig.setListWidthInChars(30);
         dualConfig.setShowUpDownBtns(true);
         dualList = new DualList(configGroup, SWT.NONE, dualConfig);
         updateDualListSelections();
@@ -140,8 +143,8 @@ public class SubscriptionManagerConfigDlg extends CaveSWTDialog {
         SubscriptionManagerConfigXML xml = configManager.getXml();
 
         ArrayList<ColumnXML> columns = xml.getColumnList();
-        ArrayList<String> fullList = new ArrayList<String>();
-        ArrayList<String> selectedList = new ArrayList<String>();
+        ArrayList<String> fullList = new ArrayList<>();
+        ArrayList<String> selectedList = new ArrayList<>();
 
         for (ColumnXML column : columns) {
             if (column.isVisible()) {
@@ -204,9 +207,9 @@ public class SubscriptionManagerConfigDlg extends CaveSWTDialog {
      */
     protected void handleApply() {
         if (dualList.getSelectedListItems().length == 0) {
-            DataDeliveryUtils
-                    .showMessage(shell, SWT.ERROR, "No Columns Visible",
-                            "No columns are visible.  At least one column must be visible.");
+            DataDeliveryUtils.showMessage(shell, SWT.ERROR,
+                    "No Columns Visible",
+                    "No columns are visible.  At least one column must be visible.");
             return;
         }
 

@@ -41,26 +41,26 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
 
 /**
  * Gridded ensemble subset tab.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 03, 2013            bsteffen     Initial creation
- * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Jan 03, 2013           bsteffen  Initial creation
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
- * @version 1.0
  */
 public class GriddedEnsembleSubsetTab {
 
     private final String NAME = "Ensemble Members";
 
-    private final Set<IDataSize> listeners = new HashSet<IDataSize>();
+    private final Set<IDataSize> listeners = new HashSet<>();
 
     private final Ensemble ensemble;
 
@@ -70,7 +70,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param ensemble
@@ -98,8 +98,8 @@ public class GriddedEnsembleSubsetTab {
         DualListConfig dualListConfig = new DualListConfig();
         dualListConfig.setAvailableListLabel("Available Members:");
         dualListConfig.setSelectedListLabel("Selected Memebers:");
-        dualListConfig.setListHeight(125);
-        dualListConfig.setListWidth(175);
+        dualListConfig.setVisibleItems(10);
+        dualListConfig.setListWidthInChars(30);
         dualListConfig.setShowUpDownBtns(false);
         dualListConfig.setFullList(ensemble.getMembers());
         dualList = new DualList(group, SWT.NONE, dualListConfig, new IUpdate() {
@@ -118,7 +118,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Get the tab name.
-     * 
+     *
      * @return the tab name
      */
     public String getName() {
@@ -127,27 +127,27 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Get the ensemble object representing the selections in this tab.
-     * 
+     *
      * @return The populated ensemble object
      */
     public Ensemble getEnsembleWithSelection() {
         Ensemble ensemble = new Ensemble(this.ensemble);
-        ensemble.setSelectedMembers(Arrays.asList(dualList
-                .getSelectedListItems()));
+        ensemble.setSelectedMembers(
+                Arrays.asList(dualList.getSelectedListItems()));
         return ensemble;
     }
 
     private void loadFromEnsemble(Ensemble ensemble) {
         dualList.clearSelection();
         if (ensemble != null && ensemble.getSelectedMembers() != null) {
-            dualList.selectItems(ensemble.getSelectedMembers().toArray(
-                    new String[0]));
+            dualList.selectItems(
+                    ensemble.getSelectedMembers().toArray(new String[0]));
         }
     }
 
     /**
      * Add the ensemble data to the provided subscription.
-     * 
+     *
      * @param subscription
      *            The subscription getting the ensemble data
      */
@@ -157,7 +157,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Load ensemble data from the provided subscription.
-     * 
+     *
      * @param subscription
      *            The subscription with ensemble data
      */
@@ -167,7 +167,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Load subset object with the ensemble data from this tab.
-     * 
+     *
      * @param subsetXml
      *            The subset object
      */
@@ -177,7 +177,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Load ensemble data from the provided subset object.
-     * 
+     *
      * @param subsetXml
      */
     public void loadFromSubsetXML(SubsetXML subsetXml) {
@@ -186,7 +186,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Does a valid selection exist?
-     * 
+     *
      * @return true if a valid selection
      */
     public boolean isValid() {
@@ -195,7 +195,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Get the modified flag
-     * 
+     *
      * @return the modified flag
      */
     public boolean isModified() {
@@ -204,7 +204,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Set the modified flag
-     * 
+     *
      * @param modified
      *            true for modified
      */
@@ -214,7 +214,7 @@ public class GriddedEnsembleSubsetTab {
 
     /**
      * Add a listener.
-     * 
+     *
      * @param listener
      *            The listener
      */
@@ -230,7 +230,7 @@ public class GriddedEnsembleSubsetTab {
     protected void notifyListeners() {
         Collection<IDataSize> listeners;
         synchronized (this.listeners) {
-            listeners = new ArrayList<IDataSize>(this.listeners);
+            listeners = new ArrayList<>(this.listeners);
         }
         for (IDataSize listener : listeners) {
             listener.updateDataSize();
