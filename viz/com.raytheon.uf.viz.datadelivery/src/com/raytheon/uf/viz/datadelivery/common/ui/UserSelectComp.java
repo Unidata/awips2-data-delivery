@@ -470,8 +470,9 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         try {
 
             @SuppressWarnings("rawtypes")
-            List<Subscription> pendingSubscriptionList = new ArrayList<>(Sets
-                    .union(groupSubscriptions, removeFromGroupSubscriptions));
+            List<Subscription> pendingSubscriptionList = new ArrayList<Subscription>(
+                    Sets.union(groupSubscriptions,
+                            removeFromGroupSubscriptions));
             final SubscriptionServiceResult result = DataDeliveryServices
                     .getSubscriptionService().updateWithPendingCheck(
                             currentUser, pendingSubscriptionList, this);
