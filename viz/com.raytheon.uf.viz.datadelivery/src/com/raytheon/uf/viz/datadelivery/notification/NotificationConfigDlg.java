@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.datadelivery.notification;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -415,8 +416,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
         // column visibility settings
         xml.getColumnList();
-        ArrayList<String> selectedList = new ArrayList<>();
-        ArrayList<String> fullList = new ArrayList<>();
+        List<String> selectedList = new ArrayList<>();
+        List<String> fullList = new ArrayList<>();
         for (ColumnXML col : xml.getColumnList()) {
             if (col.isVisible()) {
                 selectedList.add(col.getName());

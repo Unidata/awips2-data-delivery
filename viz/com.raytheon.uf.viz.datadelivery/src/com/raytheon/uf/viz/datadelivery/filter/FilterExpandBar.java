@@ -310,8 +310,7 @@ public class FilterExpandBar extends Composite
         dataManager.setArea(envelope);
 
         /*
-         *
-         *
+         * TODO : this needs to be reworked as this only has 4 display
          * (filters). This should be configurable.
          */
         if (displayName.equals(DATA_PROVIDER)) {
