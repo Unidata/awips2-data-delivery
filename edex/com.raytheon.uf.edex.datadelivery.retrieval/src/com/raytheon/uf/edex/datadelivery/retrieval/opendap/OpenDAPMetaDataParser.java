@@ -117,6 +117,7 @@ import opendap.dap.NoSuchAttributeException;
  * Feb 16, 2016  5365        dhladky   Interface change.
  * Nov 09, 2016  5988        tjensen   Update for Friendly naming for NOMADS
  * Jan 05, 2017  5988        tjensen   Updated for new parameter lookups and regexes
+ * Mar 02, 2017  5988        tjensen   Update level population for friendly naming
  * 
  * </pre>
  * 
@@ -126,6 +127,8 @@ import opendap.dap.NoSuchAttributeException;
  */
 
 class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
+
+    private static final String NUMBER_REGEX = "-?\\d+(\\.\\d+)?";
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPMetaDataParser.class);
@@ -175,12 +178,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 }
             }
 
-            if (levelType.equals(LevelType.MB)) {
-                List<Double> levelList = LookupManager.getInstance()
-                        .getLevels(collectionName).getLevelXml();
-                levels.setLevel(levelList);
-
-            } else if (levelType.equals(LevelType.SEAB)) {
+            if (levelType.equals(LevelType.MB)
+                    || levelType.equals(LevelType.SEAB)) {
                 List<Double> levelList = LookupManager.getInstance()
                         .getLevels(collectionName).getLevelXml();
                 levels.setLevel(levelList);
@@ -197,8 +196,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             }
 
         } catch (Exception e) {
-            logParsingException(levelType.toString(), "Level info",
-                    collectionName, gdsmd.getUrl());
+            statusHandler.error(" Couldn't parse Level info: "
+                    + levelType.toString() + " dataset: " + collectionName
+                    + " url: " + gdsmd.getUrl(), e);
         }
 
         return levels;
@@ -286,12 +286,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 gdsmd.setTime(time);
 
             } catch (Exception le) {
-                try {
-                    logParsingException(timecon, "Time", collectionName, url);
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            e.getLocalizedMessage(), e);
-                }
+                statusHandler.error(" Couldn't parse Time: " + timecon
+                        + " dataset: " + collectionName + " url: " + url, le);
             }
         }
         // process latitude
@@ -319,7 +315,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                 .doubleValue();
 
             } catch (Exception le) {
-                logParsingException(lat, "Latitude", collectionName, url);
+                statusHandler.error(" Couldn't parse Latitude: " + lat
+                        + " dataset: " + collectionName + " url: " + url, le);
             }
         }
         // process longitude
@@ -347,7 +344,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 lowerRight.x = maxLon;
 
             } catch (Exception le) {
-                logParsingException(lon, "Longitude", collectionName, url);
+                statusHandler.error(" Couldn't parse Longitude: " + lon
+                        + " dataset: " + collectionName + " url: " + url, le);
             }
         }
         // process level settings
@@ -366,7 +364,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 hasLevels = true;
 
             } catch (Exception le) {
-                logParsingException(lev, "Levels", collectionName, url);
+                statusHandler.error(" Couldn't parse Levels: " + lev
+                        + " dataset: " + collectionName + " url: " + url, le);
             }
         }
         // process any other globals
@@ -380,8 +379,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 gdsmd.setDataSetDescription(
                         OpenDAPParseUtility.getInstance().trim(description));
             } catch (Exception ne) {
-                logParsingException(nc_global, "Global Dataset Info",
-                        collectionName, url);
+                statusHandler.error(" Couldn't parse Global Dataset Info: "
+                        + nc_global + " dataset: " + collectionName + " url: "
+                        + url, ne);
             }
         }
         // process ensembles
@@ -391,7 +391,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 dataSet.setEnsemble(
                         OpenDAPParseUtility.getInstance().parseEnsemble(at));
             } catch (Exception en) {
-                logParsingException(ens, "Ensemble", collectionName, url);
+                statusHandler.error(" Couldn't parse Ensemble: " + ens
+                        + " dataset: " + collectionName + " url: " + url, en);
             }
         }
 
@@ -460,15 +461,17 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                         parm.setMissingValue(fill);
                     }
 
-                    DataLevelType type = parseLevelType(parm, hasLevels);
+                    DataLevelType type = parseLevelType(parm);
                     parm.setLevels(getLevels(type, collectionName, gdsmd, dz,
                             levMin, levMax));
                     parm.addLevelType(type);
                     // add to map
-                    parameters.put(name, parm);
+                    parameters.put(parm.getProviderName(), parm);
 
                 } catch (Exception le) {
-                    logParsingException(name, "Parameter", collectionName, url);
+                    statusHandler.error(" Couldn't parse Parameter: " + name
+                            + " dataset: " + collectionName + " url: " + url,
+                            le);
                 }
             }
         }
@@ -560,168 +563,69 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
     }
 
     /**
-     * Logs a parsing exception.
-     * 
-     * @param name
-     *            the OpenDAP field
-     * @param object
-     *            the name of the type of object being parsed
-     */
-    private void logParsingException(String name, String object,
-            String collectionName, String url) {
-        statusHandler.handle(Priority.PROBLEM, " Couldn't parse " + object
-                + ": " + name + " dataset: " + collectionName + " url: " + url);
-    }
-
-    /**
      * Get the correct level type
      * 
      * @param param
      * @return
      */
-    private DataLevelType parseLevelType(Parameter param, boolean hasLevels) {
+    private DataLevelType parseLevelType(Parameter param) {
 
-        // find first word
         DataLevelType type = null;
-        String[] s1 = param.getDefinition().substring(3).split(" ");
-
         // SEA ICE special case
         if (param.getDefinition().contains(LevelType.SEAB.getLevelType())) {
             type = new DataLevelType(LevelType.SEAB);
-        }
-        // fixed height, only one layer 2m AGL
-        else if (param.getProviderName()
-                .endsWith(serviceConfig.getConstantValue("TWOM"))) {
-            type = new DataLevelType(LevelType.FHAG);
-            type.addLayer(new Double(2).doubleValue());
-            type.setUnit(serviceConfig.getConstantValue("METER"));
-        }
-        // fixed height, only one layer 10m AGL
-        else if (param.getProviderName()
-                .endsWith(serviceConfig.getConstantValue("TENM"))) {
-            type = new DataLevelType(LevelType.FHAG);
-            type.addLayer(new Double(10).doubleValue());
-            type.setUnit(serviceConfig.getConstantValue("METER"));
-        }
-        // FRZ freezing level, catches one's with on the end of the param name
-        // hgt0c etc
-        else if (param.getProviderName()
-                .endsWith(LevelType.FRZ.getLevelType())) {
-            type = new DataLevelType(LevelType.FRZ);
-        }
+        } else {
+            Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
+                    .getParamLevelRegexes();
 
-        // Really special cases presented by NOMADS data sets
-        if (type == null) {
+            Matcher m = null;
+            String tempDescription = param.getDefinition();
+            for (ParameterLevelRegex myPLR : plr.values()) {
+                m = myPLR.getPattern().matcher(tempDescription);
+                if (m.find()) {
+                    type = new DataLevelType(
+                            LevelType.fromDescription(myPLR.getLevel()));
+                    type.setUnit(myPLR.getUnits());
 
-            String w1 = s1[0];
-            String w2 = s1[1];
-            if (w1.contains("=")) {
-                String[] s2 = w1.split("=");
-                if (s2[0].startsWith(LevelType.PVL.getLevelType())) {
-                    type = new DataLevelType(LevelType.PVL);
-                    type.addLayer(new Double(s2[1]).doubleValue());
-                    type.setUnit(s1[1]);
-                }
-            } else {
-                String[] s2 = w1.split("-");
-                // layer case
-                if (s2.length == 2) {
+                    if (myPLR.getLevelGroup() != null) {
+                        try {
+                            String levelInfo = m.group(0).replaceAll(
+                                    myPLR.getRegex(), myPLR.getLevelGroup());
+                            type.setUnit(levelInfo + myPLR.getUnits());
+                            if (levelInfo.contains("-")
+                                    && !tempDescription.contains("=")) {
 
-                    // fixed height above ground level
-                    try {
-                        type = new DataLevelType(LevelType.FHAG);
-                        type.addLayer(new Double(s2[0]).doubleValue());
-                        type.addLayer(new Double(s2[1]).doubleValue());
-                        type.setUnit(s1[1]);
-                    } catch (Exception se) {
-                        // not numbers
-                        if (w1.equals(LevelType.U.getLevelType())) {
-                            type = new DataLevelType(LevelType.U);
-                        } else if (w1.equals(LevelType.V.getLevelType())) {
-                            type = new DataLevelType(LevelType.V);
+                                String[] s2 = levelInfo.split("-");
+                                if (s2.length == 2) {
+                                    for (String s : s2) {
+                                        if (s.matches(NUMBER_REGEX)) {
+                                            type.addLayer(new Double(s)
+                                                    .doubleValue());
+                                        }
+                                    }
+                                }
+                            } else {
+                                if (levelInfo.matches(NUMBER_REGEX)) {
+                                    type.addLayer(new Double(levelInfo)
+                                            .doubleValue());
+                                }
+
+                            }
+                        } catch (Exception e) {
+                            statusHandler
+                                    .error("Error parsing level information from param description: "
+                                            + tempDescription, e);
                         }
                     }
-
-                } else {
-                    Double wVal = null;
-
-                    try {
-                        wVal = new Double(w1).doubleValue();
-
-                        // sigma level
-                        if (LevelType.SIGL.getLevelType().equals(w2)) {
-                            type = new DataLevelType(LevelType.SIGL);
-                            type.addLayer(wVal);
-                            type.setUnit(
-                                    serviceConfig.getConstantValue("KELVIN"));
-                        } else {
-                            // fixed height, only one layer
-                            type = new DataLevelType(LevelType.FHAG);
-                            type.addLayer(wVal);
-                            type.setUnit(w2);
-                        }
-
-                    } catch (Exception e) {
-                        // first not an Integer, other layers
-
-                        if (w1.startsWith("(")) {
-                            type = new DataLevelType(LevelType.MB);
-                        } else if (w1.equals(LevelType.SFC.getLevelType())) {
-                            type = new DataLevelType(LevelType.SFC);
-                        } else if (w1.equals(LevelType.TROP.getLevelType())) {
-                            type = new DataLevelType(LevelType.TROP);
-                        } else if (w1.equals(LevelType.MAXW.getLevelType())) {
-                            type = new DataLevelType(LevelType.MAXW);
-                        } else if (w1.equals(LevelType.HSCLW.getLevelType())) {
-                            type = new DataLevelType(LevelType.HSCLW);
-                        } else if (w1.equals(LevelType.LSCLW.getLevelType())) {
-                            type = new DataLevelType(LevelType.LSCLW);
-                        } else if (w1.equals(LevelType.EL.getLevelType())) {
-                            type = new DataLevelType(LevelType.EL);
-                        } else if (w1.equals(LevelType.CCL.getLevelType())) {
-                            type = new DataLevelType(LevelType.CCL);
-                        } else if (w1.equals(LevelType.CBL.getLevelType())) {
-                            type = new DataLevelType(LevelType.CBL);
-                        } else if (w1.equals(LevelType.CTL.getLevelType())) {
-                            type = new DataLevelType(LevelType.CTL);
-                        } else if (w1.equals(LevelType.MSL.getLevelType())) {
-                            type = new DataLevelType(LevelType.MSL);
-                        } else if (w1.equals(LevelType.EA.getLevelType())) {
-                            type = new DataLevelType(LevelType.EA);
-                        } else if (w1.equals(LevelType.FRZ.getLevelType())) {
-                            type = new DataLevelType(LevelType.FRZ);
-                        } else if (w1.equals(LevelType.LCY.getLevelType())) {
-                            type = new DataLevelType(LevelType.LCY);
-                        } else if (w1.equals(LevelType.MCY.getLevelType())) {
-                            type = new DataLevelType(LevelType.MCY);
-                        } else if (w1.equals(LevelType.HCY.getLevelType())) {
-                            type = new DataLevelType(LevelType.HCY);
-                        } else if (w1.equals(LevelType.PBL.getLevelType())) {
-                            type = new DataLevelType(LevelType.PBL);
-                        } else if (w1.equals(LevelType.MWSL.getLevelType())) {
-                            type = new DataLevelType(LevelType.MWSL);
-                        }
-                    }
+                    break;
                 }
             }
         }
 
         if (type == null) {
-
-            // If description contains surface, make the assumption it is
-            // surface
-            if (param.getDefinition().contains(LevelType.SFC.getLevelType())) {
-                type = new DataLevelType(LevelType.SFC);
-            }
-
-            // We'll make the assumption it is a MB based level for a last gasp
-            if (hasLevels && type == null) {
-                type = new DataLevelType(LevelType.MB);
-            }
-
-            if (type == null) {
-                type = new DataLevelType(LevelType.UNKNOWN);
-            }
+            statusHandler.warn("Unable to determine level type for: "
+                    + param.getDefinition());
+            type = new DataLevelType(LevelType.UNKNOWN);
         }
 
         return type;

@@ -23,14 +23,16 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 24, 2012            dhladky     Initial creation.
- * Jun  8, 2012            jpiatt      Fixed level type description &
- *                                        Code clean up.
- * Set 06, 2012   1121     mpduff      Added a unique key.
- * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
- * Jan 24, 2013  1527      dhladky     Changed 0DEG to FRZ
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 24, 2012           dhladky   Initial creation.
+ * Jun 08, 2012           jpiatt    Fixed level type description & Code clean
+ *                                  up.
+ * Set 06, 2012  1121     mpduff    Added a unique key.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Jan 24, 2013  1527     dhladky   Changed 0DEG to FRZ
+ * Mar 02, 2017  5988     tjensen   Update level population for friendly naming
  * 
  * </pre>
  * 
@@ -63,7 +65,7 @@ public class DataLevelType implements Serializable {
      */
     public DataLevelType(LevelType levelType) {
         this.type = levelType;
-        layer = new ArrayList<Double>();
+        layer = new ArrayList<>();
     }
 
     /**
@@ -75,7 +77,7 @@ public class DataLevelType implements Serializable {
         this.type = copy.type;
         this.unit = copy.unit;
         if (copy.layer != null) {
-            this.layer = new ArrayList<Double>(copy.layer);
+            this.layer = new ArrayList<>(copy.layer);
         }
     }
 
@@ -98,28 +100,30 @@ public class DataLevelType implements Serializable {
     @XmlEnum
     @XmlType(namespace = "com.raytheon.uf.common.datadelivery.registry")
     public enum LevelType {
-
-        MB("pressure", "Pressure Levels", 100), LYRBL("layer",
-                "Difference Between Two Levels", 101), SFC("surface",
-                "Surface", 1), MAXW("max", "Maximum Level", 102), TROP(
-                "tropopause", "Tropopause Level", 105), FHAG("height",
-                "Height Level", 104), TEMP("temp", "Temperature Level", 103), HSCLW(
-                "highest", "Highest Level", 106), LSCLW("lowest",
-                "Lowest Level", 107), EL("equilibrium", "Equlibrium Level", 108), CCL(
-                "convective", "Convective Level", 109), CBL("cloud",
-                "Cloud Level", 110), SIGL("sigma", "Sigma Level", 111), PVL(
-                "pv", "PV Level", 111), CTL("top", "Top Level", 112), MSL(
-                "mean", "Mean Sea Level", 113), EA("entire",
-                "Entire Atmosphere (As Single Layer)", 114), FRZ("0c",
-                "0c isotherm", 115), LCY("low", "Low Cloud Bottom Level", 116), MCY(
-                "middle", "Middle Cloud Level", 117), HCY("high",
-                "High Cloud Level", 118), PBL("planetary",
-                "Planetary Boundary Layer", 119), MWSL("hourly",
-                "Hourly Maximum", 120), U("u-component",
-                "U-Component of Hourly Maximum", 121), V("v-component",
-                "V-Component of Hourly Maximum", 122), SEAB("sea_",
-                "Sea Ice, Elevation/Area/Thickness/Movement", 123), UNKNOWN(
-                "unknown", "UNKNOWN", 0);
+        MB("pressure", "Pressure Levels", 100), 
+        SFC("surface", "Surface", 1), 
+        MAXW("max", "Maximum Level", 102), 
+        TROP("tropopause", "Tropopause Level", 105), 
+        FHAG("height", "Height Level", 104), 
+        HSCLW("highest", "Highest Level", 106), 
+        LSCLW("lowest", "Lowest Level", 107), 
+        EL("equilibrium", "Equlibrium Level", 108), 
+        CCL("convective", "Convective Level", 109), 
+        CBL("cloud","Cloud Level", 110), 
+        SIGL("sigma", "Sigma Level", 111), 
+        PVL("pv", "PV Level", 111), 
+        CTL("top", "Top Level", 112), 
+        MSL("mean", "Mean Sea Level", 113), 
+        EA("entire","Entire Atmosphere (As Single Layer)", 114), 
+        FRZ("0c","0c isotherm", 115), 
+        LCY("low", "Low Cloud Level", 116), 
+        MCY("middle", "Middle Cloud Level", 117), 
+        HCY("high", "High Cloud Level", 118), 
+        PBL("planetary", "Planetary Boundary Layer", 119), 
+        SEAB("sea_", "Sea Ice, Elevation/Area/Thickness/Movement", 123), 
+        EO("entire", "Entire Ocean (As Single Layer)", 124), 
+        SEQ("sequence", "Sequence", 125), 
+        UNKNOWN("unknown", "UNKNOWN", 0);
 
         private final String levelType;
 
@@ -133,7 +137,7 @@ public class DataLevelType implements Serializable {
             this.id = id;
         }
 
-        private static final Map<String, LevelType> DESCRIPTION_LOOKUP = new HashMap<String, LevelType>();
+        private static final Map<String, LevelType> DESCRIPTION_LOOKUP = new HashMap<>();
         static {
             for (LevelType levelType : LevelType.values()) {
                 DESCRIPTION_LOOKUP.put(levelType.getDescription(), levelType);
@@ -174,10 +178,6 @@ public class DataLevelType implements Serializable {
                     rval = val;
                     break;
                 }
-            }
-            
-            if (rval == LevelType.U || rval == LevelType.V) {
-                return LevelType.MAXW.toString();
             }
 
             return rval.toString();
@@ -246,7 +246,7 @@ public class DataLevelType implements Serializable {
      */
     public void addLayer(Double l) {
         if (layer == null) {
-            layer = new ArrayList<Double>();
+            layer = new ArrayList<>();
         }
 
         layer.add(l);
