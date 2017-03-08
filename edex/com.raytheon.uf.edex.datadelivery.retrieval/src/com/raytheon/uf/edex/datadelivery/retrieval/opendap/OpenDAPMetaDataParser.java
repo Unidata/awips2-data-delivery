@@ -116,8 +116,11 @@ import opendap.dap.NoSuchAttributeException;
  *                                     Dataset when present.
  * Feb 16, 2016  5365        dhladky   Interface change.
  * Nov 09, 2016  5988        tjensen   Update for Friendly naming for NOMADS
- * Jan 05, 2017  5988        tjensen   Updated for new parameter lookups and regexes
- * Mar 02, 2017  5988        tjensen   Update level population for friendly naming
+ * Jan 05, 2017  5988        tjensen   Updated for new parameter lookups and
+ *                                     regexes
+ * Mar 02, 2017  5988        tjensen   Update level population for friendly
+ *                                     naming
+ * Mar 08, 2017  6089        tjensen   Drop date format from parseMetadata calls
  * 
  * </pre>
  * 
@@ -783,8 +786,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
     }
 
     @Override
-    public void parseMetaData(Provider provider, String dataDateFormat,
-            LinkStore object, boolean isFile) throws Exception {
+    public void parseMetaData(Provider provider, LinkStore object,
+            boolean isFile) throws Exception {
         throw new UnsupportedOperationException(
                 "Not implemented for this type");
 

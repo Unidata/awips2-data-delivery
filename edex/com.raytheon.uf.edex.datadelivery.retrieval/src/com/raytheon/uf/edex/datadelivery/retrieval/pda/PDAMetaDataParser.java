@@ -127,8 +127,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     /** debug state */
     protected Boolean debug = false;
 
-    private String dateFormat = null;
-
     public PDAMetaDataParser() {
         serviceConfig = HarvesterServiceManager.getInstance()
                 .getServiceConfig(ServiceType.PDA);
@@ -149,8 +147,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     }
 
     @Override
-    public void parseMetaData(Provider provider, String dateFormat,
-            BriefRecordType record, boolean isMetaData) {
+    public void parseMetaData(Provider provider, BriefRecordType record,
+            boolean isMetaData) {
 
         Map<String, String> paramMap = null;
 
@@ -178,8 +176,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             statusHandler.info("relativeURL: " + relativeDataURL);
             statusHandler.info("metaDataURL: " + metaDataURL);
         }
-        // set date formatter
-        setDateFormat(dateFormat);
 
         PDAFileMetaDataExtractor extractor = PDAFileMetaDataExtractor
                 .getInstance();
@@ -189,6 +185,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         if (mdp != null) {
             Pattern p_id = mdp.getPattern();
             Matcher m = p_id.matcher(metaDataID);
+            String dateFormat = mdp.getDateFormat();
             if (m.matches()) {
                 try {
                     statusHandler
@@ -240,6 +237,10 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                     // failure return
                     return;
                 }
+                // set the dateFormat to be for this pattern
+                MetaDataPattern mdpt = extractor
+                        .getMetaDataPattern("RECORD_TITLE");
+                dateFormat = mdpt.getDateFormat();
 
                 // Lookup for coverage information
                 if (!record.getBoundingBox().isEmpty()) {
@@ -260,7 +261,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             setDefaultParams(paramMap);
 
             // use real time parsed from file
-            time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
+            time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME),
+                    dateFormat);
 
             try {
                 idate = new ImmutableDate(
@@ -418,7 +420,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         DirectPosition max = BoundingBoxUtil.convert(uc);
 
         try {
-            coverage.setEnvelope(BoundingBoxUtil.convert2D(min, max, crs));
+            coverage.setEnvelope(BoundingBoxUtil.convert2D(min, max,
+                    serviceConfig.getConstantValue("DEFAULT_CRS")));
         } catch (OgcException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Couldn't determine BoundingBox envelope!", e);
@@ -480,10 +483,10 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
      * @param endTime
      * @return
      */
-    private Time getTime(String startTime, String endTime) {
+    private Time getTime(String startTime, String endTime, String dateFormat) {
 
         Time time = new Time();
-        time.setFormat(getDateFormat());
+        time.setFormat(dateFormat);
 
         try {
             time.setStartDate(startTime);
@@ -547,24 +550,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         params.put(collectionName, parm);
 
         return params;
-    }
-
-    /**
-     * Get date formatter used to parse dates
-     * 
-     * @return
-     */
-    public String getDateFormat() {
-        return dateFormat;
-    }
-
-    /**
-     * set Date formatter used to parse dates
-     * 
-     * @param dateFormat
-     */
-    public void setDateFormat(String dateFormat) {
-        this.dateFormat = dateFormat;
     }
 
 }
