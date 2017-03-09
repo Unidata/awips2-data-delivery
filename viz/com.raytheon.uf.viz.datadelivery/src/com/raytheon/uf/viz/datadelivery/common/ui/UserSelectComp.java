@@ -73,48 +73,64 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
 /**
  * This is the user select composite. This class is intended to be extended so
  * common classes can be created and shared.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 27, 2012   702      jpiatt       Initial creation.
- * Aug 08, 2012   863      jpiatt       Added new interface method.
- * Aug 22, 2012   712      mpduff       Fix notifications.
- * Aug 20, 2012  0743      djohnson     Finish making registry type-safe, AssociationQuery for pending subscriptions.
- * Aug 30, 2012   702      jpiatt       Populate selected subscriptions according to group.
- * Aug 31, 2012  1128      mpduff       Additional notification fixes, only set group related fields in subscription.
- * Sep 06, 2012   687      mpduff       Add the Subscription object back into the SubscriptionNotificationRequest object.
- * Sep 14, 2012  1169      djohnson     Use storeOrReplaceRegistryObject.
- * Sep 24, 2012  1157      mpduff       Use InitialPendingSubscription as needed.
- * Oct 03, 2012  1241      djohnson     Use {@link DataDeliveryPermission} and handlers for registry interaction.
- * Oct 24, 2012  1290      mpduff       Added check for group definition areal data being set.
- * Nov 09, 2012  1286      djohnson     Consolidate duplicate subscription handling.
- * Nov 20, 2012  1286      djohnson     Fix formatting, implement IDisplay to display yes/no prompt.
- * Dec 10, 2012  1259      bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Jan 02, 2013  1441      djohnson     Access GroupDefinitionManager in a static fashion.
- * Apr 08, 2013  1826      djohnson     Remove unused code, delivery options.
- * May 15, 2013  1040      mpduff       OfficeID is now a list so need to add it rather than set it.
- * May 23, 2013  1650      djohnson     Fix creation of new GroupDefinitions.
- * May 28, 2013  1650      djohnson     More information when failing to schedule subscriptions.
- * Jun 13, 2013  2108      mpduff       Refactored DataSizeUtils.
- * Oct 28, 2013  2292      mpduff       Change overlap services.
- * Feb 11, 2014  2771      bgonzale     Use Data Delivery ID instead of Site.
- * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
- * Aug 18, 2014  2746      ccody        Non-local Subscription changes not updating dialogs
- * Oct 28, 2014  2748      ccody        Remove Live update. Updates are event driven.
- * Nov 19, 2014  3850      dhladky      Bad cast from Subscription to InitialPendingSubscription.
- * Nov 19, 2014  3851      dhladky      Fixed userName subscription selection bounce back on change of user.
- * Nov 19, 2014  3852      dhladky      Resurrected the unscheduled state.
- * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
- * Mar 28, 2016  5482      randerso     Fixed GUI sizing issues
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 27, 2012  702      jpiatt    Initial creation.
+ * Aug 08, 2012  863      jpiatt    Added new interface method.
+ * Aug 22, 2012  712      mpduff    Fix notifications.
+ * Aug 20, 2012  743      djohnson  Finish making registry type-safe,
+ *                                  AssociationQuery for pending subscriptions.
+ * Aug 30, 2012  702      jpiatt    Populate selected subscriptions according to
+ *                                  group.
+ * Aug 31, 2012  1128     mpduff    Additional notification fixes, only set
+ *                                  group related fields in subscription.
+ * Sep 06, 2012  687      mpduff    Add the Subscription object back into the
+ *                                  SubscriptionNotificationRequest object.
+ * Sep 14, 2012  1169     djohnson  Use storeOrReplaceRegistryObject.
+ * Sep 24, 2012  1157     mpduff    Use InitialPendingSubscription as needed.
+ * Oct 03, 2012  1241     djohnson  Use {@link DataDeliveryPermission} and
+ *                                  handlers for registry interaction.
+ * Oct 24, 2012  1290     mpduff    Added check for group definition areal data
+ *                                  being set.
+ * Nov 09, 2012  1286     djohnson  Consolidate duplicate subscription handling.
+ * Nov 20, 2012  1286     djohnson  Fix formatting, implement IDisplay to
+ *                                  display yes/no prompt.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Jan 02, 2013  1441     djohnson  Access GroupDefinitionManager in a static
+ *                                  fashion.
+ * Apr 08, 2013  1826     djohnson  Remove unused code, delivery options.
+ * May 15, 2013  1040     mpduff    OfficeID is now a list so need to add it
+ *                                  rather than set it.
+ * May 23, 2013  1650     djohnson  Fix creation of new GroupDefinitions.
+ * May 28, 2013  1650     djohnson  More information when failing to schedule
+ *                                  subscriptions.
+ * Jun 13, 2013  2108     mpduff    Refactored DataSizeUtils.
+ * Oct 28, 2013  2292     mpduff    Change overlap services.
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Aug 18, 2014  2746     ccody     Non-local Subscription changes not updating
+ *                                  dialogs
+ * Oct 28, 2014  2748     ccody     Remove Live update. Updates are event
+ *                                  driven.
+ * Nov 19, 2014  3850     dhladky   Bad cast from Subscription to
+ *                                  InitialPendingSubscription.
+ * Nov 19, 2014  3851     dhladky   Fixed userName subscription selection bounce
+ *                                  back on change of user.
+ * Nov 19, 2014  3852     dhladky   Resurrected the unscheduled state.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author jpiatt
- * @version 1.0
  */
 public class UserSelectComp<T extends Time, C extends Coverage> extends
         Composite implements IUpdate, IDisplay, IForceApplyPromptDisplayText {
@@ -143,15 +159,15 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
     private String[] userArr;
 
     /** User Name array list */
-    private final List<String> nameArr = new ArrayList<String>();
+    private final List<String> nameArr = new ArrayList<>();
 
     /** DualListConfig object */
     private DualListConfig dualConfig;
 
     /** map to hold user subscriptions */
-    private final Map<String, Map<String, Subscription<T, C>>> userMap = new HashMap<String, Map<String, Subscription<T, C>>>();
+    private final Map<String, Map<String, Subscription<T, C>>> userMap = new HashMap<>();
 
-    private final Set<String> initiallySelectedSubscriptions = new HashSet<String>();
+    private final Set<String> initiallySelectedSubscriptions = new HashSet<>();
 
     /** Keeps track of UserName in selection combo **/
     private String previousUserNameComboSelection = "";
@@ -164,7 +180,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent composite.
      */
@@ -229,8 +245,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
         // Available & Selected Subscriptions
         dualConfig = new DualListConfig();
-        dualConfig.setListHeight(120);
-        dualConfig.setListWidth(125);
+        dualConfig.setVisibleItems(10);
+        dualConfig.setListWidthInChars(20);
         dualConfig.setShowUpDownBtns(false);
         dualConfig.setAvailableListLabel("Available Subscriptions:");
         dualConfig.setSelectedListLabel("Selected Subscriptions:");
@@ -272,8 +288,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
                     e);
         }
 
-        ArrayList<String> fullList = new ArrayList<String>();
-        Map<String, Subscription<T, C>> hMap = new HashMap<String, Subscription<T, C>>();
+        ArrayList<String> fullList = new ArrayList<>();
+        Map<String, Subscription<T, C>> hMap = new HashMap<>();
 
         for (Subscription<T, C> subscription : results) {
 
@@ -295,7 +311,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
     /**
      * Change selected subscription definitions to group created properties.
-     * 
+     *
      * @param groupName
      *            The name of the group
      */
@@ -304,14 +320,14 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         String owner = userNameCombo.getText();
         Map<String, Subscription<T, C>> ownerSubs = userMap.get(owner);
 
-        Set<String> selectedSubscriptionNames = Sets.newHashSet(dualList
-                .getSelectedListItems());
+        Set<String> selectedSubscriptionNames = Sets
+                .newHashSet(dualList.getSelectedListItems());
 
         Set<String> differences = Sets.symmetricDifference(
                 selectedSubscriptionNames, initiallySelectedSubscriptions);
 
-        Set<Subscription<T, C>> addedToGroup = new HashSet<Subscription<T, C>>();
-        Set<Subscription<T, C>> removedFromGroup = new HashSet<Subscription<T, C>>();
+        Set<Subscription<T, C>> addedToGroup = new HashSet<>();
+        Set<Subscription<T, C>> removedFromGroup = new HashSet<>();
 
         for (String subscriptionName : differences) {
             final Subscription<T, C> subscription = ownerSubs
@@ -330,7 +346,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
     /**
      * Updates the group definition, the subscriptions added to the group, and
      * the subscriptions removed from the group.
-     * 
+     *
      * @param groupName
      * @param addedToGroup
      * @param removedFromGroup
@@ -355,9 +371,10 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections
                 .emptySet();
         try {
-            groupSubscriptionsForUpdate = new HashSet<Subscription<T, C>>(
+            groupSubscriptionsForUpdate = new HashSet<>(
                     (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers
-                            .getSubscriptionHandler().getByGroupName(groupName));
+                            .getSubscriptionHandler()
+                            .getByGroupName(groupName));
 
             // Remove any that are set to be removed from the group
             groupSubscriptionsForUpdate.removeAll(removedFromGroup);
@@ -381,7 +398,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
     /**
      * Populate the selected subscriptions
-     * 
+     *
      * @param selectedList
      *            The selected subscriptions
      * @param groupName
@@ -407,10 +424,10 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
             // Set duration
             if (groupDefinition.getSubscriptionStart() != null) {
-                subscription.setSubscriptionStart(groupDefinition
-                        .getSubscriptionStart());
-                subscription.setSubscriptionEnd(groupDefinition
-                        .getSubscriptionEnd());
+                subscription.setSubscriptionStart(
+                        groupDefinition.getSubscriptionStart());
+                subscription.setSubscriptionEnd(
+                        groupDefinition.getSubscriptionEnd());
             } else {
                 subscription.setSubscriptionStart(null);
                 subscription.setSubscriptionEnd(null);
@@ -418,10 +435,10 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
             // Set active period
             if (groupDefinition.getActivePeriodStart() != null) {
-                subscription.setActivePeriodStart(groupDefinition
-                        .getActivePeriodStart());
-                subscription.setActivePeriodEnd(groupDefinition
-                        .getActivePeriodEnd());
+                subscription.setActivePeriodStart(
+                        groupDefinition.getActivePeriodStart());
+                subscription.setActivePeriodEnd(
+                        groupDefinition.getActivePeriodEnd());
             } else {
                 subscription.setActivePeriodStart(null);
                 subscription.setActivePeriodEnd(null);
@@ -445,8 +462,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
             subscription.addOfficeID(DataDeliveryUtils.getDataDeliveryId());
             if (sizeUtils != null) {
-                subscription.setDataSetSize(sizeUtils
-                        .getDataSetSizeInKb(subscription));
+                subscription.setDataSetSize(
+                        sizeUtils.getDataSetSizeInKb(subscription));
             }
         }
 
@@ -454,7 +471,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
             @SuppressWarnings("rawtypes")
             List<Subscription> pendingSubscriptionList = new ArrayList<Subscription>(
-                    Sets.union(groupSubscriptions, removeFromGroupSubscriptions));
+                    Sets.union(groupSubscriptions,
+                            removeFromGroupSubscriptions));
             final SubscriptionServiceResult result = DataDeliveryServices
                     .getSubscriptionService().updateWithPendingCheck(
                             currentUser, pendingSubscriptionList, this);
@@ -510,7 +528,7 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
     /**
      * Populate Selected Subscriptions list according to the group selection
-     * 
+     *
      * @param groupName
      *            Name of the subscription group
      */
@@ -520,8 +538,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         dualList.clearAvailableList(true);
 
         initiallySelectedSubscriptions.clear();
-        Map<String, Subscription<T, C>> sMap = userMap.get(userNameCombo
-                .getText());
+        Map<String, Subscription<T, C>> sMap = userMap
+                .get(userNameCombo.getText());
 
         for (String subscriptionName : sMap.keySet()) {
 
@@ -533,8 +551,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         }
 
         // set the selected list
-        dualList.selectItems(initiallySelectedSubscriptions
-                .toArray(new String[0]));
+        dualList.selectItems(
+                initiallySelectedSubscriptions.toArray(new String[0]));
     }
 
     /**
@@ -542,7 +560,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
      */
     @Override
     public boolean displayYesNoPopup(String title, String message) {
-        return DataDeliveryUtils.showYesNoMessage(getShell(), title, message) == SWT.YES;
+        return DataDeliveryUtils.showYesNoMessage(getShell(), title,
+                message) == SWT.YES;
     }
 
     /**

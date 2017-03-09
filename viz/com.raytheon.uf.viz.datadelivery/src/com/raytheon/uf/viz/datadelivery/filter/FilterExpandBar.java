@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -64,39 +64,45 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 
 /**
- * 
+ *
  * The main class that contains the filter expand bar and the associated
  * controls.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2012            lvenable    Initial creation
- * Jun 21, 2012    736     djohnson    Add setter for coordinates.
- * Dec 12, 2012   1391     bgonzale    Added a job for the dataset query.
- * Dec 10, 2012   1259     bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
- * Dec 18, 2012   1436     bgonzale    When creating the filter dialogs, use the loaded
- *                                     configuration when populating the filters. Fixed selection
- *                                     icon update when loading from a file.
- * Feb 24, 2013   1620     mpduff      Fixed set clean issue when loading configurations.  Set clean 
- *                                     needs to be called after the data load job is complete.
- * May 15, 2013   1040     mpduff      Called markNotBusyInUIThread.
- * Jul 05, 2013   2137     mpduff      Only a single data type can be selected.
- * Jul 05, 2013   2138     mpduff      Fixed to not use filter if filter is disabled.
- * Sep 26, 2013   2412     mpduff      Don't create expand items if no data type is selected.
- * Apr 10, 2014   2892     mpduff      Clear selected items when changing data types.
- * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2012           lvenable  Initial creation
+ * Jun 21, 2012  736      djohnson  Add setter for coordinates.
+ * Dec 12, 2012  1391     bgonzale  Added a job for the dataset query.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Dec 18, 2012  1436     bgonzale  When creating the filter dialogs, use the
+ *                                  loaded configuration when populating the
+ *                                  filters. Fixed selection icon update when
+ *                                  loading from a file.
+ * Feb 24, 2013  1620     mpduff    Fixed set clean issue when loading
+ *                                  configurations.  Set clean needs to be
+ *                                  called after the data load job is complete.
+ * May 15, 2013  1040     mpduff    Called markNotBusyInUIThread.
+ * Jul 05, 2013  2137     mpduff    Only a single data type can be selected.
+ * Jul 05, 2013  2138     mpduff    Fixed to not use filter if filter is
+ *                                  disabled.
+ * Sep 26, 2013  2412     mpduff    Don't create expand items if no data type is
+ *                                  selected.
+ * Apr 10, 2014  2892     mpduff    Clear selected items when changing data
+ *                                  types.
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
-public class FilterExpandBar extends Composite implements IFilterUpdate,
-        IExpandControlAction {
+public class FilterExpandBar extends Composite
+        implements IFilterUpdate, IExpandControlAction {
     private final String DATA_PROVIDER = "Data Provider";
 
     private final String DATA_SET = "Data Set";
@@ -139,7 +145,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            The parent composite
      */
@@ -197,8 +203,8 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
         layout.marginHeight = 0;
         layout.marginWidth = 0;
         composite.setLayout(layout);
-        composite
-                .setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        composite.setLayoutData(
+                new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         ExpandBarControlsConfig expBarConfig = new ExpandBarControlsConfig();
         expBarConfig.setCollapseAll(true);
@@ -290,15 +296,11 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
                 dualConfig.setSelectedListLabel(setting.getValue());
             } else if (setting.getName().equalsIgnoreCase("showUpDownBtns")) {
                 dualConfig.setShowUpDownBtns(getBoolean(setting.getValue()));
-            } else if (setting.getName().equalsIgnoreCase("listWidth")) {
-                dualConfig.setShowUpDownBtns(getBoolean(setting.getValue()));
-            } else if (setting.getName().equalsIgnoreCase("listHeight")) {
-                dualConfig.setShowUpDownBtns(getBoolean(setting.getValue()));
             } else if (setting.getName().equalsIgnoreCase("showRegex")) {
                 filterConfig.setRegExVisible(getBoolean(setting.getValue()));
             } else if (setting.getName().equalsIgnoreCase("showMatch")) {
-                filterConfig.setMatchControlVisible(getBoolean(setting
-                        .getValue()));
+                filterConfig
+                        .setMatchControlVisible(getBoolean(setting.getValue()));
             } else if (setting.getName().equalsIgnoreCase("showDualList")) {
                 filterConfig.setDualListVisible(getBoolean(setting.getValue()));
             }
@@ -314,19 +316,19 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
         if (displayName.equals(DATA_PROVIDER)) {
             Set<String> providerSet = dataManager
                     .getAvailableDataProvidersByType(dataType);
-            dualConfig.setFullList(new ArrayList<String>(providerSet));
+            dualConfig.setFullList(new ArrayList<>(providerSet));
             dualConfig.setSelectedList(getFilterSettingsValues(DATA_PROVIDER));
         } else if (displayName.equals(DATA_SET)) {
-            dualConfig.setFullList(new ArrayList<String>(dataManager
-                    .getAvailableDataSets()));
+            dualConfig.setFullList(
+                    new ArrayList<>(dataManager.getAvailableDataSets()));
             dualConfig.setSelectedList(getFilterSettingsValues(DATA_SET));
         } else if (displayName.equals(PARAMETER)) {
-            dualConfig.setFullList(new ArrayList<String>(dataManager
-                    .getAvailableParameters()));
+            dualConfig.setFullList(
+                    new ArrayList<>(dataManager.getAvailableParameters()));
             dualConfig.setSelectedList(getFilterSettingsValues(PARAMETER));
         } else if (displayName.equals(LEVEL)) {
-            dualConfig.setFullList(new ArrayList<String>(dataManager
-                    .getAvailableLevels()));
+            dualConfig.setFullList(
+                    new ArrayList<>(dataManager.getAvailableLevels()));
             dualConfig.setSelectedList(getFilterSettingsValues(LEVEL));
         }
 
@@ -345,7 +347,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
     /**
      * Get the list of defined filterSettings for a filter type defined in
      * filterSettingsXml.
-     * 
+     *
      * @param filterType
      * @return List of filter values.
      */
@@ -362,7 +364,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Add a separator line to the display.
-     * 
+     *
      * @param parentComp
      *            Parent component.
      */
@@ -393,8 +395,8 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
     private void displayEnableFilterDialog() {
 
         if (expandBar.getItemCount() == 0) {
-            MessageBox mb = new MessageBox(this.getShell(), SWT.ICON_ERROR
-                    | SWT.OK);
+            MessageBox mb = new MessageBox(this.getShell(),
+                    SWT.ICON_ERROR | SWT.OK);
             mb.setText("Warning");
             mb.setMessage("No filters are available to enable/disable.");
             mb.open();
@@ -442,11 +444,11 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Get a list of filter names.
-     * 
+     *
      * @return A list of filter names.
      */
     public ArrayList<String> getFilterNames() {
-        ArrayList<String> names = new ArrayList<String>();
+        ArrayList<String> names = new ArrayList<>();
 
         for (ExpandItem ei : expandBar.getItems()) {
             names.add(ei.getText());
@@ -457,7 +459,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Any filters in the expandBar?
-     * 
+     *
      * @return true if one or more filters exist in the expand bar
      */
     public boolean hasFilters() {
@@ -470,11 +472,11 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Get a list of enabled filters.
-     * 
+     *
      * @return A list of enabled filters.
      */
     public ArrayList<Integer> getEnabledFilters() {
-        ArrayList<Integer> enabledIndexes = new ArrayList<Integer>();
+        ArrayList<Integer> enabledIndexes = new ArrayList<>();
 
         for (int i = 0; i < expandBar.getItems().length; i++) {
             AbstractFilterComp afc = (AbstractFilterComp) expandBar.getItem(i)
@@ -489,7 +491,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Enable the list of specified filters.
-     * 
+     *
      * @param indexes
      *            Array of indexes specifying the filters to be enabled.
      */
@@ -506,7 +508,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#
      * collapseAction()
      */
@@ -521,10 +523,9 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /*
      * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#expandAction
-     * ()
+     *
+     * @see com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#
+     * expandAction ()
      */
     @Override
     public void expandAction() {
@@ -537,7 +538,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#
      * expandSelectedAction()
      */
@@ -548,10 +549,9 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /*
      * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#disableAction
-     * ()
+     *
+     * @see com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#
+     * disableAction ()
      */
     @Override
     public void disableAction() {
@@ -560,18 +560,19 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#
      * clearAllAction()
      */
     @Override
     public void clearAllAction() {
 
-        MessageBox mb = new MessageBox(this.getShell(), SWT.ICON_QUESTION
-                | SWT.YES | SWT.NO);
+        MessageBox mb = new MessageBox(this.getShell(),
+                SWT.ICON_QUESTION | SWT.YES | SWT.NO);
         mb.setText("Clear All Filters");
-        mb.setMessage("You are about to clear all of your filter settings.  This\n"
-                + "cannot be undone.\n\nDo you wish to continue?");
+        mb.setMessage(
+                "You are about to clear all of your filter settings.  This\n"
+                        + "cannot be undone.\n\nDo you wish to continue?");
         int result = mb.open();
 
         if (result == SWT.NO) {
@@ -587,10 +588,9 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /*
      * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#previewAction
-     * ()
+     *
+     * @see com.raytheon.uf.viz.datadelivery.common.ui.IExpandControlAction#
+     * previewAction ()
      */
     @Override
     public void previewAction() {
@@ -603,7 +603,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Update the filters.
-     * 
+     *
      * @param dataType
      *            the data type
      * @param envelope
@@ -616,7 +616,8 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
         // Clear previously selected items
         if (filterSettingsXml != null) {
-            for (FilterTypeXML xml : this.filterSettingsXml.getFilterTypeList()) {
+            for (FilterTypeXML xml : this.filterSettingsXml
+                    .getFilterTypeList()) {
                 xml.clearValues();
             }
         }
@@ -657,8 +658,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
                                         if (control instanceof FilterComp) {
                                             FilterComp fc = (FilterComp) control;
                                             String[] items = filterTypeXml
-                                                    .getValues()
-                                                    .toArray(
+                                                    .getValues().toArray(
                                                             new String[filterTypeXml
                                                                     .getValues()
                                                                     .size()]);
@@ -666,7 +666,8 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
                                                     && items.length > 0) {
                                                 fc.selectItems(items);
                                                 ei.setImage(filterImgs
-                                                        .getExpandItemImage(ExpandItemState.Entries));
+                                                        .getExpandItemImage(
+                                                                ExpandItemState.Entries));
                                             }
                                         }
                                     }
@@ -681,7 +682,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Populate the filters.
-     * 
+     *
      * @param filterSettingsXml
      *            Settings to populate
      */
@@ -693,7 +694,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
                 FilterComp fc = (FilterComp) control;
                 if (fc.isEnabled()) {
                     String[] selectedItems = fc.getSelectedListItems();
-                    ArrayList<String> values = new ArrayList<String>();
+                    ArrayList<String> values = new ArrayList<>();
                     for (String selectedItem : selectedItems) {
                         values.add(selectedItem);
                     }
@@ -719,7 +720,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Check for changes in the filter.
-     * 
+     *
      * @return true if changes have been made;
      */
     public boolean isDirty() {
@@ -751,7 +752,7 @@ public class FilterExpandBar extends Composite implements IFilterUpdate,
 
     /**
      * Set the referenced envelope.
-     * 
+     *
      * @param envelope
      *            The ReferencedEnvelope
      */

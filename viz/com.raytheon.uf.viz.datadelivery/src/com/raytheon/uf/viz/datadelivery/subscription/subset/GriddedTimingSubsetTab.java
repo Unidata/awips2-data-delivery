@@ -39,28 +39,30 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 
 /**
  * Implementation for Gridded data.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 22, 2012 0743       djohnson     Initial creation
- * Aug 29, 2012 0223       mpduff       Removed cycle times.
- * Sep 07, 2012 0684       mpduff       Clear fcstHour selection before setting new selection.
- * Sep 24, 2012 1209       djohnson     Display text when there are no available cycles, move validation to presenter.
- * Jan 10, 2013 1444       mpduff       Add updateSelectedForecastHours method.
- * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 22, 2012  743      djohnson  Initial creation
+ * Aug 29, 2012  223      mpduff    Removed cycle times.
+ * Sep 07, 2012  684      mpduff    Clear fcstHour selection before setting new
+ *                                  selection.
+ * Sep 24, 2012  1209     djohnson  Display text when there are no available
+ *                                  cycles, move validation to presenter.
+ * Jan 10, 2013  1444     mpduff    Add updateSelectedForecastHours method.
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
-// IGriddedDataTimingSubsetView {
+    // IGriddedDataTimingSubsetView {
 
     /** Forecast dual list */
     private DualList fcstDualList;
@@ -73,7 +75,7 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param callback
@@ -105,8 +107,8 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
 
         forecastHoursDualConfig.setAvailableListLabel("Available Hours:");
         forecastHoursDualConfig.setSelectedListLabel("Selected Hours:");
-        forecastHoursDualConfig.setListHeight(125);
-        forecastHoursDualConfig.setListWidth(175);
+        forecastHoursDualConfig.setVisibleItems(10);
+        forecastHoursDualConfig.setListWidthInChars(30);
         forecastHoursDualConfig.setShowUpDownBtns(false);
         forecastHoursDualConfig.setNumericData(true);
 
@@ -116,7 +118,7 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
 
     /**
      * Get the selected forecast hours
-     * 
+     *
      * @return the selected forecast hours
      */
     public String[] getSelectedFcstHours() {
@@ -125,7 +127,7 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
 
     /**
      * List of hours to set
-     * 
+     *
      * @param fcstHours
      *            list of fcst hours
      */
@@ -140,22 +142,22 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
 
     /**
      * Set the available forecast hours
-     * 
+     *
      * @param forecastHours
      *            list of fcst hours
      */
     public void setAvailableForecastHours(List<String> forecastHours) {
-        fcstDualList.setFullList(new ArrayList<String>(forecastHours));
+        fcstDualList.setFullList(new ArrayList<>(forecastHours));
     }
 
     /**
      * Update the selected forecast hours.
-     * 
+     *
      * @param fcstHours
      *            list of fcst hours
      */
     public void updateSelectedForecastHours(List<String> fcstHours) {
-        List<String> selectedHrs = new ArrayList<String>();
+        List<String> selectedHrs = new ArrayList<>();
         String[] selectedItems = fcstDualList.getSelectedSelection();
 
         // Add the saved hours
@@ -169,7 +171,7 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
         selectedHrs.addAll(Arrays.asList(selectedItems));
 
         // Sort the hours
-        List<Integer> intList = new ArrayList<Integer>();
+        List<Integer> intList = new ArrayList<>();
         for (String hr : selectedHrs) {
             intList.add(Integer.parseInt(hr));
         }
@@ -180,13 +182,13 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
         for (int i : intList) {
             selectedHrs.add(String.valueOf(i));
         }
-        fcstDualList.selectItems(selectedHrs.toArray(new String[selectedHrs
-                .size()]));
+        fcstDualList.selectItems(
+                selectedHrs.toArray(new String[selectedHrs.size()]));
     }
 
     /**
      * Are the data valid?
-     * 
+     *
      * @return true if valid
      */
     public boolean isValid() {
@@ -198,13 +200,13 @@ public class GriddedTimingSubsetTab extends DataTimingSubsetTab {// implements
 
     /**
      * Get the save info for the tab.
-     * 
+     *
      * @return TimeXML object
      */
     public TimeXML getSaveInfo() {
         SpecificDateTimeXML time = new SpecificDateTimeXML();
-        time.setFcstHours(new ArrayList<String>(Arrays.asList(fcstDualList
-                .getSelectedListItems())));
+        time.setFcstHours(new ArrayList<>(
+                Arrays.asList(fcstDualList.getSelectedListItems())));
         return time;
     }
 }

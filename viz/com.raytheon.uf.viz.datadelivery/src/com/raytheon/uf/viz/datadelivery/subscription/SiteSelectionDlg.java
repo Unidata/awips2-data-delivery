@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -39,23 +39,23 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 
 /**
  * Shared site selection dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 29, 2013   1040     mpduff      Initial creation
- * Feb 11, 2014   2771     bgonzale    Show all SiteDataTypes in site list.
- * Apr 2,  2014   2974     dhladky     DD ID added to list for dropdowns in DD.
- * May 17, 2015   4047     dhladky     verified non-blocking.
- * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Apr 29, 2013  1040     mpduff    Initial creation
+ * Feb 11, 2014  2771     bgonzale  Show all SiteDataTypes in site list.
+ * Apr 02, 2014  2974     dhladky   DD ID added to list for dropdowns in DD.
+ * May 17, 2015  4047     dhladky   verified non-blocking.
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class SiteSelectionDlg extends CaveSWTDialog {
@@ -67,7 +67,7 @@ public class SiteSelectionDlg extends CaveSWTDialog {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent Shell
      * @param site
@@ -104,8 +104,8 @@ public class SiteSelectionDlg extends CaveSWTDialog {
         config.setAvailableListLabel("Available Sites:");
         config.setSelectedListLabel("Selected Sites:");
         config.setShowUpDownBtns(false);
-        config.setListHeight(150);
-        config.setListWidth(70);
+        config.setVisibleItems(12);
+        config.setListWidthInChars(12);
         config.setFullList(getSiteList());
         config.setSelectedList(Arrays.asList(sharedSites));
 
@@ -119,7 +119,7 @@ public class SiteSelectionDlg extends CaveSWTDialog {
         buttonComp.setLayoutData(gd);
 
         int buttonWidth = buttonComp.getDisplay().getDPI().x;
-        
+
         Button okBtn = new Button(buttonComp, SWT.NONE);
         okBtn.setText("OK");
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
@@ -147,7 +147,7 @@ public class SiteSelectionDlg extends CaveSWTDialog {
 
     /**
      * Get a list of WFO/RFC ids
-     * 
+     *
      * @return list of site ids
      */
     private List<String> getSiteList() {

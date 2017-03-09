@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -47,28 +48,29 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 
 /**
  * Filter table dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb  6, 2012            mpduff      Initial creation.
- * Mar 20, 2012   240      jpiatt      Updates to filter notification table data.
- * Jun  1, 2012   645      jpiatt      Added tooltips.
- * Sep 25, 2013  2408      mpduff      Added sort to subscription lists.
- * Sep 27, 2013  #2419     lvenable    Update code to reflect changes made in
- *                                     the dual list.
- * Oct 03, 2013  2375      mpduff      Add an apply button.
- * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
- * Jan 18, 2016  5054      randerso    Changed to extend CaveSWTDialog
- * Feb 01, 2016  5289      tgurney     Add missing close button in trim
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 06, 2012           mpduff    Initial creation.
+ * Mar 20, 2012  240      jpiatt    Updates to filter notification table data.
+ * Jun 01, 2012  645      jpiatt    Added tooltips.
+ * Sep 25, 2013  2408     mpduff    Added sort to subscription lists.
+ * Sep 27, 2013  2419     lvenable  Update code to reflect changes made in the
+ *                                  dual list.
+ * Oct 03, 2013  2375     mpduff    Add an apply button.
+ * Jun 09, 2015  4047     dhladky   Dialog blocked CAVE at initial startup,
+ *                                  fixed.
+ * Jan 18, 2016  5054     randerso  Changed to extend CaveSWTDialog
+ * Feb 01, 2016  5289     tgurney   Add missing close button in trim
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class NotificationFilterDlg extends CaveSWTDialog {
@@ -106,7 +108,7 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            Parent shell.
      * @param callback
@@ -115,8 +117,7 @@ public class NotificationFilterDlg extends CaveSWTDialog {
     public NotificationFilterDlg(Shell shell, ITableChange callback,
             List<NotificationRecord> notificationList) {
         super(shell, SWT.CLOSE, CAVE.INDEPENDENT_SHELL
-                | CAVE.PERSPECTIVE_INDEPENDENT
-                | CAVE.DO_NOT_BLOCK);
+                | CAVE.PERSPECTIVE_INDEPENDENT | CAVE.DO_NOT_BLOCK);
         setText("Notification Filter Settings");
         this.callback = callback;
         this.notificationList = notificationList;
@@ -136,7 +137,7 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
      * .eclipse.swt.widgets.Shell)
@@ -181,8 +182,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
         alwaysIncludeMeBtn = new Button(topComp, SWT.CHECK);
         alwaysIncludeMeBtn.setText("Always include my notifications");
         alwaysIncludeMeBtn.setSelection(selfInclude);
-        alwaysIncludeMeBtn
-                .setToolTipText("Select to maintain current user name in Selected list");
+        alwaysIncludeMeBtn.setToolTipText(
+                "Select to maintain current user name in Selected list");
         alwaysIncludeMeBtn.addSelectionListener(new SelectionAdapter() {
 
             @Override
@@ -194,8 +195,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
                     // Available and Selected Filter Lists
                     String[] available = userDualList.getAvailableListItems();
                     String[] select = userDualList.getSelectedListItems();
-                    List<String> arr = new ArrayList<String>();
-                    ArrayList<String> arr2 = new ArrayList<String>();
+                    List<String> arr = new ArrayList<>();
+                    List<String> arr2 = new ArrayList<>();
 
                     for (String s : available) {
 
@@ -234,12 +235,12 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
         gl = new GridLayout(3, false);
 
-        ArrayList<String> fullList = new ArrayList<String>();
+        List<String> fullList = new ArrayList<>();
 
         /**
          * Grab the usernames of each record in the table and add them to the
          * fullList
-         * 
+         *
          */
         for (NotificationRecord record : notificationList) {
 
@@ -257,8 +258,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
         NotificationFilterXML xml = configManager.getFilterXml();
 
-        ArrayList<String> selectedList = xml.getUserFilterXml().getUserList();
-        ArrayList<String> selectedListFinal = new ArrayList<String>();
+        List<String> selectedList = xml.getUserFilterXml().getUserList();
+        List<String> selectedListFinal = new ArrayList<>();
 
         /*
          * Check if everything in the selected list is still in the db
@@ -271,7 +272,7 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
         }
 
-        HashSet<String> includeItems = new HashSet<String>();
+        Set<String> includeItems = new HashSet<>();
 
         if (selfInclude) {
 
@@ -287,8 +288,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
         // Set the available and selected lists
         DualListConfig dualConfig = new DualListConfig();
-        dualConfig.setListHeight(120);
-        dualConfig.setListWidth(125);
+        dualConfig.setVisibleItems(10);
+        dualConfig.setListWidthInChars(20);
         dualConfig.setShowUpDownBtns(false);
         dualConfig.setIncludeList(includeItems);
         dualConfig.setAvailableListLabel("Available Users:");
@@ -340,7 +341,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
         subGroup = new Group(shell, SWT.NONE);
         subGroup.setLayout(gl);
         subGroup.setText(" Filter by Subscription ");
-        subGroup.setToolTipText("Subscriptions moved to the Selected list will be visible");
+        subGroup.setToolTipText(
+                "Subscriptions moved to the Selected list will be visible");
 
         gl = new GridLayout(1, false);
         Composite topComp = new Composite(subGroup, SWT.NONE);
@@ -349,7 +351,7 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
         gl = new GridLayout(3, false);
 
-        ArrayList<String> fullSubList = new ArrayList<String>();
+        List<String> fullSubList = new ArrayList<>();
 
         /*
          * Grab the usernames of each record in the table and add them to the
@@ -367,8 +369,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
         NotificationFilterXML xml = configManager.getFilterXml();
 
-        ArrayList<String> selectedSubList = xml.getSubscriptionList();
-        ArrayList<String> selectedSubListFinal = new ArrayList<String>();
+        List<String> selectedSubList = xml.getSubscriptionList();
+        List<String> selectedSubListFinal = new ArrayList<>();
 
         // Check if everything in the selected list is still in
         // the db
@@ -383,8 +385,8 @@ public class NotificationFilterDlg extends CaveSWTDialog {
         Collections.sort(selectedSubListFinal);
         Collections.sort(fullSubList);
         DualListConfig dualConfig = new DualListConfig();
-        dualConfig.setListHeight(120);
-        dualConfig.setListWidth(125);
+        dualConfig.setVisibleItems(10);
+        dualConfig.setListWidthInChars(20);
         dualConfig.setShowUpDownBtns(false);
         dualConfig.setAvailableListLabel("Available Subscriptions:");
         dualConfig.setSelectedListLabel("Selected Subscriptions:");
@@ -450,7 +452,7 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
     /**
      * Apply the changes.
-     * 
+     *
      */
     private void applyAction() {
 
@@ -476,10 +478,10 @@ public class NotificationFilterDlg extends CaveSWTDialog {
         xml.setUserFilterXml(userFilter);
 
         // Filter By Subscription Info
-        ArrayList<String> subFilter = xml.getSubscriptionList();
+        List<String> subFilter = xml.getSubscriptionList();
 
         if (subFilter == null) {
-            subFilter = new ArrayList<String>();
+            subFilter = new ArrayList<>();
         }
         subFilter.clear();
 
@@ -508,12 +510,12 @@ public class NotificationFilterDlg extends CaveSWTDialog {
 
     /**
      * Filter table by selected priorities.
-     * 
+     *
      */
     private void filterByPriority() {
 
         NotificationFilterXML xml = configManager.getFilterXml();
-        ArrayList<Priority> priorityList = xml.getPriorityList();
+        List<Priority> priorityList = xml.getPriorityList();
         for (int i = 0; i < priorityBtns.length; i++) {
             Button b = priorityBtns[i];
             for (Priority p : priorityList) {
