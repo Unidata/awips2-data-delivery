@@ -109,7 +109,6 @@ public class HibernateBandwidthDbInit extends DbInit
     @Override
     public void init() throws Exception {
         initDb();
-        getExistingTables(null);
         logger.info("Clearing previous bandwidth data...");
         final Work work = new Work() {
             @Override
