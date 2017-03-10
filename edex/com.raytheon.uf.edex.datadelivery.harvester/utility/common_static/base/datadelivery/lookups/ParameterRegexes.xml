@@ -54,7 +54,7 @@
     <levelRegex order="27.0" id="maxWind" pattern="max wind " level="Maximum Level"/>  <!--MAXW -->
     <levelRegex order="28.0" id="meanSeaLevel" pattern="mean sea level " level="Mean Sea Level"/>  <!--MSL -->
     <levelRegex order="29.0" id="planetaryBoundary" pattern="planetary boundary layer " level="Planetary Boundary Layer"/>  <!--PBL -->
-    <levelRegex order="30.0" id="pv" pattern="pv=(-?\d+(\.\d+)?e-?\d+) \(km\^2\/kg\/s\) " level="PV Level" levelGroup="$1" units="km^2/kg/s"/>  <!--PVL -->
+    <levelRegex order="30.0" id="pv" pattern="pv=(-?\d+(\.\d+)?e-?\d+) \(km\^2\/kg\/s\)( surface)? " level="PV Level" levelGroup="$1" units="km^2/kg/s"/>  <!--PVL -->
     <levelRegex order="31.0" id="topOfAtmosphere" pattern="top of atmosphere " level="Top Level"/>  <!-- CTL-->
     <levelRegex order="32.0" id="tropopause" pattern="tropopause " level="Tropopause Level"/>  <!--TROP -->
     <levelRegex order="33.0" id="surface" pattern="surface( none)? " level="Surface"/>  <!-- SFC -->
@@ -112,8 +112,10 @@
     <nameRegex order="50.0" id="secWaveMeanPer" AWIPS="PERPW" pattern="secondary wave mean period"/>
     <nameRegex order="51.0" id="priWaveDir" AWIPS="DIRPW" pattern="primary wave direction"/>
     <nameRegex order="52.0" id="secWaveDir" AWIPS="DIRSW" pattern="secondary wave direction"/>
-    <nameRegex order="53.0" id="vis" AWIPS="Vis" pattern="visibility"/>
-    <nameRegex order="54.0" id="refl" AWIPS="REFD" pattern="reflectivity"/>
-    <nameRegex order="55.0" id="temp" AWIPS="T" pattern="temperature"/>
-    <nameRegex order="56.0" id="pressure" AWIPS="P" pattern="pressure"/>
+    <nameRegex order="53.0" id="minTemp" AWIPS="MnT" pattern="minimum temperature"/>
+    <nameRegex order="54.0" id="maxTemp" AWIPS="MxT" pattern="maximum temperature"/>
+    <nameRegex order="55.0" id="vis" AWIPS="Vis" pattern="visibility"/>
+    <nameRegex order="56.0" id="refl" AWIPS="REFD" pattern="reflectivity"/>
+    <nameRegex order="57.0" id="temp" AWIPS="T" pattern="temperature"/>
+    <nameRegex order="58.0" id="pressure" AWIPS="P" pattern="pressure"/>
 </ParameterRegexes>
