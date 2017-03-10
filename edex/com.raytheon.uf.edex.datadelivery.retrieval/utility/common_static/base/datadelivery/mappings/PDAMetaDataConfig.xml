@@ -29,7 +29,7 @@
         <!-- Example: OR_ABI-L2-DMWF-M4C07_G16_s20161932020192_e20161932025000_c20161932032500.nc -->
         <regex>([A-Z0-9]+_[A-Z0-9]+-[A-Z0-9]+)-(([A-Z0-9]{3,5}?)(C|F|M1|M2)?)(-(M[34](C\d\d)?))?_([A-Z0-9]+)_s([\d]{14})_e([\d]{14})_c([\d]{14})\.[a-zA-Z0-9]+</regex>
         <!-- Ex:    20141231606593 -->
-        <dateFormat>YYYYDDDHHmmsss</dateFormat>
+        <dateFormat>yyyyDDDHHmmsss</dateFormat>
         <group name="PARAM_FORMAT" value="$3" />
         <group name="RES_FORMAT" value="$4" />
         <group name="SAT_FORMAT" value="$8" />
@@ -46,7 +46,7 @@
         <!--   <id>   | <shortName>       | <dataAcqStart>                                 | <dataAcqEnd>                                   | <dataCreateTime>                               | <fileReceivedTime>                             | <spacecraftList>                     | <instrumentList>                     | <channelList>                        | <modeList>                           | <urn>              | <polygonList>                                                            | <bD> | <resolution>      | <fileName>                        | <fileFormat> -->
         <regex>(\d+)\|([0-9a-zA-Z-_+]+)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(.\d{3})?)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_+]+(,[0-9a-zA-Z-_+]+)*)?\|([0-9a-zA-Z-_:+]+)?\|(\(-?\d{1,2}.\d{1,6} -?\d{1,3}.\d{1,6}(,-?\d{1,2}.\d{1,6} -?\d{1,3}.\d{1,6})*\))*\|(\d*)\|(\d{1,2}.\d{1,2})?\|([0-9a-zA-Z-_+]+.[0-9a-zA-Z-_+]+)?\|([0-9a-zA-Z-_+]+)?</regex>
         <!-- Ex:    2015-02-19T03:10:45 -->
-        <dateFormat>YYYY-MM-dd'T'HH:mm:ss</dateFormat>
+        <dateFormat>yyyy-MM-dd'T'HH:mm:ss</dateFormat>
         <!-- <InventoryID> ::= [0-9]+ == 1 or more digits -->
         <group name="ID_FORMAT" value="$1" />
         <!-- <shortName> ::= [0-9a-zA-Z-_+]1  == one or more of the described characters -->

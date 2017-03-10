@@ -261,15 +261,17 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             setDefaultParams(paramMap);
 
             // use real time parsed from file
-            time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME),
-                    dateFormat);
-
             try {
-                idate = new ImmutableDate(
-                        time.parseDate(paramMap.get(START_TIME)));
+                time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME),
+                        dateFormat);
+                idate = new ImmutableDate(time.getStart());
             } catch (ParseException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Couldn't parse dataTime, " + relativeDataURL, e);
+                statusHandler.error(
+                        "Couldn't parse start (" + paramMap.get(START_TIME)
+                                + ")/end (" + paramMap.get(END_TIME)
+                                + ") time from format: " + dateFormat,
+                        e);
+                return;
             }
 
             /**
@@ -482,20 +484,16 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
      * @param startTime
      * @param endTime
      * @return
+     * @throws ParseException
      */
-    private Time getTime(String startTime, String endTime, String dateFormat) {
+    private Time getTime(String startTime, String endTime, String dateFormat)
+            throws ParseException {
 
         Time time = new Time();
         time.setFormat(dateFormat);
 
-        try {
-            time.setStartDate(startTime);
-            time.setEndDate(endTime);
-        } catch (ParseException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't parse start/end time from format: " + dateFormat,
-                    e);
-        }
+        time.setStartDate(startTime);
+        time.setEndDate(endTime);
 
         return time;
     }
