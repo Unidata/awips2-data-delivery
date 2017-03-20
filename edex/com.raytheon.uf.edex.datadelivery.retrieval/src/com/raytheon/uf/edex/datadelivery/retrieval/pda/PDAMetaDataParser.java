@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.geometry.DirectPosition;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
@@ -58,6 +59,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
 import com.raytheon.uf.edex.ogc.common.OgcException;
 import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
+import com.raytheon.uf.edex.ogc.common.spatial.CrsLookup;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -343,10 +345,19 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         paramMap.put(FORMAT, serviceConfig.getConstantValue("DEFAULT_FORMAT"));
     }
 
-    private Coverage getCoverage(String polygonPoints, String crs)
+    private Coverage getCoverage(String polygonPoints, String crsName)
             throws MalformedDataException {
         Coverage coverage = new Coverage();
         GeometryFactory factory = new GeometryFactory();
+        CoordinateReferenceSystem crs;
+        String defaultCRS = serviceConfig.getConstantValue("DEFAULT_CRS");
+        try {
+            crs = BoundingBoxUtil.getCrs(defaultCRS);
+        } catch (OgcException e1) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Couldn't determine CRS from value: " + defaultCRS, e1);
+            return coverage;
+        }
 
         // Trim the leading and trailing parens, then split on parens
         polygonPoints = polygonPoints.replaceAll("^\\(", "");
@@ -374,8 +385,18 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             List<Coordinate> coorsList = new ArrayList<>();
             for (String point : polyPoints) {
                 String[] coord = point.split(" ");
-                coorsList.add(new Coordinate(Double.parseDouble(coord[1]),
-                        Double.parseDouble(coord[0])));
+                /*
+                 * EPSG uses lat/lon instead of lon/lat. A similar check exists
+                 * in the BoundingBoxUtils class that will flip the values when
+                 * they are read back out, so put them in backwards here.
+                 */
+                if (CrsLookup.isEpsgGeoCrs(crs)) {
+                    coorsList.add(new Coordinate(Double.parseDouble(coord[0]),
+                            Double.parseDouble(coord[1])));
+                } else {
+                    coorsList.add(new Coordinate(Double.parseDouble(coord[1]),
+                            Double.parseDouble(coord[0])));
+                }
             }
             // Check to make sure the polygon is closed. If not, close it.
             if (!coorsList.get(0).equals(coorsList.get(coorsList.size() - 1))) {
@@ -422,8 +443,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         DirectPosition max = BoundingBoxUtil.convert(uc);
 
         try {
-            coverage.setEnvelope(BoundingBoxUtil.convert2D(min, max,
-                    serviceConfig.getConstantValue("DEFAULT_CRS")));
+            coverage.setEnvelope(
+                    BoundingBoxUtil.convert2D(min, max, defaultCRS));
         } catch (OgcException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Couldn't determine BoundingBox envelope!", e);
