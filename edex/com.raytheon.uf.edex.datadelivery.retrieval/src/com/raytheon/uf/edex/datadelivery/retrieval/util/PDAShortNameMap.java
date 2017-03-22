@@ -58,6 +58,10 @@ public class PDAShortNameMap {
     @DynamicSerializeElement
     private String paramGroup;
 
+    @XmlAttribute(name = "resGroup")
+    @DynamicSerializeElement
+    private String resGroup;
+
     private Pattern pattern;
 
     public String getId() {
@@ -93,5 +97,13 @@ public class PDAShortNameMap {
 
     public void setPattern(Pattern pattern) {
         this.pattern = pattern;
+    }
+
+    public String getResGroup() {
+        return resGroup;
+    }
+
+    public void setResGroup(String resGroup) {
+        this.resGroup = resGroup;
     }
 }

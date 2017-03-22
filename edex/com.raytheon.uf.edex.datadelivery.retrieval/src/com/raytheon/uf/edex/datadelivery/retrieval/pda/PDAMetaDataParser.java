@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.geometry.DirectPosition;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
@@ -58,6 +59,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
 import com.raytheon.uf.edex.ogc.common.OgcException;
 import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
+import com.raytheon.uf.edex.ogc.common.spatial.CrsLookup;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -127,8 +129,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     /** debug state */
     protected Boolean debug = false;
 
-    private String dateFormat = null;
-
     public PDAMetaDataParser() {
         serviceConfig = HarvesterServiceManager.getInstance()
                 .getServiceConfig(ServiceType.PDA);
@@ -149,8 +149,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     }
 
     @Override
-    public void parseMetaData(Provider provider, String dateFormat,
-            BriefRecordType record, boolean isMetaData) {
+    public void parseMetaData(Provider provider, BriefRecordType record,
+            boolean isMetaData) {
 
         Map<String, String> paramMap = null;
 
@@ -178,8 +178,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             statusHandler.info("relativeURL: " + relativeDataURL);
             statusHandler.info("metaDataURL: " + metaDataURL);
         }
-        // set date formatter
-        setDateFormat(dateFormat);
 
         PDAFileMetaDataExtractor extractor = PDAFileMetaDataExtractor
                 .getInstance();
@@ -189,14 +187,23 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         if (mdp != null) {
             Pattern p_id = mdp.getPattern();
             Matcher m = p_id.matcher(metaDataID);
+            String dateFormat = mdp.getDateFormat();
             if (m.matches()) {
                 try {
+                    statusHandler
+                            .info("Extracting metadata from metadataID...");
                     paramMap = extractor.extractMetaData(metaDataID);
                 } catch (Exception e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "MetaData extraction error, " + metaDataID, e);
                     // failure return
                     return;
+                }
+
+                // Only store the metadata Id itself, not the whole field
+                String newId = paramMap.get("metadataId");
+                if (newId != null && !"".equals(newId)) {
+                    metaDataID = newId;
                 }
 
                 // Lookup for coverage information
@@ -216,6 +223,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             } else {
                 // If not, extract the metadata from the title
                 try {
+                    statusHandler.info("Extracting metadata from title...");
                     paramMap = extractor
                             .extractMetaDataFromTitle(relativeDataURL);
                 } catch (MetaDataExtractionException e) {
@@ -231,6 +239,10 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                     // failure return
                     return;
                 }
+                // set the dateFormat to be for this pattern
+                MetaDataPattern mdpt = extractor
+                        .getMetaDataPattern("RECORD_TITLE");
+                dateFormat = mdpt.getDateFormat();
 
                 // Lookup for coverage information
                 if (!record.getBoundingBox().isEmpty()) {
@@ -251,14 +263,17 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             setDefaultParams(paramMap);
 
             // use real time parsed from file
-            time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME));
-
             try {
-                idate = new ImmutableDate(
-                        time.parseDate(paramMap.get(START_TIME)));
+                time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME),
+                        dateFormat);
+                idate = new ImmutableDate(time.getStart());
             } catch (ParseException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Couldn't parse dataTime, " + relativeDataURL, e);
+                statusHandler.error(
+                        "Couldn't parse start (" + paramMap.get(START_TIME)
+                                + ")/end (" + paramMap.get(END_TIME)
+                                + ") time from format: " + dateFormat,
+                        e);
+                return;
             }
 
             /**
@@ -330,10 +345,19 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         paramMap.put(FORMAT, serviceConfig.getConstantValue("DEFAULT_FORMAT"));
     }
 
-    private Coverage getCoverage(String polygonPoints, String crs)
+    private Coverage getCoverage(String polygonPoints, String crsName)
             throws MalformedDataException {
         Coverage coverage = new Coverage();
         GeometryFactory factory = new GeometryFactory();
+        CoordinateReferenceSystem crs;
+        String defaultCRS = serviceConfig.getConstantValue("DEFAULT_CRS");
+        try {
+            crs = BoundingBoxUtil.getCrs(defaultCRS);
+        } catch (OgcException e1) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Couldn't determine CRS from value: " + defaultCRS, e1);
+            return coverage;
+        }
 
         // Trim the leading and trailing parens, then split on parens
         polygonPoints = polygonPoints.replaceAll("^\\(", "");
@@ -361,8 +385,18 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
             List<Coordinate> coorsList = new ArrayList<>();
             for (String point : polyPoints) {
                 String[] coord = point.split(" ");
-                coorsList.add(new Coordinate(Double.parseDouble(coord[0]),
-                        Double.parseDouble(coord[1])));
+                /*
+                 * EPSG uses lat/lon instead of lon/lat. A similar check exists
+                 * in the BoundingBoxUtils class that will flip the values when
+                 * they are read back out, so put them in backwards here.
+                 */
+                if (CrsLookup.isEpsgGeoCrs(crs)) {
+                    coorsList.add(new Coordinate(Double.parseDouble(coord[0]),
+                            Double.parseDouble(coord[1])));
+                } else {
+                    coorsList.add(new Coordinate(Double.parseDouble(coord[1]),
+                            Double.parseDouble(coord[0])));
+                }
             }
             // Check to make sure the polygon is closed. If not, close it.
             if (!coorsList.get(0).equals(coorsList.get(coorsList.size() - 1))) {
@@ -371,7 +405,14 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                                 + polygonPoints);
                 coorsList.add(coorsList.get(0));
             }
-            Coordinate[] coors = (Coordinate[]) coorsList.toArray();
+            /*
+             * coorsList.toArray() is unable to cast objects to Coordinates, so
+             * do it manually.
+             */
+            Coordinate[] coors = new Coordinate[coorsList.size()];
+            for (int c = 0; c < coors.length; c++) {
+                coors[c] = coorsList.get(c);
+            }
             LinearRing lr = factory.createLinearRing(coors);
             polys[p] = factory.createPolygon(lr, null);
             p++;
@@ -402,7 +443,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         DirectPosition max = BoundingBoxUtil.convert(uc);
 
         try {
-            coverage.setEnvelope(BoundingBoxUtil.convert2D(min, max, crs));
+            coverage.setEnvelope(
+                    BoundingBoxUtil.convert2D(min, max, defaultCRS));
         } catch (OgcException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Couldn't determine BoundingBox envelope!", e);
@@ -463,20 +505,16 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
      * @param startTime
      * @param endTime
      * @return
+     * @throws ParseException
      */
-    private Time getTime(String startTime, String endTime) {
+    private Time getTime(String startTime, String endTime, String dateFormat)
+            throws ParseException {
 
         Time time = new Time();
-        time.setFormat(getDateFormat());
+        time.setFormat(dateFormat);
 
-        try {
-            time.setStartDate(startTime);
-            time.setEndDate(endTime);
-        } catch (ParseException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't parse start/end time from format: " + dateFormat,
-                    e);
-        }
+        time.setStartDate(startTime);
+        time.setEndDate(endTime);
 
         return time;
     }
@@ -531,24 +569,6 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         params.put(collectionName, parm);
 
         return params;
-    }
-
-    /**
-     * Get date formatter used to parse dates
-     * 
-     * @return
-     */
-    public String getDateFormat() {
-        return dateFormat;
-    }
-
-    /**
-     * set Date formatter used to parse dates
-     * 
-     * @param dateFormat
-     */
-    public void setDateFormat(String dateFormat) {
-        this.dateFormat = dateFormat;
     }
 
 }

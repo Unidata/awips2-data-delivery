@@ -31,13 +31,6 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
-import net.opengis.cat.csw.v_2_0_2.InsertType;
-import net.opengis.cat.csw.v_2_0_2.SearchResultsType;
-import net.opengis.cat.csw.v_2_0_2.dc.elements.ObjectFactory;
-import net.opengis.cat.csw.v_2_0_2.dc.elements.SimpleLiteral;
-import net.opengis.ows.v_1_0_0.BoundingBoxType;
-
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -54,6 +47,13 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
+
+import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
+import net.opengis.cat.csw.v_2_0_2.InsertType;
+import net.opengis.cat.csw.v_2_0_2.SearchResultsType;
+import net.opengis.cat.csw.v_2_0_2.dc.elements.ObjectFactory;
+import net.opengis.cat.csw.v_2_0_2.dc.elements.SimpleLiteral;
+import net.opengis.ows.v_1_0_0.BoundingBoxType;
 
 /**
  * PDA Catalog Service Response Handler
@@ -73,6 +73,7 @@ import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Apr 05, 2016  5424     dhladky   More logging enhancements.
  * Aug 11, 2016  5752     tjensen   Fix bounding box parsing in parseBriefRecord
+ * Feb 17, 2017  6089     tjensen   Fix null pointers with parseBriefRecord
  * 
  * </pre>
  * 
@@ -144,8 +145,8 @@ public class PDACatalogServiceResponseHandler {
 
     /** load PDA service config and factories **/
     static {
-        serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
-                ServiceType.PDA);
+        serviceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.PDA);
         // debugging MetaData parsing.
         String debugVal = serviceConfig.getConstantValue(DEBUG);
         debug = Boolean.valueOf(debugVal);
@@ -169,12 +170,11 @@ public class PDACatalogServiceResponseHandler {
      */
     @WebMethod
     public void handleGetRecordsResponse(
-            @WebParam(name = "GetRecordsResponse", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType response)
-            throws ServiceExceptionReport {
+            @WebParam(name = "GetRecordsResponse", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body") net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType response)
+                    throws ServiceExceptionReport {
 
-        statusHandler
-                .info("-------Incoming GetRecords() response from PDA -----------");
+        statusHandler.info(
+                "-------Incoming GetRecords() response from PDA -----------");
 
         if (response.getSearchStatus() != null) {
             // we got a valid search response!
@@ -183,11 +183,11 @@ public class PDACatalogServiceResponseHandler {
             int numberOfRecords = srt.getNumberOfRecordsMatched().intValue();
 
             if (numberOfRecords > 0) {
-                statusHandler.info("Recieved "
-                        + numberOfRecords
-                        + " new records from "
-                        + HarvesterConfigurationManager.getPDAConfiguration()
-                                .getProvider().getName());
+                statusHandler.info(
+                        "Received " + numberOfRecords + " new records from "
+                                + HarvesterConfigurationManager
+                                        .getPDAConfiguration().getProvider()
+                                        .getName());
                 // we have an actual result link
                 String recordFilePath = srt.getResultSetId();
                 statusHandler.info("Record File Path: " + recordFilePath);
@@ -195,10 +195,9 @@ public class PDACatalogServiceResponseHandler {
                 try {
                     sendToFileRetrieval(recordFilePath);
                 } catch (Exception e) {
-                    statusHandler
-                            .handle(Priority.ERROR,
-                                    "Failed to send to PDA catalog file retreival queue!",
-                                    e);
+                    statusHandler.handle(Priority.ERROR,
+                            "Failed to send to PDA catalog file retreival queue!",
+                            e);
                 }
             }
         }
@@ -211,16 +210,16 @@ public class PDACatalogServiceResponseHandler {
      */
     @WebMethod
     public void handleTransaction(
-            @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body")
-            net.opengis.cat.csw.v_2_0_2.TransactionType transactions)
-            throws ServiceExceptionReport {
+            @WebParam(name = "Transaction", targetNamespace = "http://www.opengis.net/cat/csw/2.0.2", partName = "Body") net.opengis.cat.csw.v_2_0_2.TransactionType transactions)
+                    throws ServiceExceptionReport {
 
         statusHandler.info("-------Incoming Transaction from PDA -----------");
         List<Object> records = transactions.getInsertOrUpdateOrDelete();
 
         if (records != null) {
 
-            List<JAXBElement<BriefRecordType>> briefRecords = new ArrayList<>(0);
+            List<JAXBElement<BriefRecordType>> briefRecords = new ArrayList<>(
+                    records.size());
 
             for (Object o : records) {
                 // We only care about insert messages, we delete
@@ -232,22 +231,20 @@ public class PDACatalogServiceResponseHandler {
                     }
                 } catch (Exception e) {
                     statusHandler.error(
-                            "Errror parsing Transaction message from PDA.", e);
+                            "Error parsing Transaction message from PDA.", e);
                 }
             }
 
-            statusHandler.handle(Priority.INFO,
-                    "Sending " + briefRecords.size()
-                            + " Transaction Inserts to MetaDataProcessor.");
+            statusHandler.handle(Priority.INFO, "Sending " + briefRecords.size()
+                    + " Transaction Inserts to MetaDataProcessor.");
 
             for (JAXBElement<BriefRecordType> briefRecord : briefRecords) {
                 try {
                     sendToMetaDataProcessor(briefRecord);
                 } catch (Exception e) {
-                    statusHandler
-                            .handle(Priority.PROBLEM,
-                                    "Unable to send BriefRecord to metadata Processor queue.",
-                                    e);
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Unable to send BriefRecord to metadata Processor queue.",
+                            e);
                 }
             }
         }
@@ -300,10 +297,9 @@ public class PDACatalogServiceResponseHandler {
             try {
                 this.jaxbManager = new OgcJaxbManager(classes);
             } catch (JAXBException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "JaxbManager failed to initialize, can not deserialize CSW classes.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "JaxbManager failed to initialize, cannot deserialize CSW classes.",
+                        e);
             }
         }
 
@@ -347,71 +343,78 @@ public class PDACatalogServiceResponseHandler {
 
                 Element element = trans.getAny().get(i);
 
-                if (element.getLocalName().equals(ID)) {
-                    identifier = element.getFirstChild().getNodeValue();
-                    if (debug) {
-                        statusHandler.info("indentifier: " + identifier);
-                    }
-                } else if (element.getLocalName().equals(TITLE)) {
-                    title = element.getFirstChild().getNodeValue();
-                    if (debug) {
-                        statusHandler.info("title: " + title);
-                    }
-                } else if (element.getLocalName().equals(TYPE)) {
-                    type = element.getFirstChild().getNodeValue();
-                    if (debug) {
-                        statusHandler.info("type: " + type);
-                    }
-                } else if (element.getLocalName().equals(BOUNDING_BOX)) {
+                // If no child nodes set, ignore this element.
+                if (element.getFirstChild() != null) {
+                    if (element.getLocalName().equals(ID)) {
+                        identifier = element.getFirstChild().getNodeValue();
+                        if (debug) {
+                            statusHandler.info("indentifier: " + identifier);
+                        }
+                    } else if (element.getLocalName().equals(TITLE)) {
+                        title = element.getFirstChild().getNodeValue();
+                        if (debug) {
+                            statusHandler.info("title: " + title);
+                        }
+                    } else if (element.getLocalName().equals(TYPE)) {
+                        type = element.getFirstChild().getNodeValue();
+                        if (debug) {
+                            statusHandler.info("type: " + type);
+                        }
+                    } else if (element.getLocalName().equals(BOUNDING_BOX)) {
 
-                    NodeList nodes = element.getChildNodes();
-                    crsAttr = element.getAttribute(CRS);
+                        NodeList nodes = element.getChildNodes();
+                        crsAttr = element.getAttribute(CRS);
 
-                    if (debug) {
-                        statusHandler.info("CRS: " + crsAttr);
-                    }
+                        if (debug) {
+                            statusHandler.info("CRS: " + crsAttr);
+                        }
 
-                    for (int j = 0; j < nodes.getLength(); j++) {
+                        for (int j = 0; j < nodes.getLength(); j++) {
 
-                        Node node = nodes.item(j);
+                            Node node = nodes.item(j);
 
-                        if (node.getLocalName().equals(LOWER_CORNER)) {
-                            if (node.getFirstChild() != null) {
-                                if (node.getFirstChild().getNodeValue() != null) {
-                                    lowerCorner = node.getFirstChild()
-                                            .getNodeValue();
-                                    if (debug) {
-                                        statusHandler.info("LOWER_CORNER: "
-                                                + lowerCorner);
+                            if (node.getLocalName().equals(LOWER_CORNER)) {
+                                if (node.getFirstChild() != null) {
+                                    if (node.getFirstChild()
+                                            .getNodeValue() != null) {
+                                        lowerCorner = node.getFirstChild()
+                                                .getNodeValue();
+                                        if (debug) {
+                                            statusHandler.info("LOWER_CORNER: "
+                                                    + lowerCorner);
+                                        }
+                                    } else {
+                                        statusHandler
+                                                .warn("LOWER_CORNER is blank!");
                                     }
-                                } else {
-                                    statusHandler
-                                            .warn("LOWER_CORNER is blank!");
                                 }
-                            }
-                        } else if (node.getLocalName().equals(UPPER_CORNER)) {
+                            } else if (node.getLocalName()
+                                    .equals(UPPER_CORNER)) {
 
-                            if (node.getFirstChild() != null) {
-                                if (node.getFirstChild().getNodeValue() != null) {
-                                    upperCorner = node.getFirstChild()
-                                            .getNodeValue();
-                                    if (debug) {
-                                        statusHandler.info("UPPER_CORNER: "
-                                                + upperCorner);
+                                if (node.getFirstChild() != null) {
+                                    if (node.getFirstChild()
+                                            .getNodeValue() != null) {
+                                        upperCorner = node.getFirstChild()
+                                                .getNodeValue();
+                                        if (debug) {
+                                            statusHandler.info("UPPER_CORNER: "
+                                                    + upperCorner);
+                                        }
+                                    } else {
+                                        statusHandler
+                                                .warn("UPPER_CORNER is blank!");
                                     }
-                                } else {
-                                    statusHandler
-                                            .warn("UPPER_CORNER is blank!");
                                 }
-                            }
-                        } else {
-                            if (node.getFirstChild() != null) {
-                                if (node.getFirstChild().getNodeValue() != null) {
-                                    statusHandler.info("Extra node: "
-                                            + node.getLocalName()
-                                            + " value:"
-                                            + node.getFirstChild()
-                                                    .getNodeValue());
+                            } else {
+                                if (node.getFirstChild() != null) {
+                                    if (node.getFirstChild()
+                                            .getNodeValue() != null) {
+                                        statusHandler.info("Extra node: "
+                                                + node.getLocalName()
+                                                + " value:"
+                                                + node.getFirstChild()
+                                                        .getNodeValue());
+                                    }
                                 }
                             }
                         }
@@ -420,10 +423,11 @@ public class PDACatalogServiceResponseHandler {
             }
 
             // process information
-            if (identifier != null && title != null && type != null) {
+            if (identifier != null && title != null) {
 
                 // identifier builder
-                List<JAXBElement<SimpleLiteral>> idLiterals = new ArrayList<>(1);
+                List<JAXBElement<SimpleLiteral>> idLiterals = new ArrayList<>(
+                        1);
                 SimpleLiteral idLiteral = new SimpleLiteral();
                 List<String> ids = new ArrayList<>(1);
                 ids.add(identifier);
@@ -483,8 +487,8 @@ public class PDACatalogServiceResponseHandler {
                     bbt.setLowerCorner(lowerVals);
                     bbt.setUpperCorner(upperVals);
                     // 2 dimensions
-                    bbt.setDimensions(BigInteger.valueOf(new Integer(2)
-                            .intValue()));
+                    bbt.setDimensions(
+                            BigInteger.valueOf(new Integer(2).intValue()));
                     JAXBElement<BoundingBoxType> jaxbBoundingBox = boundingBoxFactory
                             .createBoundingBox(bbt);
                     boundingBoxes.add(jaxbBoundingBox);

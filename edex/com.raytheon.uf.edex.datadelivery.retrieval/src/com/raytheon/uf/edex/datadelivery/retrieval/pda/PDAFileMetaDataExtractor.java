@@ -100,6 +100,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAShortNameMapSet;
 public class PDAFileMetaDataExtractor
         extends PDAMetaDataExtractor<String, String> {
 
+    private static final String ID_FORMAT = "ID_FORMAT";
+
     private static final String PARAM_FORMAT = "PARAM_FORMAT";
 
     private static final String RECORD_TITLE = "RECORD_TITLE";
@@ -643,6 +645,7 @@ public class PDAFileMetaDataExtractor
         if (mdp != null) {
             Pattern idPattern = mdp.getPattern();
             Map<String, PatternGroup> mdpGroups = mdp.getGroupMap();
+            String idFormat = mdpGroups.get(ID_FORMAT).getValue();
             String snFormat = mdpGroups.get(SHORT_NAME_FORMAT).getValue();
             String sTimeFormat = mdpGroups.get(START_TIME_FORMAT).getValue();
             String eTimeFormat = mdpGroups.get(END_TIME_FORMAT).getValue();
@@ -650,13 +653,14 @@ public class PDAFileMetaDataExtractor
             String rTimeFormat = mdpGroups.get(RECEIVED_TIME_FORMAT).getValue();
             String satFormat = mdpGroups.get(SAT_FORMAT).getValue();
             String polyFormat = mdpGroups.get(POLYGON_FORMAT).getValue();
-            String resFormat = mdpGroups.get(RES_FORMAT).getValue();
             String urnFormat = mdpGroups.get(URN_FORMAT).getValue();
 
             // Make sure the filename matches the expected pattern before
             // parsing
             Matcher titleMatcher = idPattern.matcher(metadataIdStr);
             if (titleMatcher.matches()) {
+                String id = metadataIdStr.replaceAll(idPattern.pattern(),
+                        idFormat);
                 String sat = metadataIdStr.replaceAll(idPattern.pattern(),
                         satFormat);
                 String startTime = metadataIdStr.replaceAll(idPattern.pattern(),
@@ -667,8 +671,6 @@ public class PDAFileMetaDataExtractor
                         .replaceAll(idPattern.pattern(), cTimeFormat);
                 String receiveTime = metadataIdStr
                         .replaceAll(idPattern.pattern(), rTimeFormat);
-                String res = metadataIdStr.replaceAll(idPattern.pattern(),
-                        resFormat);
                 String polygon = metadataIdStr.replaceAll(idPattern.pattern(),
                         polyFormat);
                 String crs = metadataIdStr.replaceAll(idPattern.pattern(),
@@ -694,6 +696,8 @@ public class PDAFileMetaDataExtractor
                 }
                 String param = parseParamFromShortName(metadataIdStr
                         .replaceAll(idPattern.pattern(), snFormat));
+                String res = parseResFromShortName(metadataIdStr
+                        .replaceAll(idPattern.pattern(), snFormat));
 
                 boolean validParams = validateParamData(param, res, sat,
                         startTime, endTime, mdp.getDateFormat());
@@ -703,6 +707,7 @@ public class PDAFileMetaDataExtractor
                     ignoreData = checkForIgnore(param, startTime,
                             mdp.getDateFormat());
 
+                    paramMap.put("metadataId", id);
                     paramMap.put("collectionName", sat);
                     paramMap.put("startTime", startTime);
                     paramMap.put("endTime", endTime);
@@ -741,6 +746,22 @@ public class PDAFileMetaDataExtractor
         return param;
     }
 
+    private String parseResFromShortName(String shortName) {
+        // default res to be full disk
+        String res = "F";
+
+        for (PDAShortNameMap snm : shortNameMapping.values()) {
+            Pattern snPattern = snm.getPattern();
+            Matcher snMatcher = snPattern.matcher(shortName);
+            if (snMatcher.matches()) {
+                res = shortName.replaceAll(snPattern.pattern(),
+                        snm.getResGroup());
+            }
+
+        }
+        return res;
+    }
+
     /**
      * Reads in a file name and extracts metadata from the name.
      * 
@@ -757,7 +778,7 @@ public class PDAFileMetaDataExtractor
         statusHandler.info("Extracting MetaData from: " + fileName);
 
         /*
-         * Pull in regex and grouping from the PDA service config file in case
+         * Pull in regex and grouping from the PDA metadata config file in case
          * PDA changes the format in the future.
          */
         MetaDataPattern mdp = getMetaDataPattern(RECORD_TITLE);
@@ -878,7 +899,12 @@ public class PDAFileMetaDataExtractor
     private String checkForIgnore(String param, String startTime,
             String dateFormat) {
         boolean excludeParam = checkExcludeList(param);
-        boolean oldData = checkRetention(startTime, dateFormat);
+
+        boolean oldData = false;
+        if (Boolean.parseBoolean(
+                serviceConfig.getConstantValue("CHECK_DATA_RETENTION_TIME"))) {
+            oldData = checkRetention(startTime, dateFormat);
+        }
 
         String ignoreData = "false";
         if (excludeParam || oldData) {
@@ -920,7 +946,6 @@ public class PDAFileMetaDataExtractor
                                 + " being older than retention time of "
                                 + thresholdTime.getTimeInMillis()
                                 + " (Date format: " + dateFormat + ")");
-                        ;
                         oldDate = true;
                     }
                 } catch (ParseException e) {
@@ -1072,7 +1097,7 @@ public class PDAFileMetaDataExtractor
                     List<String> reqGroups = Arrays.asList(SHORT_NAME_FORMAT,
                             START_TIME_FORMAT, END_TIME_FORMAT,
                             CREATE_TIME_FORMAT, RECEIVED_TIME_FORMAT,
-                            SAT_FORMAT, POLYGON_FORMAT, RES_FORMAT, URN_FORMAT);
+                            SAT_FORMAT, POLYGON_FORMAT, URN_FORMAT);
                     for (String group : reqGroups) {
                         if (mdpGroups.get(group) == null) {
                             valid = false;

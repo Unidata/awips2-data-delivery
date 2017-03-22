@@ -33,6 +33,7 @@ import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapRetrievalResponse;
+import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
 
 /**
@@ -42,23 +43,26 @@ import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 01, 2013 1543       djohnson     Initial creation
- * Feb 15, 2013 1543       djohnson     Serialize data out as XML.
- * Mar 05, 2013 1647       djohnson     Apply WMO header.
- * Mar 07, 2013 1647       djohnson     Write out as hidden file, then rename.
- * Aug 09, 2013 1822       bgonzale     Added parameters to IWmoHeaderApplier.applyWmoHeader().
- * Oct 28, 2013 2506       bgonzale     Removed request parameters.  Constructor inject IRetrievalDao.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 01, 2013  1543     djohnson  Initial creation
+ * Feb 15, 2013  1543     djohnson  Serialize data out as XML.
+ * Mar 05, 2013  1647     djohnson  Apply WMO header.
+ * Mar 07, 2013  1647     djohnson  Write out as hidden file, then rename.
+ * Aug 09, 2013  1822     bgonzale  Added parameters to
+ *                                  IWmoHeaderApplier.applyWmoHeader().
+ * Oct 28, 2013  2506     bgonzale  Removed request parameters.  Constructor
+ *                                  inject IRetrievalDao.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Mar 20, 2017  6089     tjensen   Add PDARetrievalResponse to JAXBManager
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-public class SerializeRetrievedDataToDirectory implements
-        IRetrievalPluginDataObjectsProcessor {
+public class SerializeRetrievedDataToDirectory
+        implements IRetrievalPluginDataObjectsProcessor {
 
     private final JAXBManager jaxbManager;
 
@@ -80,7 +84,7 @@ public class SerializeRetrievedDataToDirectory implements
             this.jaxbManager = new JAXBManager(RetrievalResponseXml.class,
                     SbnRetrievalResponseXml.class,
                     OpenDapRetrievalResponse.class, WFSRetrievalResponse.class,
-                    Coverage.class);
+                    PDARetrievalResponse.class, Coverage.class);
         } catch (JAXBException e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -95,14 +99,14 @@ public class SerializeRetrievedDataToDirectory implements
     @Override
     public RetrievalRequestRecord processRetrievedPluginDataObjects(
             RetrievalResponseXml retrievalPluginDataObjects)
-            throws SerializationException {
+                    throws SerializationException {
         retrievalPluginDataObjects.prepareForSerialization();
 
         try {
             final String fileName = UUID.randomUUID().toString();
             final File finalFile = new File(targetDirectory, fileName);
-            final File tempHiddenFile = new File(finalFile.getParentFile(), "."
-                    + finalFile.getName());
+            final File tempHiddenFile = new File(finalFile.getParentFile(),
+                    "." + finalFile.getName());
 
             final RetrievalRequestRecord request = retrievalDao
                     .getById(retrievalPluginDataObjects.getRequestRecord());
@@ -140,7 +144,15 @@ public class SerializeRetrievedDataToDirectory implements
      */
     private String getSourceType(RetrievalRequestRecord request) {
         String provider = request.getProvider();
-        return (provider == null || !provider.equalsIgnoreCase("MADIS") ? "MODEL"
-                : "OBSERVATION");
+
+        // Default to MODEL
+        String sourceType = "MODEL";
+        if (provider.equalsIgnoreCase("MADIS")) {
+            sourceType = "OBSERVATION";
+        } else if (provider.equalsIgnoreCase("PDA")) {
+            sourceType = "SATELLITE";
+        }
+
+        return sourceType;
     }
 }
