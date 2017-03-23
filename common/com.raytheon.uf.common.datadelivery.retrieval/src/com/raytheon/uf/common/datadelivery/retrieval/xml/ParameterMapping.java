@@ -54,10 +54,6 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @DynamicSerialize
 public class ParameterMapping {
 
-    @XmlAttribute(name = "id")
-    @DynamicSerializeElement
-    private String id;
-
     @XmlAttribute(name = "GrADs")
     @DynamicSerializeElement
     private String grads;
@@ -65,6 +61,10 @@ public class ParameterMapping {
     @XmlAttribute(name = "AWIPS")
     @DynamicSerializeElement
     private String awips;
+
+    @XmlAttribute(name = "display")
+    @DynamicSerializeElement
+    private String display;
 
     /**  */
     @XmlElements({ @XmlElement(name = "dataSet", type = String.class) })
@@ -87,19 +87,19 @@ public class ParameterMapping {
         this.awips = awips;
     }
 
+    public String getDisplay() {
+        return display;
+    }
+
+    public void setDisplay(String display) {
+        this.display = display;
+    }
+
     public List<String> getDataSets() {
         return dataSets;
     }
 
     public void setDataSets(List<String> dataSets) {
         this.dataSets = dataSets;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 }

@@ -131,8 +131,6 @@ import opendap.dap.NoSuchAttributeException;
 
 class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
-    private static final String NUMBER_REGEX = "-?\\d+(\\.\\d+)?";
-
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPMetaDataParser.class);
 
@@ -229,7 +227,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         double dz = 0.00;
         float levMin = 0.0f;
         float levMax = 0.0f;
-        boolean hasLevels = false;
         final Coordinate upperLeft = new Coordinate();
         final Coordinate lowerRight = new Coordinate();
         final GriddedCoverage griddedCoverage = new GriddedCoverage();
@@ -364,7 +361,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 levMax = new Float(OpenDAPParseUtility.getInstance()
                         .trim(at.getAttribute(maximum).getValueAt(0)))
                                 .floatValue();
-                hasLevels = true;
 
             } catch (Exception le) {
                 statusHandler.error(" Couldn't parse Levels: " + lev
@@ -402,16 +398,17 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         // process the parameters
         for (Enumeration<?> e = das.getNames(); e.hasMoreElements();) {
 
-            String name = (String) e.nextElement();
+            String providerName = (String) e.nextElement();
             // filter out globals
-            if (!name.equals(ens) && !name.equals(nc_global)
-                    && !name.equals(lev) && !name.equals(lon)
-                    && !name.equals(lat) && !name.equals(timecon)) {
+            if (!providerName.equals(ens) && !providerName.equals(nc_global)
+                    && !providerName.equals(lev) && !providerName.equals(lon)
+                    && !providerName.equals(lat)
+                    && !providerName.equals(timecon)) {
 
                 // regular parameter parsing
                 try {
 
-                    AttributeTable at = das.getAttributeTable(name);
+                    AttributeTable at = das.getAttributeTable(providerName);
                     Parameter parm = new Parameter();
                     parm.setDataType(dataSet.getDataSetType());
 
@@ -423,7 +420,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
                     } catch (Exception iae) {
                         statusHandler.handle(Priority.PROBLEM,
-                                "Invalid DAP description block! " + name);
+                                "Invalid DAP description block! "
+                                        + providerName);
                     }
                     // Clean up description stuff
                     description = description.replaceAll("^[* ]+", "");
@@ -433,16 +431,41 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                             .parseUnits(description));
 
                     // Check for an AWIPS name
-                    String newName = parseParamName(name,
-                            dataSet.getDataSetName(), description);
-                    parm.setName(newName);
-                    parm.setProviderName(name);
+                    String displayName = providerName;
+                    String awipsName = null;
 
-                    // Rename the parameter using the AWIPS name if diff from
-                    // the provider
-                    if (!name.equals(parm.getName())) {
-                        name = parm.getName();
+                    /*
+                     * Check for mapping of specific grads names to see if we
+                     * match one of those. First check for overrides that apply
+                     * to specific data sets. If none found, check for general
+                     * overrides.
+                     */
+                    ParameterMapping specificMap = LookupManager.getInstance()
+                            .getDataSetParameter(dataSet.getDataSetName(),
+                                    providerName);
+                    if (specificMap == null) {
+                        specificMap = LookupManager.getInstance()
+                                .getGeneralParameter(providerName);
                     }
+
+                    if (specificMap != null) {
+                        displayName = specificMap.getDisplay();
+                        awipsName = specificMap.getAwips();
+                    } else {
+                        /*
+                         * If we didn't find a specific override, compare the
+                         * description to the known patterns
+                         */
+                        awipsName = parseParamName(providerName, description);
+                        if (!awipsName.equals(providerName)) {
+                            String levelInfo = parseLevelName(description);
+                            displayName = awipsName + " (" + levelInfo + ")";
+                        }
+                    }
+
+                    parm.setName(displayName);
+                    parm.setAwipsName(awipsName);
+                    parm.setProviderName(providerName);
 
                     try {
                         parm.setMissingValue(OpenDAPParseUtility.getInstance()
@@ -450,7 +473,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                         .getValueAt(0)));
                     } catch (Exception iae) {
                         statusHandler.handle(Priority.PROBLEM,
-                                "Invalid DAP missing value block! " + name);
+                                "Invalid DAP missing value block! "
+                                        + providerName);
                         parm.setMissingValue(fill);
                     }
 
@@ -460,7 +484,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                         .getValueAt(0)));
                     } catch (Exception iae) {
                         statusHandler.handle(Priority.PROBLEM,
-                                "Invalid DAP fill value block! " + name);
+                                "Invalid DAP fill value block! "
+                                        + providerName);
                         parm.setMissingValue(fill);
                     }
 
@@ -469,12 +494,12 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                             levMin, levMax));
                     parm.addLevelType(type);
                     // add to map
-                    parameters.put(parm.getProviderName(), parm);
+                    parameters.put(parm.getName(), parm);
 
                 } catch (Exception le) {
-                    statusHandler.error(" Couldn't parse Parameter: " + name
-                            + " dataset: " + collectionName + " url: " + url,
-                            le);
+                    statusHandler.error(" Couldn't parse Parameter: "
+                            + providerName + " dataset: " + collectionName
+                            + " url: " + url, le);
                 }
             }
         }
@@ -495,74 +520,102 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         return parameters;
     }
 
-    private String parseParamName(String name, String dataSetName,
-            String description) {
-        Map<String, ParameterMapping> plx = LookupManager.getInstance()
-                .getParameters();
+    /**
+     * Parses the parameter description to try and determine the AWIPS name from
+     * known Parameter Regexes. If a match is found, the AWIPS name for the
+     * matching pattern is returned. Else the current parameter name is
+     * returned.
+     * 
+     * @param name
+     *            Current Parameter name. Used as a default return value
+     * @param description
+     *            Parameter description
+     * @return AWIPS parameter name
+     */
+    private String parseParamName(String name, String description) {
 
         // Default paramName to grads name
         String paramName = name;
-        boolean matched = false;
 
-        /*
-         * Check for mapping of specific grads names to see if we match one of
-         * those. Some grads mappings only apply to specific datasets, so check
-         * that as well.
-         */
-        for (String key : plx.keySet()) {
-            ParameterMapping specificMap = plx.get(key);
-            if (specificMap.getGrads().equals(name)) {
-                List<String> dataSets = specificMap.getDataSets();
-                if (dataSets == null || dataSets.contains(dataSetName)) {
-                    paramName = specificMap.getAwips();
-                    matched = true;
+        Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
+                .getParamLevelRegexes();
+        Map<String, ParameterNameRegex> pnr = LookupManager.getInstance()
+                .getParamNameRegexes();
+
+        if (plr != null && pnr != null) {
+            /*
+             * Loop over known surface descriptions. If a match is found at the
+             * beginning of the string, remove it from the description string
+             * and exit the loop.
+             */
+            Matcher m = null;
+            String tempDescription = description;
+            for (ParameterLevelRegex myPLR : plr.values()) {
+                m = myPLR.getPattern().matcher(tempDescription);
+                if (m.find()) {
+                    tempDescription = m.replaceFirst("");
+                    tempDescription = tempDescription.replaceAll("^ +", "");
+                    break;
+                }
+            }
+
+            /*
+             * Loop over known regexes for descriptions. If a match is found at
+             * the begining of the string, set the param name to the name for
+             * that regex.
+             */
+            for (String key : pnr.keySet()) {
+                ParameterNameRegex nameRegex = pnr.get(key);
+                m = nameRegex.getPattern().matcher(tempDescription);
+                if (m.find()) {
+                    paramName = nameRegex.getAwips();
                     break;
                 }
             }
         }
 
-        // Else, check the long name to see if we have a regex for it.
-        if (!matched) {
+        return paramName;
+    }
 
-            Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
-                    .getParamLevelRegexes();
-            Map<String, ParameterNameRegex> pnr = LookupManager.getInstance()
-                    .getParamNameRegexes();
+    /**
+     * Uses the parameter description to determine the Level information for a
+     * given parameter. This can include the specific level, the units, and/or
+     * the level type (as applicable).
+     * 
+     * @param description
+     *            parameter description.
+     * @return String describing the level information for this parameter
+     */
+    private String parseLevelName(String description) {
+        Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
+                .getParamLevelRegexes();
+        Map<String, ParameterNameRegex> pnr = LookupManager.getInstance()
+                .getParamNameRegexes();
 
-            if (plr != null && pnr != null) {
-                /*
-                 * Loop over known surface descriptions. If a match is found at
-                 * the beginning of the string, remove it from the description
-                 * string and exit the loop.
-                 */
-                Matcher m = null;
-                String tempDescription = description;
-                for (String key : plr.keySet()) {
-                    m = plr.get(key).getPattern().matcher(tempDescription);
-                    if (m.find()) {
-                        tempDescription = m.replaceFirst("");
-                        tempDescription = tempDescription.replaceAll("^ +", "");
-                        break;
+        String levelInfo = "";
+        if (plr != null && pnr != null) {
+            Matcher m = null;
+            String tempDescription = description;
+            for (ParameterLevelRegex myPLR : plr.values()) {
+                m = myPLR.getPattern().matcher(tempDescription);
+                if (m.find()) {
+                    // Save off the level info
+                    if (myPLR.getLevelGroup() != null) {
+                        levelInfo = m.group(0).replaceAll(myPLR.getRegex(),
+                                myPLR.getLevelGroup());
                     }
-                }
-
-                /*
-                 * Loop over known regexes for descriptions. If a match is found
-                 * at the begining of the string, set the param name to the name
-                 * for that regex.
-                 */
-                for (String key : pnr.keySet()) {
-                    ParameterNameRegex nameRegex = pnr.get(key);
-                    m = nameRegex.getPattern().matcher(tempDescription);
-                    if (m.find()) {
-                        paramName = nameRegex.getAwips();
-                        break;
+                    if (myPLR.getUnits() != null) {
+                        levelInfo += myPLR.getUnits();
                     }
+                    DataLevelType type = new DataLevelType(
+                            LevelType.fromDescription(myPLR.getLevel()));
+                    levelInfo += " " + type.getType().toString();
+                    break;
                 }
             }
         }
 
-        return paramName;
+        return levelInfo.trim();
     }
 
     /**
@@ -589,37 +642,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     type = new DataLevelType(
                             LevelType.fromDescription(myPLR.getLevel()));
                     type.setUnit(myPLR.getUnits());
-
-                    if (myPLR.getLevelGroup() != null) {
-                        try {
-                            String levelInfo = m.group(0).replaceAll(
-                                    myPLR.getRegex(), myPLR.getLevelGroup());
-                            type.setUnit(levelInfo + myPLR.getUnits());
-                            if (levelInfo.contains("-")
-                                    && !tempDescription.contains("=")) {
-
-                                String[] s2 = levelInfo.split("-");
-                                if (s2.length == 2) {
-                                    for (String s : s2) {
-                                        if (s.matches(NUMBER_REGEX)) {
-                                            type.addLayer(new Double(s)
-                                                    .doubleValue());
-                                        }
-                                    }
-                                }
-                            } else {
-                                if (levelInfo.matches(NUMBER_REGEX)) {
-                                    type.addLayer(new Double(levelInfo)
-                                            .doubleValue());
-                                }
-
-                            }
-                        } catch (Exception e) {
-                            statusHandler
-                                    .error("Error parsing level information from param description: "
-                                            + tempDescription, e);
-                        }
-                    }
                     break;
                 }
             }

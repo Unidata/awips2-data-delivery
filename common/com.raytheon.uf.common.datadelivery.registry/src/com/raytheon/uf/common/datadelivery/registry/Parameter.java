@@ -32,16 +32,20 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 17, 2011 218        dhladky     Initial creation
- * May 14, 2012 455        jspinks     Added registry annotations. 
- * 8/3/2012     724        bphillip    Added more registry annotations
- * Aug 22, 2012 0743       djohnson    Store data type as an enum.
- * Sep 06, 2012 1121       mpduff      Added toString().
- * Sep 07, 2012 1102       djohnson    Add {@code @XmlRootElement}.
- * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
- * Dec 08, 2013 2584       dhladky     Version update
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 17, 2011  218      dhladky   Initial creation
+ * May 14, 2012  455      jspinks   Added registry annotations.
+ * Aug 03, 2012  724      bphillip  Added more registry annotations
+ * Aug 22, 2012  743      djohnson  Store data type as an enum.
+ * Sep 06, 2012  1121     mpduff    Added toString().
+ * Sep 07, 2012  1102     djohnson  Add {@code @XmlRootElement}.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Dec 08, 2013  2584     dhladky   Version update
+ * Mar 23, 2017  5988     tjensen   Added AWIPS name
+ * 
  * </pre>
  * 
  * @author dhladky
@@ -72,6 +76,10 @@ public class Parameter implements Serializable {
     @DynamicSerializeElement
     private String providerName;
 
+    @XmlAttribute
+    @DynamicSerializeElement
+    private String awipsName;
+
     @RegistryObjectDescription
     @XmlAttribute
     @DynamicSerializeElement
@@ -98,7 +106,8 @@ public class Parameter implements Serializable {
     @DynamicSerializeElement
     private String baseType;
 
-    @XmlElements({ @XmlElement(name = "levelType", type = DataLevelType.class) })
+    @XmlElements({
+            @XmlElement(name = "levelType", type = DataLevelType.class) })
     @DynamicSerializeElement
     private List<DataLevelType> levelType;
 
@@ -117,6 +126,7 @@ public class Parameter implements Serializable {
     public Parameter(Parameter copy) {
         this.name = copy.name;
         this.providerName = copy.providerName;
+        this.awipsName = copy.awipsName;
         this.definition = copy.definition;
         this.units = copy.units;
         this.dataType = copy.dataType;
@@ -126,7 +136,8 @@ public class Parameter implements Serializable {
 
         // deep copy
         if (copy.levelType != null) {
-            this.levelType = new ArrayList<DataLevelType>(copy.levelType.size());
+            this.levelType = new ArrayList<DataLevelType>(
+                    copy.levelType.size());
             for (DataLevelType dlt : copy.levelType) {
                 this.levelType.add(new DataLevelType(dlt));
             }
@@ -148,6 +159,14 @@ public class Parameter implements Serializable {
 
     public void setProviderName(String providerName) {
         this.providerName = providerName;
+    }
+
+    public String getAwipsName() {
+        return awipsName;
+    }
+
+    public void setAwipsName(String awipsName) {
+        this.awipsName = awipsName;
     }
 
     public String getDefinition() {
