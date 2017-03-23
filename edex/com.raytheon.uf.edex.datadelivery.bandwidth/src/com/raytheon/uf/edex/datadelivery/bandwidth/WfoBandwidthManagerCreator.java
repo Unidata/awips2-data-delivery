@@ -21,11 +21,12 @@ package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
 import com.raytheon.uf.common.datadelivery.bandwidth.IProposeScheduleResponse;
@@ -39,7 +40,6 @@ import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotif
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthContextFactory.IEdexBandwidthManagerCreator;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
@@ -81,8 +81,10 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Oct 08, 2014  2746     ccody     Relocated registryEventListener to
  *                                  EdexBandwidthManager super class
  * Mar 25, 2015  4329     dhladky   Threaded the graph data requests.
- * Mar 16, 2016  3919     tjensen    Cleanup unneeded interfaces
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 09, 2016  5771     rjpeter   Update constructor
+ * Jan 05, 2017  746      bsteffen  Handle multiple concurrent threads in
+ *                                  getBandwidthGraphData()
  * 
  * </pre>
  * 
@@ -93,12 +95,6 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(WfoBandwidthManagerCreator.class);
-
-    /** Processes map <registryName, GraphData> **/
-    private static ConcurrentHashMap<String, BandwidthGraphData> graphDataMap = null;
-
-    /** Processes list <registryName> **/
-    private static List<String> processList = null;
 
     /** NCF **/
     protected static final String NCF = "NCF";
@@ -213,54 +209,35 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
          * @return
          */
         protected BandwidthGraphData requestGraphData() {
-
-            graphDataMap = new ConcurrentHashMap<String, BandwidthGraphData>(2,
-                    1.0f);
-            processList = new ArrayList<String>(2);
-
-            // Add the registries needed
-            processList.add(LOCAL_REGISTRY);
-            processList.add(NCF);
-
-            // start threads
-            for (String registry : processList) {
-                graphDataExecutor
-                        .execute(new GraphDataRequestor(registry, this));
-            }
-
-            // count down latch
-            while (processList.size() > 0) {
-                // wait for all threads to finish before returning
-                try {
-                    Thread.sleep(50);
-                    if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                        statusHandler.handle(Priority.DEBUG,
-                                "Checking status ..." + processList.size());
-                        for (String registry : processList) {
-                            statusHandler.handle(Priority.DEBUG,
-                                    "Still processing ..." + registry);
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    statusHandler.handle(Priority.ERROR,
-                            "Process thread had been interupted!", e);
-                }
-            }
-
             BandwidthGraphData data = null;
 
-            for (Entry<String, BandwidthGraphData> entry : graphDataMap
-                    .entrySet()) {
-                if (data == null) {
-                    data = entry.getValue();
-                } else if (data != null) {
-                    data.merge(entry.getValue());
+            List<GraphDataRequestor> requestors = new ArrayList<>(2);
+
+            // Add the registries needed
+            requestors.add(new GraphDataRequestor(LOCAL_REGISTRY, this));
+            requestors.add(new GraphDataRequestor(NCF, this));
+
+            try {
+                // start threads
+                List<Future<BandwidthGraphData>> results = graphDataExecutor
+                        .invokeAll(requestors);
+
+                for (Future<BandwidthGraphData> result : results) {
+                    try {
+                        if (data == null) {
+                            data = result.get();
+                        } else {
+                            data.merge(result.get());
+                        }
+                    } catch (ExecutionException e) {
+                        statusHandler.error(
+                                "Failed to request bandwidth graph data.", e);
+                    }
                 }
+            } catch (InterruptedException e) {
+                statusHandler.error(
+                        "Process thread had been interupted!", e);
             }
-
-            graphDataMap = null;
-            processList = null;
-
             return data;
         }
     }
@@ -291,7 +268,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
      * @author dhladky
      * 
      */
-    static class GraphDataRequestor implements Runnable {
+    static class GraphDataRequestor implements Callable<BandwidthGraphData> {
 
         private final String registryName;
 
@@ -299,15 +276,14 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
         private WfoBandwidthManager wfoBandwidthManager;
 
         @Override
-        public void run() {
+        public BandwidthGraphData call() {
             try {
-                process();
+                return process();
             } catch (Exception e) {
-                statusHandler.error(
-                        "Unable to request graph data from this registry! "
+                statusHandler
+                        .error("Unable to request graph data from this registry! "
                                 + registryName, e);
-            } finally {
-                processList.remove(registryName);
+                return null;
             }
         }
 
@@ -325,19 +301,18 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
         /**
          * Request to the correct registry
          */
-        public void process() throws Exception {
+        public BandwidthGraphData process() throws Exception {
 
-            BandwidthGraphData data = null;
             /* WFO's hits two servers currently, itself and NCF */
-            if (registryName.equals(WfoBandwidthManagerCreator.LOCAL_REGISTRY)) {
-                data = wfoBandwidthManager.getLocalBandwidthGraphData();
+            if (registryName
+                    .equals(WfoBandwidthManagerCreator.LOCAL_REGISTRY)) {
+                return wfoBandwidthManager.getLocalBandwidthGraphData();
             } else if (registryName.equals(WfoBandwidthManagerCreator.NCF)) {
-                data = wfoBandwidthManager.ncfBandwidthService
+                return wfoBandwidthManager.ncfBandwidthService
                         .getBandwidthGraphData();
+            } else {
+                return null;
             }
-
-            // add data
-            graphDataMap.put(registryName, data);
         }
     }
 }

@@ -42,13 +42,13 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandler
 import com.raytheon.uf.common.datadelivery.service.ApprovedPendingSubscriptionNotificationResponse;
 import com.raytheon.uf.common.datadelivery.service.DeniedPendingSubscriptionNotificationResponse;
 import com.raytheon.uf.common.datadelivery.service.PendingSubscriptionNotificationResponse;
+import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.notification.NotificationMessage;
-import com.raytheon.uf.viz.core.notification.NotificationMessageContainsType;
+import com.raytheon.uf.viz.datadelivery.comm.NotificationMessageContainsType;
 import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableCompConfig;

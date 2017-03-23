@@ -35,7 +35,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 
-import com.raytheon.uf.viz.core.notification.INotificationObserver;
+import com.raytheon.uf.common.jms.notification.INotificationObserver;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 

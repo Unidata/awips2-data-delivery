@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an absolute override file, indicating that a higher priority 
+        version of the file will completely replace a lower priority version
+        of the file. 
+    -->
 <ParameterLookup>
-    <parameterConfig AWIPS="uogrdsfc" GrADs="uogrdsfc"/>
-    <parameterConfig AWIPS="wtmpsfc" GrADs="wtmpsfc"/>
-    <parameterConfig AWIPS="saltysfc" GrADs="saltysfc"/>
-    <parameterConfig AWIPS="vogrdsfc" GrADs="vogrdsfc"/>
-    <parameterConfig AWIPS="dslmsfc" GrADs="dslmsfc"/>
-    <parameterConfig AWIPS="vogrddsl" GrADs="vogrddsl"/>
+    <parameterConfig AWIPS="uogrdsfc" GrADs="uogrdsfc" />
+    <parameterConfig AWIPS="wtmpsfc" GrADs="wtmpsfc" />
+    <parameterConfig AWIPS="saltysfc" GrADs="saltysfc" />
+    <parameterConfig AWIPS="vogrdsfc" GrADs="vogrdsfc" />
+    <parameterConfig AWIPS="dslmsfc" GrADs="dslmsfc" />
+    <parameterConfig AWIPS="vogrddsl" GrADs="vogrddsl" />
 </ParameterLookup>

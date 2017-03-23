@@ -26,9 +26,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.xml.bind.JAXBException;
 
@@ -74,6 +77,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
@@ -94,6 +98,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
+import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 import com.raytheon.viz.ui.presenter.IDisplay;
 
 /**
@@ -167,6 +172,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jan 29, 2016  5289      tgurney    Add missing maximize button in trim
  * Mar 16, 2016  3919      tjensen    Cleanup unneeded interfaces
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
+ * Jan 10, 2017  746       bsteffen    Avoid dialog spam when activating/deactivating many subscriptions
  * 
  * </pre>
  * 
@@ -1199,124 +1205,176 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      * @param activate
      *            Flag to activate (true) deactivate (false).
      */
-    @SuppressWarnings("rawtypes")
-    private void handleActivateDeactivate(boolean activate) {
+    private void handleActivateDeactivate(final boolean activate) {
 
-        // Check for activate premissions
-        final String permission = DataDeliveryPermission.SUBSCRIPTION_ACTIVATE
+        int[] selectionIndices = tableComp.getTable().getSelectionIndices();
+
+        if (selectionIndices == null || selectionIndices.length == 0) {
+            return;
+        }
+
+        // Check for activate permissions
+        String permission = DataDeliveryPermission.SUBSCRIPTION_ACTIVATE
                 .toString();
 
-        final IUser user = UserController.getUserObject();
+        final String actionText = activate ? "Activate" : "Deactivate";
+
+        IUser user = UserController.getUserObject();
         final String username = user.uniqueId().toString();
-        final String msg = username + " is not authorized to "
-                + (activate ? "Activate" : "Deactivate")
+        String msg = username + " is not authorized to " + actionText
                 + " Subscriptions\nPermission: " + permission;
-        final boolean factivate = activate;
 
         try {
-            if (DataDeliveryServices.getPermissionsService()
+            if (!DataDeliveryServices.getPermissionsService()
                     .checkPermission(user, msg, permission).isAuthorized()) {
-
-                int count = tableComp.getTable().getSelectionCount();
-
-                if (count > 0) {
-                    int[] selectionIndices = tableComp.getTable()
-                            .getSelectionIndices();
-
-                    if (selectionIndices == null) {
-                        return;
-                    }
-
-                    final String actionText = factivate ? "activate"
-                            : "deactivate";
-                    final IForceApplyPromptDisplayText forceApplyPromptDisplayText = new CancelForceApplyAndIncreaseLatencyDisplayText(
-                            actionText, getShell());
-
-                    for (int i = 0; i < selectionIndices.length; i++) {
-                        int idx = selectionIndices[i];
-                        SubscriptionManagerRowData rowData = tableComp
-                                .getSubscriptionData().getDataRow(idx);
-                        if (rowData == null) {
-                            continue;
-                        }
-                        final Subscription sub = rowData.getSubscription();
-                        if (activate) {
-                            sub.activate();
-                        } else {
-                            sub.deactivate();
-                        }
-
-                        Job job = new Job(
-                                "Activating/De-activating Subscriptions...") {
-                            @Override
-                            protected IStatus run(IProgressMonitor monitor) {
-                                DataDeliveryGUIUtils.markBusyInUIThread(shell);
-                                SubscriptionServiceResult response = null;
-
-                                try {
-                                    response = subscriptionService.update(
-                                            username, sub,
-                                            forceApplyPromptDisplayText);
-                                } catch (RegistryHandlerException re) {
-                                    statusHandler.error(
-                                            "Can't activate/deactivate subscription: "
-                                                    + sub.getName(), re);
-                                }
-
-                                final SubscriptionServiceResult fresponse = response;
-
-                                if (!response.isAllowFurtherEditing()) {
-                                    if (factivate) {
-                                        subscriptionNotificationService
-                                                .sendSubscriptionActivatedNotification(
-                                                        sub, username);
-                                    } else {
-                                        subscriptionNotificationService
-                                                .sendSubscriptionDeactivatedNotification(
-                                                        sub, username);
-                                    }
-                                }
-
-                                if (response.hasMessageToDisplay()) {
-                                    VizApp.runAsync(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            DataDeliveryUtils.showMessage(
-                                                    shell, SWT.OK,
-                                                    sub.getName()
-                                                            + " Activated",
-                                                    fresponse.getMessage());
-                                            handleRefresh();
-                                        }
-                                    });
-                                }
-
-                                return Status.OK_STATUS;
-                            }
-                        };
-                        job.addJobChangeListener(new JobChangeAdapter() {
-                            @Override
-                            public void done(IJobChangeEvent event) {
-                                VizApp.runAsync(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (isDisposed()) {
-                                            return;
-                                        }
-                                        handleRefresh();
-                                    }
-                                });
-
-                                DataDeliveryGUIUtils
-                                        .markNotBusyInUIThread(shell);
-                            }
-                        });
-                        job.schedule();
-                    }
-                }
+                return;
             }
         } catch (AuthException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
+            return;
+        }
+
+        final IForceApplyPromptDisplayText forceApplyPromptDisplayText = new CancelForceApplyAndIncreaseLatencyDisplayText(
+                actionText, getShell());
+
+        /* Used to reset the cursor only after all jobs are done. */
+        final AtomicInteger jobCount = new AtomicInteger();
+
+        /*
+         * Queue of subscription name and messages. This is used to aggregate
+         * multiple responses and avoid spamming the user with response dialogs.
+         */
+        final Queue<Pair<String, String>> messages = new ConcurrentLinkedQueue<>();
+
+        /*
+         * Responsible for reading the messages queue and displaying all
+         * messages available. This is run on the UI thread each time a message
+         * is added to the queue. Only one message dialog will be displayed at a
+         * time and if multiple messages are already available they will be
+         * displayed in a single dialog.
+         */
+        final Runnable messenger = new Runnable() {
+
+            private SWTMessageBox messageDialog = null;
+
+            @Override
+            public void run() {
+                if (messageDialog != null) {
+                    return;
+                }
+                Pair<String, String> msgPair = messages.poll();
+                if (msgPair == null) {
+                    return;
+                }
+                boolean multiple = false;
+                String title = msgPair.getFirst() + " " + actionText + "d";
+                StringBuilder message = new StringBuilder(msgPair.getSecond());
+                msgPair = messages.poll();
+                while (msgPair != null) {
+                    multiple = true;
+                    message.append("\n").append(msgPair.getSecond());
+                    msgPair = messages.poll();
+                }
+                if (multiple) {
+                    title = "Subscriptions " + actionText + "d";
+                }
+                int remaining = jobCount.get();
+                if (remaining == 1) {
+                    message.append("\n\n1 subscription is still processing.");
+                } else if (remaining > 1) {
+                    message.append("\n\n").append(remaining)
+                            .append(" subscriptions are still processing.");
+                }
+
+                messageDialog = new SWTMessageBox(shell, title,
+                        message.toString(), SWT.OK);
+                messageDialog.setCloseCallback(new ICloseCallback() {
+
+                    @Override
+                    public void dialogClosed(Object returnValue) {
+                        messageDialog = null;
+                        /*
+                         * Must check for more messages since this task ignores
+                         * any new calls to run() while the dialog is open.
+                         */
+                        run();
+                    }
+                });
+                messageDialog.open();
+            }
+        };
+
+        for (int idx : selectionIndices) {
+            SubscriptionManagerRowData rowData = tableComp.getSubscriptionData()
+                    .getDataRow(idx);
+            if (rowData == null) {
+                continue;
+            }
+            final Subscription<?, ?> sub = rowData.getSubscription();
+            if (activate) {
+                sub.activate();
+            } else {
+                sub.deactivate();
+            }
+
+            Job job = new Job(actionText + " " + sub.getName() + "...") {
+                @Override
+                protected IStatus run(IProgressMonitor monitor) {
+                    try {
+                        if (jobCount.incrementAndGet() == 1) {
+                            DataDeliveryGUIUtils.markBusyInUIThread(shell);
+                        }
+                        SubscriptionServiceResult response = subscriptionService
+                                .update(username, sub,
+                                        forceApplyPromptDisplayText);
+                        if (!response.isAllowFurtherEditing()) {
+                            if (activate) {
+                                subscriptionNotificationService
+                                        .sendSubscriptionActivatedNotification(
+                                                sub, username);
+                            } else {
+                                subscriptionNotificationService
+                                        .sendSubscriptionDeactivatedNotification(
+                                                sub, username);
+                            }
+                        }
+
+                        if (response.hasMessageToDisplay()) {
+                            messages.add(new Pair<>(sub.getName(),
+                                    response.getMessage()));
+                        }
+                    } catch (RegistryHandlerException re) {
+                        statusHandler
+                                .error("Can't activate/deactivate subscription: "
+                                        + sub.getName(), re);
+                    } finally {
+                        /*
+                         * Reset the cursor and schedule the messenger. The
+                         * reason the messenger is scheduled here is so it can
+                         * use the jobCount to decide if it needs to wait for
+                         * other jobs to finish.
+                         */
+                        if (jobCount.decrementAndGet() <= 0) {
+                            VizApp.runAsync(messenger);
+                            DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
+                        } else {
+                            /*
+                             * Wait a little to give other jobs a chance to
+                             * finish so there can be more messages aggregated.
+                             */
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException e) {
+                                ;// ignore and go immediately
+                            }
+                            VizApp.runAsync(messenger);
+                        }
+                    }
+
+                    return Status.OK_STATUS;
+                }
+            };
+            job.schedule();
         }
     }
 

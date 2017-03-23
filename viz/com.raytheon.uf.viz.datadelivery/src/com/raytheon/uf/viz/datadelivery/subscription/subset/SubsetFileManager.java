@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -30,6 +30,7 @@ import java.util.TreeSet;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.bind.UnmarshalException;
 import javax.xml.bind.Unmarshaller;
 
 import org.eclipse.swt.SWT;
@@ -58,11 +59,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * File manager for subsets.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 28, 2012           mpduff    Initial creation.
@@ -80,11 +81,12 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
  *                                  to block
  * Oct 11, 2016  5883     tjensen   Added PDATimeXML to JaxB context.
- * 
+ * Dec 22, 2016  5923     tgurney   Do not return null when loading a subset
+ *
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class SubsetFileManager {
@@ -125,7 +127,7 @@ public class SubsetFileManager {
 
     /**
      * Get an instance of the SubsetFileManager.
-     * 
+     *
      * @return instance
      */
     public static SubsetFileManager getInstance() {
@@ -154,7 +156,7 @@ public class SubsetFileManager {
 
     /**
      * Save the area data.
-     * 
+     *
      * @param area
      *            The area xml object to save
      * @param shell
@@ -195,7 +197,7 @@ public class SubsetFileManager {
 
     /**
      * Save the area data.
-     * 
+     *
      * @param areaName
      *            The name of the area to delete
      */
@@ -220,7 +222,7 @@ public class SubsetFileManager {
 
     /**
      * Get the AreaXML file
-     * 
+     *
      * @return AreaXML object
      */
     public LocalizationFile[] getAreas() {
@@ -232,7 +234,7 @@ public class SubsetFileManager {
 
     /**
      * Get the area xml file
-     * 
+     *
      * @param locFile
      *            Localization file
      * @return the AreaXML object
@@ -250,10 +252,10 @@ public class SubsetFileManager {
 
     /**
      * Get all the saved subset files
-     * 
+     *
      * @param type
      *            Data type of files to retrieve
-     * 
+     *
      * @return LocalizationFile[] Array of files of DataType type
      */
     private Set<LocalizationFile> getSubsetFiles(DataType type) {
@@ -289,7 +291,7 @@ public class SubsetFileManager {
 
     /**
      * Save a subset xml object.
-     * 
+     *
      * @param subset
      *            the object to save
      * @param type
@@ -331,12 +333,12 @@ public class SubsetFileManager {
 
     /**
      * Load a saved subset into memory
-     * 
+     *
      * @param subsetName
      *            The subset name
      * @param type
      *            The data type
-     * 
+     *
      * @return The SubsetXML object or null if none exist
      */
     public SubsetXML loadSubset(String subsetName, DataType type) {
@@ -356,28 +358,21 @@ public class SubsetFileManager {
 
     /**
      * Load a saved subset into memory
-     * 
+     *
      * @param file
      *            The subset name
-     * 
-     * @return The SubsetXML object or null if none exist
+     *
+     * @return The SubsetXML object
+     * @throws JAXBException
      */
-    public SubsetXML loadSubset(LocalizationFile file) {
-        if (file.exists()) {
-            try {
-                return (SubsetXML) unmarshaller.unmarshal(file.getFile());
-            } catch (JAXBException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            }
-        }
-
-        return null;
+    public SubsetXML loadSubset(LocalizationFile file)
+            throws JAXBException, UnmarshalException {
+        return (SubsetXML) unmarshaller.unmarshal(file.getFile());
     }
 
     /**
      * Delete the subset
-     * 
+     *
      * @param subsetName
      *            The name of the subset to delete
      * @param type

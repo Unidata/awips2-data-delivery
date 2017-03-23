@@ -1,50 +1,54 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an absolute override file, indicating that a higher priority 
+        version of the file will completely replace a lower priority version
+        of the file. 
+    -->
 <!-- NOMADS crawler agent configuration -->
 <harvester>
-	<!-- Provider information -->
-	<provider serviceType="OPENDAP" name="NOMADS">
-		<providerType dataType="GRID" plugin="grid" availabilityDelay="100" />
-		<projection type="LatLon">
-			<name>NomadsLatLon</name>
-			<description>Test LatLonGrid Coverage for NOMADS</description>
-		</projection>
-		<!-- The regular expression pattern searched for during a metadata purge 
-			run, if the provider returned page contains the pattern the metadata will 
-			be purged. e.g. when the purge attempts URL "http://nomads.ncep.noaa.gov:9090/dods/gfs_hd/gfs_hd20120911", 
-			it will receive a response from the server. If the response contains the 
-			pattern, it will be purged. For regular expression patterns, see http://docs.oracle.com/javase/tutorial/essential/regex/ -->
-		<errorResponsePattern>GrADS\sData\sServer\s-\serror</errorResponsePattern>
-		<!-- Specifies the time delay to keep checking previous data along with 
-			the current day It consists of two parts: 1) a numeric integer argument with 
-			a range between 0 and 2^31 - 1 (Integer.MAX_VALUE). 2) the corresponding 
-			time units to apply to the postedFileDelay, any of the enumerated constants 
-			of TimeUnit [NANOSECONDS, MICROSECONDS, MILLISECONDS, SECONDS, MINUTES, HOURS, 
-			DAYS] Defaults to 0 HOURS. Examples: "3 HOURS", "1 DAYS", "30 MINUTES" -->
-		<postedFileDelay>3 HOURS</postedFileDelay>
-		<!-- The amount of time that should elapse between HTTP requests while crawling 
-			the provider. Specified in milliseconds. Defaults to 500 if not specified. -->
-		<timeBetweenCrawlRequests>100</timeBetweenCrawlRequests>
-		<connection>
-			<url>http://nomads.ncep.noaa.gov:9090/dods/</url>
-		</connection>
-	</provider>
+    <!-- Provider information -->
+    <provider serviceType="OPENDAP" name="NOMADS">
+        <providerType dataType="GRID" plugin="grid" availabilityDelay="100" />
+        <projection type="LatLon">
+            <name>NomadsLatLon</name>
+            <description>Test LatLonGrid Coverage for NOMADS</description>
+        </projection>
+        <!-- The regular expression pattern searched for during a metadata purge 
+            run, if the provider returned page contains the pattern the metadata will 
+            be purged. e.g. when the purge attempts URL "http://nomads.ncep.noaa.gov:9090/dods/gfs_hd/gfs_hd20120911", 
+            it will receive a response from the server. If the response contains the 
+            pattern, it will be purged. For regular expression patterns, see http://docs.oracle.com/javase/tutorial/essential/regex/ -->
+        <errorResponsePattern>GrADS\sData\sServer\s-\serror</errorResponsePattern>
+        <!-- Specifies the time delay to keep checking previous data along with 
+            the current day It consists of two parts: 1) a numeric integer argument with 
+            a range between 0 and 2^31 - 1 (Integer.MAX_VALUE). 2) the corresponding 
+            time units to apply to the postedFileDelay, any of the enumerated constants 
+            of TimeUnit [NANOSECONDS, MICROSECONDS, MILLISECONDS, SECONDS, MINUTES, HOURS, 
+            DAYS] Defaults to 0 HOURS. Examples: "3 HOURS", "1 DAYS", "30 MINUTES" -->
+        <postedFileDelay>3 HOURS</postedFileDelay>
+        <!-- The amount of time that should elapse between HTTP requests while crawling 
+            the provider. Specified in milliseconds. Defaults to 500 if not specified. -->
+        <timeBetweenCrawlRequests>100</timeBetweenCrawlRequests>
+        <connection>
+            <url>http://nomads.ncep.noaa.gov:9090/dods/</url>
+        </connection>
+    </provider>
     <!-- default one week of DataSetMetaData retention -->
     <retention>7</retention>
-	
-	<agent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="crawlAgent">
-		<crawlDir>/awips2/crawl</crawlDir>
-		<dateFormat>HHddMMMyyyy</dateFormat>
-		<ignore>ruc</ignore>
-		<ignore>rap_f</ignore>
-        <ignore>\.das$</ignore> 
+    <agent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="crawlAgent">
+        <crawlDir>/awips2/crawl</crawlDir>
+        <dateFormat>HHddMMMyyyy</dateFormat>
+        <ignore>ruc</ignore>
+        <ignore>rap_f</ignore>
+        <ignore>\.das$</ignore>
         <ignore>\.dds$</ignore>
         <ignore>help$</ignore>
         <ignore>fens\d\d\d_</ignore>
         <ignore>cmcens[cp]\d\d</ignore>
         <ignore>ge[cp]\d\d</ignore>
-		<!-- seed scan once a day at 12z -->
-		<seedScan>0 0 12 * * ?</seedScan>
-		<!-- main scan every 12 minutes -->
+        <!-- seed scan once a day at 12z -->
+        <seedScan>0 0 12 * * ?</seedScan>
+        <!-- main scan every 12 minutes -->
         <mainScan>0 0/12 * * * ?</mainScan>
         <searchKey>\.info$</searchKey>
         <!-- Ingest new collections found by Seed Scans? -->
@@ -57,8 +61,8 @@
         <!-- (-1) is Unlimiited  pages visited-->
         <maxSeedDepth>-1</maxSeedDepth>
         <maxMainDepth>2</maxMainDepth>
-		<!--  Commented out so you can run your own seed scan -->
-		<collection projection="LatLon" dataType="GRID" ignore="false" name="narre">
+        <!--  Commented out so you can run your own seed scan -->
+        <collection projection="LatLon" dataType="GRID" ignore="false" name="narre">
             <seedUrl>narre</seedUrl>
             <urlKey>narre</urlKey>
             <periodicity>day</periodicity>
@@ -483,6 +487,5 @@
             <lastDate>20121108</lastDate>
             <dateFormat>yyyyMMdd</dateFormat>
         </collection>
-	</agent> 	
+    </agent>
 </harvester>
-

@@ -50,8 +50,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.image.StatusImages;
-import com.raytheon.uf.viz.core.image.StatusImages.StatusImage;
+import com.raytheon.uf.viz.datadelivery.system.StatusImages.StatusImage;
 
 /**
  * Data Delivery system status composite.

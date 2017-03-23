@@ -1,17 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+        This is an absolute override file, indicating that a higher priority
+        version of the file will completely replace a lower priority version
+        of the file.
+    -->
 <statisticsConfig>
     <!-- Event Type should be fully qualified name of stat event -->
     <statisticsEvent type="com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionRetrievalEvent"
-        displayName="Subscription Retrieval" category="Data Delivery"
-        rawOfflineRetentionDays="-1" aggregateOfflineRetentionDays="90">
+        displayName="Subscription Retrieval" category="Data Delivery" rawOfflineRetentionDays="-1"
+        aggregateOfflineRetentionDays="90">
         <statisticsGroup name="plugin" displayName="Data Type" />
         <statisticsGroup name="provider" displayName="Data Provider" />
         <statisticsGroup name="owner" displayName="Owner" />
         <statisticsGroup name="network" displayName="Network Route" />
         <statisticsGroup name="subscriptionType" displayName="Subscription Type" />
-        <statisticsAggregate field="numFailed"
-            displayName="Number of Failed Subscriptions" displayUnit="Count" />
-        <statisticsAggregate field="numComplete"
-            displayName="Number of Completed Subscriptions" displayUnit="Count" />
+        <statisticsAggregate field="numFailed" displayName="Number of Failed Subscriptions"
+            displayUnit="Count" />
+        <statisticsAggregate field="numComplete" displayName="Number of Completed Subscriptions"
+            displayUnit="Count" />
     </statisticsEvent>
     <statisticsEvent type="com.raytheon.uf.common.datadelivery.event.retrieval.DataRetrievalEvent"
         displayName="Data Retrieval" category="Data Delivery">
@@ -22,10 +28,9 @@
         <!-- 
            Display unit options are bytes, KB, MB, GB
         -->
-        <statisticsAggregate field="bytes"
-            displayName="Amount of Data Downloaded" displayUnit="MB" />
-        <statisticsAggregate field="numRecords"
-            displayName="Number of Records Downloaded" displayUnit="Count" />
+        <statisticsAggregate field="bytes" displayName="Amount of Data Downloaded" displayUnit="MB" />
+        <statisticsAggregate field="numRecords" displayName="Number of Records Downloaded"
+            displayUnit="Count" />
     </statisticsEvent>
     <statisticsEvent type="com.raytheon.uf.common.datadelivery.event.retrieval.AdhocDataRetrievalEvent"
         displayName="Adhoc Data Retrieval" category="Data Delivery">
@@ -36,25 +41,24 @@
         <!-- 
            Display unit options are bytes, KB, MB, GB
         -->
-        <statisticsAggregate field="bytes"
-            displayName="Amount of Data Downloaded" displayUnit="MB" />
-        <statisticsAggregate field="numRecords"
-            displayName="Number of Records Downloaded" displayUnit="Count" />
+        <statisticsAggregate field="bytes" displayName="Amount of Data Downloaded" displayUnit="MB" />
+        <statisticsAggregate field="numRecords" displayName="Number of Records Downloaded"
+            displayUnit="Count" />
     </statisticsEvent>
     <statisticsEvent type="com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionRequestEvent"
         displayName="Subscription Requests" category="Data Delivery">
         <statisticsGroup name="provider" displayName="Data Provider" />
         <statisticsGroup name="owner" displayName="Owner" />
         <statisticsGroup name="network" displayName="Network Route" />
-        <statisticsAggregate field="numRecords"
-            displayName="Number of Subscription Requests" displayUnit="Count" />
+        <statisticsAggregate field="numRecords" displayName="Number of Subscription Requests"
+            displayUnit="Count" />
     </statisticsEvent>
     <statisticsEvent type="com.raytheon.uf.common.datadelivery.event.retrieval.AdhocSubscriptionRequestEvent"
         displayName="Adhoc Subscription Requests" category="Data Delivery">
         <statisticsGroup name="provider" displayName="Data Provider" />
         <statisticsGroup name="owner" displayName="Owner" />
         <statisticsGroup name="network" displayName="Network Route" />
-        <statisticsAggregate field="numRecords"
-            displayName="Number of Adhoc Subscription Requests" displayUnit="Count" />
+        <statisticsAggregate field="numRecords" displayName="Number of Adhoc Subscription Requests"
+            displayUnit="Count" />
     </statisticsEvent>
 </statisticsConfig>

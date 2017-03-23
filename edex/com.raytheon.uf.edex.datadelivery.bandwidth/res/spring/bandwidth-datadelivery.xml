@@ -51,11 +51,10 @@
 		<property name="initializer" ref="bandwidthInitializer" />
 	</bean>
 
-	<bean id="subscriptionLatencyCalculator"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.util.SubscriptionValueLatencyCalculator"
-		depends-on="dataSetLatencyDao">
-		<property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
-	</bean>
+    <bean id="subscriptionLatencyCalculator"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.util.SubscriptionValueLatencyCalculator">
+        <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
+    </bean>
 
 	<bean id="bandwidthUtil"
 		class="com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil"
@@ -94,14 +93,13 @@
 		<property name="retrievalPlans" ref="retrievalPlans" />
 	</bean>
 
-	<bean id="registryBandwidthUtilizationListener"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.registry.RegistryBandwidthUtilizationListener"
-		depends-on="ebxmlRegistryWebServer, BandwidthMap, bandwidthBucketDao">
-		<constructor-arg ref="ebxmlRegistryWebServer" />
-		<constructor-arg ref="ebxmlFederationEnabled" />
-		<constructor-arg ref="BandwidthMap" />
-		<constructor-arg ref="bandwidthBucketDao" />
-	</bean>
+    <bean id="registryBandwidthUtilizationListener"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.registry.RegistryBandwidthUtilizationListener">
+        <constructor-arg ref="ebxmlRegistryWebServer" />
+        <constructor-arg ref="ebxmlFederationEnabled" />
+        <constructor-arg ref="BandwidthMap" />
+        <constructor-arg ref="bandwidthBucketDao" />
+    </bean>
 
 	<bean id="subscriptionLatencyCheck"
 		class="com.raytheon.uf.edex.datadelivery.bandwidth.SubscriptionLatencyCheck"

@@ -1,31 +1,36 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an absolute override file, indicating that a higher priority 
+        version of the file will completely replace a lower priority version
+        of the file. 
+    -->
 <!-- PDA service agent configuration -->
 <harvester>
-	<!-- Provider information -->
-	<provider serviceType="PDA" name="PDA">
-		<!-- Primary type for PDA is satellite, will be more -->
-		<providerType dataType="PDA" plugin="satellite" availabilityDelay="100" />
-		<providerType dataType="PDA" plugin="goessounding" availabilityDelay="100" />
-		<projection type="LatLon">
-			<name>PDALatLon</name>
-			<description>Test LatLonGrid Coverage for PDA</description>
-		</projection>
-		<connection>
-		    <!-- PDA FTPS server name -->
+    <!-- Provider information -->
+    <provider serviceType="PDA" name="PDA">
+        <!-- Primary type for PDA is satellite, will be more -->
+        <providerType dataType="PDA" plugin="satellite" availabilityDelay="100" />
+        <providerType dataType="PDA" plugin="goessounding" availabilityDelay="100" />
+        <projection type="LatLon">
+            <name>PDALatLon</name>
+            <description>Test LatLonGrid Coverage for PDA</description>
+        </projection>
+        <connection>
+            <!-- PDA FTPS server name -->
 			<url>ftps://${retrieval.pda.ftps.ip}</url>
-		</connection>
-	</provider>	
+        </connection>
+    </provider>    
     <!-- default 6 hours of DataSetMetaData retention for PDA-->
     <retention>0.25</retention>
-	<agent xsi:type="pdaAgent" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	    <!--        20141216065934 -->
-		<dateFormat>YYYYMMddHHmmss</dateFormat>
-		<!-- CSW (catalog service) return URL, Will be the external URL of the 
-			NCF central registry when running in production -->
+    <agent xsi:type="pdaAgent" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <!--        20141216065934 -->
+        <dateFormat>YYYYMMddHHmmss</dateFormat>
+        <!-- CSW (catalog service) return URL, Will be the external URL of the 
+            NCF central registry when running in production -->
 		<responseHandler>https://${retrieval.pda.response.external.ip}:8082/PDAHarvesterResponseHandler</responseHandler>
-		<!-- CSW (catalog service) URL -->
+        <!-- CSW (catalog service) URL -->
 		<cswURL>https://${retrieval.pda.https.ip}/services/OGC_In_Proxy</cswURL>
-		<!-- Call getRecords only once a day, We get most metadata from transactions -->
-		<mainScan>0 0 0 * * ?</mainScan>
-	</agent>
+        <!-- Call getRecords only once a day, We get most metadata from transactions -->
+        <mainScan>0 0 0 * * ?</mainScan>
+    </agent>
 </harvester>

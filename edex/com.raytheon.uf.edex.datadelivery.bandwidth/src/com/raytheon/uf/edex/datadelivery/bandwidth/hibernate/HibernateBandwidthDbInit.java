@@ -20,7 +20,12 @@
 
 package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import org.hibernate.cfg.Configuration;
+import org.hibernate.jdbc.Work;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +55,9 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttr
  *                                  configuration annotated class list.
  * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4.
  * Aug 17, 2016  5771     rjpeter   Auto create DataSetLatency table.
+ * Feb 16, 2017  5899     rjpeter   Updated getTableCheckQuery to not always
+ *                                  recreate tables. Updated init to truncate
+ *                                  tables on start.
  * 
  * </pre>
  * 
@@ -57,8 +65,8 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttr
  */
 @Transactional
 @Service
-public class HibernateBandwidthDbInit extends DbInit implements
-        IBandwidthDbInit {
+public class HibernateBandwidthDbInit extends DbInit
+        implements IBandwidthDbInit {
 
     /**
      * Creates a new instance of DbInit. This constructor should only be called
@@ -72,9 +80,6 @@ public class HibernateBandwidthDbInit extends DbInit implements
         super("bandwidth manager");
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Configuration getConfiguration() {
         /*
@@ -82,32 +87,47 @@ public class HibernateBandwidthDbInit extends DbInit implements
          * this Hibernate SessionFactory is aware of
          */
         Configuration aConfig = new Configuration();
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket.class);
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate.class);
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription.class);
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval.class);
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation.class);
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency.class);
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes.class);
-        aConfig.addAnnotatedClass(com.raytheon.uf.edex.datadelivery.bandwidth.registry.RegistryBandwidthRecord.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes.class);
+        aConfig.addAnnotatedClass(
+                com.raytheon.uf.edex.datadelivery.bandwidth.registry.RegistryBandwidthRecord.class);
         return aConfig;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void init() throws Exception {
         initDb();
+        logger.info("Clearing previous bandwidth data...");
+        final Work work = new Work() {
+            @Override
+            public void execute(Connection connection) throws SQLException {
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute(
+                            "truncate bandwidth_bucket, bandwidth_subscription_retrieval_attributes, bandwidth_datasetupdate, bandwidth_allocation, bandwidth_subscription, datadeliveryregistrybandwidth");
+                    connection.commit();
+                }
+            }
+        };
+
+        dao.executeWork(work);
+        logger.info("Previous bandwidth data cleared");
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected String getTableCheckQuery() {
-        // This intentionally returns a query that will force the tables to be
-        // recreated
-        return "SELECT 'alwaysRecreateTables'";
+        return "SELECT schemaname || '.' || tablename from pg_tables where schemaname = 'awips' and "
+                + "(tablename like 'bandwidth_%' or tablename in ('datadeliveryregistrybandwidth', 'dd_data_set_latency'));";
     }
 }

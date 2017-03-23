@@ -3,19 +3,19 @@ package com.raytheon.uf.common.datadelivery.registry;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -35,9 +35,9 @@ import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * Connection XML
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
@@ -54,17 +54,19 @@ import com.raytheon.uf.common.status.UFStatus;
  *                                  class
  * Aug 19, 2014  3120     dhladky   URL remapping for properties
  * Mar 04, 2016  5388     dhladky   Changed AESEncryptor constructor
+ * Dec 21. 2016    5684     tgurney     Fix URL variable replacement
  * Feb 03, 2017  6089     tjensen   Updated to support generic system properties
  * 
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 @XmlRootElement(name = "connection")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class Connection implements Serializable {
+
+            .getProperty("harvester.external.address");
 
     private static final long serialVersionUID = 8223819912383198409L;
 
@@ -79,7 +81,7 @@ public class Connection implements Serializable {
 
     /**
      * Copy constructor.
-     * 
+     *
      * @param connection
      *            the connection to copy
      */
@@ -105,10 +107,10 @@ public class Connection implements Serializable {
     @DynamicSerializeElement
     private Encryption encryption;
 
-    @XmlElement(name = "url")
     @DynamicSerializeElement
     private String url;
 
+    @XmlElement(name = "url")
     public String getUrl() {
         return Utils.resolveSystemProperties(url);
     }
@@ -131,7 +133,7 @@ public class Connection implements Serializable {
 
     /**
      * Creates encryption object
-     * 
+     *
      * @return
      */
     public AESEncryptor getEncryptor() {
@@ -147,7 +149,7 @@ public class Connection implements Serializable {
      * you don't want the key and password ever stored in the same place.
      * providerKey is kept in the metadata database at the WFO. The password is
      * stored encrypted in a connection object file stored in localization. You
-     * 
+     *
      * @param providerKey
      * @return
      */
@@ -167,8 +169,8 @@ public class Connection implements Serializable {
 
     /**
      * encrypt password with providerKey
-     * 
-     * 
+     *
+     *
      * @param providerKey
      * @return
      */
@@ -193,8 +195,8 @@ public class Connection implements Serializable {
      * providerKey is kept in the metadata database at the WFO. The password is
      * stored encrypted in a connection object file stored in localization. You
      * can only decrypt when they come together in code here.
-     * 
-     * 
+     *
+     *
      * @param providerKey
      * @return
      */
@@ -214,8 +216,8 @@ public class Connection implements Serializable {
 
     /**
      * encrypt userName with providerKey
-     * 
-     * 
+     *
+     *
      * @param providerKey
      * @return
      */
