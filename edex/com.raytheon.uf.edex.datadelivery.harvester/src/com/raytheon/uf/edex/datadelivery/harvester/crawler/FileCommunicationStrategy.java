@@ -83,6 +83,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLi
  * Sep 10, 2014  3581     ccody     Remove references to SerializationUtil for
  *                                  JAXB operations.
  * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
+ * Feb 27, 2017  5988     tjensen   Fix issue with file save for new config
  * 
  * </pre>
  * 
@@ -216,8 +217,8 @@ class FileCommunicationStrategy implements CommunicationStrategy {
         ArrayList<Collection> newCollections = new ArrayList<>();
         // start processing the proto collections into real collections
         for (Entry<String, ProtoCollection> entry : collections.entrySet()) {
+            ProtoCollection pc = entry.getValue();
             try {
-                ProtoCollection pc = entry.getValue();
                 // make first date, find greatest depth dates
                 Collection coll = new Collection(pc.getCollectionName(),
                         pc.getSeedUrl(), pc.getDateFormatString());
@@ -239,8 +240,9 @@ class FileCommunicationStrategy implements CommunicationStrategy {
                         "adding new Collection: " + pc.getCollectionName());
                 // announce
             } catch (Exception e) {
-                statusHandler.error(
-                        "Error parsing proto-collections " + e.getMessage());
+                statusHandler.error("Error parsing proto-collection '"
+                        + pc.getCollectionName() + "' from "
+                        + provider.getName(), e);
             }
         }
 
@@ -363,7 +365,7 @@ class FileCommunicationStrategy implements CommunicationStrategy {
 
         try {
             HarvesterConfigurationManager.setHarvesterFile(hconfig, file);
-            lf.openOutputStream().save();
+            lf.save();
         } catch (Exception e) {
             statusHandler.error(
                     "Unable to recreate the " + provider

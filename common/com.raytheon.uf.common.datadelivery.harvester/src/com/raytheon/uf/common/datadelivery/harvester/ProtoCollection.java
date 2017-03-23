@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection.Periodicity;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
@@ -39,9 +41,10 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 6, 2012  1038       dhladky     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Oct 06, 2012  1038     dhladky   Initial creation
+ * Feb 28, 2017  5988     tjensen   Improve error handling on getPeriodicity
  * 
  * </pre>
  * 
@@ -51,9 +54,12 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 
 public class ProtoCollection {
 
-    private Map<Integer, ArrayList<Date>> dates = new LinkedHashMap<Integer, ArrayList<Date>>();
+    protected static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(ProtoCollection.class);
 
-    private Map<Integer, SimpleDateFormat> formats = new LinkedHashMap<Integer, SimpleDateFormat>();
+    private Map<Integer, ArrayList<Date>> dates = new LinkedHashMap<>();
+
+    private Map<Integer, SimpleDateFormat> formats = new LinkedHashMap<>();
 
     private static Comparator<Date> dateComparator = new Comparator<Date>() {
         @Override
@@ -151,8 +157,8 @@ public class ProtoCollection {
             SimpleDateFormat sdf = null;
             if (last != null) {
                 sdf = getFormats().get(getMaxDepthFormat());
+                format = sdf.format(last);
             }
-            format = sdf.format(last);
         }
         return format;
     }
@@ -180,24 +186,32 @@ public class ProtoCollection {
     public Periodicity getPeriodicity() {
         // grab two dates
         Periodicity p = Periodicity.NONE;
-        if (getDates() != null && getDates().size() > 0) {
-            Date date1 = getDates().get(getMaxDepthFormat()).get(0);
-            Date date2 = getDates().get(getMaxDepthFormat()).get(1);
+        Map<Integer, ArrayList<Date>> myDates = getDates();
+        if (myDates != null && !myDates.isEmpty()) {
+            ArrayList<Date> datesArray = myDates.get(getMaxDepthFormat());
+            if (datesArray.size() > 1) {
+                Date date1 = datesArray.get(0);
+                Date date2 = datesArray.get(1);
 
-            long timeDiff = Math.abs(date1.getTime() - date2.getTime());
+                long timeDiff = Math.abs(date1.getTime() - date2.getTime());
 
-            // do checks
-            if (timeDiff == TimeUtil.MILLIS_PER_DAY) {
+                // do checks
+                if (timeDiff == TimeUtil.MILLIS_PER_DAY) {
+                    p = Periodicity.DAY;
+                } else if (timeDiff == TimeUtil.MILLIS_PER_HOUR) {
+                    p = Periodicity.HOUR;
+                } else if (timeDiff == TimeUtil.MILLIS_PER_WEEK) {
+                    p = Periodicity.WEEK;
+                } else if (timeDiff > TimeUtil.MILLIS_PER_WEEK
+                        && timeDiff < TimeUtil.MILLIS_PER_YEAR) {
+                    p = Periodicity.MONTH;
+                } else if (timeDiff == TimeUtil.MILLIS_PER_YEAR) {
+                    p = Periodicity.YEAR;
+                }
+            } else {
+                statusHandler.warn(
+                        "Unable to determine periodicity. Defaulting to once a day");
                 p = Periodicity.DAY;
-            } else if (timeDiff == TimeUtil.MILLIS_PER_HOUR) {
-                p = Periodicity.HOUR;
-            } else if (timeDiff == TimeUtil.MILLIS_PER_WEEK) {
-                p = Periodicity.WEEK;
-            } else if (timeDiff > TimeUtil.MILLIS_PER_WEEK
-                    && timeDiff < TimeUtil.MILLIS_PER_YEAR) {
-                p = Periodicity.MONTH;
-            } else if (timeDiff == TimeUtil.MILLIS_PER_YEAR) {
-                p = Periodicity.YEAR;
             }
         }
 

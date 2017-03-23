@@ -42,7 +42,9 @@
     <!-- FTPS retrieval root URL -->
     <constant name="FTPS_REQUEST_URL" value="ftps://${retrieval.pda.ftps.ip}"/>
     <!-- REMOTE_VERIFICATION_ENABLED, False when you are hitting a load balanced FTP(S) server -->
-    <constant name="REMOTE_VERIFICATION_ENABLED" value="true" />
+    <constant name="REMOTE_VERIFICATION_ENABLED" value="false"/>
+    <!-- CHECK_DATA_RETENTION_TIME, false if using test data with old start times -->
+    <constant name="CHECK_DATA_RETENTION_TIME" value="true"/>
     <!-- FTP_CONNECT_TIMEOUT, maximum time in seconds to wait for a connection response -->
     <constant name="FTP_CONNECT_TIMEOUT" value="30" />
     <!-- FTP_DATA_TIMEOUT, maximum time in seconds to wait for a packet response during a data transfer -->

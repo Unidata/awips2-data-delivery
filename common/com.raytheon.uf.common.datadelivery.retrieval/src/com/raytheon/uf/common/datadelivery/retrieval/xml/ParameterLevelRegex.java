@@ -40,6 +40,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 2, 2016  5988       tjensen     Initial creation
+ * Mar 02, 2017 5988       tjensen     Add information to be used for level parsing
  *
  * </pre>
  *
@@ -61,6 +62,18 @@ public class ParameterLevelRegex implements Comparable {
     @XmlAttribute(name = "pattern")
     @DynamicSerializeElement
     private String regex;
+
+    @XmlAttribute(name = "level")
+    @DynamicSerializeElement
+    private String level;
+
+    @XmlAttribute(name = "levelGroup")
+    @DynamicSerializeElement
+    private String levelGroup;
+
+    @XmlAttribute(name = "units")
+    @DynamicSerializeElement
+    private String units;
 
     private Pattern pattern;
 
@@ -106,5 +119,29 @@ public class ParameterLevelRegex implements Comparable {
 
     public void setOrder(String order) {
         this.order = order;
+    }
+
+    public String getLevel() {
+        return level;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
+    }
+
+    public String getLevelGroup() {
+        return levelGroup;
+    }
+
+    public void setLevelGroup(String levelGroup) {
+        this.levelGroup = levelGroup;
+    }
+
+    public String getUnits() {
+        return units;
+    }
+
+    public void setUnits(String units) {
+        this.units = units;
     }
 }

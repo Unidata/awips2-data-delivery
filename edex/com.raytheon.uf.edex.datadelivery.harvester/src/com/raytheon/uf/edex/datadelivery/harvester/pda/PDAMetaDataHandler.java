@@ -28,10 +28,6 @@ import java.util.List;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
-import net.opengis.cat.csw.v_2_0_2.AbstractRecordType;
-import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
-import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
-
 import org.apache.commons.io.FileDeleteStrategy;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
@@ -52,19 +48,26 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAMetaDataParser;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 
+import net.opengis.cat.csw.v_2_0_2.AbstractRecordType;
+import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
+import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
+
 /**
  * Harvest PDA MetaData
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2014  3120      dhladky     Initial creation
- * Oct 14, 2014  3127      dhladky     Improved deletion of used files.
- * Apr 21, 2015  4435      dhladky     PDA transaction processing.
- * Feb 16, 2016  5365      dhladky     Streamlined to only process metadata updates with transactions.
- * Mar 16, 2016  3919      tjensen     Cleanup unneeded interfaces
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 13, 2014  3120     dhladky   Initial creation
+ * Oct 14, 2014  3127     dhladky   Improved deletion of used files.
+ * Apr 21, 2015  4435     dhladky   PDA transaction processing.
+ * Feb 16, 2016  5365     dhladky   Streamlined to only process metadata updates
+ *                                  with transactions.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Mar 08, 2017  6089     tjensen   Drop date format from parseMetadata calls
  * 
  * </pre>
  * 
@@ -112,8 +115,8 @@ public class PDAMetaDataHandler extends MetaDataHandler {
 
         try {
             PDACatalogServiceResponseWrapper wrapper = SerializationUtil
-                    .transformFromThrift(
-                            PDACatalogServiceResponseWrapper.class, bytes);
+                    .transformFromThrift(PDACatalogServiceResponseWrapper.class,
+                            bytes);
             filePath = wrapper.getFilePath();
 
             /*
@@ -141,19 +144,19 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                         + " for MetaData.....");
 
                 briefRecords = (GetRecordsResponseType) getJaxbManager()
-                        .unmarshalFromInputStream(new FileInputStream(fileName));
+                        .unmarshalFromInputStream(
+                                new FileInputStream(fileName));
             } else {
                 statusHandler.info("No Files available to Process...");
             }
 
         } catch (SerializationException e) {
-            statusHandler
-                    .handle(Priority.ERROR,
-                            "Couldn't deserialize PDACatalogServiceResponseWrapper!",
-                            e);
+            statusHandler.handle(Priority.ERROR,
+                    "Couldn't deserialize PDACatalogServiceResponseWrapper!",
+                    e);
         } catch (IOException e) {
-            statusHandler.handle(Priority.ERROR, "Couldn't find or read file! "
-                    + fileName, e);
+            statusHandler.handle(Priority.ERROR,
+                    "Couldn't find or read file! " + fileName, e);
         }
 
         if (briefRecords != null) {
@@ -171,14 +174,15 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                 BriefRecordType record = (BriefRecordType) brief.getValue();
 
                 try {
-                    // false, only parse dataset, parameter, and datasetname info for getRecords()
-                    parser.parseMetaData(provider, agent.getDateFormat(),
-                            record, false);
+                    // false, only parse dataset, parameter, and datasetname
+                    // info for getRecords()
+                    parser.parseMetaData(provider, record, false);
                     count++;
                 } catch (Exception e) {
                     statusHandler.handle(Priority.ERROR,
                             "Couldn't parse metadata! "
-                                    + record.getTitle().toString(), e);
+                                    + record.getTitle().toString(),
+                            e);
                     parsed = false;
                 }
             }
@@ -232,8 +236,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
                 // true, parse for metaData updates in transactions.
                 briefRecord = (BriefRecordType) getJaxbManager()
                         .unmarshalFromXml(new String(bytes));
-                parser.parseMetaData(provider, agent.getDateFormat(),
-                        briefRecord, true);
+                parser.parseMetaData(provider, briefRecord, true);
 
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
@@ -253,10 +256,9 @@ public class PDAMetaDataHandler extends MetaDataHandler {
             try {
                 this.jaxbManager = new OgcJaxbManager(classes);
             } catch (JAXBException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "JaxbManager failed to initialize, can not deserialize CSW classes.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "JaxbManager failed to initialize, can not deserialize CSW classes.",
+                        e);
             }
         }
 

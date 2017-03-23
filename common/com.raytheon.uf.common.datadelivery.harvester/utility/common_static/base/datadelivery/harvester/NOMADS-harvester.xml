@@ -50,7 +50,7 @@
         <seedScan>0 0 12 * * ?</seedScan>
         <!-- main scan every 12 minutes -->
         <mainScan>0 0/12 * * * ?</mainScan>
-        <searchKey>\.info$</searchKey>
+        <searchKey>info</searchKey>
         <!-- Ingest new collections found by Seed Scans? -->
         <ingestNew>true</ingestNew>
         <!-- listen to robots.txt denied directory lists? -->
