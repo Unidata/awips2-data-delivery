@@ -164,18 +164,23 @@ public class LookupManager {
         return instance;
     }
 
-    private Map<String, ParameterMapping> parameters = new HashMap<>(1);
+    /** Parameter overrides that apply to all datasets */
+    private Map<String, ParameterMapping> generalParameters = new HashMap<>(2);
+
+    /** Parameter overrides that apply to specific datasets */
+    private Map<String, Map<String, ParameterMapping>> dataSetParameters = new HashMap<>(
+            2);
 
     private Map<String, ParameterNameRegex> paramNameRegexes = new LinkedHashMap<>(
-            1);
+            2);
 
     private Map<String, ParameterLevelRegex> paramLevelRegexes = new LinkedHashMap<>(
-            1);
+            2);
 
-    private final Map<String, LevelLookup> levels = new HashMap<>(1);
+    private final Map<String, LevelLookup> levels = new HashMap<>(2);
 
     private final Map<String, DataSetInformation> dataSetInformations = new HashMap<>(
-            1);
+            2);
 
     private UnitLookup unitLookup = null;
 
@@ -319,9 +324,9 @@ public class LookupManager {
                             fileName);
 
                     Map<String, ParameterNameRegex> newParamNameRegexes = new LinkedHashMap<>(
-                            1);
+                            2);
                     Map<String, ParameterLevelRegex> newParamLevelRegexes = new LinkedHashMap<>(
-                            1);
+                            2);
 
                     if (locFiles.containsKey(LocalizationLevel.BASE)) {
                         tmpRegex = readParameterRegexes(
@@ -386,13 +391,7 @@ public class LookupManager {
         return paramLevelRegexes;
     }
 
-    /**
-     * Gets the Model parameters
-     * 
-     * @param modelName
-     * @return
-     */
-    public Map<String, ParameterMapping> getParameters() {
+    private void loadParameters() {
         ILocalizationFile file = null;
         String fileName = getParamFileName();
 
@@ -409,28 +408,9 @@ public class LookupManager {
                  * If regexes is null or the timestamp on the file has changed
                  * since we last read it, read the parameters from the file.
                  */
-                if (parameters.isEmpty()
+                if ((generalParameters.isEmpty() && dataSetParameters.isEmpty())
                         || !file.getTimeStamp().equals(paramFileTime)) {
-                    ParameterLookup tmpLookup = null;
-                    Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
-                            fileName);
-                    if (locFiles.containsKey(LocalizationLevel.BASE)) {
-                        tmpLookup = readParameterXml(
-                                locFiles.get(LocalizationLevel.BASE));
-                        for (ParameterMapping mapping : tmpLookup
-                                .getParameterMappings()) {
-                            parameters.put(mapping.getId(), mapping);
-                        }
-                    }
-                    if (locFiles.containsKey(LocalizationLevel.SITE)) {
-                        tmpLookup = readParameterXml(
-                                locFiles.get(LocalizationLevel.SITE));
-                        for (ParameterMapping mapping : tmpLookup
-                                .getParameterMappings()) {
-                            parameters.put(mapping.getId(), mapping);
-                        }
-                    }
-                    paramFileTime = file.getTimeStamp();
+                    readParametersFromFile(file, fileName);
                 }
 
             } catch (Exception e) {
@@ -440,9 +420,63 @@ public class LookupManager {
                         e);
             }
         }
+    }
 
-        return parameters;
+    public ParameterMapping getDataSetParameter(String dataSet,
+            String gradsName) {
+        loadParameters();
 
+        ParameterMapping retval = null;
+        Map<String, ParameterMapping> dsMap = dataSetParameters.get(dataSet);
+        if (dsMap != null) {
+            retval = dsMap.get(gradsName);
+        }
+
+        return retval;
+    }
+
+    public ParameterMapping getGeneralParameter(String gradsName) {
+        loadParameters();
+
+        return generalParameters.get(gradsName);
+    }
+
+    private void readParametersFromFile(ILocalizationFile file, String fileName)
+            throws Exception {
+        ParameterLookup tmpLookup = null;
+        Map<String, ParameterMapping> newGeneralParameters = new HashMap<>(2);
+
+        Map<String, Map<String, ParameterMapping>> newDataSetParameters = new HashMap<>(
+                2);
+        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                fileName);
+        for (LocalizationLevel locLevel : new LocalizationLevel[] {
+                LocalizationLevel.BASE, LocalizationLevel.SITE }) {
+            if (locFiles.containsKey(locLevel)) {
+                tmpLookup = readParameterXml(locFiles.get(locLevel));
+                for (ParameterMapping mapping : tmpLookup
+                        .getParameterMappings()) {
+                    List<String> dataSets = mapping.getDataSets();
+                    if (dataSets != null && !dataSets.isEmpty()) {
+                        for (String ds : dataSets) {
+                            Map<String, ParameterMapping> dsMap = newDataSetParameters
+                                    .get(ds);
+                            if (dsMap == null) {
+                                dsMap = new HashMap<>(2);
+                                newDataSetParameters.put(ds, dsMap);
+                            }
+                            dsMap.put(mapping.getGrads(), mapping);
+                        }
+                    } else {
+                        newGeneralParameters.put(mapping.getGrads(), mapping);
+                    }
+                }
+            }
+        }
+        paramFileTime = file.getTimeStamp();
+
+        generalParameters = newGeneralParameters;
+        dataSetParameters = newDataSetParameters;
     }
 
     /**

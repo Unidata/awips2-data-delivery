@@ -57,7 +57,7 @@ public class ParameterLevelRegex implements Comparable {
 
     @XmlAttribute(name = "order")
     @DynamicSerializeElement
-    private String order;
+    private float order;
 
     @XmlAttribute(name = "pattern")
     @DynamicSerializeElement
@@ -104,7 +104,7 @@ public class ParameterLevelRegex implements Comparable {
     public int compareTo(Object o) {
         if (o instanceof ParameterLevelRegex) {
             ParameterLevelRegex other = (ParameterLevelRegex) o;
-            int orderDiff = order.compareTo(other.getOrder());
+            int orderDiff = Float.compare(order, other.getOrder());
             if (orderDiff != 0) {
                 return orderDiff;
             }
@@ -113,11 +113,11 @@ public class ParameterLevelRegex implements Comparable {
         return 1;
     }
 
-    public String getOrder() {
+    public float getOrder() {
         return order;
     }
 
-    public void setOrder(String order) {
+    public void setOrder(float order) {
         this.order = order;
     }
 
