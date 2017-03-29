@@ -38,23 +38,26 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestB
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 
-
-
 /**
  * OpenDAP Provider Retrieval Adapter
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 07, 2011            dhladky     Initial creation
- * Jun 28, 2012 819        djohnson    Use utility class for DConnect.
- * Jul 25, 2012 955        djohnson    Make package-private.
- * Feb 05, 2013 1580       mpduff      EventBus refactor.
- * Feb 12, 2013 1543       djohnson    The payload can just be an arbitrary object, implementations can define an array if required.
- * Sept 19, 2013 2388      dhladky     Logging for failed requests.
- * Apr 12, 2015 4400       dhladky     Upgraded to DAP2 and preserved backward compatibility.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 07, 2011           dhladky   Initial creation
+ * Jun 28, 2012  819      djohnson  Use utility class for DConnect.
+ * Jul 25, 2012  955      djohnson  Make package-private.
+ * Feb 05, 2013  1580     mpduff    EventBus refactor.
+ * Feb 12, 2013  1543     djohnson  The payload can just be an arbitrary object,
+ *                                  implementations can define an array if
+ *                                  required.
+ * Sept 19, 201  2388     dhladky   Logging for failed requests.
+ * Apr 12, 2015  4400     dhladky   Upgraded to DAP2 and preserved backward
+ *                                  compatibility.
+ * Mar 23, 2017  5988     tjensen   Improved logging
  * 
  * </pre>
  * 
@@ -62,16 +65,18 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * @version 1.0
  */
 
-class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCoverage> {
+class OpenDAPRetrievalAdapter
+        extends RetrievalAdapter<GriddedTime, GriddedCoverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPRetrievalAdapter.class);
-    
+
     /** convert if older XDODS version **/
     boolean isDods = DodsUtils.isOlderXDODSVersion();
 
     @Override
-    public OpenDAPRequestBuilder createRequestMessage(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
+    public OpenDAPRequestBuilder createRequestMessage(
+            RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
 
         OpenDAPRequestBuilder reqBuilder = new OpenDAPRequestBuilder(this,
                 attXML);
@@ -96,9 +101,8 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
                 data = connect.getData(null);
             }
         } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR,
-                    "Request: " + request.getRequest()
-                            + " could not be fullfilled!", e.getMessage());
+            statusHandler.handle(Priority.ERROR, "Request: "
+                    + request.getRequest() + " could not be fullfilled!", e);
             EventBus.publish(new RetrievalEvent(e.getMessage()));
         }
 
@@ -111,7 +115,8 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
 
     @Override
     public Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse<GriddedTime, GriddedCoverage> response) throws TranslationException {
+            IRetrievalResponse<GriddedTime, GriddedCoverage> response)
+                    throws TranslationException {
         Map<String, PluginDataObject[]> map = new HashMap<String, PluginDataObject[]>();
 
         OpenDAPTranslator translator;
@@ -125,13 +130,15 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
         Object payload = null;
         try {
             if (response.getPayLoad() != null) {
-                
+
                 payload = response.getPayLoad();
-                
+
                 if (payload instanceof dods.dap.DataDDS) {
-                    payload = dods.dap.DataDDS.class.cast(response.getPayLoad());
+                    payload = dods.dap.DataDDS.class
+                            .cast(response.getPayLoad());
                 } else if (payload instanceof opendap.dap.DataDDS) {
-                    payload = opendap.dap.DataDDS.class.cast(response.getPayLoad());
+                    payload = opendap.dap.DataDDS.class
+                            .cast(response.getPayLoad());
                 }
             }
         } catch (ClassCastException e) {
@@ -143,9 +150,8 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
 
             if (!CollectionUtil.isNullOrEmpty(pdos)) {
                 String pluginName = pdos[0].getPluginName();
-                map.put(pluginName,
-                        CollectionUtil.combine(PluginDataObject.class,
-                                map.get(pluginName), pdos));
+                map.put(pluginName, CollectionUtil.combine(
+                        PluginDataObject.class, map.get(pluginName), pdos));
             }
         }
 
@@ -156,8 +162,9 @@ class OpenDAPRetrievalAdapter extends RetrievalAdapter<GriddedTime, GriddedCover
      * @param attribute
      * @return
      */
-    OpenDAPTranslator getOpenDapTranslator(RetrievalAttribute<GriddedTime, GriddedCoverage> attribute)
-            throws InstantiationException {
+    OpenDAPTranslator getOpenDapTranslator(
+            RetrievalAttribute<GriddedTime, GriddedCoverage> attribute)
+                    throws InstantiationException {
         return new OpenDAPTranslator(attribute);
     }
 }

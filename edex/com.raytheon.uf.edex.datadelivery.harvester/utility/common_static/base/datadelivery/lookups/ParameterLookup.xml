@@ -32,11 +32,11 @@
  -->
 
 <ParameterLookup>
-    <parameterMapping id="tcdclcll" AWIPS="LCDC" GrADs="tcdclcll"/>
-    <parameterMapping id="tcdcmcll" AWIPS="MCDC" GrADs="tcdcmcll"/>
-    <parameterMapping id="tcdchcll" AWIPS="HCDC" GrADs="tcdchcll"/>
+    <parameterMapping AWIPS="LCDC" display="LCDC (LCY)" GrADs="tcdclcll"/>
+    <parameterMapping AWIPS="MCDC" display="MCDC (MCY)" GrADs="tcdcmcll"/>
+    <parameterMapping AWIPS="HCDC" display="HCDC (HCY)" GrADs="tcdchcll"/>
     
     <!-- Vague description on these 2 cause them to map to 'T' -->
-    <parameterMapping id="tmpmax2m" AWIPS="MxT" GrADs="tmpmax2m"/>
-    <parameterMapping id="tmpmin2m" AWIPS="MnT" GrADs="tmpmin2m"/>
+    <parameterMapping AWIPS="MxT" display="MxT (2m FHAG)" GrADs="tmpmax2m"/>
+    <parameterMapping AWIPS="MnT" display="MnT (2m FHAG)" GrADs="tmpmin2m"/>
 </ParameterLookup>
