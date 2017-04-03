@@ -29,6 +29,15 @@
     different datasets. Any parameter matching a mapping in this file will 
     ignore parsing of the definition in and use the AWIPS name in this mapping 
     as the parameter name.
+    
+    Example applicable to all datasets:
+    <parameterMapping AWIPS="AWIPS NAME" display="DISPLAY NAME" GrADs="GrADS NAME"/>
+    
+    Example applicable only to specific datasets:
+    <parameterMapping AWIPS="AWIPS NAME" display="DISPLAY NAME" GrADs="GrADS NAME">
+       <dataSet>DataSet 1</dataSet>
+       <dataSet>DataSet 2</dataSet>
+    </parameterMapping>    
  -->
 
 <ParameterLookup>
