@@ -65,7 +65,7 @@ import com.raytheon.uf.common.status.UFStatus;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class Connection implements Serializable {
-
+    protected static final String externalAddress = System
             .getProperty("harvester.external.address");
 
     private static final long serialVersionUID = 8223819912383198409L;
