@@ -77,44 +77,58 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
 /**
  * This class contains the notification table and the controls to change the
  * page that will be displayed in the table.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 18, 2012   687      lvenable    Initial creation.
- * Aug 09, 2012   430      jpiatt      Modifications for sort asc & sort desc.
- * Aug 30, 2012  1120      jpiatt      Added clickSort flag.
- * Sep 06, 2012   687      mpduff      Call the table selection method of the ITableChanged interface.
- * Oct 22, 2012   1284     mpduff      Fix the start/end index for pagination of new records, code cleanup.
- * Nov 29, 2012  1285      bgonzale    Added a refresh pause button to the Notification Center Dialog.
- * Jan 22, 2013  1520      mpduff      Update javadoc.
- * Apr 25, 2013  1820      mpduff      Get the column list every time.
- * Aug 30, 2013  2314      mpduff      Sort the table data on load.
- * Sep 16, 2013  2375      mpduff      Removed initial sorting.
- * Sep 26, 2013  2417      mpduff      Fix the find all row selection.
- * Oct 15, 2013  2451      skorolev    Get highlighted rows after message update.
- * Nov 01, 2013  2431      skorolev    Changed labels on the table.
- * Feb 07, 2014  2453      mpduff      Refactored.
- * Apr 18, 2014  3012      dhladky     Null check.
- * Aug 18, 2014  2746      ccody       Non-local Subscription changes not updating dialogs
- * Oct 29, 2014  2749      ccody       Unable to change the OPSNET Bandwidth value for Data Delivery
- * Dec 03, 2014  3840      ccody       Implement Comparator based sorting
- * Jun 09, 2015  4047      dhladky     Dialog blocked CAVE at initial startup, fixed.
- * Jun 10, 2015  4059      dhladky     Fixed manual selections being blown away by updates. (under #4047 check in)
- * Jul 01, 2015  4047      dhladky     Selected indexes never took paging into account.
- * Jul 08, 2015  2805      dhladky     Removed re-evaluation of find dialog buttons on update.
- * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues, changed page number selection to spinner
- *                                     instead of combo box that gets huge if there are lots of pages
- * Apr 26, 2016  5528      dhladky     Prevent null pointer on initial use of find tool.
- * 
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Jun 18, 2012  687         lvenable     Initial creation.
+ * Aug 09, 2012  430         jpiatt       Modifications for sort asc & sort
+ *                                        desc.
+ * Aug 30, 2012  1120        jpiatt       Added clickSort flag.
+ * Sep 06, 2012  687         mpduff       Call the table selection method of the
+ *                                        ITableChanged interface.
+ * Oct 22, 2012  1284        mpduff       Fix the start/end index for pagination
+ *                                        of new records, code cleanup.
+ * Nov 29, 2012  1285        bgonzale     Added a refresh pause button to the
+ *                                        Notification Center Dialog.
+ * Jan 22, 2013  1520        mpduff       Update javadoc.
+ * Apr 25, 2013  1820        mpduff       Get the column list every time.
+ * Aug 30, 2013  2314        mpduff       Sort the table data on load.
+ * Sep 16, 2013  2375        mpduff       Removed initial sorting.
+ * Sep 26, 2013  2417        mpduff       Fix the find all row selection.
+ * Oct 15, 2013  2451        skorolev     Get highlighted rows after message
+ *                                        update.
+ * Nov 01, 2013  2431        skorolev     Changed labels on the table.
+ * Feb 07, 2014  2453        mpduff       Refactored.
+ * Apr 18, 2014  3012        dhladky      Null check.
+ * Aug 18, 2014  2746        ccody        Non-local Subscription changes not
+ *                                        updating dialogs
+ * Oct 29, 2014  2749        ccody        Unable to change the OPSNET Bandwidth
+ *                                        value for Data Delivery
+ * Dec 03, 2014  3840        ccody        Implement Comparator based sorting
+ * Jun 09, 2015  4047        dhladky      Dialog blocked CAVE at initial
+ *                                        startup, fixed.
+ * Jun 10, 2015  4059        dhladky      Fixed manual selections being blown
+ *                                        away by updates. (under #4047 check
+ *                                        in)
+ * Jul 01, 2015  4047        dhladky      Selected indexes never took paging
+ *                                        into account.
+ * Jul 08, 2015  2805        dhladky      Removed re-evaluation of find dialog
+ *                                        buttons on update.
+ * Mar 28, 2016  5482        randerso     Fixed GUI sizing issues, changed page
+ *                                        number selection to spinner instead of
+ *                                        combo box that gets huge if there are
+ *                                        lots of pages
+ * Apr 26, 2016  5528        dhladky      Prevent null pointer on initial use of
+ *                                        find tool.
+ * Feb 28, 2017  6121        randerso     Cleanup
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
 
 public class NotificationTableComp extends TableComp implements ITableFind {
@@ -127,15 +141,15 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     private PriorityImages pImage = null;
 
     /** Master Table list object with users filtered only */
-    private final TableDataManager<NotificationRowData> masterTableList = new TableDataManager<NotificationRowData>(
+    private final TableDataManager<NotificationRowData> masterTableList = new TableDataManager<>(
             TABLE_TYPE.NOTIFICATION);
 
     /** Filtered Table list object */
-    private final TableDataManager<NotificationRowData> filteredTableList = new TableDataManager<NotificationRowData>(
+    private final TableDataManager<NotificationRowData> filteredTableList = new TableDataManager<>(
             TABLE_TYPE.NOTIFICATION);
 
     /** Filtered Table list object */
-    private final List<NotificationRowData> visibleTableList = new ArrayList<NotificationRowData>();
+    private final List<NotificationRowData> visibleTableList = new ArrayList<>();
 
     /** Concurrent List applicable here **/
     private List<NotificationRecord> notificationList = Collections
@@ -189,7 +203,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     private int messageReceivedWhilePausedCount = 0;
 
     /** Highlighted row ids */
-    private final Set<Integer> selectedRowIds = new HashSet<Integer>();
+    private final Set<Integer> selectedRowIds = new HashSet<>();
 
     /** Index of the first visible data row */
     private int tableDataStartIndex = 0;
@@ -202,12 +216,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Constructor.
-     * 
+     *
      * Note: For the super class we are passing in a false for the notification
      * flag. This is turned off because the notification dialog is using the
      * NotificationHandler and it contains the necessary code that needs to be
      * executed.
-     * 
+     *
      * @param parent
      * @param tableConfig
      * @param callback
@@ -301,13 +315,13 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 pageSpin.setEnabled(!isLocked);
                 tableChangeCallback.tableLock(isLocked);
                 if (isLocked) {
-                    pauseButton.setBackground(getDisplay().getSystemColor(
-                            SWT.COLOR_RED));
+                    pauseButton.setBackground(
+                            getDisplay().getSystemColor(SWT.COLOR_RED));
                 } else {
                     populateTable();
                     messageReceivedWhilePausedCount = 0;
-                    pauseButton.setBackground(getDisplay().getSystemColor(
-                            SWT.COLOR_WIDGET_BACKGROUND));
+                    pauseButton.setBackground(getDisplay()
+                            .getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
                 }
 
             }
@@ -321,7 +335,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Get the table list with filters applied.
-     * 
+     *
      * @return TableDataManager obj
      */
     public TableDataManager<NotificationRowData> getFilteredTableList() {
@@ -330,7 +344,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Get the rows of data to display.
-     * 
+     *
      * @return list of Notification Row Data objects
      */
     private List<NotificationRowData> gatherVisibleTableRows() {
@@ -360,7 +374,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Delete table rows.
-     * 
+     *
      * @param deleteRecordIds
      */
     public void deleteTableDataRows(List<NotificationRowData> deleteRecordIds) {
@@ -369,7 +383,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Get the table obj.
-     * 
+     *
      * @return the table obj.
      */
     public Table getTable() {
@@ -404,7 +418,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             return;
         }
 
-        List<NotificationRowData> ids = new ArrayList<NotificationRowData>();
+        List<NotificationRowData> ids = new ArrayList<>();
         for (int index : indices) {
             NotificationRowData rowData = visibleTableList.get(index);
             ids.add(rowData);
@@ -416,7 +430,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Action taken when tool tip is selected.
-     * 
+     *
      * @param showToolTips
      *            true when tooltips are on
      */
@@ -450,18 +464,17 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
         if (numFilteredRows == 0) {
             // No rows visible possibly due to filtering
-            numRowsLbl
-                    .setText("No rows to display. Please check the configuration and "
+            numRowsLbl.setText(
+                    "No rows to display. Please check the configuration and "
                             + "filtering options.");
         } else if (numFilteredRows < endRow) {
             numRowsLbl.setText(ROWS + startRow + " - " + numFilteredRows
                     + " from " + numFilteredRows + " of "
                     + this.masterTableList.getSize());
         } else {
-            numRowsLbl
-                    .setText(ROWS + startRow + " - " + endRow + " from "
-                            + numFilteredRows + " of "
-                            + this.masterTableList.getSize());
+            numRowsLbl.setText(ROWS + startRow + " - " + endRow + " from "
+                    + numFilteredRows + " of "
+                    + this.masterTableList.getSize());
         }
     }
 
@@ -501,15 +514,15 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         }
 
         if (indices.length > 1) {
-            DataDeliveryUtils.showMessage(getShell(), SWT.OK,
-                    "Selection Error", "Please select only one row.");
+            DataDeliveryUtils.showMessage(getShell(), SWT.OK, "Selection Error",
+                    "Please select only one row.");
             return;
         }
 
         TableItem ti = table.getItem(indices[0]);
         NotificationRowData rd = (NotificationRowData) ti.getData();
 
-        List<NotificationRowData> deleteList = new ArrayList<NotificationRowData>();
+        List<NotificationRowData> deleteList = new ArrayList<>();
 
         // Loop over rows and delete the matching rows
         for (NotificationRowData data : filteredTableList.getDataArray()) {
@@ -542,12 +555,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Action taken to delete notifications from view by priority.
-     * 
+     *
      * @param priority
      *            priority indicator
      */
     public void handleHideByPriority(int priority) {
-        List<NotificationRowData> deleteList = new ArrayList<NotificationRowData>();
+        List<NotificationRowData> deleteList = new ArrayList<>();
 
         // Loop over rows and delete the matching rows
         for (NotificationRowData data : filteredTableList.getDataArray()) {
@@ -565,7 +578,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Get the table cell text.
-     * 
+     *
      * @param name
      *            The column name
      * @param rd
@@ -594,7 +607,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Populate the NotificationRowData objects
-     * 
+     *
      * @param notificationRecords
      *            list of notification records
      */
@@ -609,8 +622,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
                 NotificationConfigManager configMan = NotificationConfigManager
                         .getInstance();
-                ArrayList<String> users = configMan.getFilterXml()
-                        .getUserFilterXml().getUserList();
+                List<String> users = configMan.getFilterXml().getUserFilterXml()
+                        .getUserList();
 
                 MessageLoadXML messageLoad = msgLoadCallback.getMessageLoad();
 
@@ -647,15 +660,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                         if (recordId == null || recordCalendarDate == null) {
                             statusHandler
                                     .error("Error Extracting data from Notification Message: One or more mandatory values are null.\n"
-                                            + "ID: "
-                                            + record.getId()
-                                            + "  Date: "
-                                            + record.getDate()
+                                            + "ID: " + record.getId()
+                                            + "  Date: " + record.getDate()
                                             + "  Category: "
                                             + record.getCategory()
                                             + "\nPriority: "
-                                            + record.getPriority()
-                                            + "  User: "
+                                            + record.getPriority() + "  User: "
                                             + record.getUsername()
                                             + "\nMessage: "
                                             + record.getMessage());
@@ -699,7 +709,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                             sortByTime(masterTableList);
 
                             int loadLast = messageLoad.getLoadLast();
-                            List<NotificationRowData> removeList = new ArrayList<NotificationRowData>();
+                            List<NotificationRowData> removeList = new ArrayList<>();
 
                             // Keep only the specified number of rows
                             if (messageLoad.isNumMessages()) {
@@ -718,9 +728,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                                 List<NotificationRowData> dataList = masterTableList
                                         .getDataArray();
                                 for (int i = 0; i < dataList.size(); i++) {
-                                    if (currentTime
-                                            - dataList.get(i).getDate()
-                                                    .getTime() > backTime) {
+                                    if (currentTime - dataList.get(i).getDate()
+                                            .getTime() > backTime) {
                                         removeList.add(dataList.get(i));
                                     }
                                 }
@@ -773,7 +782,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Pass filter value information.
-     * 
+     *
      * @param username
      *            user name table data
      * @param priority
@@ -791,13 +800,13 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
         NotificationConfigManager configMan = NotificationConfigManager
                 .getInstance();
-        ArrayList<String> users = configMan.getFilterXml().getUserFilterXml()
+        List<String> users = configMan.getFilterXml().getUserFilterXml()
                 .getUserList();
-        ArrayList<Priority> priorityList = configMan.getFilterXml()
+        List<Priority> priorityList = configMan.getFilterXml()
                 .getPriorityList();
-        ArrayList<String> subscriptionCategoryList = configMan.getFilterXml()
+        List<String> subscriptionCategoryList = configMan.getFilterXml()
                 .getSubscriptionList();
-        ArrayList<Integer> num = new ArrayList<Integer>();
+        List<Integer> num = new ArrayList<>();
 
         for (Priority p : priorityList) {
             num.add(p.getPriorityNum());
@@ -846,7 +855,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             // Check to see if we already HAVE this message
             NotificationRowData rd = null;
             int filteredTableListSize = this.filteredTableList.getSize();
-            for (int i = 0; i < filteredTableListSize && filterFlag == true; i++) {
+            for (int i = 0; i < filteredTableListSize
+                    && filterFlag == true; i++) {
                 rd = this.filteredTableList.getDataRow(i);
                 String rdCategory = rd.getCategory();
                 Integer rdPriority = rd.getPriority();
@@ -872,11 +882,11 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Pass filter information.
-     * 
+     *
      * @param records
      *            Notification record
      * @return boolean true if passes filter
-     * 
+     *
      */
     public boolean passesValueFilter(List<NotificationRecord> records) {
         for (NotificationRecord record : records) {
@@ -889,10 +899,10 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Get the column data.
-     * 
+     *
      * @param colName
      *            The column name of interest
-     * 
+     *
      * @return The populated ColumnXML object
      */
     private ColumnXML getColumnData(String colName) {
@@ -1021,10 +1031,10 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                 ColumnXML columnXml = getColumnData(column.getText());
                 if (columnXml != null) {
                     if (columnXml.isVisible()) {
-                        if (column.getText().equals(
-                                NotifColumnNames.PRIORITY.toString())) {
-                            item.setImage(idx++, pImage.getImage(Priority
-                                    .values()[rd.getPriority()]));
+                        if (column.getText()
+                                .equals(NotifColumnNames.PRIORITY.toString())) {
+                            item.setImage(idx++, pImage.getImage(
+                                    Priority.values()[rd.getPriority()]));
                         } else {
                             String text = getCellText(columnXml.getName(), rd);
                             if (text == null) {
@@ -1058,7 +1068,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             int[] indices = table.getSelectionIndices();
             selectedRowIds.clear();
             // Extract selected notification ids from the table page
-            List<NotificationRowData> highlights = new ArrayList<NotificationRowData>(
+            List<NotificationRowData> highlights = new ArrayList<>(
                     indices.length);
             for (int index : indices) {
                 // have to account for paging
@@ -1080,7 +1090,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * This method is not used. The Notification dialog is using the
      * NotificationHandler so this override method is not used.
      */
@@ -1150,7 +1160,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Returns a string with a count of the messages received while paused.
-     * 
+     *
      * @return formatted string.
      */
     public String getPauseCountLabel() {
@@ -1190,12 +1200,12 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
     /**
      * Delete rows based on id.
-     * 
+     *
      * @param deleteRecordIds
      *            List of ids to delete.
      */
     public void deleteTableDataRows(ArrayList<Integer> deleteRecordIds) {
-        List<NotificationRowData> deleteList = new ArrayList<NotificationRowData>(
+        List<NotificationRowData> deleteList = new ArrayList<>(
                 deleteRecordIds.size());
 
         for (NotificationRowData rd : filteredTableList.getDataArray()) {

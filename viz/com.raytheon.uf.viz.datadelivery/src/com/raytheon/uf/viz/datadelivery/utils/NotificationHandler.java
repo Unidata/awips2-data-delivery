@@ -10,35 +10,36 @@ import com.raytheon.uf.common.datadelivery.event.notification.DeleteNotification
 import com.raytheon.uf.common.datadelivery.event.notification.GetNotificationRequest;
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants;
-import com.raytheon.uf.common.serialization.comm.RequestRouter;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.jms.notification.INotificationObserver;
 import com.raytheon.uf.common.jms.notification.NotificationException;
 import com.raytheon.uf.common.jms.notification.NotificationMessage;
+import com.raytheon.uf.common.serialization.comm.RequestRouter;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.datadelivery.notification.xml.MessageLoadXML;
 
 /**
- * 
+ *
  * Manages the retrieval of current and arriving notification records
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 12, 2012            jsanchez     Initial creation
- * Jan 22, 2013 1501       djohnson     Route requests to datadelivery.
- * Sep 05, 2013 2314       mpduff       support the load all messages option.
- * Feb 07, 2014 2453       mpduff       Remove username query param.
- * Oct 03, 2014 2749       ccody        Replace deprecated references to non-deprecated classes
- * Jun 09, 2015 4047       dhladky      cleanup.
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Mar 12, 2012              jsanchez     Initial creation
+ * Jan 22, 2013  1501        djohnson     Route requests to datadelivery.
+ * Sep 05, 2013  2314        mpduff       support the load all messages option.
+ * Feb 07, 2014  2453        mpduff       Remove username query param.
+ * Oct 03, 2014  2749        ccody        Replace deprecated references to
+ *                                        non-deprecated classes
+ * Jun 09, 2015  4047        dhladky      cleanup.
+ * Feb 28, 2017  6121        randerso     Cleanup
+ *
  * </pre>
- * 
+ *
  * @author jsanchez
- * @version 1.0
  */
 public class NotificationHandler implements INotificationObserver {
 
@@ -52,12 +53,12 @@ public class NotificationHandler implements INotificationObserver {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(NotificationHandler.class);
 
-    private static Set<INotificationArrivedListener> listeners = new CopyOnWriteArraySet<INotificationArrivedListener>();
+    private static Set<INotificationArrivedListener> listeners = new CopyOnWriteArraySet<>();
 
     /**
      * Add a notifications arrived listener, listeners will get notified when
      * new notifications have been ingested in edex
-     * 
+     *
      * @param listener
      */
     public static void addListener(INotificationArrivedListener listener) {
@@ -66,7 +67,7 @@ public class NotificationHandler implements INotificationObserver {
 
     /**
      * Remove the listener
-     * 
+     *
      * @param listener
      */
     public static void removeListener(INotificationArrivedListener listener) {
@@ -76,7 +77,7 @@ public class NotificationHandler implements INotificationObserver {
     /**
      * Request the notifications from the notification database.Reads in the
      * default configuration.
-     * 
+     *
      * @param messageLoad
      *            messages to load
      * @param users
@@ -85,7 +86,7 @@ public class NotificationHandler implements INotificationObserver {
      */
     @SuppressWarnings("unchecked")
     public List<NotificationRecord> intialLoad(MessageLoadXML messageLoad,
-            ArrayList<String> users) {
+            List<String> users) {
         int loadAmount;
         Integer hours = null;
         Integer maxResults = null;
@@ -118,12 +119,12 @@ public class NotificationHandler implements INotificationObserver {
                     "Error trying to retrieve notifications from database", e);
         }
 
-        return new ArrayList<NotificationRecord>();
+        return new ArrayList<>();
     }
 
     /**
      * Deletes records from the notification table
-     * 
+     *
      * @param ids
      *            The record ids to be deleted
      * @return the number of rows deleted from the table
@@ -148,14 +149,14 @@ public class NotificationHandler implements INotificationObserver {
     /**
      * Processes an arriving NotificationRecord and notifies all listeners (i.e.
      * dialog)
-     * 
+     *
      * @param messages
      *            The array of messages being sent from 'notify.msg'
      */
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
-        ArrayList<Integer> deleteRecordIds = new ArrayList<Integer>();
-        ArrayList<NotificationRecord> notificationRecords = new ArrayList<NotificationRecord>();
+        ArrayList<Integer> deleteRecordIds = new ArrayList<>();
+        ArrayList<NotificationRecord> notificationRecords = new ArrayList<>();
 
         try {
             for (NotificationMessage msg : messages) {

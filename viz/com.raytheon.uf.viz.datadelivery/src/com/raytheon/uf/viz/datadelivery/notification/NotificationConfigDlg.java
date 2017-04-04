@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.datadelivery.notification;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -49,31 +50,31 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
 
 /**
  * Notification Configuration Dialog
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 2, 2012             mpduff      Initial creation
- * Feb 23, 2012            jpiatt      Remove save in handleOK method.
- * Apr 16, 2012   452      jpiatt      Added row configuration.
- * Jun  1, 2012   645      jpiatt      Added tooltips.
- * Jun 07, 2012   687      lvenable    Table data refactor.
- * Aug 08, 2012   863      jpiatt      Added new interface method.
- * Aug 13, 2012   430      jpiatt      Modifications for sort asc & desc.
- * Oct 22, 2012  1284      mpduff      Code Cleanup.
- * Aug 30, 2013  2314      mpduff      Fixed sorting ambiguity.
- * Sep 16, 2013  2375      mpduff      Add apply button.
- * May 17, 2015  4047      dhladky     verified non-blocking.
- * Feb 01, 2016  5289     tgurney    Add missing minimize button in trim
- * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------
+ * Feb 02, 2012           mpduff    Initial creation
+ * Feb 23, 2012           jpiatt    Remove save in handleOK method.
+ * Apr 16, 2012  452      jpiatt    Added row configuration.
+ * Jun 01, 2012  645      jpiatt    Added tooltips.
+ * Jun 07, 2012  687      lvenable  Table data refactor.
+ * Aug 08, 2012  863      jpiatt    Added new interface method.
+ * Aug 13, 2012  430      jpiatt    Modifications for sort asc & desc.
+ * Oct 22, 2012  1284     mpduff    Code Cleanup.
+ * Aug 30, 2013  2314     mpduff    Fixed sorting ambiguity.
+ * Sep 16, 2013  2375     mpduff    Add apply button.
+ * May 17, 2015  4047     dhladky   verified non-blocking.
+ * Feb 01, 2016  5289     tgurney   Add missing minimize button in trim
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
@@ -134,7 +135,7 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentShell
      * @param callback
      */
@@ -197,8 +198,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         displayGroup.setLayout(gl);
         displayGroup.setLayoutData(gd);
         displayGroup.setText(" Display Configuration Settings ");
-        displayGroup
-                .setToolTipText("Items which refresh the table after clicking OK");
+        displayGroup.setToolTipText(
+                "Items which refresh the table after clicking OK");
 
         // Load all messages check box
         allMsgChk = new Button(displayGroup, SWT.CHECK);
@@ -248,8 +249,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         hourRdo.setSelection(true);
         hourRdo.setToolTipText("Display last number of hours");
 
-        Label sep = new Label(displayGroup, SWT.SEPARATOR | SWT.SHADOW_OUT
-                | SWT.HORIZONTAL);
+        Label sep = new Label(displayGroup,
+                SWT.SEPARATOR | SWT.SHADOW_OUT | SWT.HORIZONTAL);
         sep.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 
         MessageLoadXML msgLoad = xml.getMessageLoad();
@@ -278,8 +279,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
         sortColumnCbo = new Combo(sortComp, SWT.READ_ONLY);
         sortColumnCbo.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT));
-        sortColumnCbo
-                .setToolTipText("Select column to sort upon initial table load");
+        sortColumnCbo.setToolTipText(
+                "Select column to sort upon initial table load");
 
         gd = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
         gl = new GridLayout(1, false);
@@ -300,8 +301,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         sortDescRdo.setSelection(!sortAsc);
         sortAscRdo.setSelection(sortAsc);
 
-        Label sep2 = new Label(displayGroup, SWT.SEPARATOR | SWT.SHADOW_OUT
-                | SWT.HORIZONTAL);
+        Label sep2 = new Label(displayGroup,
+                SWT.SEPARATOR | SWT.SHADOW_OUT | SWT.HORIZONTAL);
         sep2.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 
         // Pagination Combo Box
@@ -319,8 +320,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         rowNumCbo = new Combo(rowComp, SWT.READ_ONLY);
         rowNumCbo.setLayoutData(new GridData(SWT.DEFAULT, SWT.DEFAULT));
         rowNumCbo.setItems(rows);
-        rowNumCbo
-                .setToolTipText("Select number of table rows to display per page");
+        rowNumCbo.setToolTipText(
+                "Select number of table rows to display per page");
 
         for (String rowVal : rows) {
             if (!(Integer.parseInt(rowVal) == pageSet)) {
@@ -333,8 +334,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
         rowNumCbo.select(i);
 
-        Label sep3 = new Label(displayGroup, SWT.SEPARATOR | SWT.SHADOW_OUT
-                | SWT.HORIZONTAL);
+        Label sep3 = new Label(displayGroup,
+                SWT.SEPARATOR | SWT.SHADOW_OUT | SWT.HORIZONTAL);
         sep3.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 
         // Priority settings
@@ -401,8 +402,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
             numNameRdo.setSelection(true);
         }
 
-        Label sep4 = new Label(displayGroup, SWT.SEPARATOR | SWT.SHADOW_OUT
-                | SWT.HORIZONTAL);
+        Label sep4 = new Label(displayGroup,
+                SWT.SEPARATOR | SWT.SHADOW_OUT | SWT.HORIZONTAL);
         sep4.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 
         // Column settings
@@ -415,8 +416,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
         // column visibility settings
         xml.getColumnList();
-        ArrayList<String> selectedList = new ArrayList<String>();
-        ArrayList<String> fullList = new ArrayList<String>();
+        List<String> selectedList = new ArrayList<>();
+        List<String> fullList = new ArrayList<>();
         for (ColumnXML col : xml.getColumnList()) {
             if (col.isVisible()) {
                 selectedList.add(col.getName());
@@ -425,8 +426,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         }
 
         DualListConfig dualConfig = new DualListConfig();
-        dualConfig.setListHeight(150);
-        dualConfig.setListWidth(100);
+        dualConfig.setVisibleItems(12);
+        dualConfig.setListWidthInChars(15);
         dualConfig.setAvailableListLabel("Hidden Columns:");
         dualConfig.setSelectedListLabel("Visible Columns:");
         dualConfig.setShowUpDownBtns(true);
@@ -492,9 +493,9 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
         // return if all columns set to hidden
         if (dualList.getSelectedListItems().length == 0) {
-            DataDeliveryUtils
-                    .showMessage(shell, SWT.ERROR, "No Columns Visible",
-                            "No columns are visible.  At least one column must be visible.");
+            DataDeliveryUtils.showMessage(shell, SWT.ERROR,
+                    "No Columns Visible",
+                    "No columns are visible.  At least one column must be visible.");
             return;
         }
 
@@ -504,8 +505,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
         xml.clearColumns();
 
-        String sortCol = sortColumnCbo.getItem(sortColumnCbo
-                .getSelectionIndex());
+        String sortCol = sortColumnCbo
+                .getItem(sortColumnCbo.getSelectionIndex());
 
         String[] selectedColumns = dualList.getSelectedListItems();
         String[] availableColumns = dualList.getAvailableListItems();
@@ -620,7 +621,7 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
     /**
      * Handle the combo box with data.
-     * 
+     *
      * @param entries
      *            true if data in the combo box.
      */

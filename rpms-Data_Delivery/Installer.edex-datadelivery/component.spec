@@ -18,6 +18,13 @@ Distribution: N/A
 Vendor: Raytheon
 Packager: %{_build_site}
 
+#######################################################
+# Added since lib/plugins are exported in OSGI format
+#  and lib/dependencies are not resulting in yum being
+#  unable to find FOSS ogsi(*) requirements.
+#######################################################
+AutoReq: no
+
 provides: awips2-edex-datadelivery
 requires: awips2
 requires: awips2-edex-base
@@ -47,31 +54,12 @@ mkdir -p %{_build_root}
 if [ $? -ne 0 ]; then
    exit 1
 fi
-# prepare the init.d directory path
-mkdir -p %{_build_root}/etc/init.d
-if [ $? -ne 0 ]; then
-   exit 1
-fi
 
 unzip %{_baseline_workspace}/build.edex/edex/dist/edex-datadelivery.zip \
    -d %{_build_root}
 if [ $? -ne 0 ]; then
    exit 1
 fi
-
-# include the init.d script
-INSTALLER_RPM="%{_baseline_workspace}/rpms-Data_Delivery/"
-EDEX_DATADELIVERY="${INSTALLER_RPM}/Installer.edex-datadelivery"
-cp -v ${EDEX_DATADELIVERY}/scripts/init.d/* \
-   %{_build_root}/etc/init.d
-if [ $? -ne 0 ]; then
-   exit 1
-fi
-# rename the script to prevent naming conflicts during installation
-pushd . > /dev/null 2>&1
-cd %{_build_root}/etc/init.d
-mv edexServiceList edexServiceList-datadelivery
-popd > /dev/null 2>&1
 
 #add central registry script
 mkdir -p %{_build_root}/awips2/edex/bin/
@@ -93,17 +81,26 @@ fi
 
 %pre
 %post
-# replace the service list script with the datadelivery service list script
-if [ -f /etc/init.d/edexServiceList ]; then
-   mv /etc/init.d/edexServiceList /etc/init.d/edexServiceList.orig
-   if [ $? -ne 0 ]; then
-      exit 1
-   fi
+
+#add services to the edex service list
+LIST_FILE=/awips2/etc/edexServiceList
+DD_SERVICES=(registry)
+
+if [ -f $LIST_FILE ]; then
+   source $LIST_FILE
+
+   for service in ${DD_SERVICES[*]}; do
+       if [[ ! ${SERVICES[@]} =~ $service ]]; then
+           SERVICES=(${SERVICES[@]} $service)
+       fi
+   done
+
+else
+   SERVICES=$DD_SERVICES
 fi
-cp /etc/init.d/edexServiceList-datadelivery /etc/init.d/edexServiceList
-if [ $? -ne 0 ]; then
-   exit 1
-fi
+
+echo "#list generated on $(date)" > $LIST_FILE
+echo "export SERVICES=(${SERVICES[@]})" >> $LIST_FILE
 
 #change date stamp of utility files
 UTILITY=/awips2/edex/data/utility
@@ -120,12 +117,22 @@ fi
 if [ "${1}" = "1" ]; then
    exit 0
 fi
-# restore the original service list script with the datadelivery service list script
-if [ -f /etc/init.d/edexServiceList.orig ]; then
-   mv /etc/init.d/edexServiceList.orig /etc/init.d/edexServiceList
-   if [ $? -ne 0 ]; then
-      exit 1
-   fi
+
+#remove DD services from the service list
+LIST_FILE=/awips2/etc/edexServiceList
+DD_SERVICES=(registry)
+
+if [ -f $LIST_FILE ]; then
+   source $LIST_FILE
+
+   for service in ${DD_SERVICES[*]}; do
+       if [[ ${SERVICES[@]} =~ $service ]]; then
+           SERVICES=(${SERVICES[@]/$service})
+       fi
+   done
+
+   echo "#list generated on $(date)" > $LIST_FILE
+   echo "export SERVICES=(${SERVICES[@]})" >> $LIST_FILE
 fi
 
 %postun
@@ -135,10 +142,5 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files
 %defattr(644,awips,fxalpha,755)
-%dir /awips2
-%dir /awips2/edex
 /awips2/edex/*
-%dir /awips2/edex/bin
 %attr(744, -, -) /awips2/edex/bin/centralRegistryProviderCredentials.sh
-
-%attr(744,root,root) /etc/init.d/*
