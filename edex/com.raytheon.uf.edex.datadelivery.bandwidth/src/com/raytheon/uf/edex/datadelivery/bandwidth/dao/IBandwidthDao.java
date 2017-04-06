@@ -43,15 +43,18 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 23, 2012 1286       djohnson     Initial creation
- * Jun 03, 2013 2038       djohnson     Add method to get subscription retrievals by provider, dataset, and status.
- * Jun 13, 2013 2095       djohnson     Implement ability to store a collection of subscriptions.
- * Jun 24, 2013 2106       djohnson     Add more methods.
- * Jul 18, 2013 1653       mpduff       Added getSubscriptionStatusSummary.
- * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 23, 2012  1286     djohnson  Initial creation
+ * Jun 03, 2013  2038     djohnson  Add method to get subscription retrievals by
+ *                                  provider, dataset, and status.
+ * Jun 13, 2013  2095     djohnson  Implement ability to store a collection of
+ *                                  subscriptions.
+ * Jun 24, 2013  2106     djohnson  Add more methods.
+ * Jul 18, 2013  1653     mpduff    Added getSubscriptionStatusSummary.
+ * Dec 17, 2013  2636     bgonzale  Added method to get a BandwidthAllocation.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
@@ -325,7 +328,7 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      * @return A newly created and persisted BandwidthDataSetUpdate Object.
      */
     BandwidthDataSetUpdate newBandwidthDataSetUpdate(
-            DataSetMetaData<T> dataSetMetaData);
+            DataSetMetaData<T, C> dataSetMetaData);
 
     /**
      * Create a new BandwidthSubscription Object based on the Subscription and
@@ -354,7 +357,8 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      * @return A List of SubscriptionRetrievals that has the specified
      *         subscriptionId.
      */
-    List<SubscriptionRetrieval> querySubscriptionRetrievals(long subscriptionId);
+    List<SubscriptionRetrieval> querySubscriptionRetrievals(
+            long subscriptionId);
 
     /**
      * Get {@link SubscriptionRetrieval}s for the specific

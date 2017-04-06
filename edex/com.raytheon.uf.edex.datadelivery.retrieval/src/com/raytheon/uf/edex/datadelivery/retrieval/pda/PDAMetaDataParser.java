@@ -93,6 +93,7 @@ import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
  * Aug 25, 2016  5752     tjensen   Change MetaData date to use start instead of
  *                                  create
  * Jan 27, 2017  6089     tjensen   Update to work with pipe delimited metadata
+ * Apr 05, 2017  1045     tjensen   Update for moving datasets
  * 
  * </pre>
  * 
@@ -127,7 +128,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     private static final String DEBUG = "DEBUG";
 
     /** debug state */
-    protected Boolean debug = false;
+    protected boolean debug = false;
 
     public PDAMetaDataParser() {
         serviceConfig = HarvesterServiceManager.getInstance()
@@ -141,7 +142,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
      * Non impl in PDA
      */
     @Override
-    public List<DataSetMetaData<?>> parseMetaData(Provider provider,
+    public List<DataSetMetaData<?, ?>> parseMetaData(Provider provider,
             BriefRecordType record, Collection collection,
             String dataDateFormat) {
         throw new UnsupportedOperationException(
@@ -155,6 +156,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         Map<String, String> paramMap = null;
 
         Date arrivalTime = TimeUtil.newGmtCalendar().getTime();
+        String dsName = null;
         // Geo coverage of information
         Coverage coverage = null;
         // extract time information for record
@@ -173,7 +175,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         String metaDataURL = provider.getConnection().getUrl() + "/"
                 + relativeDataURL;
 
-        if (debug == true) {
+        if (debug) {
             statusHandler.info("metaDataID: " + metaDataID);
             statusHandler.info("relativeURL: " + relativeDataURL);
             statusHandler.info("metaDataURL: " + metaDataURL);
@@ -199,6 +201,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                     // failure return
                     return;
                 }
+                dsName = paramMap.get(DATASET_NAME);
 
                 // Only store the metadata Id itself, not the whole field
                 String newId = paramMap.get("metadataId");
@@ -208,17 +211,15 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
                 // Lookup for coverage information
                 String polygonPoints = paramMap.get("polygonPoints");
-                String crs = paramMap.get("crs");
-                if (polygonPoints != null && !polygonPoints.equals("")
-                        && crs != null && !crs.equals("")) {
+                if (polygonPoints != null && !("".equals(polygonPoints))) {
                     try {
-                        coverage = getCoverage(polygonPoints, crs);
+                        coverage = getCoverage(polygonPoints);
                     } catch (MalformedDataException e) {
                         statusHandler.error("Invalid Polygon data", e);
                     }
                 } else {
-                    statusHandler.warn("Geometry missing for dataset '"
-                            + paramMap.get(DATASET_NAME) + "'");
+                    statusHandler.warn(
+                            "Geometry missing for dataset '" + dsName + "'");
                 }
             } else {
                 // If not, extract the metadata from the title
@@ -227,10 +228,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                     paramMap = extractor
                             .extractMetaDataFromTitle(relativeDataURL);
                 } catch (MetaDataExtractionException e) {
-                    // Don't need to print a stack trace for this.
                     statusHandler.error("MetaData extraction error on "
-                            + relativeDataURL + ". Caused by: "
-                            + e.getLocalizedMessage());
+                            + relativeDataURL + ".", e);
                     // failure return
                     return;
                 } catch (Exception e) {
@@ -239,6 +238,8 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                     // failure return
                     return;
                 }
+                dsName = paramMap.get(DATASET_NAME);
+
                 // set the dateFormat to be for this pattern
                 MetaDataPattern mdpt = extractor
                         .getMetaDataPattern("RECORD_TITLE");
@@ -250,14 +251,13 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                             record.getBoundingBox().get(0).getValue());
                 } else {
                     statusHandler.warn("Bounding box is empty for dataset '"
-                            + paramMap.get(DATASET_NAME) + "'");
+                            + dsName + "'");
                 }
             }
 
             // Common regardless of extraction method
             if ("true".equals(paramMap.get("ignoreData"))) {
-                statusHandler.info("Skipping DataSet '"
-                        + paramMap.get(DATASET_NAME) + "'");
+                statusHandler.info("Skipping DataSet '" + dsName + "'");
                 return;
             }
             setDefaultParams(paramMap);
@@ -276,25 +276,27 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                 return;
             }
 
+            String providerName = provider.getName();
+            boolean isMoving = getIsMovingFromConfig(dsName, providerName);
+
             /**
              * This portion of the MetaData parser is only used when a coverage
              * exists.
              */
             if (coverage != null) {
 
-                statusHandler.info("Preparing to store DataSet: "
-                        + paramMap.get(DATASET_NAME));
+                statusHandler.info("Preparing to store DataSet: " + dsName);
                 PDADataSet pdaDataSet = new PDADataSet();
                 pdaDataSet.setCollectionName(paramMap.get(COLLECTION_NAME));
-                pdaDataSet.setDataSetName(paramMap.get(DATASET_NAME));
-                pdaDataSet.setProviderName(provider.getName());
+                pdaDataSet.setDataSetName(dsName);
+                pdaDataSet.setProviderName(providerName);
                 pdaDataSet.setDataSetType(DataType.PDA);
                 pdaDataSet.setTime(time);
                 pdaDataSet.setArrivalTime(arrivalTime.getTime());
                 // there is only one parameter per briefRecord at this point
                 Map<String, Parameter> parameters = getParameters(
                         paramMap.get(PARAM_NAME), paramMap.get(COLLECTION_NAME),
-                        provider.getName(), paramMap.get(UNITS),
+                        providerName, paramMap.get(UNITS),
                         paramMap.get(FILL_VALUE), paramMap.get(MISSING_VALUE));
                 pdaDataSet.setParameters(parameters);
                 // set the coverage
@@ -304,10 +306,15 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                     storeParameter(parm.getValue());
                 }
 
+                pdaDataSet.applyInfoFromConfig(isMoving,
+                        getParentBoundsFromConfig(dsName, providerName,
+                                coverage.getEnvelope()
+                                        .getCoordinateReferenceSystem()),
+                        getSizeEstFromConfig(dsName, providerName));
+
                 storeDataSet(pdaDataSet);
             } else {
-                statusHandler.warn(
-                        "Coverage is null for: " + paramMap.get(DATASET_NAME));
+                statusHandler.warn("Coverage is null for: " + dsName);
             }
 
             /*
@@ -323,10 +330,21 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                         paramMap.get(COLLECTION_NAME),
                         time.getStart().getTime()));
                 pdadsmd.setTime(time);
-                pdadsmd.setDataSetName(paramMap.get(DATASET_NAME));
+                pdadsmd.setDataSetName(dsName);
                 pdadsmd.setDataSetDescription(metaDataID + " " + DATASET_NAME);
                 pdadsmd.setDate(idate);
-                pdadsmd.setProviderName(provider.getName());
+                pdadsmd.setProviderName(providerName);
+
+                /*
+                 * If this is a moving dataset, save the coverage for this
+                 * specific instance of the product in the metadata instead of
+                 * on the dataset itself. Coverage on the dataset will store the
+                 * 'parent coverage' (the outer bounds of where this product can
+                 * be positioned).
+                 */
+                if (isMoving) {
+                    pdadsmd.setInstanceCoverage(coverage);
+                }
                 // In PDA's case it's actually a file name
                 pdadsmd.setUrl(metaDataURL);
 
@@ -345,7 +363,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         paramMap.put(FORMAT, serviceConfig.getConstantValue("DEFAULT_FORMAT"));
     }
 
-    private Coverage getCoverage(String polygonPoints, String crsName)
+    private Coverage getCoverage(String polygonPoints)
             throws MalformedDataException {
         Coverage coverage = new Coverage();
         GeometryFactory factory = new GeometryFactory();
@@ -467,7 +485,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
         try {
 
-            if (debug == true) {
+            if (debug) {
                 statusHandler.info("Parsed LOWER CORNER: "
                         + boundingBoxType.getLowerCorner().get(0) + ", "
                         + boundingBoxType.getLowerCorner().get(1) + " size: "

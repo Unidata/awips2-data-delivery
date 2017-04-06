@@ -25,6 +25,7 @@ import opendap.dap.NoSuchAttributeException;
  * Apr 14, 2015  4400     dhladky   Updated to DAP2 protocol.
  * Feb 16, 2016  5365     dhladky   Interface update.
  * Mar 08, 2017  6089     tjensen   Drop date format from parseMetaData calls
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
@@ -41,14 +42,14 @@ public interface IParseMetaData<O extends Object> {
      * @param dataSet
      */
     @SuppressWarnings("rawtypes")
-    void storeMetaData(List<DataSetMetaData<?>> metaDatas, DataSet dataSet);
+    void storeMetaData(List<DataSetMetaData<?, ?>> metaDatas, DataSet dataSet);
 
     /**
      * Common singular store method
      * 
      * @param metaData
      */
-    void storeMetaData(final DataSetMetaData<?> metaData);
+    void storeMetaData(final DataSetMetaData<?, ?> metaData);
 
     /**
      * Set the dataset name in the registry
@@ -91,9 +92,9 @@ public interface IParseMetaData<O extends Object> {
      * @return
      * @throws NoSuchAttributeException
      */
-    List<DataSetMetaData<?>> parseMetaData(Provider provider, O object,
+    List<DataSetMetaData<?, ?>> parseMetaData(Provider provider, O object,
             Collection collection, String dataDateFormat)
-                    throws NoSuchAttributeException;
+            throws NoSuchAttributeException;
 
     /**
      * OGC interface for metadata parsing

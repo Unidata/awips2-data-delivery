@@ -3,19 +3,19 @@ package com.raytheon.uf.common.datadelivery.registry;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,7 +29,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.geospatial.adapter.ReferencedEnvelopeAdapter;
@@ -40,11 +39,11 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Coverage XML
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jan 17, 2011  191      dhladky   Initial creation
@@ -52,9 +51,10 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  referenced envelopes.
  * Jan 15, 2014  2678     bgonzale  Added XmlRootElement annotation.
  * Aug 02, 2016  5752     tjensen   Added equals()
- * 
+ * Apr 10, 2017  1045     tjensen   Add copy constructor
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
@@ -65,13 +65,17 @@ import com.vividsolutions.jts.geom.Coordinate;
 @XmlSeeAlso({ GriddedCoverage.class, LatLonGridCoverage.class })
 public class Coverage implements Serializable {
 
-    /**
-	 * 
-	 */
     private static final long serialVersionUID = -4989602744566078018L;
 
     public Coverage() {
 
+    }
+
+    public Coverage(Coverage baseCov) {
+        if (baseCov != null) {
+            this.setEnvelope(baseCov.getEnvelope());
+            this.setRequestEnvelope(baseCov.getRequestEnvelope());
+        }
     }
 
     /**
@@ -115,7 +119,7 @@ public class Coverage implements Serializable {
 
     /**
      * Get the subset upper left coordinate
-     * 
+     *
      * @return The subset upper left coordinate
      */
     public Coordinate getRequestUpperLeft() {
@@ -127,7 +131,7 @@ public class Coverage implements Serializable {
 
     /**
      * Get the subset lower right coordinate
-     * 
+     *
      * @return The subset lower right coordinate
      */
     public Coordinate getRequestLowerRight() {
@@ -139,7 +143,7 @@ public class Coverage implements Serializable {
 
     /**
      * Dataset upper left
-     * 
+     *
      * @return dataset upper left coordinate
      */
     public Coordinate getUpperLeft() {
@@ -151,7 +155,7 @@ public class Coverage implements Serializable {
 
     /**
      * Dataset Lower Right
-     * 
+     *
      * @return dataset lower right coordinate
      */
     public Coordinate getLowerRight() {
@@ -162,15 +166,42 @@ public class Coverage implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                + ((envelope == null) ? 0 : envelope.hashCode());
+        result = prime * result
+                + ((requestEnvelope == null) ? 0 : requestEnvelope.hashCode());
+        return result;
+    }
+
+    @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Coverage) {
-            Coverage other = (Coverage) obj;
-            EqualsBuilder eqBuilder = new EqualsBuilder();
-            eqBuilder.append(this.getEnvelope(), other.getEnvelope());
-            eqBuilder.append(this.getRequestEnvelope(),
-                    other.getRequestEnvelope());
-            return eqBuilder.isEquals();
+        if (this == obj) {
+            return true;
         }
-        return super.equals(obj);
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Coverage other = (Coverage) obj;
+        if (envelope == null) {
+            if (other.envelope != null) {
+                return false;
+            }
+        } else if (!envelope.equals(other.envelope)) {
+            return false;
+        }
+        if (requestEnvelope == null) {
+            if (other.requestEnvelope != null) {
+                return false;
+            }
+        } else if (!requestEnvelope.equals(other.requestEnvelope)) {
+            return false;
+        }
+        return true;
     }
 }

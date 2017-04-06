@@ -51,11 +51,12 @@ import com.raytheon.uf.edex.ogc.common.interfaces.IWCSMetaData;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 25, 2013            bclement     Initial creation
- * Aug 18, 2013  #2097     dhladky      Adapted to AWIPS
- * Jan 13, 2014  #2679     dhladky      Multiple layers
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------------
+ * Jul 25, 2013           bclement  Initial creation
+ * Aug 18, 2013  2097     dhladky   Adapted to AWIPS
+ * Jan 13, 2014  2679     dhladky   Multiple layers
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
@@ -73,7 +74,7 @@ public class WcsRegistryCollectorAddon<D extends SimpleDimension, L extends Simp
     protected GriddedDataSetMetaData gdsmd = null;
 
     protected Time time = null;
-    
+
     public WcsRegistryCollectorAddon() {
         super();
     }
@@ -209,7 +210,7 @@ public class WcsRegistryCollectorAddon<D extends SimpleDimension, L extends Simp
     }
 
     @Override
-    protected DataSetMetaData<?> getDataSetMetaData(String layerName) {
+    protected DataSetMetaData<?, ?> getDataSetMetaData(String layerName) {
         // TODO Auto-generated method stub
         return null;
     }

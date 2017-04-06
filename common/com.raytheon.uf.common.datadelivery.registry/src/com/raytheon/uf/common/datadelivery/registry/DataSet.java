@@ -9,9 +9,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.registry.annotations.RegistryObject;
 import com.raytheon.uf.common.registry.annotations.RegistryObjectAssociation;
@@ -29,11 +26,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * DataSet, wraps up the DataSetMetaData objects.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 28, 2011  218      dhladky   Initial creation
@@ -49,9 +46,10 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jan 23, 2013  2584     dhladky   Versions.
  * Jun 09, 2014  3113     mpduff    Version 1.1 - Add arrivalTime.
  * Nov 16, 2016  5988     tjensen   Added Parameters to equals comparison
- * 
+ * Apr 05, 2017  1045     tjensen   Add information to support moving datasets
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
@@ -69,7 +67,6 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
 
     @XmlAttribute
     @DynamicSerializeElement
-    @SlotAttribute
     protected String collectionName;
 
     @RegistryObjectDescription
@@ -87,7 +84,7 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
     @SlotAttribute
     @SlotAttributeConverter(KeySetSlotConverter.class)
     @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
-    protected Map<String, Parameter> parameters = new HashMap<String, Parameter>();
+    protected Map<String, Parameter> parameters = new HashMap<>();
 
     @XmlElement(name = "coverage")
     @DynamicSerializeElement
@@ -106,7 +103,6 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
 
     @XmlElement
     @DynamicSerializeElement
-    @SlotAttribute
     protected int availabilityOffset;
 
     /**
@@ -115,6 +111,14 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
     @XmlElement
     @DynamicSerializeElement
     protected long arrivalTime;
+
+    @XmlElement
+    @DynamicSerializeElement
+    protected long estimatedSize;
+
+    @XmlElement
+    @DynamicSerializeElement
+    protected boolean moving;
 
     public Map<String, Parameter> getParameters() {
         return parameters;
@@ -172,9 +176,17 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
         return time;
     }
 
+    public long getEstimatedSize() {
+        return estimatedSize;
+    }
+
+    public void setEstimatedSize(long estimatedSize) {
+        this.estimatedSize = estimatedSize;
+    }
+
     /**
      * Retrieve the service type for this instance of DataSet.
-     * 
+     *
      * @return the serviceType
      */
     public abstract ServiceType getServiceType();
@@ -210,38 +222,98 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof DataSet) {
-            @SuppressWarnings("rawtypes")
-            DataSet other = (DataSet) obj;
-            EqualsBuilder eqBuilder = new EqualsBuilder();
-            eqBuilder.append(this.getProviderName(), other.getProviderName());
-            eqBuilder.append(this.getCollectionName(),
-                    other.getCollectionName());
-            eqBuilder.append(this.getDataSetName(), other.getDataSetName());
-            eqBuilder.append(this.getParameters(), other.getParameters());
-            return eqBuilder.isEquals();
-        }
-        return super.equals(obj);
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                + ((collectionName == null) ? 0 : collectionName.hashCode());
+        result = prime * result
+                + ((dataSetName == null) ? 0 : dataSetName.hashCode());
+        result = prime * result
+                + ((dataSetType == null) ? 0 : dataSetType.hashCode());
+        result = prime * result + (moving ? 1231 : 1237);
+        result = prime * result
+                + ((parameters == null) ? 0 : parameters.hashCode());
+        result = prime * result
+                + ((providerName == null) ? 0 : providerName.hashCode());
+        return result;
     }
 
     @Override
-    public int hashCode() {
-        HashCodeBuilder hcBuilder = new HashCodeBuilder();
-        hcBuilder.append(this.getProviderName());
-        hcBuilder.append(this.getCollectionName());
-        hcBuilder.append(this.getDataSetName());
-        return hcBuilder.toHashCode();
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        DataSet other = (DataSet) obj;
+        if (collectionName == null) {
+            if (other.collectionName != null) {
+                return false;
+            }
+        } else if (!collectionName.equals(other.collectionName)) {
+            return false;
+        }
+        if (dataSetName == null) {
+            if (other.dataSetName != null) {
+                return false;
+            }
+        } else if (!dataSetName.equals(other.dataSetName)) {
+            return false;
+        }
+        if (dataSetType != other.dataSetType) {
+            return false;
+        }
+        if (moving != other.moving) {
+            return false;
+        }
+        if (parameters == null) {
+            if (other.parameters != null) {
+                return false;
+            }
+        } else if (!parameters.equals(other.parameters)) {
+            return false;
+        }
+        if (providerName == null) {
+            if (other.providerName != null) {
+                return false;
+            }
+        } else if (!providerName.equals(other.providerName)) {
+            return false;
+        }
+        return true;
     }
 
     /**
      * Combine the important information from another dataset into this one.
      * Used when a data set update is occuring.
-     * 
+     *
      * @param result
      *            the combined dataset
      */
     public void combine(DataSet<T, C> toCombine) {
         this.getParameters().putAll(toCombine.getParameters());
+    }
+
+    public boolean isMoving() {
+        return moving;
+    }
+
+    public void setMoving(boolean isMoving) {
+        this.moving = isMoving;
+    }
+
+    public void applyInfoFromConfig(boolean isMoving, C parentCov,
+            long estSize) {
+        setMoving(isMoving);
+        if (isMoving) {
+            setCoverage(parentCov);
+            setEstimatedSize(estSize);
+        }
+
     }
 }

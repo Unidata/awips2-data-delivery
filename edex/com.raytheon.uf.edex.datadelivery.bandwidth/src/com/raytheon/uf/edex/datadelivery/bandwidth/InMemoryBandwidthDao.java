@@ -57,49 +57,57 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 24, 2012 1286       djohnson     Initial creation
- * Dec 12, 2012 1286       djohnson     Use concurrent lists to avoid concurrent modification exceptions.
- * Jun 03, 2013 2038       djohnson     Add method to get subscription retrievals by provider, dataset, and status.
- * Jun 13, 2013 2095       djohnson     Implement ability to store a collection of subscriptions.
- * Jul 09, 2013 2106       djohnson     Rather than copy all elements and remove unnecessary, just copy the ones that apply.
- * Jul 11, 2013 2106       djohnson     Use BandwidthSubscription instead of Subscription.
- * Jul 18, 2013 1653       mpduff       Implemented method.
- * Oct 2,  2013 1797       dhladky      generics
- * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
- * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 24, 2012  1286     djohnson  Initial creation
+ * Dec 12, 2012  1286     djohnson  Use concurrent lists to avoid concurrent
+ *                                  modification exceptions.
+ * Jun 03, 2013  2038     djohnson  Add method to get subscription retrievals by
+ *                                  provider, dataset, and status.
+ * Jun 13, 2013  2095     djohnson  Implement ability to store a collection of
+ *                                  subscriptions.
+ * Jul 09, 2013  2106     djohnson  Rather than copy all elements and remove
+ *                                  unnecessary, just copy the ones that apply.
+ * Jul 11, 2013  2106     djohnson  Use BandwidthSubscription instead of
+ *                                  Subscription.
+ * Jul 18, 2013  1653     mpduff    Implemented method.
+ * Oct 02, 2013  1797     dhladky   generics
+ * Dec 17, 2013  2636     bgonzale  Added method to get a BandwidthAllocation.
+ * Dec 09, 2014  3550     ccody     Add method to get BandwidthAllocation list
+ *                                  by network and Bandwidth Bucked Id values
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
-        IBandwidthDao<T, C> {
+class InMemoryBandwidthDao<T extends Time, C extends Coverage>
+        implements IBandwidthDao<T, C> {
 
     private static final AtomicLong idSequence = new AtomicLong(1);
 
     // Explicitly ConcurrentLinkedQueue so we can use methods that require that
     // type to be concurrently safe
-    private final ConcurrentLinkedQueue<BandwidthAllocation> bandwidthAllocations = new ConcurrentLinkedQueue<BandwidthAllocation>();
+    private final ConcurrentLinkedQueue<BandwidthAllocation> bandwidthAllocations = new ConcurrentLinkedQueue<>();
 
-    private final ConcurrentLinkedQueue<BandwidthSubscription> bandwidthSubscriptions = new ConcurrentLinkedQueue<BandwidthSubscription>();
+    private final ConcurrentLinkedQueue<BandwidthSubscription> bandwidthSubscriptions = new ConcurrentLinkedQueue<>();
 
-    private final ConcurrentLinkedQueue<BandwidthDataSetUpdate> bandwidthDataSetUpdates = new ConcurrentLinkedQueue<BandwidthDataSetUpdate>();
+    private final ConcurrentLinkedQueue<BandwidthDataSetUpdate> bandwidthDataSetUpdates = new ConcurrentLinkedQueue<>();
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<BandwidthAllocation> getBandwidthAllocations(Long subscriptionId) {
-        List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
+    public List<BandwidthAllocation> getBandwidthAllocations(
+            Long subscriptionId) {
+        List<BandwidthAllocation> allocations = new ArrayList<>();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if ((current instanceof SubscriptionRetrieval)
-                    && ((SubscriptionRetrieval) current)
-                            .getBandwidthSubscription().getId() == subscriptionId) {
+                    && subscriptionId.equals(((SubscriptionRetrieval) current)
+                            .getBandwidthSubscription().getId())) {
                 allocations.add(current.copy());
             }
         }
@@ -112,7 +120,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network) {
-        List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
+        List<BandwidthAllocation> allocations = new ArrayList<>();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if (current.getNetwork() == network) {
@@ -129,7 +137,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network,
             List<Long> bandwidthBucketIdList) {
-        List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
+        List<BandwidthAllocation> allocations = new ArrayList<>();
 
         if (bandwidthBucketIdList == null) {
             return (allocations);
@@ -138,8 +146,8 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
         for (BandwidthAllocation current : bandwidthAllocations) {
             long bandwidthBucketId = current.getBandwidthBucket();
             Long bandwidthBucketIdLong = Long.valueOf(bandwidthBucketId);
-            if ((current.getNetwork() == network)
-                    && (bandwidthBucketIdList.contains(bandwidthBucketIdLong))) {
+            if ((current.getNetwork() == network) && (bandwidthBucketIdList
+                    .contains(bandwidthBucketIdLong))) {
                 allocations.add(current.copy());
             }
         }
@@ -153,7 +161,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     @Override
     public List<BandwidthAllocation> getBandwidthAllocationsInState(
             RetrievalStatus state) {
-        List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
+        List<BandwidthAllocation> allocations = new ArrayList<>();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if (state.equals(current.getStatus())) {
@@ -170,7 +178,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     @Override
     public List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(
             String providerName, String dataSetName) {
-        List<BandwidthDataSetUpdate> results = new ArrayList<BandwidthDataSetUpdate>();
+        List<BandwidthDataSetUpdate> results = new ArrayList<>();
 
         for (BandwidthDataSetUpdate current : bandwidthDataSetUpdates) {
             if (providerName.equals(current.getProviderName())
@@ -211,7 +219,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     public List<BandwidthAllocation> getDeferred(Network network,
             Date endTime) {
 
-        List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
+        List<BandwidthAllocation> allocations = new ArrayList<>();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if (network == current.getNetwork()
@@ -243,9 +251,11 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     @Override
     public BandwidthSubscription getBandwidthSubscription(String registryId,
             Date baseReferenceTime) {
-        List<BandwidthSubscription> bandwidthSubscriptions = getBandwidthSubscriptionByRegistryId(registryId);
+        List<BandwidthSubscription> bandwidthSubscriptions = getBandwidthSubscriptionByRegistryId(
+                registryId);
         for (BandwidthSubscription bandwidthSubscription : bandwidthSubscriptions) {
-            if (bandwidthSubscription.getBaseReferenceTime() == baseReferenceTime) {
+            if (bandwidthSubscription.getBaseReferenceTime()
+                    .equals(baseReferenceTime)) {
                 return bandwidthSubscription;
             }
         }
@@ -378,7 +388,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public BandwidthDataSetUpdate newBandwidthDataSetUpdate(
-            DataSetMetaData<T> dataSetMetaData) {
+            DataSetMetaData<T, C> dataSetMetaData) {
         BandwidthDataSetUpdate entity = BandwidthUtil
                 .newDataSetMetaDataDao(dataSetMetaData);
         entity.setIdentifier(getNextId());
@@ -409,12 +419,13 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     @Override
     public List<SubscriptionRetrieval> querySubscriptionRetrievals(
             long subscriptionId) {
-        List<SubscriptionRetrieval> results = new ArrayList<SubscriptionRetrieval>();
+        List<SubscriptionRetrieval> results = new ArrayList<>();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if (current instanceof SubscriptionRetrieval) {
                 final SubscriptionRetrieval subscriptionRetrieval = (SubscriptionRetrieval) current;
-                if (subscriptionRetrieval.getBandwidthSubscription().getId() == subscriptionId) {
+                if (subscriptionRetrieval.getBandwidthSubscription()
+                        .getId() == subscriptionId) {
                     results.add(subscriptionRetrieval.copy());
                 }
             }
@@ -470,7 +481,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     /**
      * @return
      */
-    private long getNextId() {
+    private static long getNextId() {
         return idSequence.getAndIncrement();
     }
 
@@ -526,7 +537,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
         collection.add(obj);
     }
 
-    private <M extends IPersistableDataObject<Long>> void removeFromCollection(
+    private static <M extends IPersistableDataObject<Long>> void removeFromCollection(
             ConcurrentLinkedQueue<M> collection, M obj) {
         for (Iterator<M> iter = collection.iterator(); iter.hasNext();) {
             M old = iter.next();
@@ -592,8 +603,8 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
                 final Date subRetrievalStartTime = subscriptionRetrieval
                         .getStartTime();
                 final boolean withinTimeLimits = !(earliestDate
-                        .after(subRetrievalStartTime) || latestDate
-                        .before(subRetrievalStartTime));
+                        .after(subRetrievalStartTime)
+                        || latestDate.before(subRetrievalStartTime));
 
                 if (provider.equals(subscription.getProvider())
                         && dataSetName.equals(subscription.getDataSetName())
@@ -623,8 +634,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
      */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals() {
-        List<SubscriptionRetrieval> results = new ArrayList<SubscriptionRetrieval>(
-                bandwidthAllocations.size());
+        List<SubscriptionRetrieval> results = new ArrayList<>();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if (current instanceof SubscriptionRetrieval) {
@@ -641,7 +651,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage> implements
     public List<BandwidthAllocation> getBandwidthAllocationsForNetworkAndBucketStartTime(
             Network network, long bucketStartTime) {
 
-        List<BandwidthAllocation> allocations = new ArrayList<BandwidthAllocation>();
+        List<BandwidthAllocation> allocations = new ArrayList<>();
 
         for (BandwidthAllocation current : bandwidthAllocations) {
             if (current.getNetwork() == network

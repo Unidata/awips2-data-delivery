@@ -66,17 +66,19 @@ import com.vividsolutions.jts.geom.Envelope;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 23, 2013            bclement     Initial creation
- * Aug 08, 2013 2097       dhladky      Made operational
- * Aug 30, 2013 2098       dhladky      Improved
- * Sept 2, 2013 2098       dhladky      Updated how times are managed.
- * Sept 30, 2013 1797      dhladky      Generics
- * Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
- * Nov 6,  2013 2525       dhladky      Stop appending "/wfs"
- * Jan 13, 2014 2679       dhladky      Multiple ingest layer windows for a single request window.
- * Apr 13, 2014 3012       dhladky      Cleaned up.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 23, 2013           bclement  Initial creation
+ * Aug 08, 2013  2097     dhladky   Made operational
+ * Aug 30, 2013  2098     dhladky   Improved
+ * Sep 02, 2013  2098     dhladky   Updated how times are managed.
+ * Sep 30, 2013  1797     dhladky   Generics
+ * Oct 10, 2013  1797     bgonzale  Refactored registry Time objects.
+ * Nov 06, 2013  2525     dhladky   Stop appending "/wfs"
+ * Jan 13, 2014  2679     dhladky   Multiple ingest layer windows for a single
+ *                                  request window.
+ * Apr 13, 2014  3012     dhladky   Cleaned up.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
@@ -86,39 +88,31 @@ import com.vividsolutions.jts.geom.Envelope;
 public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L extends SimpleLayer<D>, R extends PluginDataObject>
         extends RegistryCollectorAddon<D, L, R> implements IWFSMetaData<L> {
 
-    protected final IUFStatusHandler statusHandler = UFStatus.getHandler(this
-            .getClass());
+    protected final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(this.getClass());
 
-    protected final Map<String, WFSPointDataSet> wpds = new HashMap<String, WFSPointDataSet>(1);
+    protected final Map<String, WFSPointDataSet> wpds = new HashMap<>(2);
 
-    protected final Map<String, PointDataSetMetaData> pdsmds = new HashMap<String, PointDataSetMetaData>(1);
+    protected final Map<String, PointDataSetMetaData> pdsmds = new HashMap<>(2);
 
-    protected final Map<String, PointTime> times = new HashMap<String, PointTime>(1);
+    protected final Map<String, PointTime> times = new HashMap<>(2);
 
-    protected final Map<String, Coverage> coverages = new HashMap<String, Coverage>(1);
+    protected final Map<String, Coverage> coverages = new HashMap<>(2);
 
-    protected final Map<String, L> layers = new HashMap<String, L>(1);
-        
-    protected final Map<String, Date> previousTimes = new HashMap<String, Date>(1);
-    
+    protected final Map<String, L> layers = new HashMap<>(2);
+
+    protected final Map<String, Date> previousTimes = new HashMap<>(2);
+
     protected int roundCutoff = 45;
-    
-    /**  Used to identify breaking character for URL and unique naming key **/
+
+    /** Used to identify breaking character for URL and unique naming key **/
     public static final String UNIQUE_ID_SEPARATOR = ",";
 
     public WfsRegistryCollectorAddon() {
-        
+
         super();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.ogc.common.db.CollectorAddon#onCollect(com.raytheon
-     * .uf.edex.ogc.common.db.SimpleLayer,
-     * com.raytheon.uf.common.dataplugin.PluginDataObject)
-     */
     @Override
     public void onCollect(L layer, R record) {
         ensureLayer(layer);
@@ -190,7 +184,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
 
                 @Override
                 public Set<SimpleDimension> getDimensions() {
-                    return new TreeSet<SimpleDimension>();
+                    return new TreeSet<>();
                 }
             };
         }
@@ -201,7 +195,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
      */
     protected void initializeLayer(L layer) {
         synchronized (layer) {
-            
+
             Coverage coverage = getCoverage(layer.getName());
             Coordinate lowerRight = coverage.getLowerRight();
             Coordinate upperLeft = coverage.getUpperLeft();
@@ -237,14 +231,14 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
 
     @Override
     public WFSPointDataSet getDataSet(String layerName) {
-        
+
         WFSPointDataSet wpd = wpds.get(layerName);
-        
+
         if (wpd == null) {
             wpd = new WFSPointDataSet();
             wpds.put(layerName, wpd);
         }
-      
+
         return wpd;
     }
 
@@ -256,7 +250,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
     protected void setTime(L layer) {
         synchronized (layer) {
             // always creating a new time object for transfer
-            List<Date> timeList = new ArrayList<Date>();
+            List<Date> timeList = new ArrayList<>();
             // for dataset we just create a place holder object
             // DataSetMetaData gets the actual times
             if (layer.getTimes() != null) {
@@ -273,9 +267,9 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
                 time.setFormat(dateFormat.toPattern());
                 if (!timeList.isEmpty()) {
-                    
+
                     Date previousTime = previousTimes.get(layer.getName());
-                    
+
                     if (previousTime == null) {
                         time.setStart(timeList.get(0));
                     } else {
@@ -306,14 +300,14 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
      * @return PointTime
      */
     protected PointTime getTime(String layerName) {
-        
+
         PointTime time = times.get(layerName);
-        
+
         if (time == null) {
-           time = new PointTime();
-           times.put(layerName, time);
+            time = new PointTime();
+            times.put(layerName, time);
         }
-        
+
         return time;
     }
 
@@ -340,14 +334,14 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
 
     @Override
     public PointDataSetMetaData getDataSetMetaData(String layerName) {
-        
+
         PointDataSetMetaData pdsmd = pdsmds.get(layerName);
-        
+
         if (pdsmd == null) {
             pdsmd = new PointDataSetMetaData();
             pdsmds.put(layerName, pdsmd);
         }
-        
+
         return pdsmd;
     }
 
@@ -362,19 +356,20 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
             sb.append(layer.getTargetMiny()).append(" : ");
             sb.append(layer.getTargetMinx()).append(", ");
             sb.append(layer.getTargetMaxy());
-            
+
             PointDataSetMetaData pdsmd = getDataSetMetaData(layer.getName());
             pdsmd.setDataSetDescription(sb.toString());
             pdsmd.setDataSetName(layer.getName());
             pdsmd.setProviderName(getConfiguration().getProvider().getName());
             StringBuilder sb2 = new StringBuilder();
-            sb2.append(getConfiguration().getProvider().getConnection()
-                    .getUrl());
+            sb2.append(
+                    getConfiguration().getProvider().getConnection().getUrl());
             /**
              * this is added to the URL because the URL is what the registry
              * uses as it's unique identifier. All WFS/WCS requests use the same
              * URL, we have to add the dataset name to ensure uniqueness of the
-             * key in the registry.  This is stripped off and discarded in retrieval.
+             * key in the registry. This is stripped off and discarded in
+             * retrieval.
              **/
             sb2.append(UNIQUE_ID_SEPARATOR);
             sb2.append(layer.getName());
@@ -399,7 +394,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
      * @return Coverage
      */
     private Coverage getNewCoverage(String layerName) {
-        
+
         Coverage coverage = new Coverage();
         ConfigLayer configLayer = getAgent().getLayer(layerName);
         Coordinate lowerRight = new Coordinate(configLayer.getMaxx(),
@@ -409,7 +404,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
         ReferencedEnvelope re = EnvelopeUtils.createLatLonEnvelope(lowerRight,
                 upperLeft);
         coverage.setEnvelope(re);
-        
+
         return coverage;
     }
 
@@ -422,15 +417,15 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
      */
     @Override
     protected Coverage getCoverage(String layerName) {
-        
+
         Coverage coverage = coverages.get(layerName);
-        
+
         if (coverage == null) {
-            
+
             coverage = getNewCoverage(layerName);
             coverages.put(layerName, coverage);
         }
-        
+
         return coverage;
     }
 
@@ -455,7 +450,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
             times.put(layer.getName(), new PointTime());
             // harvests the times from the layer
             setTime(layer);
-            
+
             // make sure you populate the metadata
             setDataSetMetaData(layer);
             PointDataSetMetaData data = getDataSetMetaData(layer.getName());
@@ -471,12 +466,10 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
      * Adds the new times to the layers, transmit meta data objects
      */
     public void buildLayerUpdate() {
-  
-        synchronized (layers) {
-            for (String name : layers.keySet()) {
-                // grab each layer to evaluate
-                L layer = layers.get(name);
 
+        synchronized (layers) {
+            // grab each layer to evaluate
+            for (L layer : layers.values()) {
                 try {
                     if (!layer.getTimes().isEmpty()) {
                         sendMetaData(layer);
@@ -484,12 +477,13 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
                                 + ": times: " + layer.getTimes().size());
                         layer.getTimes().clear();
                     } else {
-                        statusHandler.info("No new metadata to update "
-                                + layer.getName());
+                        statusHandler.info(
+                                "No new metadata to update " + layer.getName());
                     }
                 } catch (Exception e) {
-                    statusHandler.error("problem updating " + layer.getName()
-                            + " layer. " + e);
+                    statusHandler.error(
+                            "problem updating " + layer.getName() + " layer. ",
+                            e);
                 }
             }
         }
@@ -524,32 +518,35 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
     }
 
     /**
-     * Marker time for sending back and requesting data
-     * From this date to last will be the next query
+     * Marker time for sending back and requesting data From this date to last
+     * will be the next query
+     * 
      * @return
      */
     public Date getPreviousTime(String layerName) {
-        
+
         Date previous = previousTimes.get(layerName);
         return previous;
     }
 
     /**
      * Sets the marker time for previousDate
+     * 
      * @param layername
      * @param previousTime
      */
     public void setPreviousTime(String layerName, Date previousTime) {
         previousTimes.put(layerName, previousTime);
     }
-    
+
     /**
      * Filter geographically
+     * 
      * @param pdos
      */
     public PluginDataObject[] filter(PluginDataObject[] pdos) {
 
-        Collection<PluginDataObject> withInGeoConstraint = new ArrayList<PluginDataObject>();
+        Collection<PluginDataObject> withInGeoConstraint = new ArrayList<>();
         PluginDataObject[] pdor = null;
 
         for (PluginDataObject record : pdos) {
@@ -573,14 +570,13 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
 
                             if (e.contains(c)) {
                                 withInGeoConstraint.add(record);
-                                // once it is found to be within one, you are done.
+                                // once it is found to be within one, you are
+                                // done.
                                 break;
                             } else {
-                                statusHandler.handle(
-                                        Priority.DEBUG,
+                                statusHandler.handle(Priority.DEBUG,
                                         "Record discarded:  outside of range: "
-                                                + c.x + " "
-                                                + c.y);
+                                                + c.x + " " + c.y);
                             }
                         }
                     }
@@ -595,7 +591,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
 
         return pdor;
     }
-    
+
     @Override
     public String isWithinLayer(R record) {
 

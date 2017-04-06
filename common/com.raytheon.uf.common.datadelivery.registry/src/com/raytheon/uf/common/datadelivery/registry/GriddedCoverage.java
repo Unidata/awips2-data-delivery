@@ -48,13 +48,19 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 31, 2011 191        dhladky     Initial creation
- * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
- * Dec 10, 2012 1259       bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
- * Feb 15, 2013 1543       djohnson    Remove constructor accepting a Coverage.
- * Mar 04, 2015 3959       rjpeter     Update for grid based subgridding.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 31, 2011  191      dhladky   Initial creation
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Feb 15, 2013  1543     djohnson  Remove constructor accepting a Coverage.
+ * Mar 04, 2015  3959     rjpeter   Update for grid based subgridding.
+ * Apr 05, 2017  1045     tjensen   Add Constructor to create GriddedCoverage
+ *                                  from non-GriddedCoverage
+ * 
  * </pre>
  * 
  * @author dhladky
@@ -72,6 +78,10 @@ public class GriddedCoverage extends Coverage implements Serializable {
 
     public GriddedCoverage() {
 
+    }
+
+    public GriddedCoverage(Coverage baseCov) {
+        super(baseCov);
     }
 
     @XmlElement
@@ -192,9 +202,7 @@ public class GriddedCoverage extends Coverage implements Serializable {
             }
 
             return subGC;
-        } catch (TransformException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
-        } catch (GridCoverageException e) {
+        } catch (TransformException | GridCoverageException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
         return null;

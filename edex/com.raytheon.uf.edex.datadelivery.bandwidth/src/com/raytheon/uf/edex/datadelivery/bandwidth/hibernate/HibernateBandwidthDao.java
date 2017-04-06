@@ -53,21 +53,26 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 23, 2012 1286       djohnson     Extracted from BandwidthContextFactory.
- * Feb 07, 2013 1543       djohnson     Moved session management context to CoreDao.
- * Feb 11, 2013 1543       djohnson     Use Spring transactions.
- * Feb 13, 2013 1543       djohnson     Converted into a service, created new DAOs as required.
- * Jun 03, 2013 2038       djohnson     Add method to get subscription retrievals by provider, dataset, and status.
- * Jun 13, 2013 2095       djohnson     Implement ability to store a collection of subscriptions.
- * Jun 24, 2013 2106       djohnson     Implement new methods.
- * Jul 18, 2013 1653       mpduff       Added getSubscriptionStatusSummary.
- * Aug 28, 2013 2290       mpduff       Check for no subscriptions.
- * Oct 2,  2013 1797       dhladky      Generics
- * Dec 17, 2013 2636       bgonzale     Added method to get a BandwidthAllocation.
- * Dec 09, 2014 3550       ccody        Add method to get BandwidthAllocation list by network and Bandwidth Bucked Id values
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 23, 2012  1286     djohnson  Extracted from BandwidthContextFactory.
+ * Feb 07, 2013  1543     djohnson  Moved session management context to CoreDao.
+ * Feb 11, 2013  1543     djohnson  Use Spring transactions.
+ * Feb 13, 2013  1543     djohnson  Converted into a service, created new DAOs
+ *                                  as required.
+ * Jun 03, 2013  2038     djohnson  Add method to get subscription retrievals by
+ *                                  provider, dataset, and status.
+ * Jun 13, 2013  2095     djohnson  Implement ability to store a collection of
+ *                                  subscriptions.
+ * Jun 24, 2013  2106     djohnson  Implement new methods.
+ * Jul 18, 2013  1653     mpduff    Added getSubscriptionStatusSummary.
+ * Aug 28, 2013  2290     mpduff    Check for no subscriptions.
+ * Oct 02, 2013  1797     dhladky   Generics
+ * Dec 17, 2013  2636     bgonzale  Added method to get a BandwidthAllocation.
+ * Dec 09, 2014  3550     ccody     Add method to get BandwidthAllocation list
+ *                                  by network and Bandwidth Bucked Id values
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
@@ -99,7 +104,8 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      * {@inheritDoc}
      */
     @Override
-    public List<BandwidthAllocation> getBandwidthAllocations(Long subscriptionId) {
+    public List<BandwidthAllocation> getBandwidthAllocations(
+            Long subscriptionId) {
         return bandwidthAllocationDao.getBySubscriptionId(subscriptionId);
     }
 
@@ -183,8 +189,8 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
     @Override
     public BandwidthSubscription getBandwidthSubscription(String registryId,
             Date baseReferenceTime) {
-        return bandwidthSubscriptionDao.getByRegistryIdReferenceTime(
-                registryId, baseReferenceTime);
+        return bandwidthSubscriptionDao.getByRegistryIdReferenceTime(registryId,
+                baseReferenceTime);
     }
 
     /**
@@ -278,7 +284,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
      */
     @Override
     public BandwidthDataSetUpdate newBandwidthDataSetUpdate(
-            DataSetMetaData<T> dataSetMetaData) {
+            DataSetMetaData<T, C> dataSetMetaData) {
 
         BandwidthDataSetUpdate entity = BandwidthUtil
                 .newDataSetMetaDataDao(dataSetMetaData);
@@ -584,11 +590,10 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
 
                     });
 
-            summary.setStartTime(subRetrievalList.get(0).getStartTime()
-                    .getTime());
-            summary.setEndTime(subRetrievalList
-                    .get(subRetrievalList.size() - 1).getEndTime()
-                    .getTime());
+            summary.setStartTime(
+                    subRetrievalList.get(0).getStartTime().getTime());
+            summary.setEndTime(subRetrievalList.get(subRetrievalList.size() - 1)
+                    .getEndTime().getTime());
         }
 
         summary.setDataSize(sub.getDataSetSize());

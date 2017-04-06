@@ -59,15 +59,17 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 23, 2013            bclement     Initial creation
- * Aug 08, 2013            dhladky      Made operational
- * Jan 13, 2014  2679      dhladky      multiple layers
- * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
- * Apr 14, 2014  3012      dhladky      Cleaned up.
- * Jun 08, 2014  3141      dhladky      DPA SOAP to central registry comm
- * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 23, 2013           bclement  Initial creation
+ * Aug 08, 2013           dhladky   Made operational
+ * Jan 13, 2014  2679     dhladky   multiple layers
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Apr 14, 2014  3012     dhladky   Cleaned up.
+ * Jun 08, 2014  3141     dhladky   DPA SOAP to central registry comm
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
@@ -104,8 +106,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
             try {
                 this.packageNames = paths.split(pathSeparator);
             } catch (Exception e) {
-                statusHandler.error(
-                        "Couldn't parse Registry Collector JAXB path list: "
+                statusHandler
+                        .error("Couldn't parse Registry Collector JAXB path list: "
                                 + paths, e);
             }
 
@@ -151,7 +153,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
      * @param metaDatas
      * @param dataSet
      */
-    public void storeMetaData(final DataSetMetaData<?> metaData) {
+    public void storeMetaData(final DataSetMetaData<?, ?> metaData) {
 
         DataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
@@ -166,7 +168,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
                     + "] successfully stored in Registry");
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
-                    + description + "] failed to store in Registry");
+                    + description + "] failed to store in Registry", e);
 
         }
     }
@@ -189,8 +191,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         dsn.setParameters(dataSetToStore.getParameters());
 
         try {
-            DataDeliveryHandlers.getDataSetNameHandler().update(
-                    RegistryUtil.registryUser, dsn);
+            DataDeliveryHandlers.getDataSetNameHandler()
+                    .update(RegistryUtil.registryUser, dsn);
             statusHandler.info("DataSetName object store complete, dataset ["
                     + dsn.getDataSetName() + "]");
         } catch (RegistryHandlerException e) {
@@ -215,8 +217,9 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
             storeDataSetName(dataSet);
 
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM, "Dataset [" + dataSetName
-                    + "] failed to store in Registry");
+            statusHandler.handle(Priority.PROBLEM,
+                    "Dataset [" + dataSetName + "] failed to store in Registry",
+                    e);
         }
     }
 
@@ -228,12 +231,11 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     protected void storeProvider(final Provider provider) {
 
         try {
-            DataDeliveryHandlers.getProviderHandler().update(
-                    RegistryUtil.registryUser, provider);
+            DataDeliveryHandlers.getProviderHandler()
+                    .update(RegistryUtil.registryUser, provider);
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Provider [" + provider.getName()
-                            + "] failed to store in Registry");
+            statusHandler.handle(Priority.PROBLEM, "Provider ["
+                    + provider.getName() + "] failed to store in Registry", e);
         }
     }
 
@@ -273,11 +275,12 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     protected void storeParameter(Parameter parameter) {
 
         try {
-            DataDeliveryHandlers.getParameterHandler().update(
-                    RegistryUtil.registryUser, parameter);
+            DataDeliveryHandlers.getParameterHandler()
+                    .update(RegistryUtil.registryUser, parameter);
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
-                    "Failed to store parameter [" + parameter.getName() + "]");
+                    "Failed to store parameter [" + parameter.getName() + "]",
+                    e);
         }
     }
 
@@ -298,7 +301,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     public void setParameters(L layer) {
         synchronized (layer) {
             if (getParameters() == null || getParameters().isEmpty()) {
-                parameters = new HashMap<String, Parameter>();
+                parameters = new HashMap<>();
                 for (Parameter parm : agent.getLayer(layer.getName())
                         .getParameters()) {
                     // place in map
@@ -319,7 +322,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
     protected abstract void setDataSetMetaData(L layer);
 
-    protected abstract DataSetMetaData<?> getDataSetMetaData(String layerName);
+    protected abstract DataSetMetaData<?, ?> getDataSetMetaData(
+            String layerName);
 
     protected abstract DataType getDataType();
 

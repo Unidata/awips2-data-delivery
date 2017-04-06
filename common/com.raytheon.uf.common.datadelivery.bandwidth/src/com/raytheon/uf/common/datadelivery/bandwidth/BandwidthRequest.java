@@ -20,17 +20,20 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 23, 2012 1286       djohnson     Add SW history, move to common plugin.
- * Nov 20, 2012 1286       djohnson     Add PROPOSE_SCHEDULE_SUBSCRIPTION.
- * Dec 06, 2012 1397       djohnson     Add GET_BANDWIDTH_GRAPH_DATA.
- * Jul 18, 2013 1653       mpduff       Add GET_SUBSCRIPTION_STATUS.
- * Oct 2   2013 1797       dhladky      generic attempt
- * Feb 11, 2014 2771       bgonzale     Added GET_DATADELIVERY_ID to RequestTypes.
- * Apr 22, 2014 2992       dhladky      This is not an interface, changed to be correct naming.
- * Nov 19, 2014 3852       dhladky      Resurrected the Unscheduled state.
- * Nov 20, 2014 2749       ccody        Added "propose only" for  Set Avail Bandwidth
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 23, 2012  1286     djohnson  Add SW history, move to common plugin.
+ * Nov 20, 2012  1286     djohnson  Add PROPOSE_SCHEDULE_SUBSCRIPTION.
+ * Dec 06, 2012  1397     djohnson  Add GET_BANDWIDTH_GRAPH_DATA.
+ * Jul 18, 2013  1653     mpduff    Add GET_SUBSCRIPTION_STATUS.
+ * Oct 2   2013  1797     dhladky   generic attempt
+ * Feb 11, 2014  2771     bgonzale  Added GET_DATADELIVERY_ID to RequestTypes.
+ * Apr 22, 2014  2992     dhladky   This is not an interface, changed to be
+ *                                  correct naming.
+ * Nov 19, 2014  3852     dhladky   Resurrected the Unscheduled state.
+ * Nov 20, 2014  2749     ccody     Added "propose only" for  Set Avail
+ *                                  Bandwidth
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * 
  * </pre>
  * 
@@ -38,8 +41,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * @version 1.0
  */
 @DynamicSerialize
-public class BandwidthRequest<T extends Time, C extends Coverage> extends
-        AbstractPrivilegedRequest {
+public class BandwidthRequest<T extends Time, C extends Coverage>
+        extends AbstractPrivilegedRequest {
 
     public static enum RequestType {
         // Get the current retrieval plan for the
@@ -62,7 +65,7 @@ public class BandwidthRequest<T extends Time, C extends Coverage> extends
     private Calendar begin;
 
     @DynamicSerializeElement
-    private DataSetMetaData<T> dataSetMetaData;
+    private DataSetMetaData<T, C> dataSetMetaData;
 
     @DynamicSerializeElement
     private Calendar end;
@@ -93,7 +96,7 @@ public class BandwidthRequest<T extends Time, C extends Coverage> extends
     /**
      * @return the dataSetMetaData
      */
-    public DataSetMetaData<T> getDataSetMetaData() {
+    public DataSetMetaData<T, C> getDataSetMetaData() {
         return dataSetMetaData;
     }
 
@@ -135,7 +138,7 @@ public class BandwidthRequest<T extends Time, C extends Coverage> extends
      * @param dataSetMetaData
      *            the dataSetMetaData to set
      */
-    public void setDataSetMetaData(DataSetMetaData<T> dataSetMetaData) {
+    public void setDataSetMetaData(DataSetMetaData<T, C> dataSetMetaData) {
         this.dataSetMetaData = dataSetMetaData;
     }
 

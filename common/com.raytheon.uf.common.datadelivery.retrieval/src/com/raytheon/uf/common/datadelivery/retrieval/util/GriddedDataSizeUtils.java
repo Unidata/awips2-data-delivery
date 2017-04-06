@@ -41,11 +41,13 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2013    2108    mpduff      Initial creation.
- * Sept 25, 2013  1797     dhladky     separated time from gridded time
- * Nov 20, 2013   2554     dhladky     Generics
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 13, 2013  2108     mpduff    Initial creation.
+ * Sep 25, 2013  1797     dhladky   separated time from gridded time
+ * Nov 20, 2013  2554     dhladky   Generics
+ * Apr 05, 2017  1045     tjensen   Add support for estimated size for moving
+ *                                  datasets
  * 
  * </pre>
  * 
@@ -132,23 +134,17 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
     public long getFullSizeInBytes() {
         if (dataSet != null) {
             if (fullSize == -999) {
-                GriddedCoverage griddedCov = dataSet
-                        .getCoverage();
-                long numCells = griddedCov.getGridCoverage().getNx()
-                        * griddedCov.getGridCoverage().getNy();
-                long numEns = 1;
-                long fcstHrs = 1;
 
-                fcstHrs = dataSet.getForecastHours().size();
+                long numEns = 1;
+                long fcstHrs = dataSet.getForecastHours().size();
+
                 if (dataSet.getEnsemble() != null) {
                     numEns = dataSet.getEnsemble().getMemberCount();
                 }
 
-                Map<String, Parameter> paramMap = dataSet.getParameters();
-
                 // get the number of grids available
                 long numGridsAvailable = 0;
-
+                Map<String, Parameter> paramMap = dataSet.getParameters();
                 for (Parameter p : paramMap.values()) {
                     int numLevels = p.getLevels().getLevel().size();
 
@@ -157,11 +153,18 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
                     numGridsAvailable += (numLevels > 0 ? numLevels : 1);
                 }
 
-                fullSize = numEns
-                        * fcstHrs
-                        * numGridsAvailable
-                        * dataSet.getServiceType()
-                                .getRequestBytesPerParameterPerLevel(numCells);
+                long bytesPerParameterPerLevel = 0;
+                if (dataSet.isMoving()) {
+                    bytesPerParameterPerLevel = dataSet.getEstimatedSize();
+                } else {
+                    GriddedCoverage griddedCov = dataSet.getCoverage();
+                    long numCells = griddedCov.getGridCoverage().getNx()
+                            * griddedCov.getGridCoverage().getNy();
+                    bytesPerParameterPerLevel = dataSet.getServiceType()
+                            .getRequestBytesPerParameterPerLevel(numCells);
+                }
+                fullSize = numEns * fcstHrs * numGridsAvailable
+                        * bytesPerParameterPerLevel;
             }
         }
 
@@ -178,8 +181,8 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
 
         return getDataSetSizeInBytes(subscription.getParameter(),
                 ((GriddedTime) subscription.getTime()).getSelectedTimeIndices()
-                        .size(), numEnsemble, subscription.getCoverage()
-                        .getRequestEnvelope());
+                        .size(),
+                numEnsemble, subscription.getCoverage().getRequestEnvelope());
     }
 
     /**
@@ -197,15 +200,19 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
      */
     public long getDataSetSizeInBytes(List<Parameter> params, int numFcstHrs,
             int numEnsembleMembers, ReferencedEnvelope envelope) {
-        int numberOfGridCells = calculateGridCells(envelope);
 
         int numRequestedGrids = getNumberRequestedGrids(params);
 
-        long l = numRequestedGrids
-                * numFcstHrs
-                * numEnsembleMembers
-                * dataSet.getServiceType().getRequestBytesPerParameterPerLevel(
-                        numberOfGridCells);
+        long bytesPerParameterPerLevel = 0;
+        if (dataSet.isMoving()) {
+            bytesPerParameterPerLevel = dataSet.getEstimatedSize();
+        } else {
+            bytesPerParameterPerLevel = dataSet.getServiceType()
+                    .getRequestBytesPerParameterPerLevel(
+                            calculateGridCells(envelope));
+        }
+        long l = numRequestedGrids * numFcstHrs * numEnsembleMembers
+                * bytesPerParameterPerLevel;
         return l;
     }
 }

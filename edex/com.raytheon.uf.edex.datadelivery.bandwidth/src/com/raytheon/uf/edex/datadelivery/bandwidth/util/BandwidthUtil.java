@@ -31,26 +31,33 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Jul 26, 2012  726      jspinks   Initial creation
- * Oct 10, 2012  726      djohnson  Add bandwidthManagementEnabled, some more utility methods, use
- *                                  availability delay to determine which starting hours to
- *                                  schedule.
- * Nov 09, 2012  1286     djohnson  Separate DAO utility methods from general utility.
- * Dec 11, 2012  1403     djohnson  No longer valid to run without bandwidth management.
+ * Oct 10, 2012  726      djohnson  Add bandwidthManagementEnabled, some more
+ *                                  utility methods, use availability delay to
+ *                                  determine which starting hours to schedule.
+ * Nov 09, 2012  1286     djohnson  Separate DAO utility methods from general
+ *                                  utility.
+ * Dec 11, 2012  1403     djohnson  No longer valid to run without bandwidth
+ *                                  management.
  * Feb 14, 2013  1595     djohnson  Use subscription rescheduling strategy.
- * Jun 13, 2013  2095     djohnson  Point subscriptions don't check for dataset updates on
- *                                  aggregation.
- * Jun 25, 2013  2106     djohnson  CheapClone was cheap in ease, not performance.
+ * Jun 13, 2013  2095     djohnson  Point subscriptions don't check for dataset
+ *                                  updates on aggregation.
+ * Jun 25, 2013  2106     djohnson  CheapClone was cheap in ease, not
+ *                                  performance.
  * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority enum.
  * Oct 30, 2013  2448     dhladky   Moved methods to TimeUtil.
  * Dec 20, 2013  2636     mpduff    Changed dataset delay to offset.
- * Jan 08, 2014  2615     bgonzale  Moved Calendar min and max methods to TimeUtil.
+ * Jan 08, 2014  2615     bgonzale  Moved Calendar min and max methods to
+ *                                  TimeUtil.
  * Apr 09, 2014  3012     dhladky   GMT Calendar use.
- * Jun 09, 2014  3113     mpduff    Moved getDataSetAvailablityOffset to SubscriptionUtil.
+ * Jun 09, 2014  3113     mpduff    Moved getDataSetAvailablityOffset to
+ *                                  SubscriptionUtil.
  * Nov 03, 2014  2414     dhladky   Refactored and moved some BWM methods.
- * May 27, 2015  4531     dhladky   Remove excessive Calendar references. GMT standard the rest.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references. GMT
+ *                                  standard the rest.
  * Feb 16, 2017  5899     rjpeter   Removed excessive logging.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * 
  * </pre>
  * 
@@ -188,7 +195,7 @@ public class BandwidthUtil {
      * @return the dao
      */
     public static BandwidthDataSetUpdate newDataSetMetaDataDao(
-            DataSetMetaData<?> dataSetMetaData) {
+            DataSetMetaData<?, ?> dataSetMetaData) {
         BandwidthDataSetUpdate dao = new BandwidthDataSetUpdate();
         // Set the fields we need to have..
         dao.setDataSetName(dataSetMetaData.getDataSetName());

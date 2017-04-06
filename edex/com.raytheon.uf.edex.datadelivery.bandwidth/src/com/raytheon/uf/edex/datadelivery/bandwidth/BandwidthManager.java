@@ -40,7 +40,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.raytheon.edex.util.Util;
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
@@ -77,6 +76,7 @@ import com.raytheon.uf.common.time.util.IPerformanceTimer;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
+import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.algorithm.AlgorithmUtil;
 import com.raytheon.uf.common.util.algorithm.AlgorithmUtil.IBinarySearchResponse;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
@@ -131,21 +131,21 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                     of already scheduled BandwidthAllocations.
  * Feb 11, 2014 2771       bgonzale    Added handler for GET_DATADELIVERY_ID request.
  * Feb 10, 2014 2636       mpduff      Changed how retrieval plan is updated over time.
- * Apr 02, 2014 2810       dhladky      Priority sorting of subscriptions.
+ * Apr 02, 2014 2810       dhladky     Priority sorting of subscriptions.
  * Apr 09, 2014 3012       dhladky     Range the querries for metadata checks to subscriptions.
  * Apr 22, 2014 2992       dhladky     Ability to get list of all registry nodes containing data.
  * May 22, 2014 2808       dhladky     Schedule unscheduled subs when one is de-activated.
- * May 15, 2014 3113       mpduff       Schedule subscriptions for gridded datasets without cycles.
+ * May 15, 2014 3113       mpduff      Schedule subscriptions for gridded datasets without cycles.
  * Jul 28, 2014 2752       dhladky     Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
- * Aug 29, 2014 3446       bphillip     SubscriptionUtil is now a singleton
- * Sep 14, 2014 2131       dhladky      PDA updates
+ * Aug 29, 2014 3446       bphillip    SubscriptionUtil is now a singleton
+ * Sep 14, 2014 2131       dhladky     PDA updates
  * Oct 03, 2014 2749       ccody       Changes to startBandwidthManager 
  *                                     to refresh only necessary spring components 
- *                                     @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.startNewBandwidthManager
+ *                                     &#64;see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.startNewBandwidthManager
  *                                     Changes to handleRequest so that after restarting that the EdexBandwidthManager
  *                                     changes and updates itself so that attempts to connect with them 
  *                                     do not result in errors and exceptions.
- *                                     @see com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager.resetBandwidthManager
+ *                                     &#64;see com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager.resetBandwidthManager
  * Oct 15, 2014 3664       ccody       Add notification event for unscheduled Subscriptions at startup
  * Oct 12, 2014 3707       dhladky     Changed the way gridded subscriptions are triggerd for retrieval.
  * Oct 28, 2014 2748       ccody       Subscription outside of Active period should not throw an exception
@@ -155,11 +155,12 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Jan 15, 2014 3884       dhladky     Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
  * Jan 27, 2014 4041       dhladky     Consolidated time checks for Adhoc creations.
  * Feb 19, 2015 3998       dhladky     Streamlined adhoc subscription processing.
- * May 27, 2015 4531       dhladky      Remove excessive Calendar references.
+ * May 27, 2015 4531       dhladky     Remove excessive Calendar references.
  * Jun 09, 2015 4047       dhladky     Performance improvement on startup, initial startup scheduling async now.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
+ * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
  * Sep 12, 2016 5772       tjensen     Allow PDA adhocs for older times
  * Sep 30, 2016 5772       tjensen     Fix Adhocs for older times
+ * Apr 05, 2017 1045       tjensen     Update for moving datasets
  * </pre>
  * 
  * @author dhladky
@@ -181,7 +182,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     private static final String objectType = "'urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.%Subscription'";
 
     /** Persistence DAO for BWM **/
-    final IBandwidthDao<T, C> bandwidthDao;
+    protected final IBandwidthDao<T, C> bandwidthDao;
 
     /** Aggregates retrievals for subscriptions that have common datasets **/
     private SimpleSubscriptionAggregator aggregator;
@@ -213,7 +214,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
     /** Manages the Retrieval Process for the Bandwidth Manager **/
     @VisibleForTesting
-    final RetrievalManager retrievalManager;
+    protected final RetrievalManager retrievalManager;
 
     /**
      * Map of application contexts used for starting bandwidth manager instances
@@ -221,8 +222,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     private ConcurrentHashMap<String[], ClassPathXmlApplicationContext> appContextMap = new ConcurrentHashMap<>();
 
     public BandwidthManager(IBandwidthDbInit dbInit,
-            IBandwidthDao<T, C> bandwidthDao,
-            RetrievalManager retrievalManager,
+            IBandwidthDao<T, C> bandwidthDao, RetrievalManager retrievalManager,
             BandwidthDaoUtil<T, C> bandwidthDaoUtil, RegistryIdUtil idUtil) {
         this.dbInit = dbInit;
         this.bandwidthDao = bandwidthDao;
@@ -335,10 +335,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 bwManager.initializer.executeAfterRegistryInit();
                 return bwManager;
             } catch (EbxmlRegistryException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Error loading subscriptions after starting the new bandwidth manager!  Returning null reference.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error loading subscriptions after starting the new bandwidth manager!  Returning null reference.",
+                        e);
                 return null;
             }
         } finally {
@@ -384,12 +383,13 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         switch (requestType) {
         case GET_ESTIMATED_COMPLETION:
             Subscription<T, C> adhocAsSub = null;
-            if (subscriptions.size() != 1
-                    || (!((adhocAsSub = subscriptions.get(0)) instanceof AdhocSubscription))) {
+            if (subscriptions.size() != 1 || (!((adhocAsSub = subscriptions
+                    .get(0)) instanceof AdhocSubscription))) {
                 throw new IllegalArgumentException(
                         "Must supply one, and only one, adhoc subscription to get the estimated completion time.");
             }
-            response = getEstimatedCompletionTime((AdhocSubscription<T, C>) adhocAsSub);
+            response = getEstimatedCompletionTime(
+                    (AdhocSubscription<T, C>) adhocAsSub);
             break;
         case REINITIALIZE:
             response = startNewBandwidthManager();
@@ -401,7 +401,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             // SBN subscriptions must go through the NCF
             if (!subscriptions.isEmpty()
                     && Network.SBN.equals(subscriptions.get(0).getRoute())) {
-                final IProposeScheduleResponse proposeResponse = proposeScheduleSbnSubscription(subscriptions);
+                final IProposeScheduleResponse proposeResponse = proposeScheduleSbnSubscription(
+                        subscriptions);
                 response = proposeResponse;
             } else {
                 // OPSNET subscriptions
@@ -422,8 +423,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             RetrievalPlan b = retrievalManager.getPlan(requestNetwork);
             if (b != null) {
                 response = b.getDefaultBandwidth();
-            } else {
-                response = null;
             }
             break;
         case PROPOSE_ONLY_SET_BANDWIDTH:
@@ -433,9 +432,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             if (proposeOnlyUnscheduledSubscriptions.isEmpty()) {
                 statusHandler
                         .info("No subscriptions will be unscheduled by changing the bandwidth for network ["
-                                + requestNetwork
-                                + "] to ["
-                                + bandwidth
+                                + requestNetwork + "] to [" + bandwidth
                                 + "].  This is a Propose-Only call. NO CHANGES WILL BE APPLIED..");
             }
             break;
@@ -446,9 +443,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             if (unscheduledSubscriptions.isEmpty()) {
                 statusHandler
                         .info("No subscriptions will be unscheduled by changing the bandwidth for network ["
-                                + requestNetwork
-                                + "] to ["
-                                + bandwidth
+                                + requestNetwork + "] to [" + bandwidth
                                 + "].  Applying...");
                 // This is a safe operation as all subscriptions will remain
                 // scheduled, just apply
@@ -472,8 +467,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             break;
         case SHOW_DEFERRED:
             StringBuilder sb = new StringBuilder();
-            List<BandwidthAllocation> z = bandwidthDao.getDeferred(
-                    requestNetwork, request.getBegin().getTime());
+            List<BandwidthAllocation> z = bandwidthDao
+                    .getDeferred(requestNetwork, request.getBegin().getTime());
             for (BandwidthAllocation allocation : z) {
                 sb.append(allocation).append("\n");
             }
@@ -490,8 +485,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             break;
         case GET_SUBSCRIPTION_STATUS:
             Subscription<T, C> sub = null;
-            if (subscriptions.size() != 1
-                    || (!((sub = subscriptions.get(0)) instanceof Subscription))) {
+            if (subscriptions.size() != 1 || (!((sub = subscriptions
+                    .get(0)) instanceof Subscription))) {
                 throw new IllegalArgumentException(
                         "Must supply one, and only one, subscription to get the status summary.");
             }
@@ -506,9 +501,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         // Clean up any in-memory bandwidth configuration files
         InMemoryBandwidthContextFactory.deleteInMemoryBandwidthConfigFile();
 
-        if (resetManager == true) {
-            resetBandwidthManager(requestNetwork, "Bandwidth changed to "
-                    + bandwidth + " KBps");
+        if (resetManager) {
+            resetBandwidthManager(requestNetwork,
+                    "Bandwidth changed to " + bandwidth + " KBps");
 
         }
 
@@ -539,9 +534,11 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         Set<BandwidthAllocation> unscheduledAllocations = new HashSet<>();
         Map<String, SubscriptionRequestEvent> subscriptionEventsMap = new HashMap<>();
 
-        for (Subscription<T, C> subscription : orderSubscriptionsByPriority(insubscriptions)) {
+        for (Subscription<T, C> subscription : orderSubscriptionsByPriority(
+                insubscriptions)) {
 
-            List<BandwidthAllocation> unscheduled = subscriptionUpdated(subscription);
+            List<BandwidthAllocation> unscheduled = subscriptionUpdated(
+                    subscription);
             unscheduledAllocations.addAll(unscheduled);
 
             /*
@@ -582,8 +579,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         for (BandwidthAllocation allocation : unscheduledAllocations) {
             if (allocation instanceof SubscriptionRetrieval) {
                 SubscriptionRetrieval retrieval = (SubscriptionRetrieval) allocation;
-                unscheduledSubscriptions.add(retrieval
-                        .getBandwidthSubscription().getName());
+                unscheduledSubscriptions
+                        .add(retrieval.getBandwidthSubscription().getName());
             }
         }
 
@@ -600,12 +597,13 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     public List<BandwidthAllocation> schedule(Subscription<T, C> subscription) {
         List<BandwidthAllocation> unscheduled = Collections.emptyList();
         if (subscription instanceof RecurringSubscription) {
-            if (!((RecurringSubscription<T, C>) subscription).shouldSchedule()) {
+            if (!((RecurringSubscription<T, C>) subscription)
+                    .shouldSchedule()) {
                 return unscheduled;
             }
         }
-        RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription
-                .getRoute());
+        RetrievalPlan plan = bandwidthDaoUtil
+                .getRetrievalPlan(subscription.getRoute());
 
         if (plan != null) {
 
@@ -613,17 +611,15 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
             try {
                 dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
-                        .getDataSetMetaDataToDate(
-                                subscription.getDataSetName(),
+                        .getDataSetMetaDataToDate(subscription.getDataSetName(),
                                 subscription.getProvider(),
                                 plan.getPlanEnd().getTime());
 
             } catch (RegistryHandlerException e1) {
                 dsmdList = new ArrayList<>(0);
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to look-up list of DataSetMetData during scheduling. ",
-                                e1);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to look-up list of DataSetMetData during scheduling. ",
+                        e1);
             }
 
             SortedSet<Date> retrievalTimes = subscription.getRetrievalTimes(
@@ -635,9 +631,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         // add an adhoc if one exists and isn't in startup mode
         if (EDEXUtil.isRunning()) {
-            unscheduled = new ArrayList<>(); // Reallocate to
-                                                                // get a MUTABLE
-                                                                // object
+            // Reallocate to get a MUTABLE object
+            unscheduled = new ArrayList<>();
             if (subscription.getDataSetType() == DataType.GRID) {
                 unscheduled.addAll(getMostRecent(subscription, true));
             } else if (subscription.getDataSetType() == DataType.POINT) {
@@ -674,23 +669,21 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     @SuppressWarnings({ "rawtypes" })
     private void updateSchedule(Subscription<T, C> subscription) {
 
-        RetrievalPlan plan = bandwidthDaoUtil.getRetrievalPlan(subscription
-                .getRoute());
+        RetrievalPlan plan = bandwidthDaoUtil
+                .getRetrievalPlan(subscription.getRoute());
         List<DataSetMetaData> dsmdList = null;
 
         if (plan != null) {
 
             try {
                 dsmdList = DataDeliveryHandlers.getDataSetMetaDataHandler()
-                        .getDataSetMetaDataToDate(
-                                subscription.getDataSetName(),
+                        .getDataSetMetaDataToDate(subscription.getDataSetName(),
                                 subscription.getProvider(),
                                 plan.getPlanEnd().getTime());
             } catch (RegistryHandlerException e1) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to look-up list of DataSetMetData during schedule updating. ",
-                                e1);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to look-up list of DataSetMetData during schedule updating. ",
+                        e1);
             }
             SortedSet<Date> retrievalTimes = subscription.getRetrievalTimes(
                     plan.getPlanStart().getTime(), plan.getPlanEnd().getTime(),
@@ -741,7 +734,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @return number of subscriptions processed
      */
     public int updateSchedule(Network network) {
-        List<Subscription<T, C>> subsToSchedule = getSubscriptionsToSchedule(network);
+        List<Subscription<T, C>> subsToSchedule = getSubscriptionsToSchedule(
+                network);
         if (CollectionUtil.isNullOrEmpty(subsToSchedule)) {
             return 0;
         }
@@ -788,18 +782,19 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         for (Date retrievalTime : retrievalTimes) {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.info("Scheduling subscription ["
-                        + subscription.getName()
-                        + String.format(
-                                "] retrievalTime [%1$tY%1$tm%1$td%1$tH%1$tM",
-                                retrievalTime) + "]");
+                statusHandler.info(
+                        "Scheduling subscription [" + subscription.getName()
+                                + String.format(
+                                        "] retrievalTime [%1$tY%1$tm%1$td%1$tH%1$tM",
+                                        retrievalTime)
+                                + "]");
             }
 
             // Add the current subscription to the ones BandwidthManager already
             // knows about.
-            newSubscriptions.add(BandwidthUtil
-                    .getSubscriptionDaoForSubscription(subscription,
-                            retrievalTime));
+            newSubscriptions
+                    .add(BandwidthUtil.getSubscriptionDaoForSubscription(
+                            subscription, retrievalTime));
         }
         timer.lap("createBandwidthSubscriptions");
 
@@ -834,7 +829,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     protected ProposeScheduleResponse proposeScheduleSubscriptions(
             List<Subscription<T, C>> subscriptions)
             throws SerializationException {
-        final ProposeScheduleResponse proposeResponse = proposeSchedule(subscriptions);
+        final ProposeScheduleResponse proposeResponse = proposeSchedule(
+                subscriptions);
         Set<String> subscriptionsUnscheduled = proposeResponse
                 .getUnscheduledSubscriptions();
         if (subscriptionsUnscheduled.isEmpty()) {
@@ -849,7 +845,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     .next();
             int requiredLatency = determineRequiredLatency(subscription);
             proposeResponse.setRequiredLatency(requiredLatency);
-            long requiredDataSetSize = determineRequiredDataSetSize(subscription);
+            long requiredDataSetSize = determineRequiredDataSetSize(
+                    subscription);
             proposeResponse.setRequiredDataSetSize(requiredDataSetSize);
         } else {
             Map<String, Subscription<T, C>> allSubscriptionMap = new HashMap<>();
@@ -903,8 +900,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         try {
             proposedBwManager = startProposedBandwidthManager(copyOfCurrentMap);
 
-            unscheduled = proposedBwManager
-                    .scheduleSubscriptions((List<Subscription<T, C>>) subscriptions);
+            unscheduled = proposedBwManager.scheduleSubscriptions(
+                    (List<Subscription<T, C>>) subscriptions);
         } catch (Exception e) {
             statusHandler.error("Error proposing scheduling! ", e);
         }
@@ -936,20 +933,19 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             proposedBwManager = startProposedBandwidthManager(copyOfCurrentMap);
 
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug("Current retrieval plan:" + Util.EOL
-                        + showRetrievalPlan(requestNetwork) + Util.EOL
-                        + "Proposed retrieval plan:" + Util.EOL
+                statusHandler.debug("Current retrieval plan:" + FileUtil.EOL
+                        + showRetrievalPlan(requestNetwork) + FileUtil.EOL
+                        + "Proposed retrieval plan:" + FileUtil.EOL
                         + proposedBwManager.showRetrievalPlan(requestNetwork));
             }
 
             List<BandwidthAllocation> unscheduledAllocations = proposedBwManager.bandwidthDao
-                    .getBandwidthAllocationsInState(RetrievalStatus.UNSCHEDULED);
+                    .getBandwidthAllocationsInState(
+                            RetrievalStatus.UNSCHEDULED);
 
             if (!unscheduledAllocations.isEmpty()
                     && statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                LogUtil.logIterable(
-                        statusHandler,
-                        Priority.DEBUG,
+                LogUtil.logIterable(statusHandler, Priority.DEBUG,
                         "The following unscheduled allocations would occur with the proposed bandwidth:",
                         unscheduledAllocations);
             }
@@ -963,9 +959,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
             if (!subscriptions.isEmpty()
                     && statusHandler.isPriorityEnabled(Priority.INFO)) {
-                LogUtil.logIterable(
-                        statusHandler,
-                        Priority.INFO,
+                LogUtil.logIterable(statusHandler, Priority.INFO,
                         "The following subscriptions would not be scheduled with the proposed bandwidth:",
                         subscriptions);
             }
@@ -1006,8 +1000,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
 
-        List<SubscriptionRetrieval> retrievals = getAggregator().aggregate(
-                bandwidthSubscriptions);
+        List<SubscriptionRetrieval> retrievals = getAggregator()
+                .aggregate(bandwidthSubscriptions);
         timer.lap("aggregator");
         if (CollectionUtil.isNullOrEmpty(retrievals)) {
             return new ArrayList<>(0);
@@ -1030,8 +1024,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
              * subscription has now be subsumed or altered to accommodate a new
              * super set of subscriptions...
              */
-            if ((retrieval.getStatus().equals(RetrievalStatus.RESCHEDULE) || retrieval
-                    .getStatus().equals(RetrievalStatus.PROCESSING))
+            if ((retrieval.getStatus().equals(RetrievalStatus.RESCHEDULE)
+                    || retrieval.getStatus().equals(RetrievalStatus.PROCESSING))
                     && !retrieval.isSubsumed()) {
 
                 BandwidthSubscription bandwidthSubscription = retrieval
@@ -1050,8 +1044,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
                 if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                     statusHandler.debug("Adding latency minutes of ["
-                            + maxLatency
-                            + "] to start time of "
+                            + maxLatency + "] to start time of "
                             + String.format("[%1$tY%1$tm%1$td%1$tH%1$tM]",
                                     startTime));
                 }
@@ -1095,7 +1088,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 attribute.setSubscription(bandwidthSubscriptions.subscription);
             } catch (SerializationException e) {
                 throw new IllegalStateException(
-                        "Unable to serialize the subscription, these retrievals will not be processed!");
+                        "Unable to serialize the subscription, these retrievals will not be processed!",
+                        e);
             }
             attribute.setSubscriptionRetrieval(retrieval);
             attributes.add(attribute);
@@ -1104,16 +1098,18 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         bandwidthDao.storeSubscriptionRetrievalAttributes(attributes);
         timer.lap("storing retrieval attributes");
 
-        List<BandwidthAllocation> unscheduled = (reservations.isEmpty()) ? Collections
-                .<BandwidthAllocation> emptyList() : retrievalManager
-                .schedule(reservations);
+        List<BandwidthAllocation> unscheduled = (reservations.isEmpty())
+                ? Collections.<BandwidthAllocation> emptyList()
+                : retrievalManager.schedule(reservations);
         timer.lap("scheduling retrievals");
 
         timer.stop();
         final int numberOfBandwidthSubscriptions = bandwidthSubscriptions.newSubscriptions
                 .size();
-        timer.logLaps("aggregate() bandwidthSubscriptions ["
-                + numberOfBandwidthSubscriptions + "]", performanceHandler);
+        timer.logLaps(
+                "aggregate() bandwidthSubscriptions ["
+                        + numberOfBandwidthSubscriptions + "]",
+                performanceHandler);
 
         return unscheduled;
     }
@@ -1156,7 +1152,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     public List<BandwidthAllocation> scheduleAdhoc(
             AdhocSubscription<T, C> subscription) {
-        // Adhocs always schedule for immediately regardles of type
+        // Adhocs always schedule for immediately regardless of type
         return scheduleAdhoc(subscription, BandwidthUtil.now());
     }
 
@@ -1188,7 +1184,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 subscription = subscriptionUpdated;
             }
         }
-        
+
         // Use SimpleSubscriptionAggregator (i.e. no aggregation) to generate a
         // SubscriptionRetrieval for this AdhocSubscription
         SimpleSubscriptionAggregator a = new SimpleSubscriptionAggregator(
@@ -1226,8 +1222,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
                     bandwidthDao.store(attributes);
                 } catch (SerializationException e) {
-                    statusHandler.error(
-                            "Trapped Exception trying to schedule AdhocSubscription["
+                    statusHandler
+                            .error("Trapped Exception trying to schedule AdhocSubscription["
                                     + subscription.getName() + "]", e);
                     return Collections.emptyList();
                 }
@@ -1248,7 +1244,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @return
      */
     private List<BandwidthAllocation> getMostRecent(
-            Subscription<T, C> subscription, boolean useMostRecentDataSetUpdate) {
+            Subscription<T, C> subscription,
+            boolean useMostRecentDataSetUpdate) {
         List<BandwidthAllocation> unscheduled = Collections.emptyList();
         // Create an adhoc subscription based on the new subscription,
         // and set it to retrieve the most recent cycle (or most recent
@@ -1261,14 +1258,13 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             adhoc = bandwidthDaoUtil.setAdhocMostRecentUrlAndTime(adhoc);
 
             if (adhoc == null) {
-                statusHandler
-                        .warn(String
-                                .format("There wasn't any applicable recent dataset metadata to use for new subscription [%s].  "
-                                        + "No adhoc requested.",
-                                        subscription.getName()));
+                statusHandler.warn(String.format(
+                        "There wasn't any applicable recent dataset metadata to use for new subscription [%s].  "
+                                + "No adhoc requested.",
+                        subscription.getName()));
             } else {
-                RetrievalPlan plan = retrievalManager.getPlan(subscription
-                        .getRoute());
+                RetrievalPlan plan = retrievalManager
+                        .getPlan(subscription.getRoute());
                 if (plan != null) {
 
                     Calendar nowCalendar = TimeUtil.newCalendar();
@@ -1276,8 +1272,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     // check for subscription in active period window
                     // check for whether subscription is expired
                     // check if subscription is active
-                    if (subscription.shouldScheduleForTime(nowCalendar
-                            .getTime()) && subscription.isActive()) {
+                    if (subscription.shouldScheduleForTime(
+                            nowCalendar.getTime()) && subscription.isActive()) {
                         unscheduled = scheduleAdhoc(adhoc);
 
                     } else {
@@ -1290,11 +1286,10 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             }
         } else {
             if (!subscription.isActive()) {
-                statusHandler
-                        .info(String.format(
-                                "Time frame outside of subscription active time frame [%s].  "
-                                        + "No adhoc requested.",
-                                subscription.getName()));
+                statusHandler.info(String.format(
+                        "Time frame outside of subscription active time frame [%s].  "
+                                + "No adhoc requested.",
+                        subscription.getName()));
             } else {
                 throw new IllegalArgumentException(
                         "Unable to create adhoc queries for this type of subscription.  "
@@ -1311,8 +1306,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     public List<BandwidthAllocation> adhocSubscription(
             AdhocSubscription<T, C> adhoc) {
-        statusHandler.info("Scheduling adhoc subscription [" + adhoc.getName()
-                + "]");
+        statusHandler.info(
+                "Scheduling adhoc subscription [" + adhoc.getName() + "]");
         return scheduleAdhoc(adhoc);
     }
 
@@ -1366,18 +1361,22 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             // it's active, attempt to add it..
             if (bandwidthSubscriptions.isEmpty()
                     && ((RecurringSubscription<?, ?>) subscription)
-                            .shouldSchedule() && !subscription.isUnscheduled()) {
+                            .shouldSchedule()
+                    && !subscription.isUnscheduled()) {
                 return schedule(subscription);
-            } else if (subscription.getStatus() == SubscriptionStatus.DEACTIVATED
+            } else if (subscription
+                    .getStatus() == SubscriptionStatus.DEACTIVATED
                     || subscription.isUnscheduled()) {
                 // See if the subscription was deactivated or unscheduled..
                 // Need to remove BandwidthReservations for this
                 // subscription.
-                List<BandwidthAllocation> unscheduled = remove(bandwidthSubscriptions);
+                List<BandwidthAllocation> unscheduled = remove(
+                        bandwidthSubscriptions);
 
                 // Attempt to schedule any subscriptions that are unscheduled
                 // More room may be available because of the de-activation
-                if (subscription.getStatus() == SubscriptionStatus.DEACTIVATED) {
+                if (subscription
+                        .getStatus() == SubscriptionStatus.DEACTIVATED) {
                     scheduleUnscheduledSubscriptions(subscription.getName());
                 }
 
@@ -1385,7 +1384,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
             } else {
                 // Normal update, unschedule old allocations and create new ones
-                List<BandwidthAllocation> unscheduled = remove(bandwidthSubscriptions);
+                List<BandwidthAllocation> unscheduled = remove(
+                        bandwidthSubscriptions);
                 unscheduled.addAll(schedule(subscription));
                 return unscheduled;
             }
@@ -1432,7 +1432,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            the subscription
      * @return the estimated completion time
      */
-    private Date getEstimatedCompletionTime(AdhocSubscription<T, C> subscription) {
+    private Date getEstimatedCompletionTime(
+            AdhocSubscription<T, C> subscription) {
         final List<BandwidthSubscription> bandwidthSubscriptions = bandwidthDao
                 .getBandwidthSubscriptionByRegistryId(subscription.getId());
 
@@ -1509,15 +1510,15 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         BandwidthManager<T, C> proposedBandwidthManager = null;
         try {
-            proposedBandwidthManager = startProposedBandwidthManager(copyOfCurrentMap);
+            proposedBandwidthManager = startProposedBandwidthManager(
+                    copyOfCurrentMap);
             Set<String> unscheduled = proposedBandwidthManager
                     .scheduleSubscriptions(Arrays.asList(subscription));
             return unscheduled.isEmpty();
         } catch (SerializationException e) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Serialization error while determining required latency.  Returning true in order to be fault tolerant.",
-                            e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Serialization error while determining required latency.  Returning true in order to be fault tolerant.",
+                    e);
             return true;
         }
     }
@@ -1571,7 +1572,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @param copyFrom
      * @return
      */
-    public List<BandwidthAllocation> copyState(BandwidthManager<T, C> copyFrom) {
+    public List<BandwidthAllocation> copyState(
+            BandwidthManager<T, C> copyFrom) {
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
         List<BandwidthAllocation> unscheduled = Collections.emptyList();
@@ -1599,10 +1601,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                             .getSubscriptionHandler().getByName(subName);
                     actualSubscriptions.add(actualSubscription);
                 } catch (RegistryHandlerException e) {
-                    statusHandler
-                            .handle(Priority.PROBLEM,
-                                    "Unable to lookup the subscription, results may not be accurate for modeling bandwidth changes.",
-                                    e);
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Unable to lookup the subscription, results may not be accurate for modeling bandwidth changes.",
+                            e);
                 }
             }
 
@@ -1648,8 +1649,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         final int requiredLatency = determineRequiredValue(subscription,
                 new FindSubscriptionRequiredLatency());
 
-        final int bufferRoomInMinutes = retrievalManager.getPlan(
-                subscription.getRoute()).getBucketMinutes();
+        final int bufferRoomInMinutes = retrievalManager
+                .getPlan(subscription.getRoute()).getBucketMinutes();
 
         return requiredLatency + bufferRoomInMinutes;
     }
@@ -1701,22 +1702,23 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         SortedSet<M> possibleValues = strategy.getPossibleValues(previousValue,
                 currentValue);
 
-        IBinarySearchResponse<M> response = AlgorithmUtil.binarySearch(
-                possibleValues, new Comparable<M>() {
+        IBinarySearchResponse<M> response = AlgorithmUtil
+                .binarySearch(possibleValues, new Comparable<M>() {
                     @Override
                     public int compareTo(M valueToCheck) {
-                        Subscription clone = strategy.setValue(
-                                subscription.copy(), valueToCheck);
+                        Subscription clone = strategy
+                                .setValue(subscription.copy(), valueToCheck);
 
-                        boolean valueWouldWork = isSchedulableWithoutConflict(clone);
+                        boolean valueWouldWork = isSchedulableWithoutConflict(
+                                clone);
 
                         // Check if one more restrictive value would not work,
                         // if so then this is the required value, otherwise keep
                         // searching
                         if (valueWouldWork) {
-                            clone = strategy.setValue(
-                                    subscription.copy(),
-                                    strategy.getNextRestrictiveValue(valueToCheck));
+                            clone = strategy.setValue(subscription.copy(),
+                                    strategy.getNextRestrictiveValue(
+                                            valueToCheck));
 
                             return (isSchedulableWithoutConflict(clone)) ? 1
                                     : 0;
@@ -1733,21 +1735,24 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             currentValue = binarySearchedValue;
 
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug(String.format("Found required "
-                        + valueDescription + " of [%s] in [%s] iterations",
+                statusHandler.debug(String.format(
+                        "Found required " + valueDescription
+                                + " of [%s] in [%s] iterations",
                         binarySearchedValue, response.getIterations()));
             }
         } else {
-            statusHandler.warn(String.format("Unable to find the required "
-                    + valueDescription
-                    + " with a binary search, using value [%s]", currentValue));
+            statusHandler.warn(String.format(
+                    "Unable to find the required " + valueDescription
+                            + " with a binary search, using value [%s]",
+                    currentValue));
         }
 
         timer.stop();
 
-        final String logMsg = String.format("Determined required "
-                + valueDescription + " of [%s] in [%s] ms.", currentValue,
-                timer.getElapsedTime());
+        final String logMsg = String.format(
+                "Determined required " + valueDescription
+                        + " of [%s] in [%s] ms.",
+                currentValue, timer.getElapsedTime());
 
         statusHandler.info(logMsg);
 

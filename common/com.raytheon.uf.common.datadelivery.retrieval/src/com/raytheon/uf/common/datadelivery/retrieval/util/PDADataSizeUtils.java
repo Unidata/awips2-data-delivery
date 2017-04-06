@@ -34,10 +34,12 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 20, 2014   3121     dhladky     creation
- * Apr 19, 2016   5424     dhladky     Re-visited sizing.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 20, 2014  3121     dhladky   creation
+ * Apr 19, 2016  5424     dhladky   Re-visited sizing.
+ * Apr 05, 2017  1045     tjensen   Add support for estimated size for moving
+ *                                  datasets
  * 
  * </pre>
  * 
@@ -47,7 +49,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 public class PDADataSizeUtils extends DataSizeUtils<PDADataSet> {
 
-   /**
+    /**
      * Constructor.
      * 
      * @param dataSet
@@ -93,8 +95,15 @@ public class PDADataSizeUtils extends DataSizeUtils<PDADataSet> {
      */
     @Override
     public long getDataSetSizeInBytes(Subscription<?, ?> subscription) {
-        return getDataSetSizeInBytes(subscription.getCoverage()
-                .getRequestEnvelope());
+        long sizePerParam = 0;
+        if (dataSet.isMoving()) {
+            sizePerParam = dataSet.getEstimatedSize();
+        } else {
+            sizePerParam = getDataSetSizeInBytes(
+                    subscription.getCoverage().getRequestEnvelope());
+        }
+
+        return subscription.getParameter().size() * sizePerParam;
     }
 
     /**

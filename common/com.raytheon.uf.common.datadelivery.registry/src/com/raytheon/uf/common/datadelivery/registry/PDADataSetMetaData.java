@@ -16,10 +16,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 14, 2014 3120        dhladky     Initial creation
- * Sep 17, 2014 3127        dhladky     Added for geographic subsetting.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------
+ * Jun 14, 2014  3120     dhladky   Initial creation
+ * Sep 17, 2014  3127     dhladky   Added for geographic subsetting.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * 
  * </pre>
  * 
@@ -30,15 +32,15 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @XmlAccessorType(XmlAccessType.NONE)
 @RegistryObjectVersion(value = 1.0f)
 @DynamicSerialize
-public class PDADataSetMetaData extends DataSetMetaData<Time> {
+public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
 
     @XmlAttribute
     @DynamicSerializeElement
     @SlotAttribute
     private String metaDataID;
-    
+
     public PDADataSetMetaData() {
-        
+
     }
 
     public String getMetaDataID() {

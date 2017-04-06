@@ -64,26 +64,37 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011 218        dhladky      Initial creation
- * Jul 24, 2012 955        djohnson     Check multiple datasets for cycles provided on subscription.
- * Aug 02, 2012 955        djohnson     Use DataSetQuery to get all metadata objects.
- * Aug 10, 2012 1022       djohnson     Retrieve latest available url from {@link OpenDapGriddedDataSet}.
- * Aug 20, 2012 0743       djohnson     Cycle will no longer be null.
- * Sep 24, 2012 1209       djohnson     NO_CYCLE metadatas can now fulfill subscriptions.
- * Oct 05, 2012 1241       djohnson     Replace RegistryManager calls with registry handler calls.
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Nov 25, 2012 1340       dhladky      Added type for subscriptions to retrieval
- * Dec 10, 2012 1259       bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Sep 18, 2013 2383       bgonzale     Added subscription name to log output.
- * Sept 25, 2013 1797      dhladky      separated time from gridded time
- * Sept 27, 2014 3121      dhladky      reomoved un-needed casting.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2011  218      dhladky   Initial creation
+ * Jul 24, 2012  955      djohnson  Check multiple datasets for cycles provided
+ *                                  on subscription.
+ * Aug 02, 2012  955      djohnson  Use DataSetQuery to get all metadata
+ *                                  objects.
+ * Aug 10, 2012  1022     djohnson  Retrieve latest available url from {@link
+ *                                  OpenDapGriddedDataSet}.
+ * Aug 20, 2012  743      djohnson  Cycle will no longer be null.
+ * Sep 24, 2012  1209     djohnson  NO_CYCLE metadatas can now fulfill
+ *                                  subscriptions.
+ * Oct 05, 2012  1241     djohnson  Replace RegistryManager calls with registry
+ *                                  handler calls.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Nov 25, 2012  1340     dhladky   Added type for subscriptions to retrieval
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Sep 18, 2013  2383     bgonzale  Added subscription name to log output.
+ * Sep 25, 2013  1797     dhladky   separated time from gridded time
+ * Sep 27, 2014  3121     dhladky   removed un-needed casting.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
+ * 
+ * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedCoverage> {
+class OpenDAPRetrievalGenerator
+        extends RetrievalGenerator<GriddedTime, GriddedCoverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPRetrievalGenerator.class);
@@ -95,7 +106,8 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
         @SuppressWarnings("unchecked")
         Iterator<A> iter = (Iterator<A>) subscriptions.iterator();
         while (iter.hasNext()) {
-            Subscription<GriddedTime, GriddedCoverage> subscription = iter.next();
+            Subscription<GriddedTime, GriddedCoverage> subscription = iter
+                    .next();
             DataSet<?, ?> result = null;
             try {
                 result = DataDeliveryHandlers.getDataSetHandler()
@@ -104,8 +116,8 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
                 if (result == null
                         || !(result instanceof OpenDapGriddedDataSet)) {
                     // TODO: Send notification?
-                    statusHandler
-                            .warn("Unable to satisfy the criteria for a new subscription!");
+                    statusHandler.warn(
+                            "Unable to satisfy the criteria for a new subscription!");
                     iter.remove();
                     continue;
 
@@ -128,8 +140,8 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
             while (cycleIter.hasNext()) {
                 Integer cycle = cycleIter.next();
                 if (subCycleTimes.contains(cycle)) {
-                    subscription.setUrl(openDapGriddedDataSet.getCyclesToUrls()
-                            .get(cycle));
+                    subscription.setUrl(
+                            openDapGriddedDataSet.getCyclesToUrls().get(cycle));
                     break;
                 }
             }
@@ -152,13 +164,14 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
      *            the subscription
      * @return the url for retrieval or null if no retrieval should take place
      */
-    private static String getRetrievalUrl(Subscription<GriddedTime, GriddedCoverage> subscription) {
+    private static String getRetrievalUrl(
+            Subscription<GriddedTime, GriddedCoverage> subscription) {
         String url = subscription.getUrl();
 
-        DataSetMetaData<?> result = null;
+        DataSetMetaData<?, ?> result = null;
         try {
-            result = DataDeliveryHandlers.getDataSetMetaDataHandler().getById(
-                    url);
+            result = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                    .getById(url);
             if (result == null) {
                 throw new RegistryHandlerException(
                         "Unable to find the dataset by id from its unique url!",
@@ -187,8 +200,9 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
      * @return true if the datasetmetadata will satisfy the subscription
      */
     @VisibleForTesting
-    static boolean satisfiesSubscriptionCriteria(Subscription<GriddedTime, GriddedCoverage> subscription,
-            DataSetMetaData<?> dsmd) {
+    static boolean satisfiesSubscriptionCriteria(
+            Subscription<GriddedTime, GriddedCoverage> subscription,
+            DataSetMetaData<?, ?> dsmd) {
         List<Integer> cycleTimes = subscription.getTime().getCycleTimes();
         // If the subscription doesn't have cycle times subscribed to, then add
         // the NO_CYCLE marker cycle
@@ -249,8 +263,7 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
      */
     private int getDimensionalSize(GriddedCoverage c) {
 
-        return c.getGridCoverage().getNx()
-                * c.getGridCoverage().getNy();
+        return c.getGridCoverage().getNx() * c.getGridCoverage().getNy();
     }
 
     /**
@@ -259,15 +272,12 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
      * @param parm
      * @return
      */
-    protected Map<DataTime, List<Level>> getGridDuplicates(
-            String name,
+    protected Map<DataTime, List<Level>> getGridDuplicates(String name,
             Parameter parm, List<DataTime> times, List<Level> levels,
-            List<String> ensembleMembers,
-            GriddedCoverage cov) {
+            List<String> ensembleMembers, GriddedCoverage cov) {
 
         return RetrievalGeneratorUtilities.findGridDuplicates(name, times,
-                levels, ensembleMembers,
-                parm, cov.getRequestGridCoverage());
+                levels, ensembleMembers, parm, cov.getRequestGridCoverage());
     }
 
     /**
@@ -279,8 +289,9 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
     @SuppressWarnings("unchecked")
     private List<Retrieval> getGridRetrievals(SubscriptionBundle bundle) {
 
-        List<Retrieval> retrievals = new ArrayList<Retrieval>();
-        Subscription<GriddedTime, GriddedCoverage> sub = bundle.getSubscription();
+        List<Retrieval> retrievals = new ArrayList<>();
+        Subscription<GriddedTime, GriddedCoverage> sub = bundle
+                .getSubscription();
 
         int sfactor = getSizingFactor(getDimensionalSize(sub.getCoverage()));
         sub = removeDuplicates(sub);
@@ -289,16 +300,18 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
 
             if (sub.getUrl() == null) {
 
-                List<Subscription<GriddedTime, GriddedCoverage>> subs = new ArrayList<Subscription<GriddedTime, GriddedCoverage>>(1);
+                List<Subscription<GriddedTime, GriddedCoverage>> subs = new ArrayList<>(
+                        1);
                 subs.add(sub);
 
-                List<Subscription<GriddedTime, GriddedCoverage>> fillableSubs = addMostRecentDataSetMetaDataUrlToSubscriptions(subs);
+                List<Subscription<GriddedTime, GriddedCoverage>> fillableSubs = addMostRecentDataSetMetaDataUrlToSubscriptions(
+                        subs);
 
                 if (!CollectionUtil.isNullOrEmpty(fillableSubs)) {
                     sub = fillableSubs.get(0);
                 } else if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    statusHandler
-                            .debug("Subscription with null url is not retrievable at this time.  There are no relevant DataSetMetaData objects with which to fill it.");
+                    statusHandler.debug(
+                            "Subscription with null url is not retrievable at this time.  There are no relevant DataSetMetaData objects with which to fill it.");
                     sub = null;
                     return Collections.emptyList();
                 }
@@ -310,10 +323,8 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
             sub.setUrl(retrievalUrl);
 
             if (sub.getUrl() == null) {
-                statusHandler
-                        .info("Skipping subscription "
-                                + sub.getName()
-                                + " that is unfulfillable with the current metadata (null URL.)");
+                statusHandler.info("Skipping subscription " + sub.getName()
+                        + " that is unfulfillable with the current metadata (null URL.)");
                 return Collections.emptyList();
             }
 
@@ -324,17 +335,18 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
                 ensembles = sub.getEnsemble().split(1);
             }
 
-            for (List<Integer> timeSequence : subTime.getTimeSequences(sfactor)) {
+            for (List<Integer> timeSequence : subTime
+                    .getTimeSequences(sfactor)) {
 
-                for (Parameter param : (List<Parameter>)sub.getParameter()) {
+                for (Parameter param : (List<Parameter>) sub.getParameter()) {
                     final Levels paramLevels = param.getLevels();
-                    if (CollectionUtil.isNullOrEmpty(paramLevels
-                            .getSelectedLevelIndices())) {
+                    if (CollectionUtil.isNullOrEmpty(
+                            paramLevels.getSelectedLevelIndices())) {
                         // handle single level
                         paramLevels.setRequestLevelEnd(0);
                         paramLevels.setRequestLevelStart(0);
                         List<GriddedTime> times = processTime(timeSequence,
-                                (GriddedTime)sub.getTime());
+                                (GriddedTime) sub.getTime());
 
                         for (GriddedTime time : times) {
                             for (Ensemble ensemble : ensembles) {
@@ -384,8 +396,10 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
      * @param Time
      * @return
      */
-    private Retrieval getRetrieval(Subscription<GriddedTime, GriddedCoverage> sub, SubscriptionBundle bundle,
-            Parameter param, Levels level, GriddedTime time, Ensemble ensemble) {
+    private Retrieval getRetrieval(
+            Subscription<GriddedTime, GriddedCoverage> sub,
+            SubscriptionBundle bundle, Parameter param, Levels level,
+            GriddedTime time, Ensemble ensemble) {
 
         Retrieval retrieval = new Retrieval();
         retrieval.setSubscriptionName(sub.getName());
@@ -398,9 +412,9 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
 
         // Coverage and type processing
         GriddedCoverage cov = sub.getCoverage();
-        
+
         // Attribute processing
-        RetrievalAttribute<GriddedTime, GriddedCoverage> att = new RetrievalAttribute<GriddedTime, GriddedCoverage>();
+        RetrievalAttribute<GriddedTime, GriddedCoverage> att = new RetrievalAttribute<>();
         Parameter lparam = processParameter(param);
         att.setCoverage(cov);
         lparam.setLevels(level);
@@ -410,15 +424,15 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
         att.setSubName(retrieval.getSubscriptionName());
         Provider provider;
         try {
-            provider = DataDeliveryHandlers.getProviderHandler().getByName(
-                    sub.getProvider());
+            provider = DataDeliveryHandlers.getProviderHandler()
+                    .getByName(sub.getProvider());
         } catch (RegistryHandlerException e) {
-            throw new IllegalArgumentException(
-                    "Error looking up the provider!", e);
+            throw new IllegalArgumentException("Error looking up the provider!",
+                    e);
         }
         // Look up the provider's configured plugin for this data type
-        ProviderType providerType = provider.getProviderType(sub
-                .getDataSetType());
+        ProviderType providerType = provider
+                .getProviderType(sub.getDataSetType());
         att.setPlugin(providerType.getPlugin());
         att.setProvider(sub.getProvider());
         retrieval.addAttribute(att);
@@ -446,13 +460,13 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
 
         int sfactor = 0;
 
-        if (size > 1000000) {
+        if (size > 1_000_000) {
             sfactor = 1;
-        } else if (size < 1000000 && size > 750000) {
+        } else if (size < 1_000_000 && size > 750_000) {
             sfactor = 2;
-        } else if (size < 750000 && size > 500000) {
+        } else if (size < 750_000 && size > 500_000) {
             sfactor = 3;
-        } else if (size < 500000 && size > 250000) {
+        } else if (size < 500_000 && size > 250_000) {
             sfactor = 4;
         } else {
             sfactor = 5;
@@ -471,7 +485,7 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
     private List<Levels> processLevels(List<Integer> levelSequence,
             Levels parmLevels) {
 
-        List<Levels> levels = new ArrayList<Levels>();
+        List<Levels> levels = new ArrayList<>();
         for (int i = 0; i < levelSequence.size(); i++) {
             Levels level = new Levels();
             level.setLevel(parmLevels.getLevel());
@@ -496,9 +510,10 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
      * @param subTime
      * @return
      */
-    private ArrayList<GriddedTime> processTime(List<Integer> timeSequence, GriddedTime subTime) {
+    private ArrayList<GriddedTime> processTime(List<Integer> timeSequence,
+            GriddedTime subTime) {
 
-        ArrayList<GriddedTime> times = new ArrayList<GriddedTime>();
+        ArrayList<GriddedTime> times = new ArrayList<>();
         for (int i = 0; i < timeSequence.size(); i++) {
             GriddedTime time = new GriddedTime();
             time.setEnd(subTime.getEnd());
@@ -507,7 +522,7 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
             time.setFormat(subTime.getFormat());
             time.setStep(subTime.getStep());
             time.setStepUnit(subTime.getStepUnit());
-            ArrayList<Integer> indicies = new ArrayList<Integer>(1);
+            ArrayList<Integer> indicies = new ArrayList<>(1);
             indicies.add(timeSequence.get(i));
             time.setSelectedTimeIndices(indicies);
             time.setRequestStartTimeAsInt(timeSequence.get(i));
@@ -522,11 +537,12 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
      * Remove duplicate levels, times, subscriptions
      */
     @Override
-    protected Subscription<GriddedTime, GriddedCoverage> removeDuplicates(Subscription<GriddedTime, GriddedCoverage> sub) {
+    protected Subscription<GriddedTime, GriddedCoverage> removeDuplicates(
+            Subscription<GriddedTime, GriddedCoverage> sub) {
 
         GriddedCoverage cov = sub.getCoverage();
         GriddedTime time = sub.getTime();
-        
+
         int sfactor = getSizingFactor(getDimensionalSize(cov));
 
         List<String> ensembles = null;
@@ -536,13 +552,12 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
             ensembles = Arrays.asList((String) null);
         }
 
-        for (List<Integer> timeSequence : time.getTimeSequences(
-                sfactor)) {
+        for (List<Integer> timeSequence : time.getTimeSequences(sfactor)) {
 
-            for (Parameter param : (List<Parameter>)sub.getParameter()) {
+            for (Parameter param : (List<Parameter>) sub.getParameter()) {
 
-                if (param.getLevels().getSelectedLevelIndices() == null
-                        || param.getLevels().getSelectedLevelIndices().size() == 0) {
+                if (param.getLevels().getSelectedLevelIndices() == null || param
+                        .getLevels().getSelectedLevelIndices().size() == 0) {
                     // levels don't matter so much here it's just one
                     param.getLevels().setRequestLevelEnd(0);
                     param.getLevels().setRequestLevelStart(0);
@@ -558,8 +573,7 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
                             .getOpenDAPGridLevels(param.getLevels());
 
                     Map<DataTime, List<Level>> dups = getGridDuplicates(
-                            sub.getName(),
- param, times, levels, ensembles,
+                            sub.getName(), param, times, levels, ensembles,
                             cov);
 
                     for (int i = 0; i < times.size(); i++) {
@@ -595,8 +609,7 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
                         }
 
                         Map<DataTime, List<Level>> dups = getGridDuplicates(
-                                sub.getName(), param, times, plevels,
-                                ensembles,
+                                sub.getName(), param, times, plevels, ensembles,
                                 cov);
 
                         for (int i = 0; i < times.size(); i++) {
@@ -638,8 +651,8 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
         }
         // remove entire subscription, it's a duplicate
         if (time.getSelectedTimeIndices().size() == 0) {
-            statusHandler.info("Removing duplicate subscription: "
-                    + sub.getName());
+            statusHandler
+                    .info("Removing duplicate subscription: " + sub.getName());
             return null;
         }
 
@@ -647,4 +660,4 @@ class OpenDAPRetrievalGenerator extends RetrievalGenerator<GriddedTime, GriddedC
 
     }
 
- }
+}

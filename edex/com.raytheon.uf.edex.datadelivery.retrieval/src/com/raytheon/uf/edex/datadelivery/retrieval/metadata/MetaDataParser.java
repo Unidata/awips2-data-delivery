@@ -26,6 +26,9 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataSetName;
@@ -38,6 +41,8 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHand
 import com.raytheon.uf.common.datadelivery.registry.handlers.ParameterHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetBounds;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
@@ -48,6 +53,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
 
 /**
  * Parse MetaData.
@@ -81,6 +87,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
  *                                  prevented storage.
  * Jul 22, 2016  5752     tjensen   Fix storeDataSet and add additional logging
  *                                  information
+ * Apr 05, 2017  1045     tjensen   Update for moving datasets
  * 
  * </pre>
  * 
@@ -151,12 +158,12 @@ public abstract class MetaDataParser<O extends Object>
      * @param DataSetMetaData
      *            <?>
      */
-    public void storeMetaData(final DataSetMetaData<?> metaData) {
+    public void storeMetaData(final DataSetMetaData<?, ?> metaData) {
 
         DataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
         final String description = metaData.getDataSetDescription();
-        DataSetMetaData<?> currentMetaData = null;
+        DataSetMetaData<?, ?> currentMetaData = null;
         boolean store = false;
 
         try {
@@ -223,17 +230,17 @@ public abstract class MetaDataParser<O extends Object>
      */
     @SuppressWarnings("rawtypes")
     @Override
-    public void storeMetaData(final List<DataSetMetaData<?>> metaDatas,
+    public void storeMetaData(final List<DataSetMetaData<?, ?>> metaDatas,
             final DataSet dataSet) {
 
         DataSetMetaDataHandler handler = DataDeliveryHandlers
                 .getDataSetMetaDataHandler();
-        Iterator<DataSetMetaData<?>> iter = metaDatas.iterator();
+        Iterator<DataSetMetaData<?, ?>> iter = metaDatas.iterator();
 
         while (iter.hasNext()) {
 
-            final DataSetMetaData<?> dsmd = iter.next();
-            DataSetMetaData<?> currentMetaData = null;
+            final DataSetMetaData<?, ?> dsmd = iter.next();
+            DataSetMetaData<?, ?> currentMetaData = null;
             final String url = dsmd.getUrl();
             boolean store = false;
 
@@ -259,11 +266,8 @@ public abstract class MetaDataParser<O extends Object>
                     statusHandler.info("DataSetMetaData [" + url
                             + "] successfully stored in Registry");
                 } catch (RegistryHandlerException e) {
-                    statusHandler
-                            .handle(Priority.PROBLEM,
-                                    "DataSetMetaData [" + url
-                                            + "] failed to store in Registry",
-                                    e);
+                    statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
+                            + url + "] failed to store in Registry", e);
 
                 }
             }
@@ -383,4 +387,44 @@ public abstract class MetaDataParser<O extends Object>
         return (int) offset;
     }
 
+    protected boolean getIsMovingFromConfig(String dsName, String provider) {
+        boolean moving = false;
+
+        DataSetConfigInfo dsci = LookupManager.getInstance()
+                .getDataSetConfigInfo(dsName, provider);
+        if (dsci != null) {
+            moving = dsci.isMoving();
+        }
+        return moving;
+    }
+
+    protected Coverage getParentBoundsFromConfig(String dsName, String provider,
+            CoordinateReferenceSystem crs) {
+        Coverage parentCoverage = null;
+
+        DataSetConfigInfo dsci = LookupManager.getInstance()
+                .getDataSetConfigInfo(dsName, provider);
+        if (dsci != null) {
+            DataSetBounds parentBounds = dsci.getParentBounds();
+
+            if (parentBounds != null) {
+                parentCoverage = CoverageUtil
+                        .buildCoverage(parentBounds.getCoordList(), crs);
+            } else {
+                parentCoverage = CoverageUtil.buildDefaultCoverage(crs);
+            }
+        }
+        return parentCoverage;
+    }
+
+    protected long getSizeEstFromConfig(String dsName, String provider) {
+        long estSize = 0;
+
+        DataSetConfigInfo dsci = LookupManager.getInstance()
+                .getDataSetConfigInfo(dsName, provider);
+        if (dsci != null) {
+            estSize = dsci.getSizeEstimate();
+        }
+        return estSize;
+    }
 }

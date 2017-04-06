@@ -42,13 +42,15 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 03, 2012 1241       djohnson    Initial creation
- * Oct 17, 2012 0726       djohnson    Move in {@link #getByDataSet}.
- * Jun 24, 2013 2106       djohnson    Now composes a registryHandler.
- * Jul 28, 2014 2752       dhladky     Added new method functions for more efficient querying.
- * Feb 19, 2015 3998       dhladky     Streamlined adhoc sub processing.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 03, 2012  1241     djohnson  Initial creation
+ * Oct 17, 2012  726      djohnson  Move in {@link #getByDataSet}.
+ * Jun 24, 2013  2106     djohnson  Now composes a registryHandler.
+ * Jul 28, 2014  2752     dhladky   Added new method functions for more
+ *                                  efficient querying.
+ * Feb 19, 2015  3998     dhladky   Streamlined adhoc sub processing.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * 
  * </pre>
  * 
@@ -56,17 +58,16 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * @version 1.0
  */
 
-public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?>, QUERY extends DataSetMetaDataFilterableQuery<T>>
-        extends BaseRegistryObjectHandler<T, QUERY> implements
-        IBaseDataSetMetaDataHandler<T> {
+public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?, ?>, QUERY extends DataSetMetaDataFilterableQuery<T>>
+        extends BaseRegistryObjectHandler<T, QUERY>
+        implements IBaseDataSetMetaDataHandler<T> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Set<ImmutableDate> getDatesForDataSet(
-            String dataSetName, String providerName)
-            throws RegistryHandlerException {
+    public Set<ImmutableDate> getDatesForDataSet(String dataSetName,
+            String providerName) throws RegistryHandlerException {
         DataSetMetaDataDatesQuery query = new DataSetMetaDataDatesQuery();
         query.setDataSetName(dataSetName);
         query.setProviderName(providerName);
@@ -76,15 +77,15 @@ public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?>, Q
 
         checkResponse(response, "getDatesForDataSet");
 
-        return new HashSet<ImmutableDate>(response.getResults());
+        return new HashSet<>(response.getResults());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<T> getByDataSet(String dataSetName,
-            String providerName) throws RegistryHandlerException {
+    public List<T> getByDataSet(String dataSetName, String providerName)
+            throws RegistryHandlerException {
         QUERY query = getQuery();
         query.setDataSetName(dataSetName);
         query.setProviderName(providerName);
@@ -95,15 +96,14 @@ public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?>, Q
 
         return response.getResults();
     }
-    
+
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    public T getByDataSetDate(String dataSetName,
-            String providerName, Date date)
-            throws RegistryHandlerException {
+    public T getByDataSetDate(String dataSetName, String providerName,
+            Date date) throws RegistryHandlerException {
         DataSetMetaDataQuery query = new DataSetMetaDataQuery();
         query.setDataSetName(dataSetName);
         query.setProviderName(providerName);
@@ -116,56 +116,62 @@ public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?>, Q
 
         return (T) response.getSingleResult();
     }
-    
+
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public List<T> getDataSetMetaDataToDate(String dataSetName,
-            String providerName, Date planEnd)
-            throws RegistryHandlerException {
-        
-        // First, get date list for this dataSet. Then add only dates before planEnd.
-        Set<ImmutableDate> dates = getDatesForDataSet(dataSetName, providerName);
-        List<ImmutableDate> dateList = new ArrayList<ImmutableDate>();
-        for (ImmutableDate id: dates) {
-            if(id.before(planEnd)) {
+            String providerName, Date planEnd) throws RegistryHandlerException {
+
+        /*
+         * First, get date list for this dataSet. Then add only dates before
+         * planEnd.
+         */
+        Set<ImmutableDate> dates = getDatesForDataSet(dataSetName,
+                providerName);
+        List<ImmutableDate> dateList = new ArrayList<>();
+        for (ImmutableDate id : dates) {
+            if (id.before(planEnd)) {
                 dateList.add(id);
             }
         }
-        
+
         // ensure proper sorting
         Collections.sort(dateList);
-        
-        // Now make our actual query for DSMD's, will return them in ordered by date.
+
+        /*
+         * Now make our actual query for DSMD's, will return them in ordered by
+         * date.
+         */
         DataSetMetaDataQuery query = new DataSetMetaDataQuery();
         query.setDataSetName(dataSetName);
         query.setProviderName(providerName);
         query.setDates(dateList);
 
-        RegistryQueryResponse<DataSetMetaData> response = registryHandler.getObjects(query);
+        RegistryQueryResponse<DataSetMetaData> response = registryHandler
+                .getObjects(query);
 
         checkResponse(response, "getDataSetMetaToDate");
 
         return (List<T>) response.getResults();
     }
-    
- 
+
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    public T getMostRecentDataSetMetaData(
-            String dataSetName, String providerName)
-            throws RegistryHandlerException {
-        
+    public T getMostRecentDataSetMetaData(String dataSetName,
+            String providerName) throws RegistryHandlerException {
+
         // First, get date list for this dataSet.
-        Set<ImmutableDate> dates = getDatesForDataSet(dataSetName, providerName);
+        Set<ImmutableDate> dates = getDatesForDataSet(dataSetName,
+                providerName);
         // Then get the most recent one.
         ImmutableDate mostRecent = null;
-        for (ImmutableDate id: dates) {
+        for (ImmutableDate id : dates) {
             if (mostRecent == null || id.after(mostRecent)) {
                 mostRecent = id;
             }
@@ -176,11 +182,12 @@ public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?>, Q
         query.setProviderName(providerName);
         query.setDate(mostRecent);
 
-        RegistryQueryResponse<DataSetMetaData> response = registryHandler.getObjects(query);
+        RegistryQueryResponse<DataSetMetaData> response = registryHandler
+                .getObjects(query);
 
         checkResponse(response, "getMostRecentDataSetMetaData");
 
         return (T) response.getSingleResult();
     }
-    
+
 }

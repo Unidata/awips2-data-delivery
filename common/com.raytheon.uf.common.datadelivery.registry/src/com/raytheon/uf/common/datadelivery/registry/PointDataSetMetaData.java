@@ -1,4 +1,5 @@
 package com.raytheon.uf.common.datadelivery.registry;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -24,17 +25,20 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.registry.annotations.RegistryObjectVersion;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
+
 /**
  * Point Meta Data object
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 20, 2012  754      dhladky     Initial creation
- * Sept 30, 2013 1797     dhladky     Generics
- * Apr 14, 2014  3012      dhladky     Unneeded method removed.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------
+ * Aug 20, 2012  754      dhladky   Initial creation
+ * Sep 30, 2013  1797     dhladky   Generics
+ * Apr 14, 2014  3012     dhladky   Unneeded method removed.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * 
  * </pre>
  * 
@@ -46,10 +50,10 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 @XmlAccessorType(XmlAccessType.NONE)
 @RegistryObjectVersion(value = 1.0f)
 @DynamicSerialize
-public class PointDataSetMetaData extends DataSetMetaData<PointTime> {
+public class PointDataSetMetaData extends DataSetMetaData<PointTime, Coverage> {
 
     public PointDataSetMetaData() {
-        
+
     }
-  
+
 }

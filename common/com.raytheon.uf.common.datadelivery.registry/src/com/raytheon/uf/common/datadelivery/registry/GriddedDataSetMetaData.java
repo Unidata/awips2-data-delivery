@@ -20,14 +20,17 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011    218      dhladky     Initial creation
- * Jul 24, 2012    955      djohnson    Add {@link RegistryObject}.
- * Aug 20, 2012   0743      djohnson    Store cycle in a slot.
- * Nov 19, 2012 1166        djohnson    Clean up JAXB representation of registry objects.
- * Sept 30, 2013 1797       dhladky     Generics
- * Dec 20, 2013  2636       mpduff      Add equals/hashcode.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2011  218      dhladky   Initial creation
+ * Jul 24, 2012  955      djohnson  Add {@link RegistryObject}.
+ * Aug 20, 2012  743      djohnson  Store cycle in a slot.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Sep 30, 2013  1797     dhladky   Generics
+ * Dec 20, 2013  2636     mpduff    Add equals/hashcode.
+ * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * 
  * </pre>
  * 
@@ -36,8 +39,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso(OpenDapGriddedDataSetMetaData.class)
-public abstract class GriddedDataSetMetaData extends
-        DataSetMetaData<GriddedTime> {
+public abstract class GriddedDataSetMetaData
+        extends DataSetMetaData<GriddedTime, GriddedCoverage> {
 
     public static final String CYCLE_SLOT = "cycle";
 
@@ -51,7 +54,7 @@ public abstract class GriddedDataSetMetaData extends
      */
     @DynamicSerializeElement
     @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
-    private Map<DataLevelType, Levels> levelTypes = new HashMap<DataLevelType, Levels>();
+    private Map<DataLevelType, Levels> levelTypes = new HashMap<>();
 
     /**
      * map of the level types available in set
@@ -71,7 +74,7 @@ public abstract class GriddedDataSetMetaData extends
 
     public void addLevelType(DataLevelType type, Levels levels) {
         if (levelTypes == null) {
-            levelTypes = new HashMap<DataLevelType, Levels>();
+            levelTypes = new HashMap<>();
         }
         if (!levelTypes.containsKey(type)) {
             levelTypes.put(type, levels);
@@ -86,11 +89,6 @@ public abstract class GriddedDataSetMetaData extends
         return cycle;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -101,11 +99,6 @@ public abstract class GriddedDataSetMetaData extends
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -114,7 +107,7 @@ public abstract class GriddedDataSetMetaData extends
         if (!super.equals(obj)) {
             return false;
         }
-        if (!(obj instanceof GriddedDataSetMetaData)) {
+        if (this.getClass() != obj.getClass()) {
             return false;
         }
         GriddedDataSetMetaData other = (GriddedDataSetMetaData) obj;

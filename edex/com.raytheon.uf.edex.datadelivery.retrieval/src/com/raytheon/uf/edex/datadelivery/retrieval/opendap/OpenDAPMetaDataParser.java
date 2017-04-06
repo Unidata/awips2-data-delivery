@@ -121,6 +121,7 @@ import opendap.dap.NoSuchAttributeException;
  * Mar 02, 2017  5988        tjensen   Update level population for friendly
  *                                     naming
  * Mar 08, 2017  6089        tjensen   Drop date format from parseMetadata calls
+ * Apr 05, 2017  1045        tjensen   Update for moving datasets
  * 
  * </pre>
  * 
@@ -220,7 +221,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
     private Map<String, Parameter> getParameters(DAS das,
             GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd, Link link,
             Collection collection, String dataDateFormat)
-                    throws NoSuchAttributeException {
+            throws NoSuchAttributeException {
 
         final String collectionName = dataSet.getCollectionName();
         final String url = gdsmd.getUrl();
@@ -257,7 +258,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         final String missing_value = serviceConfig
                 .getConstantValue("MISSING_VALUE");
         final String fill_value = serviceConfig.getConstantValue("FILL_VALUE");
-        final String fill = new Float(GridUtil.GRID_FILL_VALUE).toString();
+        final String fill = Float.toString(GridUtil.GRID_FILL_VALUE);
 
         // process globals first
         // process time
@@ -306,13 +307,13 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                         .trim(at.getAttribute(minimum).getValueAt(0)))
                                 .doubleValue());
 
-                upperLeft.y = new Double(OpenDAPParseUtility.getInstance()
-                        .trim(at.getAttribute(maximum).getValueAt(0)))
-                                .doubleValue();
+                upperLeft.y = Double
+                        .parseDouble(OpenDAPParseUtility.getInstance()
+                                .trim(at.getAttribute(maximum).getValueAt(0)));
 
-                lowerRight.y = new Double(OpenDAPParseUtility.getInstance()
-                        .trim(at.getAttribute(minimum).getValueAt(0)))
-                                .doubleValue();
+                lowerRight.y = Double
+                        .parseDouble(OpenDAPParseUtility.getInstance()
+                                .trim(at.getAttribute(minimum).getValueAt(0)));
 
             } catch (Exception le) {
                 statusHandler.error(" Couldn't parse Latitude: " + lat
@@ -421,7 +422,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     } catch (Exception iae) {
                         statusHandler.handle(Priority.PROBLEM,
                                 "Invalid DAP description block! "
-                                        + providerName);
+                                        + providerName,
+                                iae);
                     }
                     // Clean up description stuff
                     description = description.replaceAll("^[* ]+", "");
@@ -474,7 +476,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     } catch (Exception iae) {
                         statusHandler.handle(Priority.PROBLEM,
                                 "Invalid DAP missing value block! "
-                                        + providerName);
+                                        + providerName,
+                                iae);
                         parm.setMissingValue(fill);
                     }
 
@@ -484,8 +487,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                         .getValueAt(0)));
                     } catch (Exception iae) {
                         statusHandler.handle(Priority.PROBLEM,
-                                "Invalid DAP fill value block! "
-                                        + providerName);
+                                "Invalid DAP fill value block! " + providerName,
+                                iae);
                         parm.setMissingValue(fill);
                     }
 
@@ -564,8 +567,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
              * the begining of the string, set the param name to the name for
              * that regex.
              */
-            for (String key : pnr.keySet()) {
-                ParameterNameRegex nameRegex = pnr.get(key);
+            for (ParameterNameRegex nameRegex : pnr.values()) {
                 m = nameRegex.getPattern().matcher(tempDescription);
                 if (m.find()) {
                     paramName = nameRegex.getAwips();
@@ -592,7 +594,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         Map<String, ParameterNameRegex> pnr = LookupManager.getInstance()
                 .getParamNameRegexes();
 
-        String levelInfo = "";
+        StringBuilder sb = new StringBuilder();
+
         if (plr != null && pnr != null) {
             Matcher m = null;
             String tempDescription = description;
@@ -601,19 +604,20 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 if (m.find()) {
                     // Save off the level info
                     if (myPLR.getLevelGroup() != null) {
-                        levelInfo = m.group(0).replaceAll(myPLR.getRegex(),
-                                myPLR.getLevelGroup());
+                        sb.append(m.group(0).replaceAll(myPLR.getRegex(),
+                                myPLR.getLevelGroup()));
                     }
                     if (myPLR.getUnits() != null) {
-                        levelInfo += myPLR.getUnits();
+                        sb.append(myPLR.getUnits());
                     }
                     DataLevelType type = new DataLevelType(
                             LevelType.fromDescription(myPLR.getLevel()));
-                    levelInfo += " " + type.getType().toString();
+                    sb.append(" " + type.getType().toString());
                     break;
                 }
             }
         }
+        String levelInfo = sb.toString();
 
         return levelInfo.trim();
     }
@@ -657,11 +661,11 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
     }
 
     @Override
-    public List<DataSetMetaData<?>> parseMetaData(Provider provider,
+    public List<DataSetMetaData<?, ?>> parseMetaData(Provider provider,
             LinkStore store, Collection collection, String dataDateFormat)
-                    throws NoSuchAttributeException {
+            throws NoSuchAttributeException {
 
-        final Map<OpenDapGriddedDataSet, List<DataSetMetaData<?>>> metaDatas = new HashMap<>();
+        final Map<OpenDapGriddedDataSet, List<DataSetMetaData<?, ?>>> metaDatas = new HashMap<>();
 
         Set<String> linkKeys = new TreeSet<>(store.getLinkKeys());
 
@@ -672,7 +676,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         for (String linkKey : linkKeys) {
             OpenDapGriddedDataSet dataSet = new OpenDapGriddedDataSet();
             dataSet.setCollectionName(collection.getName());
-            dataSet.setProviderName(provider.getName());
+            String providerName = provider.getName();
+            dataSet.setProviderName(providerName);
 
             final GriddedDataSetMetaData gdsmd = new OpenDapGriddedDataSetMetaData();
 
@@ -683,7 +688,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 vals = OpenDAPParseUtility.getInstance()
                         .getDataSetNameAndCycle(linkKey, collection);
             } catch (Exception e1) {
-                statusHandler.handle(Priority.PROBLEM,
+                throw new IllegalStateException(
                         "Failed to get cycle and dataset name set...", e1);
             }
             dataSet.setDataSetName(vals.get(0));
@@ -773,9 +778,27 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             gdsmd.setAvailabilityOffset((int) offset);
             gdsmd.setArrivalTime(arrivalTime);
 
+            String dsName = dataSet.getDataSetName();
+            boolean isMoving = getIsMovingFromConfig(dsName, providerName);
+            if (isMoving) {
+                /*
+                 * If this is a moving dataset, save the coverage for this
+                 * specific instance of the product in the metadata instead of
+                 * on the dataset itself. Coverage on the dataset will store the
+                 * 'parent coverage' (the outer bounds of where this product can
+                 * be positioned).
+                 */
+                gdsmd.setInstanceCoverage(dataSet.getCoverage());
+            }
+            dataSet.applyInfoFromConfig(isMoving,
+                    new GriddedCoverage(
+                            getParentBoundsFromConfig(dsName, providerName,
+                                    dataSet.getCoverage().getEnvelope()
+                                            .getCoordinateReferenceSystem())),
+                    getSizeEstFromConfig(dsName, providerName));
+
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler
-                        .debug("Dataset Name: " + dataSet.getDataSetName());
+                statusHandler.debug("Dataset Name: " + dsName);
                 statusHandler.debug("StartTime:    " + gdsmd.getTime());
                 statusHandler.debug(
                         "Offset:       " + dataSet.getAvailabilityOffset());
@@ -783,7 +806,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                         .debug("Arrival Time: " + dataSet.getArrivalTime());
             }
 
-            List<DataSetMetaData<?>> toStore = metaDatas.get(dataSet);
+            List<DataSetMetaData<?, ?>> toStore = metaDatas.get(dataSet);
 
             if (toStore == null) {
                 toStore = new ArrayList<>();
@@ -793,10 +816,11 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             toStore.add(gdsmd);
         }
 
-        List<DataSetMetaData<?>> parsedMetadatas = new ArrayList<>();
+        List<DataSetMetaData<?, ?>> parsedMetadatas = new ArrayList<>();
         for (DataSet<GriddedTime, GriddedCoverage> dataSet : metaDatas
                 .keySet()) {
-            List<DataSetMetaData<?>> dataSetMetaDatas = metaDatas.get(dataSet);
+            List<DataSetMetaData<?, ?>> dataSetMetaDatas = metaDatas
+                    .get(dataSet);
 
             storeDataSet(dataSet);
             storeMetaData(dataSetMetaDatas, dataSet);
