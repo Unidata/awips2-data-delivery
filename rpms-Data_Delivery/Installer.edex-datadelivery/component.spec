@@ -82,25 +82,30 @@ fi
 %pre
 %post
 
-#add services to the edex service list
-LIST_FILE=/awips2/etc/edexServiceList
-DD_SERVICES=(registry)
 
-if [ -f $LIST_FILE ]; then
-   source $LIST_FILE
+#update edexServiceList on install 
+if [ "${1}" = "1" ]; then 
 
-   for service in ${DD_SERVICES[*]}; do
-       if [[ ! ${SERVICES[@]} =~ $service ]]; then
-           SERVICES=(${SERVICES[@]} $service)
-       fi
-   done
+  #add services to the edex service list
+  LIST_FILE=/etc/init.d/edexServiceList
+  DD_SERVICES=(registry)
 
-else
-   SERVICES=$DD_SERVICES
+  if [ -f $LIST_FILE ]; then
+     source $LIST_FILE
+
+     for service in ${DD_SERVICES[*]}; do
+         if [[ ! ${SERVICES[@]} =~ $service ]]; then
+             SERVICES=(${SERVICES[@]} $service)
+         fi
+     done
+  else
+     SERVICES=$DD_SERVICES
+  fi
+
+  echo "#list generated on $(date)" > $LIST_FILE
+  echo "export SERVICES=(${SERVICES[@]})" >> $LIST_FILE
+
 fi
-
-echo "#list generated on $(date)" > $LIST_FILE
-echo "export SERVICES=(${SERVICES[@]})" >> $LIST_FILE
 
 #change date stamp of utility files
 UTILITY=/awips2/edex/data/utility
