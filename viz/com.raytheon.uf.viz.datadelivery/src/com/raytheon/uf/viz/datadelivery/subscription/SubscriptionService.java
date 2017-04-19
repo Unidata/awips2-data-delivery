@@ -72,11 +72,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * Basic implementation of the {@link ISubscriptionService}.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 07, 2012 1286       djohnson     Initial creation
@@ -105,11 +105,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * Feb 21, 2017  746       bsteffen     Do not deactivate after increasing latency.
- * 
+ * Apr 10, 2017  6074      mapeters     Activate after increasing latency.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 public class SubscriptionService implements ISubscriptionService {
@@ -122,18 +122,20 @@ public class SubscriptionService implements ISubscriptionService {
     private static final String DUPLICATE_SUBSCRIPTIONS = "This subscription is completely fulfilled by ";
 
     /**
-     * Implementation of {@link IDisplayForceApplyPrompt} that uses an SWT
-     * dialog.
+     * Uses an SWT dialog to shell a force apply prompt.
      */
-    private static class DisplayForceApplyPrompt implements
-            IDisplayForceApplyPrompt {
+    private static class DisplayForceApplyPrompt {
 
         private ForceApplyPromptResponse forceApplyPromptResponse = ForceApplyPromptResponse.CANCEL;
 
         /**
-         * {@inheritDoc}
+         * Display the force apply prompt.
+         *
+         * @param configuration
+         *            the configuration
+         *
+         * @return the response
          */
-        @Override
         public ForceApplyPromptResponse displayForceApplyPrompt(
                 ForceApplyPromptConfiguration configuration) {
             DisplayForceApplyPromptDialog dlg = new DisplayForceApplyPromptDialog(
@@ -146,15 +148,16 @@ public class SubscriptionService implements ISubscriptionService {
          * get the response from the last call to the displayForceApplyPrompt
          * method.
          */
-        @Override
         public ForceApplyPromptResponse getForceApplyPromptResponse() {
             return forceApplyPromptResponse;
         }
 
         /**
-         * {@inheritDoc}
+         * Display a popup message to the user.
+         *
+         * @param displayTextStrategy
+         * @param message
          */
-        @Override
         public void displayMessage(
                 IForceApplyPromptDisplayText displayTextStrategy,
                 final String message) {
@@ -181,7 +184,7 @@ public class SubscriptionService implements ISubscriptionService {
 
     private final IPermissionsService permissionsService;
 
-    private final IDisplayForceApplyPrompt forceApplyPrompt;
+    private final DisplayForceApplyPrompt forceApplyPrompt;
 
     /**
      * Result class used internally to denote whether the user should be
@@ -216,41 +219,13 @@ public class SubscriptionService implements ISubscriptionService {
     }
 
     /**
-     * Interface representing shelling a force apply prompt.
-     */
-    @VisibleForTesting
-    static interface IDisplayForceApplyPrompt {
-        /**
-         * Display the force apply prompt.
-         * 
-         * @param configuration
-         *            the configuration
-         * 
-         * @return the response
-         */
-        ForceApplyPromptResponse displayForceApplyPrompt(
-                ForceApplyPromptConfiguration configuration);
-
-        ForceApplyPromptResponse getForceApplyPromptResponse();
-
-        /**
-         * Display a popup message to the user.
-         * 
-         * @param displayTextStrategy
-         * @param message
-         */
-        void displayMessage(IForceApplyPromptDisplayText displayTextStrategy,
-                String message);
-    }
-
-    /**
      * Interface that must be implemented by classes that will be showing a
      * force apply prompt message.
      */
     public static interface IForceApplyPromptDisplayText {
         /**
          * Retrieve the display text that will be displayed for each option.
-         * 
+         *
          * @param option
          *            the option
          * @param requiredLatency
@@ -270,7 +245,7 @@ public class SubscriptionService implements ISubscriptionService {
 
         /**
          * Get the shell to use.
-         * 
+         *
          * @return the shell
          */
         Shell getShell();
@@ -280,7 +255,7 @@ public class SubscriptionService implements ISubscriptionService {
      * Private constructor. Use
      * {@link #newInstance(SendToServerSubscriptionNotificationService)}
      * instead.
-     * 
+     *
      * @param notificationService
      *            the subscription notification service
      * @param bandwidthService
@@ -292,7 +267,7 @@ public class SubscriptionService implements ISubscriptionService {
             SendToServerSubscriptionNotificationService notificationService,
             BandwidthService bandwidthService,
             IPermissionsService permissionsService,
-            IDisplayForceApplyPrompt displayForceApplyPrompt) {
+            DisplayForceApplyPrompt displayForceApplyPrompt) {
         this.notificationService = notificationService;
         this.bandwidthService = bandwidthService;
         this.permissionsService = permissionsService;
@@ -303,7 +278,7 @@ public class SubscriptionService implements ISubscriptionService {
      * Factory method to create an {@link ISubscriptionService}. Allows for
      * changing to use sub-classes or different implementations later, without
      * tying specifically to the implementation class.
-     * 
+     *
      * @param notificationService
      * @param bandwidthService
      * @param permissionsService
@@ -352,7 +327,7 @@ public class SubscriptionService implements ISubscriptionService {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      */
     @Override
     public SubscriptionServiceResult update(final String username,
@@ -392,8 +367,8 @@ public class SubscriptionService implements ISubscriptionService {
             public String call() throws RegistryHandlerException {
                 for (Subscription sub : subs) {
                     sub.setUnscheduled(false);
-                    DataDeliveryHandlers.getSubscriptionHandler().update(
-                            username, sub);
+                    DataDeliveryHandlers.getSubscriptionHandler()
+                            .update(username, sub);
                 }
                 return successMessage;
             }
@@ -434,10 +409,9 @@ public class SubscriptionService implements ISubscriptionService {
                             continue;
                         }
                     } catch (RegistryHandlerException e1) {
-                        statusHandler
-                                .handle(Priority.INFO,
-                                        DataDeliveryUtils.UNABLE_TO_RETRIEVE_PENDING_SUBSCRIPTIONS,
-                                        e1);
+                        statusHandler.handle(Priority.INFO,
+                                DataDeliveryUtils.UNABLE_TO_RETRIEVE_PENDING_SUBSCRIPTIONS,
+                                e1);
                         unableToUpdate.add(subscription.getName());
                         continue;
                     }
@@ -448,14 +422,14 @@ public class SubscriptionService implements ISubscriptionService {
                     try {
                         if (!(permissionsService instanceof RequestFromServerPermissionsService)) {
                             throw new RegistryHandlerException(
-                                    "Invalid Handler "
-                                            + permissionsService.getClass()
-                                                    .toString());
+                                    "Invalid Handler " + permissionsService
+                                            .getClass().toString());
                         }
                         boolean authorized = ((RequestFromServerPermissionsService) permissionsService)
                                 .checkPermissionToChangeSubscription(user,
                                         PENDING_SUBSCRIPTION_AWAITING_APPROVAL,
-                                        subscription).isAuthorized();
+                                        subscription)
+                                .isAuthorized();
                         try {
                             if (authorized) {
                                 subscription.setUnscheduled(false);
@@ -464,16 +438,15 @@ public class SubscriptionService implements ISubscriptionService {
                             } else {
                                 PendingSubscription pendingSub = subscription
                                         .pending(username);
-                                pendingSub
-                                        .setChangeReason("Group Definition Changed");
+                                pendingSub.setChangeReason(
+                                        "Group Definition Changed");
                                 savePendingSub(pendingSub, username);
                                 pendingCreated.add(subscription.getName());
                             }
                         } catch (RegistryHandlerException e1) {
-                            statusHandler
-                                    .handle(Priority.INFO,
-                                            DataDeliveryUtils.UNABLE_TO_RETRIEVE_PENDING_SUBSCRIPTIONS,
-                                            e1);
+                            statusHandler.handle(Priority.INFO,
+                                    DataDeliveryUtils.UNABLE_TO_RETRIEVE_PENDING_SUBSCRIPTIONS,
+                                    e1);
                             unableToUpdate.add(subscription.getName());
                             continue;
                         }
@@ -483,18 +456,15 @@ public class SubscriptionService implements ISubscriptionService {
                                 e.getLocalizedMessage(), e);
                     }
                 }
-                appendCollectionPortion(
-                        successMessage,
+                appendCollectionPortion(successMessage,
                         "\n\nThe following subscriptions have pending changes awaiting approval:",
                         pendingCreated);
 
-                appendCollectionPortion(
-                        successMessage,
+                appendCollectionPortion(successMessage,
                         "\n\nThe following subscriptions already had pending changes and were not modified:",
                         alreadyPending);
 
-                appendCollectionPortion(
-                        successMessage,
+                appendCollectionPortion(successMessage,
                         "\n\nThe following subscriptions were unable to be modified:",
                         unableToUpdate);
 
@@ -516,7 +486,7 @@ public class SubscriptionService implements ISubscriptionService {
             throws RegistryHandlerException {
 
         final List<Subscription> subscriptions = Arrays
-                .<Subscription> asList(sub);
+                .<Subscription>asList(sub);
         final String successMessage = "The query was successfully stored.";
         final ServiceInteraction action = new ServiceInteraction() {
             @Override
@@ -549,7 +519,7 @@ public class SubscriptionService implements ISubscriptionService {
      * would like to continue with the action forcibly. If so, the action is
      * performed and the affected subscriptions are updated to be in the
      * unscheduled state.
-     * 
+     *
      * @param subscriptions
      * @param action
      * @param displayTextStrategy
@@ -568,10 +538,11 @@ public class SubscriptionService implements ISubscriptionService {
 
         /*
          * If activating the subscriptions check for overlaps.
-         * 
+         *
          * Only need to check one because all are being updated the same way.
          */
-        if (subscriptions.get(0).getSubscriptionState() == SubscriptionState.ON) {
+        if (subscriptions.get(0)
+                .getSubscriptionState() == SubscriptionState.ON) {
             SubscriptionOverlapRequest request = new SubscriptionOverlapRequest(
                     subscriptions);
 
@@ -600,13 +571,10 @@ public class SubscriptionService implements ISubscriptionService {
         }
 
         try {
-            final ProposeResult result = proposeScheduleAndAction(
-                    subscriptions, action, displayTextStrategy);
+            final ProposeResult result = proposeScheduleAndAction(subscriptions,
+                    action, displayTextStrategy);
 
             if (result.promptUser) {
-                final Subscription subscription = (subscriptions.size() == 1) ? subscriptions
-                        .get(0) : null;
-
                 VizApp.runSync(new Runnable() {
                     @Override
                     public void run() {
@@ -615,26 +583,39 @@ public class SubscriptionService implements ISubscriptionService {
                 });
 
                 StringBuilder notificationSB = new StringBuilder();
-                ForceApplyPromptResponse theResult = forceApplyPrompt
-                        .getForceApplyPromptResponse();
                 switch (forceApplyPrompt.getForceApplyPromptResponse()) {
                 case INCREASE_LATENCY:
-                    int oldLatency = subscription.getLatencyInMinutes();
-                    subscription
-                            .setLatencyInMinutes(result.config.requiredLatency);
-                    notificationSB
-                            .append(" Bandwidth Latency has been modified from ");
+                    Subscription sub = subscriptions.get(0);
+                    int numSubs = subscriptions.size();
+                    if (numSubs > 1) {
+                        /*
+                         * This shouldn't be able to happen, as the
+                         * INCREASE_LATENCY option is currently only displayed
+                         * to the user when working with a single subscription.
+                         */
+                        String msg = "Increase Latency option selected for "
+                                + numSubs + " subscriptions. Only subscription "
+                                + sub.getName() + " will be modified.";
+                        statusHandler.warn(msg);
+                    }
+                    int oldLatency = sub.getLatencyInMinutes();
+                    sub.setLatencyInMinutes(result.config.requiredLatency);
+                    notificationSB.append(
+                            " Bandwidth Latency has been modified from ");
                     notificationSB.append(oldLatency);
                     notificationSB.append(" to ");
-                    notificationSB.append(subscription.getLatencyInMinutes());
-                    notificationSB
-                            .append(" (minutes) to fit in available bandwidth.");
-                    notificationService
-                            .sendSubscriptionUnscheduledNotification(
-                                    subscription, notificationSB.toString(),
-                                    username);
+                    notificationSB.append(sub.getLatencyInMinutes());
+                    notificationSB.append(
+                            " (minutes) to fit in available bandwidth.");
+                    notificationService.sendSubscriptionUnscheduledNotification(
+                            sub, notificationSB.toString(), username);
 
-                    // Intentional fall-through
+                    sub.activate();
+                    String successMessageIncreasedLatency = action.call();
+
+                    return getForceApplyMessage(subscriptions,
+                            successMessageIncreasedLatency, username);
+
                 case FORCE_APPLY_UNSCHEDULED:
                     // Have to make sure we set them to BE UNSCHEDULED. We don't
                     // want the bandwidth manager scheduling it.... YET.
@@ -660,13 +641,16 @@ public class SubscriptionService implements ISubscriptionService {
                 case CANCEL:
                     return new SubscriptionServiceResult(true);
                 case EDIT_SUBSCRIPTIONS:
-                    if (!result.config.isNotAbleToScheduleOnlyTheSubscription()) {
+                    if (!result.config
+                            .isNotAbleToScheduleOnlyTheSubscription()) {
                         VizApp.runSync(new Runnable() {
                             @Override
                             public void run() {
                                 new SubscriptionManagerAction()
-                                        .loadSubscriptionManager(SubscriptionManagerFilters
-                                                .getByNames(result.config.wouldBeUnscheduledSubscriptions));
+                                        .loadSubscriptionManager(
+                                                SubscriptionManagerFilters
+                                                        .getByNames(
+                                                                result.config.wouldBeUnscheduledSubscriptions));
                             }
                         });
                     }
@@ -692,7 +676,7 @@ public class SubscriptionService implements ISubscriptionService {
      * Proposes scheduling the subscriptions (with any modifications that have
      * been made) in the bandwidth manager. If subscriptions would be
      * unscheduled as a result, then a message is returned designating such.
-     * 
+     *
      * @param subscriptions
      * @param serviceInteraction
      * @return the result
@@ -726,7 +710,7 @@ public class SubscriptionService implements ISubscriptionService {
 
     /**
      * Appends the unscheduled subscriptions portion to the StringBuilder.
-     * 
+     *
      * @param unscheduledSubscriptions
      *            the unscheduled subscriptions
      * @param subscriptions
@@ -747,23 +731,25 @@ public class SubscriptionService implements ISubscriptionService {
                 && (subscriptions.get(0).getName()
                         .equals(unscheduledSubscriptions.iterator().next()))) {
             final Subscription subscription = subscriptions.get(0);
-            msg.append(
-                    (subscription instanceof AdhocSubscription) ? "The query"
-                            : "Subscription " + subscription.getName())
+            msg.append((subscription instanceof AdhocSubscription) ? "The query"
+                    : "Subscription " + subscription.getName())
                     .append(" would not fully schedule with the bandwidth management system if this action were performed.");
         } else {
-            msg.append("The following subscriptions would not fully schedule with the bandwidth management system if this action were performed:");
+            msg.append(
+                    "The following subscriptions would not fully schedule with the bandwidth management system if this action were performed:");
         }
 
         if (singleSubscription) {
             Subscription subscription = subscriptions.get(0);
-            final int maximumLatencyFromRules = getMaximumAllowableLatency(subscription);
+            final int maximumLatencyFromRules = getMaximumAllowableLatency(
+                    subscription);
 
             return new ForceApplyPromptConfiguration(TITLE, msg.toString(),
                     proposeScheduleResponse.getRequiredLatency(),
                     maximumLatencyFromRules,
                     proposeScheduleResponse.getRequiredDataSetSize(),
-                    displayTextStrategy, subscription, unscheduledSubscriptions);
+                    displayTextStrategy, subscription,
+                    unscheduledSubscriptions);
         } else {
             return new ForceApplyPromptConfiguration(TITLE, msg.toString(),
                     displayTextStrategy, unscheduledSubscriptions);
@@ -772,21 +758,20 @@ public class SubscriptionService implements ISubscriptionService {
 
     /**
      * Appends the unscheduled subscriptions portion to the StringBuilder.
-     * 
+     *
      * @param unscheduledSubscriptions
      *            the unscheduled subscriptions
      */
     private void getUnscheduledSubscriptionsPortion(StringBuilder msg,
             Set<String> unscheduledSubscriptions) {
-        appendCollectionPortion(
-                msg,
+        appendCollectionPortion(msg,
                 "\n\nThe following subscriptions did not fully schedule with the bandwidth management system:",
                 unscheduledSubscriptions);
     }
 
     /**
      * Append a collection of items underneath a preamble text.
-     * 
+     *
      * @param msg
      *            the current text
      * @param preamble
@@ -804,7 +789,7 @@ public class SubscriptionService implements ISubscriptionService {
 
     /**
      * Save a pending subscription.
-     * 
+     *
      * @throws RegistryHandlerException
      */
     private void savePendingSub(PendingSubscription pendingSub, String username)
@@ -840,7 +825,7 @@ public class SubscriptionService implements ISubscriptionService {
     /**
      * Gets the max allowed latency for this subscription from rules for it's
      * type
-     * 
+     *
      * @param subscription
      * @return
      */
@@ -856,11 +841,8 @@ public class SubscriptionService implements ISubscriptionService {
         } else if (subTime instanceof PointTime) {
             return ((PointTime) subTime).getInterval();
             // PDA, general data type subscriptions
-        } else if (subTime instanceof Time) {
-            return subscription.getLatencyInMinutes();
         } else {
-            throw new IllegalArgumentException(subTime.getClass()
-                    + " Not yet implemented!");
+            return subscription.getLatencyInMinutes();
         }
     }
 
@@ -869,7 +851,7 @@ public class SubscriptionService implements ISubscriptionService {
      * the Result message for the Proposal of the forcing. In particular the
      * part describing whether everything can or can't be scheduled. This is
      * handed back to the dialog and displayed to the user.
-     * 
+     *
      * @param subscriptions
      * @param successMessage
      * @param username
@@ -887,7 +869,8 @@ public class SubscriptionService implements ISubscriptionService {
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.ERROR,
                     "Can't update Subscription To set UNSCHEDULED! "
-                            + unscheduled, e);
+                            + unscheduled,
+                    e);
         }
 
         StringBuilder sb = new StringBuilder(successMessage);
