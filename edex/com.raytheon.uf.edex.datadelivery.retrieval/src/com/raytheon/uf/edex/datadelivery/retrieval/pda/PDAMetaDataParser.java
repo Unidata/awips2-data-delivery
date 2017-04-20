@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,7 +33,9 @@ import java.util.regex.Pattern;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.geometry.DirectPosition;
+import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
@@ -71,11 +73,11 @@ import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
 
 /**
  * Parse PDA metadata
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jun 17, 2014  3120     dhladky   Initial creation
@@ -94,9 +96,9 @@ import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
  *                                  create
  * Jan 27, 2017  6089     tjensen   Update to work with pipe delimited metadata
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
- * 
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
@@ -306,12 +308,18 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                     storeParameter(parm.getValue());
                 }
 
-                pdaDataSet.applyInfoFromConfig(isMoving,
-                        getParentBoundsFromConfig(dsName, providerName,
-                                coverage.getEnvelope()
-                                        .getCoordinateReferenceSystem()),
-                        getSizeEstFromConfig(dsName, providerName));
-
+                if (isMoving) {
+                    try {
+                        pdaDataSet.applyInfoFromConfig(isMoving,
+                                getParentBoundsFromConfig(dsName, providerName),
+                                getSizeEstFromConfig(dsName, providerName));
+                    } catch (FactoryException | TransformException e) {
+                        statusHandler
+                                .error("Unable to get Parent Bounds for DataSet '"
+                                        + dsName + "' from " + provider, e);
+                        return;
+                    }
+                }
                 storeDataSet(pdaDataSet);
             } else {
                 statusHandler.warn("Coverage is null for: " + dsName);
@@ -473,7 +481,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
     /**
      * Set the Coverage from the OGC BoundingBox
-     * 
+     *
      * @param boundingBoxType
      * @param provider
      */
@@ -518,7 +526,7 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
     /**
      * Set the time object
-     * 
+     *
      * @param dateFormat
      * @param startTime
      * @param endTime

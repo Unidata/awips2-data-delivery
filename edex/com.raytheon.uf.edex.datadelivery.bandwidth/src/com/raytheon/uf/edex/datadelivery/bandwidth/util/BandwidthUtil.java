@@ -25,11 +25,11 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 
 /**
  * Bandwidth Manager utility methods.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 26, 2012  726      jspinks   Initial creation
@@ -58,9 +58,9 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  *                                  standard the rest.
  * Feb 16, 2017  5899     rjpeter   Removed excessive logging.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
- * 
+ *
  * </pre>
- * 
+ *
  */
 public class BandwidthUtil {
 
@@ -99,7 +99,7 @@ public class BandwidthUtil {
      * management and can alter some of the time arithmetic that is used
      * throughout the code. Zero out the seconds and milliseconds values as a
      * convenience
-     * 
+     *
      * @return
      */
     public static Calendar now() {
@@ -136,9 +136,9 @@ public class BandwidthUtil {
 
     /**
      * Format a Calendar Object into a standard String format.
-     * 
+     *
      * @param calendar
-     * 
+     *
      * @return The standard String format of the provided Calendar.
      */
     public static String format(Calendar calendar) {
@@ -157,7 +157,7 @@ public class BandwidthUtil {
     /**
      * Create a new {@link BandwidthSubscription} Object based on the
      * {@link Subscription} and {@link Calendar} Objects provided.
-     * 
+     *
      * @param subscription
      *            the subscription
      * @param baseReferenceTime
@@ -189,7 +189,7 @@ public class BandwidthUtil {
     /**
      * Create a new {@link BandwidthDataSetUpdate} Object based on the
      * {@link DataSetMetaData} Object provided.
-     * 
+     *
      * @param dataSetMetaData
      *            the metadata
      * @return the dao
@@ -210,7 +210,7 @@ public class BandwidthUtil {
     /**
      * Convert the number of kilobytes per second to bytes for the number of
      * specified minutes.
-     * 
+     *
      * @param kilobytesPerSecond
      *            the kilobytes per second
      * @param numberOfMinutes
@@ -225,7 +225,7 @@ public class BandwidthUtil {
 
     /**
      * Convert bytes to kilobytes.
-     * 
+     *
      * @param bytes
      *            the bytes
      * @return the kilobytes
@@ -236,7 +236,7 @@ public class BandwidthUtil {
 
     /**
      * Check whether a subscription should be rescheduled on an update.
-     * 
+     *
      * @param subscription
      *            the subscription
      * @param old
@@ -264,7 +264,7 @@ public class BandwidthUtil {
 
     /**
      * Special handling for Gridded Times with cycles and time indicies
-     * 
+     *
      * @param subTime
      * @param dataSetMetaDataTime
      * @return
@@ -285,7 +285,7 @@ public class BandwidthUtil {
     /**
      * Updates a {@link Subscription) to reflect important attributes of the
      * specified {@link DataSetMetaData}.
-     * 
+     *
      * @param sub
      *            the subscription
      * @param dataSetMetaData
@@ -301,13 +301,17 @@ public class BandwidthUtil {
         dsmdTime = handleCyclesAndSequences(subTime, dsmdTime);
         sub.setTime(dsmdTime);
         sub.setUrl(dataSetMetaData.getUrl());
+        Coverage instanceCoverage = dataSetMetaData.getInstanceCoverage();
+        if (instanceCoverage != null) {
+            sub.setCoverage(instanceCoverage);
+        }
 
         return sub;
     }
 
     /**
      * Get the list of mode configured spring file names for the named mode.
-     * 
+     *
      * @param modeName
      *            retrieve the spring files configured for this mode
      * @return list of spring files configured for the given mode
@@ -336,7 +340,7 @@ public class BandwidthUtil {
     /**
      * Convert List of subscriptions to a Map. This is used in request handler
      * portion of the BWM.
-     * 
+     *
      * @param List
      *            <Subscription> list
      * @return Map<String, Subscription>

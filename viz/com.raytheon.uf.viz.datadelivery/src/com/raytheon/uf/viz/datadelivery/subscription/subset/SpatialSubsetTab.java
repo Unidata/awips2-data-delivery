@@ -20,8 +20,12 @@
 package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -40,11 +44,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * Spatial Subset Tab.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 30, 2012           mpduff    Initial creation.
@@ -69,9 +73,10 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
  * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
  *                                  to block
- * 
+ * Apr 20, 2017  1045     tjensen   Update for moving datasets
+ *
  * </pre>
- * 
+ *
  * @author mpduff
  * @version 1.0
  */
@@ -83,6 +88,8 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /** Envelope describing full area where requests are possible */
     private ReferencedEnvelope fullEnvelope;
+
+    private boolean moving = false;
 
     /** Data Set Size flag */
     private boolean useDataSetSize = false;
@@ -102,12 +109,14 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
     /** Delete button for user defined areas. **/
     private Button deleteBtn = null;
 
+    private Font boldFont;
+
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Composite holding these controls
-     * 
+     *
      * @param dataSet
      *            The DataSetMetaData object
      * @param callback
@@ -116,8 +125,11 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
     public SpatialSubsetTab(Composite parentComp, DataSet dataSet,
             IDataSize callback) {
         this.parentComp = parentComp;
-        if (dataSet != null && dataSet.getCoverage() != null) {
-            this.fullEnvelope = dataSet.getCoverage().getEnvelope();
+        if (dataSet != null) {
+            this.moving = dataSet.isMoving();
+            if (dataSet.getCoverage() != null) {
+                this.fullEnvelope = dataSet.getCoverage().getEnvelope();
+            }
         }
         this.callback = callback;
 
@@ -139,7 +151,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
                         .getSelection();
 
                 useDataSetSize = dataBoundaryChecked;
-                if (dataBoundaryChk.getSelection() == true) {
+                if (dataBoundaryChk.getSelection()) {
                     // Disable controls
                     areaComp.enableAllControls(false);
                 } else {
@@ -156,8 +168,28 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
         GridLayout gl = new GridLayout(1, false);
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 
-        areaComp = new AreaComp(parentComp, "Subset by Area", this,
-                fullEnvelope);
+        String areaCompTitle = "Subset by Area";
+
+        if (moving) {
+            areaCompTitle = "Intersection Area";
+            Label movingLbl = new Label(parentComp, SWT.CENTER);
+            movingLbl.setText("This is a Moving DataSet");
+            FontData mLblFont = movingLbl.getFont().getFontData()[0];
+            boldFont = new Font(parentComp.getDisplay(), new FontData(
+                    mLblFont.getName(), mLblFont.getHeight(), SWT.BOLD));
+            movingLbl.setFont(boldFont);
+            movingLbl.setToolTipText(
+                    "Specify the area products must intersect with to be retrieved.");
+        }
+
+        parentComp.addDisposeListener(new DisposeListener() {
+            @Override
+            public void widgetDisposed(DisposeEvent arg0) {
+                boldFont.dispose();
+            }
+        });
+
+        areaComp = new AreaComp(parentComp, areaCompTitle, this, fullEnvelope);
         areaComp.setLayout(gl);
         areaComp.setLayoutData(gd);
 
@@ -179,8 +211,8 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
         Composite buttonComp = new Composite(saveGrp, SWT.NONE);
         buttonComp.setLayout(new GridLayout(2, false));
-        buttonComp.setLayoutData(new GridData(SWT.CENTER, SWT.DEFAULT, true,
-                false, 2, 1));
+        buttonComp.setLayoutData(
+                new GridData(SWT.CENTER, SWT.DEFAULT, true, false, 2, 1));
 
         int buttonWidth = buttonComp.getDisplay().getDPI().x;
         Button saveBtn = new Button(buttonComp, SWT.PUSH);
@@ -200,8 +232,8 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
         gd.minimumWidth = buttonWidth;
         deleteBtn.setText("Delete");
         deleteBtn.setLayoutData(gd);
-        deleteBtn
-                .setToolTipText("Click to delete named region from 'My Regions'");
+        deleteBtn.setToolTipText(
+                "Click to delete named region from 'My Regions'");
         deleteBtn.setEnabled(false);
         deleteBtn.setVisible(false);
         deleteBtn.addSelectionListener(new SelectionAdapter() {
@@ -214,7 +246,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Boundary Check action method.
-     * 
+     *
      * @param selected
      *            true if the data set boundary checkbox is selected.
      */
@@ -228,7 +260,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Get text in Saved Region Name text box.
-     * 
+     *
      * @return Region Name
      */
     public String getRegionSaveText() {
@@ -237,7 +269,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Reset Saved Region Name text box.
-     * 
+     *
      */
     public void resetRegionSaveText() {
         savedRegionTxt.setText("");
@@ -266,8 +298,8 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
         AreaXML area = getSaveInfo();
 
-        SubsetFileManager.getInstance()
-                .saveArea(area, this.areaComp.getShell());
+        SubsetFileManager.getInstance().saveArea(area,
+                this.areaComp.getShell());
 
         // update the regionCombo
         areaComp.showMyRegions(saveName);
@@ -299,7 +331,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Using the data set size?
-     * 
+     *
      * @return true if Use Data Set Size is checked
      */
     public boolean useDataSetSize() {
@@ -308,21 +340,20 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Get the requested envelope.
-     * 
-     * 
+     *
+     *
      * @return The selected envelope
      */
     public ReferencedEnvelope getEnvelope() {
         if (useDataSetSize) {
             return fullEnvelope;
-        } else {
-            return areaComp.getEnvelope();
         }
+        return areaComp.getEnvelope();
     }
 
     /**
      * Populate the tab.
-     * 
+     *
      * @param area
      *            The AreaXML object
      */
@@ -353,7 +384,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Get the save details from this tab
-     * 
+     *
      * @return AreaXML object populated with the save details
      */
     public AreaXML getSaveInfo() {
@@ -382,7 +413,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Determine if the tab selections are valid.
-     * 
+     *
      * @return true if tab is valid
      */
     public boolean isValid() {
@@ -419,7 +450,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Get the boolean if any spatial info has changed.
-     * 
+     *
      * @param spatialDirty
      *            spatial info has changed
      */
@@ -429,7 +460,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Get the boolean if any spatial info has changed.
-     * 
+     *
      * @return dateCycleDirty true if spatial info has changed
      */
     public boolean isSpatialDirty() {
@@ -438,7 +469,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /**
      * Set the DataSet.
-     * 
+     *
      * @param dataSet
      */
     public void setDataSet(DataSet dataSet) {

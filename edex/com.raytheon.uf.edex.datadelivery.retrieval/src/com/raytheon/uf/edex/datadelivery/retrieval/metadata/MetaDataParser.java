@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,7 +26,8 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
@@ -57,11 +58,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
 
 /**
  * Parse MetaData.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 20, 2011  218      dhladky   Initial creation
@@ -88,9 +89,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
  * Jul 22, 2016  5752     tjensen   Fix storeDataSet and add additional logging
  *                                  information
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
- * 
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -154,10 +155,11 @@ public abstract class MetaDataParser<O extends Object>
 
     /**
      * Store Data objects
-     * 
+     *
      * @param DataSetMetaData
      *            <?>
      */
+    @Override
     public void storeMetaData(final DataSetMetaData<?, ?> metaData) {
 
         DataSetMetaDataHandler handler = DataDeliveryHandlers
@@ -198,6 +200,7 @@ public abstract class MetaDataParser<O extends Object>
     /**
      * Stores the name of the dataset, used in lookups.
      */
+    @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void storeDataSetName(DataSet dataSetToStore) {
 
@@ -224,7 +227,7 @@ public abstract class MetaDataParser<O extends Object>
 
     /**
      * Store the DataSetMetaData Object to the registry.
-     * 
+     *
      * @param metaDatas
      *            The DataSetMetaData Object to store.
      */
@@ -276,9 +279,10 @@ public abstract class MetaDataParser<O extends Object>
 
     /**
      * Make sure our provider is contained in the Registry
-     * 
+     *
      * @param provider
      */
+    @Override
     public void storeProvider(final Provider provider) {
 
         try {
@@ -310,10 +314,11 @@ public abstract class MetaDataParser<O extends Object>
     /**
      * Store a parameter object to the registry. If necessary, also store the
      * ParameterLevel Objects needed to successfully store the Parameter Object.
-     * 
+     *
      * @param parameter
      *            The Parameter Object to store.
      */
+    @Override
     public void storeParameter(Parameter parameter) {
 
         try {
@@ -346,11 +351,12 @@ public abstract class MetaDataParser<O extends Object>
 
     /**
      * Gets the availability offset for this data set
-     * 
+     *
      * @param dataSetName
      * @param startMillis
      * @return
      */
+    @Override
     public int getDataSetAvailabilityTime(String dataSetName,
             long startMillis) {
 
@@ -387,7 +393,8 @@ public abstract class MetaDataParser<O extends Object>
         return (int) offset;
     }
 
-    protected boolean getIsMovingFromConfig(String dsName, String provider) {
+    protected static boolean getIsMovingFromConfig(String dsName,
+            String provider) {
         boolean moving = false;
 
         DataSetConfigInfo dsci = LookupManager.getInstance()
@@ -398,8 +405,8 @@ public abstract class MetaDataParser<O extends Object>
         return moving;
     }
 
-    protected Coverage getParentBoundsFromConfig(String dsName, String provider,
-            CoordinateReferenceSystem crs) {
+    protected static Coverage getParentBoundsFromConfig(String dsName,
+            String provider) throws FactoryException, TransformException {
         Coverage parentCoverage = null;
 
         DataSetConfigInfo dsci = LookupManager.getInstance()
@@ -409,15 +416,16 @@ public abstract class MetaDataParser<O extends Object>
 
             if (parentBounds != null) {
                 parentCoverage = CoverageUtil
-                        .buildCoverage(parentBounds.getCoordList(), crs);
+                        .buildCoverage(parentBounds.getCoordList());
             } else {
-                parentCoverage = CoverageUtil.buildDefaultCoverage(crs);
+                parentCoverage = CoverageUtil.buildDefaultCoverage();
             }
+
         }
         return parentCoverage;
     }
 
-    protected long getSizeEstFromConfig(String dsName, String provider) {
+    protected static long getSizeEstFromConfig(String dsName, String provider) {
         long estSize = 0;
 
         DataSetConfigInfo dsci = LookupManager.getInstance()

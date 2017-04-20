@@ -3,19 +3,19 @@ package com.raytheon.uf.common.datadelivery.registry;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -44,11 +44,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Coverage for Grid XML
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jan 31, 2011  191      dhladky   Initial creation
@@ -60,9 +60,9 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Mar 04, 2015  3959     rjpeter   Update for grid based subgridding.
  * Apr 05, 2017  1045     tjensen   Add Constructor to create GriddedCoverage
  *                                  from non-GriddedCoverage
- * 
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
@@ -114,16 +114,26 @@ public class GriddedCoverage extends Coverage implements Serializable {
 
     public void setGridCoverage(GridCoverage gridCoverage) {
         this.gridCoverage = gridCoverage;
-        GridGeometry2D gridGeom = gridCoverage.getGridGeometry();
-        ReferencedEnvelope envelope = new ReferencedEnvelope(
-                gridGeom.getEnvelope2D());
-        double dx = envelope.getWidth() / gridGeom.getGridRange2D().width;
-        double dy = envelope.getHeight() / gridGeom.getGridRange2D().height;
-        // shrink the envelope by half a grid cell so it is covering cell
-        // center and not cell corner. Otherwise worldwide grids can extend
-        // up to 90.5 which just seems odd.
-        envelope.expandBy(dx / -2, dy / -2);
-        setEnvelope(envelope);
+    }
+
+    public void generateEnvelopeFromGridCoverage() {
+        if (gridCoverage != null) {
+            GridGeometry2D gridGeom = gridCoverage.getGridGeometry();
+            ReferencedEnvelope envelope = new ReferencedEnvelope(
+                    gridGeom.getEnvelope2D());
+            double dx = envelope.getWidth() / gridGeom.getGridRange2D().width;
+            double dy = envelope.getHeight() / gridGeom.getGridRange2D().height;
+            /*
+             * shrink the envelope by half a grid cell so it is covering cell
+             * center and not cell corner. Otherwise worldwide grids can extend
+             * up to 90.5 which just seems odd.
+             */
+            envelope.expandBy(dx / -2, dy / -2);
+            setEnvelope(envelope);
+        } else {
+            // If gridCoverage is null, set the envelope to match.
+            setEnvelope(null);
+        }
     }
 
     @Override
@@ -137,7 +147,7 @@ public class GriddedCoverage extends Coverage implements Serializable {
     /**
      * Calculate the subgrid coverage that should be used based off the current
      * requestEnvelope.
-     * 
+     *
      * @param requestEnvelope
      * @return
      */
@@ -164,7 +174,7 @@ public class GriddedCoverage extends Coverage implements Serializable {
      * requestEnvelope is applied to this GriddedCoverage. This will return null
      * if the envelope cannot be used or if it the same as the coverage
      * envelope.
-     * 
+     *
      * @param requestEnvelope
      * @return
      */

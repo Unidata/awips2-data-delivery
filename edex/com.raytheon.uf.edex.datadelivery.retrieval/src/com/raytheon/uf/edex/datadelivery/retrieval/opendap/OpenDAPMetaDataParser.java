@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -30,7 +30,11 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.operation.TransformException;
+
 import com.raytheon.uf.common.datadelivery.registry.Collection;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
@@ -75,12 +79,12 @@ import opendap.dap.NoSuchAttributeException;
 /**
  * Parse OpenDAP MetaData. This class should remain package-private, all access
  * should be limited through the {@link OpenDapServiceFactory}.
- * 
- * 
+ *
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#     Engineer  Description
  * ------------- ----------- --------- -----------------------------------------
  * Feb 20, 2011  218         dhladky   Initial creation
@@ -122,9 +126,9 @@ import opendap.dap.NoSuchAttributeException;
  *                                     naming
  * Mar 08, 2017  6089        tjensen   Drop date format from parseMetadata calls
  * Apr 05, 2017  1045        tjensen   Update for moving datasets
- * 
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  * @param <O>
@@ -145,7 +149,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
      * now it can only recognize MB (pressure levels) for DAP types. It also
      * rudimentarily recognizes Heights Above Sea Level, SEAB. dz = number of
      * levels levMin = minimum level value levMax = maximum level value
-     * 
+     *
      * @param type
      * @param collectionName
      * @param gdsmd
@@ -208,7 +212,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
     /**
      * Process parameters against lookups and DAP constants
-     * 
+     *
      * @param das
      * @param dataSet
      * @param gdsmd
@@ -519,6 +523,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         }
 
         griddedCoverage.setGridCoverage(gridCoverage);
+        griddedCoverage.generateEnvelopeFromGridCoverage();
 
         return parameters;
     }
@@ -528,14 +533,14 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
      * known Parameter Regexes. If a match is found, the AWIPS name for the
      * matching pattern is returned. Else the current parameter name is
      * returned.
-     * 
+     *
      * @param name
      *            Current Parameter name. Used as a default return value
      * @param description
      *            Parameter description
      * @return AWIPS parameter name
      */
-    private String parseParamName(String name, String description) {
+    private static String parseParamName(String name, String description) {
 
         // Default paramName to grads name
         String paramName = name;
@@ -583,12 +588,12 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
      * Uses the parameter description to determine the Level information for a
      * given parameter. This can include the specific level, the units, and/or
      * the level type (as applicable).
-     * 
+     *
      * @param description
      *            parameter description.
      * @return String describing the level information for this parameter
      */
-    private String parseLevelName(String description) {
+    private static String parseLevelName(String description) {
         Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
                 .getParamLevelRegexes();
         Map<String, ParameterNameRegex> pnr = LookupManager.getInstance()
@@ -624,11 +629,11 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
     /**
      * Get the correct level type
-     * 
+     *
      * @param param
      * @return
      */
-    private DataLevelType parseLevelType(Parameter param) {
+    private static DataLevelType parseLevelType(Parameter param) {
 
         DataLevelType type = null;
         // SEA ICE special case
@@ -706,7 +711,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 }
             }
 
-            DAS das = (DAS) link.getLinks().get(DAP_TYPE.DAS.getDapType());
+            DAS das = link.getLinks().get(DAP_TYPE.DAS.getDapType());
             // set url first, used for level lookups
             gdsmd.setUrl(link.getUrl().replace(
                     serviceConfig.getConstantValue("META_DATA_SUFFIX"),
@@ -774,11 +779,13 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     gdsmd.getTime().getStart().getTime());
             long arrivalTime = TimeUtil.currentTimeMillis();
             dataSet.setArrivalTime(arrivalTime);
-            dataSet.setAvailabilityOffset((int) offset);
-            gdsmd.setAvailabilityOffset((int) offset);
+            dataSet.setAvailabilityOffset(offset);
+            gdsmd.setAvailabilityOffset(offset);
             gdsmd.setArrivalTime(arrivalTime);
 
             String dsName = dataSet.getDataSetName();
+            GriddedCoverage parentCov = new GriddedCoverage();
+
             boolean isMoving = getIsMovingFromConfig(dsName, providerName);
             if (isMoving) {
                 /*
@@ -789,12 +796,28 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                  * be positioned).
                  */
                 gdsmd.setInstanceCoverage(dataSet.getCoverage());
+
+                /*
+                 * The coverage in the dataset for moving products needs to have
+                 * a GridCoverage to avoid issues in CAVE. However, this value
+                 * will not be used by moving products, so just put in the one
+                 * from this metadata instance.
+                 */
+                parentCov.setGridCoverage(
+                        dataSet.getCoverage().getGridCoverage());
+                Coverage cov;
+                try {
+                    cov = getParentBoundsFromConfig(dsName, providerName);
+                } catch (FactoryException | TransformException e) {
+                    throw new IllegalStateException(
+                            "Unable to get Parent Bounds for DataSet '" + dsName
+                                    + "' from " + provider,
+                            e);
+                }
+                parentCov.setEnvelope(cov.getEnvelope());
             }
-            dataSet.applyInfoFromConfig(isMoving,
-                    new GriddedCoverage(
-                            getParentBoundsFromConfig(dsName, providerName,
-                                    dataSet.getCoverage().getEnvelope()
-                                            .getCoordinateReferenceSystem())),
+
+            dataSet.applyInfoFromConfig(isMoving, parentCov,
                     getSizeEstFromConfig(dsName, providerName));
 
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {

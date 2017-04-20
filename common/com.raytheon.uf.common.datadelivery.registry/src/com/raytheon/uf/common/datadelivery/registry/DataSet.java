@@ -307,12 +307,24 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
         this.moving = isMoving;
     }
 
+    /**
+     * Apply information pulled from config files relevant ot this Data Set
+     * 
+     * @param isMoving
+     *            True if this is a moving data set
+     * @param parentCov
+     *            Outer bounds of where this product can be found. Only
+     *            applicable to moving data.
+     * @param estSizeInKB
+     *            Estimated Size of per parameter of the data in KB. Only used
+     *            for moving data sets.
+     */
     public void applyInfoFromConfig(boolean isMoving, C parentCov,
-            long estSize) {
+            long estSizeInKB) {
         setMoving(isMoving);
         if (isMoving) {
             setCoverage(parentCov);
-            setEstimatedSize(estSize);
+            setEstimatedSize(estSizeInKB * 1024);
         }
 
     }

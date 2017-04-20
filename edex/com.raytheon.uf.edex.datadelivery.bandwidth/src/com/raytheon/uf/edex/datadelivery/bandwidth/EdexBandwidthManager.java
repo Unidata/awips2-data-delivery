@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.opengis.referencing.operation.TransformException;
 import org.springframework.util.CollectionUtils;
 
 import com.google.common.collect.Lists;
@@ -65,6 +66,7 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHand
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.event.EventBus;
+import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.ebxml.encoder.RegistryEncoders;
 import com.raytheon.uf.common.registry.ebxml.encoder.RegistryEncoders.Type;
@@ -100,10 +102,10 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Implementation of {@link BandwidthManager} that isolates EDEX specific
  * functionality. This keeps things out of the {@link InMemoryBandwidthManager}
  * that could interfere with garbage collection/threading concerns.
- * 
+ *
  * <pre>
  *  SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 10, 2013  2106     djohnson  Extracted from {@link BandwidthManager}.
@@ -172,9 +174,9 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  startup scheduling async now.
  * Aug 09, 2016  5771     rjpeter   Allow concurrent event processing
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
- * 
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  */
 public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
@@ -218,7 +220,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Primary spring utilized constructor
-     * 
+     *
      * @param dbInit
      * @param bandwidthDao
      * @param retrievalManager
@@ -262,7 +264,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Reset specifically the EdexBandwidthManager.
-     * 
+     *
      * This method is abstract here so that the handleRequest implemented in the
      * abstract BandwidthManager class is able to make a call the instance of
      * the EdexBandwidthManager so that it can "reshuffle the deck" of Retrieval
@@ -272,7 +274,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * be able to reset itself in response to operations from within the
      * abstract BandwidthManager.handleRequest method processing. Presently,
      * this method must be implemented but empty in all other implementations.
-     * 
+     *
      * @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.resetBandwidthManager
      */
     @Override
@@ -373,7 +375,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * Schedule the list of subscriptions. This list is generally passed from
      * the in memory BWM and is processed here for scheduling (for real) and DB
      * persistence.
-     * 
+     *
      * @param subscriptions
      *            the subscriptions
      * @return the set of subscription names unscheduled
@@ -390,8 +392,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
          * unscheduled there and then. This saves time at start-up that was
          * eaten up waiting for the BWM keeping the JVM initialization from
          * completing.
-         * 
-         * 
+         *
+         *
          */
         if (insubscriptions != null) {
             for (Subscription<T, C> sub : orderSubscriptionsByPriority(
@@ -407,7 +409,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * Process the subscription scheduling asynchronously for applying proposed
      * subscriptions. Reads subs off the BandwidthEventBus placed by
      * scheduleSubscriptions() method.
-     * 
+     *
      * @param persistSubs
      */
     @Subscribe
@@ -427,11 +429,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Give a listing of the unscheduled subscriptions.
-     * 
+     *
      * @param subscriptionNetwork
      * @param unscheduledList
      */
-    private void logSubscriptionListUnscheduled(String subscriptionNetwork,
+    private static void logSubscriptionListUnscheduled(
+            String subscriptionNetwork,
             List<BandwidthAllocation> unscheduledList) {
         if (unscheduledList != null) {
             StringBuilder sb = new StringBuilder();
@@ -453,7 +456,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Get the spring injected subscription object handler.
-     * 
+     *
      * @return the subscriptionHandler
      */
     public SubscriptionHandler getSubscriptionHandler() {
@@ -462,7 +465,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Get the subscription if it is part of a client subscription request.
-     * 
+     *
      * @param subId
      * @return
      */
@@ -480,7 +483,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Query the registry for any stored object by it's ID.
-     * 
+     *
      * @param handler
      * @param id
      * @return
@@ -498,7 +501,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Gets the id'd dataSetMetaData object from the registry.
-     * 
+     *
      * @param id
      * @return
      */
@@ -519,7 +522,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * BandwidthManager that retrievalManager has completed the retrievals for a
      * Subscription. The updated BandwidthSubscription Object is placed on the
      * BandwidthEventBus.
-     * 
+     *
      * @param subscription
      *            The completed subscription.
      */
@@ -564,7 +567,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * When a Subscription is removed from the Registry, a RemoveRegistryEvent
      * is generated and forwarded to this method to remove the necessary
      * BandwidthReservations (and perhaps redefine others).
-     * 
+     *
      * @param event
      */
     @SuppressWarnings("unchecked")
@@ -618,7 +621,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * Listen for registry insert events necessary to drive Bandwidth
      * Management.
-     * 
+     *
      * @param re
      *            The <code>InsertRegistryEvent</code> Object to evaluate.
      */
@@ -680,7 +683,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * Listen for Registry update events. Filter for subscription specific
      * events. Sends corresponding subscription notification events.
-     * 
+     *
      * @param event
      */
     @SuppressWarnings("unchecked")
@@ -750,7 +753,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * Filter for DataSetMetaData Objects received from registry. Publish to
      * BandwidthEventBus for further downstream processing by specific type of
      * DataSetMetaData object.
-     * 
+     *
      * @param re
      */
     private void publishDataSetMetaDataEvent(RegistryEvent re) {
@@ -779,7 +782,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Process a general DataSetMetaData object for update.
-     * 
+     *
      * @param dataSetMetaData
      *            the metadadata
      */
@@ -819,19 +822,31 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 Coverage instanceCoverage = dataSetMetaData
                         .getInstanceCoverage();
                 if (instanceCoverage != null) {
-                    ReferencedEnvelope intersection = instanceCoverage
-                            .getEnvelope().intersection(
-                                    subscription.getCoverage().getEnvelope());
-                    if (intersection.isNull() || intersection.isEmpty()) {
-                        /*
-                         * Skip this subscription since this metadata does not
-                         * overlap with the requested area.
-                         */
-                        statusHandler.info("Skipping subscription '"
-                                + subscription.getName()
-                                + "' due to the requested coverage not intersecting "
-                                + "with the coverage of this instance.");
+                    ReferencedEnvelope intersection;
+                    try {
+                        intersection = MapUtil.reprojectAndIntersect(
+                                subscription.getCoverage().getRequestEnvelope(),
+                                instanceCoverage.getEnvelope());
 
+                        if (intersection.isNull() || intersection.isEmpty()) {
+                            /*
+                             * Skip this subscription since this metadata does
+                             * not overlap with the requested area.
+                             */
+                            statusHandler.info("Skipping subscription '"
+                                    + subscription.getName() + "' for "
+                                    + dataSetMetaData.getUrl()
+                                    + " due to the requested coverage not intersecting "
+                                    + "with the coverage of this instance.");
+
+                            continue;
+                        }
+                    } catch (TransformException e) {
+                        statusHandler
+                                .error("Error checking moving intersection for subscription '"
+                                        + subscription.getName() + "' for "
+                                        + dataSetMetaData.getUrl()
+                                        + ". Skipping retrieval.", e);
                         continue;
                     }
                 }
@@ -897,7 +912,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * Process a {@link PDADataSetMetaData} that was received from the event
      * bus.
-     * 
+     *
      * @param dataSetMetaData
      *            the metadadata
      * @throws ParseException
@@ -914,7 +929,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * Process a {@link GriddedDataSetMetaData} that was received from the event
      * bus.
-     * 
+     *
      * @param dataSetMetaData
      *            the metadadata
      * @throws ParseException
@@ -931,7 +946,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * Process a {@link PointDataSetMetaData} that was received from the event
      * bus.
-     * 
+     *
      * @param dataSetMetaData
      *            the metadadata
      * @throws ParseException
@@ -994,13 +1009,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                  */
                 if (pointTimeEnd.before(earliestRetrievalDataTime)
                         || pointTimeStart.after(latestRetrievalDataTime)) {
-                    continue;
-                } else {
                     statusHandler.info("Retrieval:  " + retrieval.toString()
                             + " Outside the range: MIN: "
                             + earliestRetrievalDataTime.toString() + " MAX: "
                             + latestRetrievalDataTime.toString()
                             + " \n No retrieval will be produced!");
+                    continue;
                 }
 
                 try {
@@ -1051,12 +1065,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Determine if the subscription belongs to the local BWM.
-     * 
+     *
      * @param sub
      * @return
      */
     @SuppressWarnings("rawtypes")
-    private boolean isSubscriptionManagedLocally(Subscription sub) {
+    private static boolean isSubscriptionManagedLocally(Subscription sub) {
 
         boolean isLocallyManaged = false;
 
@@ -1084,7 +1098,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * Send out subscription notifications to listening CAVE clients and EDEX
      * components.
-     * 
+     *
      * @param event
      * @param sub
      */
@@ -1130,7 +1144,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * Send out subscription status event to listening CAVE and EDEX components.
      * components.
-     * 
+     *
      * @param event
      * @param sub
      */
@@ -1145,7 +1159,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * This method is called at EDEX (hibernate) BWM initialization. It attempts
      * to schedule the subscriptions available to it. It allows adds the timer
      * tasks for the Maintenance Task which keep scheduling current.
-     * 
+     *
      * @param Map
      *            <Network, List<Subscription>> subMap
      */
@@ -1223,7 +1237,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Get's the list of subscriptions to schedule by network type.
-     * 
+     *
      * @param network
      */
     @Override
@@ -1247,7 +1261,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     /**
      * For a given block of allocations. Un-schedule it's subscriptions and
      * remove it's Retrieval Attributes.
-     * 
+     *
      * @param List
      *            <BandwidthAllocation> unscheduled
      */
@@ -1294,7 +1308,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
     /**
      * Try to schedule other subs when another deactivates
-     * 
+     *
      * @param deactivatedSubName
      */
     @SuppressWarnings({ "unchecked", "rawtypes", "unused" })

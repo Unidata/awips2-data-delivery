@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,12 +21,16 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
 import java.util.List;
 
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.opengis.referencing.operation.TransformException;
+
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
+import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -40,47 +44,61 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 /**
  * Utility class that maintains state between in-memory objects and database
  * versions.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 24, 2012 1286       djohnson     Extract methods from {@link BandwidthUtil}.
- * Dec 11, 2012 1286       djohnson     FULFILLED allocations are not in the retrieval plan either.
- * Feb 14, 2013 1595       djohnson     Fix not using calendar copies, and backwards max/min operations.
- * Jun 03, 2013 2038       djohnson     Add ability to schedule down to minute granularity.
- * Jun 04, 2013  223       mpduff       Refactor changes.
- * Sept 10, 2013 2351      dhladky      Made adhoc queries for pointdata work
- * Sept 17, 2013 2383      bgonzale     setAdhocMostRecentUrlAndTime returns null if grid and
- *                                      no metadata found.
- * Sept 24, 2013 1797      dhladky      separated time from GriddedTime
- * Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
- * Oct 30, 2013  2448      dhladky      Fixed pulling data before and after activePeriod starting and ending.
- * Nov 5, 2013  2521       dhladky      Fixed DataSetMetaData update failures for URL's in pointdata.
- * Nov 12, 2013 2448       dhladky      Fixed stop/start subscription scheduling problem.
- * Nov 20, 2013 2448       bgonzale     Fix for subscription start time set to first cycle time.
- *                                      Fix for subscription end time set to end of day.
- * Dec 02, 2013 2545       mpduff       Fix for delay starting retrievals, execute adhoc upon subscribing.
- * Dec 20, 2013 2636       mpduff       Fix dataset offset.
- * Jan 08, 2014 2615       bgonzale     Refactored getRetrievalTimes into RecurringSubscription
- *                                      calculateStart and calculateEnd methods.
- * Jan 24, 2014 2636       mpduff       Refactored retrieval time generation.
- * Jan 24, 2013 2709       bgonzale     Added inActivePeriodWindow check during retrieval time calculations
- *                                      because the calculate start and end time methods no longer use
- *                                      active period.
- * Jan 29, 2014 2636       mpduff       Scheduling refactor.
- * Feb 11, 2014 2636       mpduff       Change how retrieval times are calculated.
- * Apr 15, 2014 3012       dhladky      Fixed improper offsets.
- * Apr 21, 2014 2887       dhladky      Missed start/end in previous call, needs shouldScheduleForTime();
- * Jun 09, 2014 3113       mpduff       Moved getRetrievalTimes to Subscription.
- * Jul 28, 2014 2752       dhladky      Greatly streamlined scheduling.
- * Sept 14, 2014 2131      dhladky      PDA additions
- * Feb 19, 2015 3998       dhladky      Simplified the adhoc subscription process.
- * Apr 13, 2016 5573       dhladky      Recurring subscriptions fail do to null time object.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 24, 2012  1286     djohnson  Extract methods from {@link BandwidthUtil}.
+ * Dec 11, 2012  1286     djohnson  FULFILLED allocations are not in the
+ *                                  retrieval plan either.
+ * Feb 14, 2013  1595     djohnson  Fix not using calendar copies, and backwards
+ *                                  max/min operations.
+ * Jun 03, 2013  2038     djohnson  Add ability to schedule down to minute
+ *                                  granularity.
+ * Jun 04, 2013  223      mpduff    Refactor changes.
+ * Sep 10, 2013  2351     dhladky   Made adhoc queries for pointdata work
+ * Sep 17, 2013  2383     bgonzale  setAdhocMostRecentUrlAndTime returns null if
+ *                                  grid and no metadata found.
+ * Sep 24, 2013  1797     dhladky   separated time from GriddedTime
+ * Oct 10, 2013  1797     bgonzale  Refactored registry Time objects.
+ * Oct 30, 2013  2448     dhladky   Fixed pulling data before and after
+ *                                  activePeriod starting and ending.
+ * Nov 05, 2013  2521     dhladky   Fixed DataSetMetaData update failures for
+ *                                  URL's in pointdata.
+ * Nov 12, 2013  2448     dhladky   Fixed stop/start subscription scheduling
+ *                                  problem.
+ * Nov 20, 2013  2448     bgonzale  Fix for subscription start time set to first
+ *                                  cycle time. Fix for subscription end time
+ *                                  set to end of day.
+ * Dec 02, 2013  2545     mpduff    Fix for delay starting retrievals, execute
+ *                                  adhoc upon subscribing.
+ * Dec 20, 2013  2636     mpduff    Fix dataset offset.
+ * Jan 08, 2014  2615     bgonzale  Refactored getRetrievalTimes into
+ *                                  RecurringSubscription calculateStart and
+ *                                  calculateEnd methods.
+ * Jan 24, 2014  2636     mpduff    Refactored retrieval time generation.
+ * Jan 24, 2013  2709     bgonzale  Added inActivePeriodWindow check during
+ *                                  retrieval time calculations because the
+ *                                  calculate start and end time methods no
+ *                                  longer use active period.
+ * Jan 29, 2014  2636     mpduff    Scheduling refactor.
+ * Feb 11, 2014  2636     mpduff    Change how retrieval times are calculated.
+ * Apr 15, 2014  3012     dhladky   Fixed improper offsets.
+ * Apr 21, 2014  2887     dhladky   Missed start/end in previous call, needs
+ *                                  shouldScheduleForTime();
+ * Jun 09, 2014  3113     mpduff    Moved getRetrievalTimes to Subscription.
+ * Jul 28, 2014  2752     dhladky   Greatly streamlined scheduling.
+ * Sep 14, 2014  2131     dhladky   PDA additions
+ * Feb 19, 2015  3998     dhladky   Simplified the adhoc subscription process.
+ * Apr 13, 2016  5573     dhladky   Recurring subscriptions fail do to null time
+ *                                  object.
+ * Apr 20, 2017  1045     tjensen   Update for moving datasets
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  * @version 1.0
  */
@@ -96,7 +114,7 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
 
     /**
      * Constructor.
-     * 
+     *
      * @param bandwidthDao
      *            the bandwidth dao
      * @param retrievalManager
@@ -130,7 +148,7 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
     /**
      * Handle updating the database and propagate the update of any status
      * changes to the RetrievalManager.
-     * 
+     *
      * @param allocation
      */
     public void update(BandwidthAllocation allocation) {
@@ -143,7 +161,7 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
      * Add the url and start time for the most recent dataset metadata update
      * that has arrived, which matches the requested cycle of the
      * {@link AdhocSubscription}.
-     * 
+     *
      * @param adhoc
      *            the adhoc subscription, with its {@link Time} object's cycles
      *            populated
@@ -166,46 +184,79 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
                             adhoc.getProvider());
 
         } catch (Exception e) {
-            statusHandler.handle(
-                    Priority.PROBLEM,
+            statusHandler.handle(Priority.PROBLEM,
                     "No DataSetMetaData matching query! DataSetName: "
                             + adhoc.getDataSetName() + " Provider: "
-                            + adhoc.getProvider(), e);
+                            + adhoc.getProvider(),
+                    e);
         }
 
         if (dataSetMetaData == null) {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler
-                        .debug(String
-                                .format("There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
-                                        adhoc.getName()));
+                statusHandler.debug(String.format(
+                        "There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
+                        adhoc.getName()));
             }
         } else {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler
-                        .debug(String
-                                .format("Found most recent metadata for adhoc subscription [%s], using url [%s]",
-                                        adhoc.getName(),
-                                        dataSetMetaData.getUrl()));
+                statusHandler.debug(String.format(
+                        "Found most recent metadata for adhoc subscription [%s], using url [%s]",
+                        adhoc.getName(), dataSetMetaData.getUrl()));
             }
+            // TODO: Restructure adhoc to make logic flow clearer
+            Coverage instanceCoverage = dataSetMetaData.getInstanceCoverage();
+            boolean doRetrieval = true;
+            if (instanceCoverage != null) {
 
-            adhoc.setUrl(dataSetMetaData.getUrl());
-            
-            // Safety, create a placeholder object populating both time fields.
-            if (adhoc.getTime() == null) {
-                T time = (T)(new Time());
-                time.setStart(dataSetMetaData.getDate());
-                time.setEnd(dataSetMetaData.getDate());
-                adhoc.setTime(time);
-            } else {
-                adhoc.getTime().setStart(dataSetMetaData.getDate());
-                // Safety, ensure end time is set to a default as well.
-                if (adhoc.getTime().getEnd() == null) {
-                    adhoc.getTime().setEnd(dataSetMetaData.getDate());
+                ReferencedEnvelope intersection;
+                try {
+                    intersection = MapUtil.reprojectAndIntersect(
+                            adhoc.getCoverage().getRequestEnvelope(),
+                            instanceCoverage.getEnvelope());
+
+                    if (intersection.isNull() || intersection.isEmpty()) {
+                        /*
+                         * Skip this subscription since this metadata does not
+                         * overlap with the requested area.
+                         */
+                        statusHandler.info("Skipping subscription '"
+                                + adhoc.getName()
+                                + "' due to the requested coverage not intersecting "
+                                + "with the coverage of this instance.");
+                        doRetrieval = false;
+                    } else {
+                        adhoc.setCoverage((C) instanceCoverage);
+                    }
+                } catch (TransformException e) {
+                    statusHandler
+                            .error("Error checking moving intersection for subscription '"
+                                    + adhoc.getName()
+                                    + "'. Skipping retrieval.", e);
+                    doRetrieval = false;
                 }
             }
-            
-            retVal = adhoc;
+            if (doRetrieval) {
+                adhoc.setUrl(dataSetMetaData.getUrl());
+
+                /*
+                 * Safety, create a placeholder object populating both time
+                 * fields.
+                 */
+                if (adhoc.getTime() == null) {
+                    T time = (T) (new Time());
+                    time.setStart(dataSetMetaData.getDate());
+                    time.setEnd(dataSetMetaData.getDate());
+                    adhoc.setTime(time);
+                } else {
+                    adhoc.getTime().setStart(dataSetMetaData.getDate());
+                    // Safety, ensure end time is set to a default as well.
+                    if (adhoc.getTime().getEnd() == null) {
+                        adhoc.getTime().setEnd(dataSetMetaData.getDate());
+                    }
+                }
+
+                retVal = adhoc;
+            }
         }
 
         return retVal;
