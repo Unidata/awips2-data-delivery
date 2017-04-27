@@ -103,11 +103,11 @@ import com.raytheon.viz.ui.presenter.IDisplay;
 
 /**
  * Subscription Manager Main Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 9, 2012             mpduff      Initial creation.
@@ -173,22 +173,22 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 16, 2016  3919      tjensen    Cleanup unneeded interfaces
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * Jan 10, 2017  746       bsteffen    Avoid dialog spam when activating/deactivating many subscriptions
- * 
+ *
  * </pre>
- * 
+ *
  * @author mpduff
  * @version 1.0
  */
 
-public class SubscriptionManagerDlg extends CaveSWTDialog implements
-        ITableChange, ISubscriptionAction, IGroupAction, IDisplay {
+public class SubscriptionManagerDlg extends CaveSWTDialog
+        implements ITableChange, ISubscriptionAction, IGroupAction, IDisplay {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubscriptionManagerDlg.class);
 
     /** Help file */
-    private final String SUBSCRIPTION_MANAGER_HELP_FILE = "help/subscriptionManagerHelp.xml";
+    private static final String SUBSCRIPTION_MANAGER_HELP_FILE = "help/subscriptionManagerHelp.xml";
 
     /** Enumeration to use with Data set */
     public static enum FullDataset {
@@ -233,12 +233,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     /** Group combo box */
     private Combo groupCbo;
 
-    /** Office IDs */
-    private String[] officeNames;
-
-    /** GroupName array */
-    private String[] groupNames;
-
     /** Subscription Approval Dialog */
     private SubscriptionApprovalDlg dlg = null;
 
@@ -252,7 +246,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     private DeleteGroupDlg deleteGroupDlg;
 
     /** The subscription service */
-    private final ISubscriptionService subscriptionService = DataDeliveryServices
+    private final SubscriptionService subscriptionService = DataDeliveryServices
             .getSubscriptionService();
 
     /** The subscription notification service */
@@ -277,10 +271,10 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     private LoadSaveConfigDlg saveAsDlg;
 
     /** Option to select all subscriptions */
-    private final String ALL = "ALL";
+    private static final String ALL = "ALL";
 
     /** Option to select all groups of subscriptions */
-    private final String ALL_SUBSCRIPTIONS = "All Subscriptions";
+    private static final String ALL_SUBSCRIPTIONS = "All Subscriptions";
 
     /** Edit menu */
     private MenuItem editMI;
@@ -307,12 +301,12 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     private final ScheduledExecutorService scheduler;
 
     /** instance of configuration manager */
-    private SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
+    private final SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
             .getInstance();
 
     /**
      * Constructor
-     * 
+     *
      * @param parent
      *            The parent shell
      * @param filter
@@ -325,14 +319,14 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
         this.filter = filter;
         scheduler = Executors.newScheduledThreadPool(1);
-        scheduler
-                .scheduleAtFixedRate(new RefreshTask(), 2, 2, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(new RefreshTask(), 2, 2,
+                TimeUnit.MINUTES);
         setText("Data Delivery Subscription Manager");
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
      */
@@ -341,11 +335,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialog#preOpened()
-     */
     @Override
     protected void preOpened() {
         /*
@@ -359,13 +348,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         shell.setSize(1100, 350);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
 
@@ -380,11 +362,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         enableControls(true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
         // Create the main layout for the shell.
@@ -395,11 +372,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         return mainLayout;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#disposed()
-     */
     @Override
     protected void disposed() {
         super.disposed();
@@ -478,9 +450,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                 try {
                     handleLoadConfig();
                 } catch (JAXBException e) {
-                    statusHandler
-                            .handle(com.raytheon.uf.common.status.UFStatus.Priority.ERROR,
-                                    e.getLocalizedMessage(), e);
+                    statusHandler.handle(
+                            com.raytheon.uf.common.status.UFStatus.Priority.ERROR,
+                            e.getLocalizedMessage(), e);
                 }
             }
         });
@@ -760,8 +732,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             if (DataDeliveryServices.getPermissionsService()
                     .checkPermission(user, msg, permission).isAuthorized()) {
                 DataBrowserAction action = new DataBrowserAction();
-                Map<String, String> params = new HashMap<String, String>();
-                ExecutionEvent ee = new ExecutionEvent(null, params, null, null);
+                Map<String, String> params = new HashMap<>();
+                ExecutionEvent ee = new ExecutionEvent(null, params, null,
+                        null);
                 action.execute(ee);
             }
         } catch (ExecutionException e) {
@@ -775,7 +748,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /**
      * Open the Create Group dialog.
-     * 
+     *
      * @param create
      *            true for create dialog and false for edit
      */
@@ -804,13 +777,10 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                         }
                         editGroupDlg.open();
                     } else {
-                        DataDeliveryUtils
-                                .showMessage(
-                                        getShell(),
-                                        SWT.OK,
-                                        "No Groups Defined",
-                                        "No groups currently defined.\n\n"
-                                                + "Select the File->New Group... menu to create a group");
+                        DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                                "No Groups Defined",
+                                "No groups currently defined.\n\n"
+                                        + "Select the File->New Group... menu to create a group");
                     }
                 }
             }
@@ -830,13 +800,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             }
             deleteGroupDlg.open();
         } else {
-            DataDeliveryUtils
-                    .showMessage(
-                            getShell(),
-                            SWT.OK,
-                            "No Groups Defined",
-                            "No groups currently defined.\n\n"
-                                    + "Select the File->New Group... menu to create a group");
+            DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                    "No Groups Defined", "No groups currently defined.\n\n"
+                            + "Select the File->New Group... menu to create a group");
         }
     }
 
@@ -1021,9 +987,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         try {
             if (DataDeliveryServices.getPermissionsService()
                     .checkPermission(user, msg, permission).isAuthorized()) {
-                ArrayList<SubscriptionManagerRowData> deleteList = new ArrayList<SubscriptionManagerRowData>();
-                final List<Subscription> subsToDelete = new ArrayList<Subscription>();
-                final List<Subscription> subsToUpdate = new ArrayList<Subscription>();
+                ArrayList<SubscriptionManagerRowData> deleteList = new ArrayList<>();
+                final List<Subscription> subsToDelete = new ArrayList<>();
+                final List<Subscription> subsToUpdate = new ArrayList<>();
 
                 for (int idx : tableComp.getTable().getSelectionIndices()) {
                     SubscriptionManagerRowData removedItem = tableComp
@@ -1058,8 +1024,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
                             if (choice == SWT.YES) {
                                 // remove the rows from the table
-                                tableComp.getSubscriptionData().removeAll(
-                                        deleted);
+                                tableComp.getSubscriptionData()
+                                        .removeAll(deleted);
 
                                 final String username = LocalizationManager
                                         .getInstance().getCurrentUser();
@@ -1070,7 +1036,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                                             IProgressMonitor monitor) {
                                         DataDeliveryGUIUtils
                                                 .markBusyInUIThread(shell);
-                                        List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>(
+                                        List<RegistryHandlerException> exceptions = new ArrayList<>(
                                                 0);
                                         if (!subsToDelete.isEmpty()) {
                                             exceptions = deleteSubscriptions(
@@ -1083,33 +1049,35 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                                                             subsToUpdate));
                                         }
                                         for (RegistryHandlerException t : exceptions) {
-                                            statusHandler
-                                                    .handle(Priority.ERROR,
-                                                            "Failed to delete some subscriptions: "
-                                                                    + t.getLocalizedMessage(),
-                                                            t);
+                                            statusHandler.handle(Priority.ERROR,
+                                                    "Failed to delete some subscriptions: "
+                                                            + t.getLocalizedMessage(),
+                                                    t);
                                         }
 
                                         return Status.OK_STATUS;
                                     }
                                 };
-                                job.addJobChangeListener(new JobChangeAdapter() {
-                                    @Override
-                                    public void done(IJobChangeEvent event) {
-                                        VizApp.runAsync(new Runnable() {
+                                job.addJobChangeListener(
+                                        new JobChangeAdapter() {
                                             @Override
-                                            public void run() {
-                                                if (isDisposed()) {
-                                                    return;
-                                                }
-                                                handleRefresh();
+                                            public void done(
+                                                    IJobChangeEvent event) {
+                                                VizApp.runAsync(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        if (isDisposed()) {
+                                                            return;
+                                                        }
+                                                        handleRefresh();
+                                                    }
+                                                });
+
+                                                DataDeliveryGUIUtils
+                                                        .markNotBusyInUIThread(
+                                                                shell);
                                             }
                                         });
-
-                                        DataDeliveryGUIUtils
-                                                .markNotBusyInUIThread(shell);
-                                    }
-                                });
                                 job.schedule();
                             } else {
                                 // Refresh the table to reset any objects edited
@@ -1119,8 +1087,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                     }
                 };
 
-                DataDeliveryUtils.showCallbackMessageBox(shell, SWT.YES
-                        | SWT.NO, "Delete Confirmation", message, callback);
+                DataDeliveryUtils.showCallbackMessageBox(shell,
+                        SWT.YES | SWT.NO, "Delete Confirmation", message,
+                        callback);
             }
         } catch (AuthException e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
@@ -1129,7 +1098,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /**
      * Get the delete confirmation message.
-     * 
+     *
      * @param subsToDelete
      *            subscription list to delete
      * @param subsToUpdate
@@ -1201,7 +1170,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /**
      * Handle activating/deactivating the subscription.
-     * 
+     *
      * @param activate
      *            Flag to activate (true) deactivate (false).
      */
@@ -1365,7 +1334,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
                             try {
                                 Thread.sleep(500);
                             } catch (InterruptedException e) {
-                                ;// ignore and go immediately
+                                // ignore and go immediately
                             }
                             VizApp.runAsync(messenger);
                         }
@@ -1404,13 +1373,14 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR,
                     "Error loading Help Text file: "
-                            + SUBSCRIPTION_MANAGER_HELP_FILE, e);
+                            + SUBSCRIPTION_MANAGER_HELP_FILE,
+                    e);
         }
     }
 
     /**
      * Check whether there are groups available.
-     * 
+     *
      * @return true if there are groups defined
      */
     private boolean thereAreGroupsAvailable() {
@@ -1442,7 +1412,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         List<String> groupNameList = GroupDefinitionManager.getGroupNames();
 
         groupNameList.add(0, ALL_SUBSCRIPTIONS);
-        groupNames = groupNameList.toArray(new String[0]);
+        String[] groupNames = groupNameList.toArray(new String[0]);
         groupCbo.setItems(groupNames);
 
         if (this.selectedGroup != null) {
@@ -1458,7 +1428,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     public void loadOfficeNames() {
 
         List<String> siteList = DataDeliveryUtils.getDataDeliverySiteList();
-        officeNames = siteList.toArray(new String[siteList.size()]);
+        String[] officeNames = siteList.toArray(new String[siteList.size()]);
 
         officeCbo.setItems(officeNames);
 
@@ -1475,13 +1445,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
         officeCbo.select(officeCbo.indexOf(site));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.test.subscription.ISubscriptionConfig
-     * #updateTable()
-     */
     @Override
     public void tableChanged() {
         String sortColumnText = null;
@@ -1545,17 +1508,15 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
             String msg = user.uniqueId()
                     + " is not authorized to access Subscription Approval";
 
-            return DataDeliveryServices
-                    .getPermissionsService()
-                    .checkPermissions(
-                            user,
-                            msg,
+            return DataDeliveryServices.getPermissionsService()
+                    .checkPermissions(user, msg,
                             DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE
                                     .toString(),
                             DataDeliveryPermission.SUBSCRIPTION_APPROVE_USER
                                     .toString(),
                             DataDeliveryPermission.SUBSCRIPTION_APPROVE_VIEW
-                                    .toString()).isAuthorized();
+                                    .toString())
+                    .isAuthorized();
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
@@ -1565,16 +1526,16 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /**
      * Deletes a subscription and its associations.
-     * 
+     *
      * @param username
-     * 
+     *
      * @param subscription
-     * 
+     *
      * @return true if successful
      */
-    private List<RegistryHandlerException> deleteSubscriptions(String username,
-            List<Subscription> subscriptions) {
-        List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>();
+    private static List<RegistryHandlerException> deleteSubscriptions(
+            String username, List<Subscription> subscriptions) {
+        List<RegistryHandlerException> exceptions = new ArrayList<>();
 
         SubscriptionHandler handler = RegistryObjectHandlers
                 .get(SubscriptionHandler.class);
@@ -1589,16 +1550,16 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /**
      * Update subscriptions.
-     * 
+     *
      * @param username
      *            User updating the subscriptions
      * @param subscriptions
      *            Subscriptions to update
      * @return List of errors that occurred
      */
-    private List<RegistryHandlerException> updateSubscriptions(String username,
-            List<Subscription> subscriptions) {
-        List<RegistryHandlerException> exceptions = new ArrayList<RegistryHandlerException>();
+    private static List<RegistryHandlerException> updateSubscriptions(
+            String username, List<Subscription> subscriptions) {
+        List<RegistryHandlerException> exceptions = new ArrayList<>();
 
         SubscriptionHandler handler = RegistryObjectHandlers
                 .get(SubscriptionHandler.class);
@@ -1650,7 +1611,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
      */
     @Override
     public boolean displayYesNoPopup(String title, String message) {
-        return DataDeliveryUtils.showYesNoMessage(shell, title, message) == SWT.YES;
+        return DataDeliveryUtils.showYesNoMessage(shell, title,
+                message) == SWT.YES;
     }
 
     /**
@@ -1672,7 +1634,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
 
     /**
      * Enable/Disable controls.
-     * 
+     *
      * @param enable
      *            true to enable, false to disable
      */
@@ -1696,7 +1658,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog implements
     private class RefreshTask implements Runnable {
         @Override
         public void run() {
-            if (TimeUtil.currentTimeMillis() - tableComp.getLastUpdateTime() >= TimeUtil.MILLIS_PER_MINUTE * 2) {
+            if (TimeUtil.currentTimeMillis() - tableComp
+                    .getLastUpdateTime() >= TimeUtil.MILLIS_PER_MINUTE * 2) {
                 statusHandler
                         .info("Running SubscriptionManager refresh task,lastUpdate: "
                                 + new Date(tableComp.getLastUpdateTime()));

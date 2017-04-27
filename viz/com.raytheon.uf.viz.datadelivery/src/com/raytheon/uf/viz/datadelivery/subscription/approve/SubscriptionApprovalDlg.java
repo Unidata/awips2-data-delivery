@@ -65,7 +65,7 @@ import com.raytheon.uf.viz.datadelivery.common.ui.TableDataManager;
 import com.raytheon.uf.viz.datadelivery.help.HelpManager;
 import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
 import com.raytheon.uf.viz.datadelivery.subscription.CancelForceApplyAndIncreaseLatencyDisplayText;
-import com.raytheon.uf.viz.datadelivery.subscription.ISubscriptionService;
+import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.ForceApplyPromptResponse;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionServiceResult;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
@@ -75,41 +75,50 @@ import com.raytheon.viz.ui.presenter.IDisplay;
 
 /**
  * Pending subscription approval dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 7, 2012             mpduff      Initial creation
- * Aug 21, 2012 712        mpduff      Remove registry call to get subscription id.
- * Aug 27, 2012 0743       djohnson    Fix to not have NPE, delete associations on approval.
- * Aug 31, 2012 1128       mpudff      Notification fix.
- * Sep 06, 2012 1142       djohnson    Create deletePendingSubscription().
- * Sep 17, 2012 1157       mpduff      Add subscription to notification request.
- * Sep 14, 2012 1169       djohnson    Use storeOrReplaceRegistryObject.
- * Oct 03, 2012 1241       djohnson    Use {@link DataDeliveryPermission} and registry handlers.
- * Oct 10, 2012 1204       jpiatt      Changed GUI alert to AlertViz alert.
- * Nov 09, 2012 1286       djohnson    Consolidate duplicate subscription handling.
- * Nov 20, 2012 1286       djohnson    Implement IDisplay to display yes/no prompt.
- * Nov 28, 2012 1286       djohnson    Use subscriptionService for notification, and only notify when actually approved.
- * Dec 12, 2012 1433       bgonzale    Use new subscription copy ctor method for approval of pending subscription.
- * Mar 29, 2013 1841       djohnson    Subscription is now UserSubscription.
- * Apr 05, 2013 1841       djohnson    Add support for shared subscriptions.
- * Jun 06, 2013 2030       mpduff      Refactored help.
- * Jul 26, 2013 2232       mpduff      Refactored Data Delivery permissions.
- * Sep 03, 2013 2315       mpduff      Add subscription name to denied approval message.
- * Oct 23, 2013 2292       mpduff      Move subscription overlap checks to edex.
- * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
- * Apr 18, 2014  3012      dhladky      Null check.
- * Aug 18, 2014 2746       ccody       Non-local Subscription changes not updating dialogs
- * Jan 05, 2015 3898       ccody       Delete existing Site subscription if it is updated to a Shared Subscription
- * Feb 01, 2016 5289       tgurney     Add missing maximize button in trim
- * Mar 16, 2016  3919      tjensen     Cleanup unneeded interfaces
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 07, 2012           mpduff    Initial creation
+ * Aug 21, 2012  712      mpduff    Remove registry call to get subscription id.
+ * Aug 27, 2012  743      djohnson  Fix to not have NPE, delete associations on
+ *                                  approval.
+ * Aug 31, 2012  1128     mpudff    Notification fix.
+ * Sep 06, 2012  1142     djohnson  Create deletePendingSubscription().
+ * Sep 17, 2012  1157     mpduff    Add subscription to notification request.
+ * Sep 14, 2012  1169     djohnson  Use storeOrReplaceRegistryObject.
+ * Oct 03, 2012  1241     djohnson  Use {@link DataDeliveryPermission} and
+ *                                  registry handlers.
+ * Oct 10, 2012  1204     jpiatt    Changed GUI alert to AlertViz alert.
+ * Nov 09, 2012  1286     djohnson  Consolidate duplicate subscription handling.
+ * Nov 20, 2012  1286     djohnson  Implement IDisplay to display yes/no prompt.
+ * Nov 28, 2012  1286     djohnson  Use subscriptionService for notification,
+ *                                  and only notify when actually approved.
+ * Dec 12, 2012  1433     bgonzale  Use new subscription copy ctor method for
+ *                                  approval of pending subscription.
+ * Mar 29, 2013  1841     djohnson  Subscription is now UserSubscription.
+ * Apr 05, 2013  1841     djohnson  Add support for shared subscriptions.
+ * Jun 06, 2013  2030     mpduff    Refactored help.
+ * Jul 26, 2013  2232     mpduff    Refactored Data Delivery permissions.
+ * Sep 03, 2013  2315     mpduff    Add subscription name to denied approval
+ *                                  message.
+ * Oct 23, 2013  2292     mpduff    Move subscription overlap checks to edex.
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Apr 18, 2014  3012     dhladky   Null check.
+ * Aug 18, 2014  2746     ccody     Non-local Subscription changes not updating
+ *                                  dialogs
+ * Jan 05, 2015  3898     ccody     Delete existing Site subscription if it is
+ *                                  updated to a Shared Subscription
+ * Feb 01, 2016  5289     tgurney   Add missing maximize button in trim
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Apr 25, 2017  1045     tjensen   Cleanup more unneeded interfaces
+ *
  * </pre>
- * 
+ *
  * @author mpduff
  * @version 1.0
  */
@@ -117,8 +126,8 @@ import com.raytheon.viz.ui.presenter.IDisplay;
 public class SubscriptionApprovalDlg extends CaveSWTDialog implements
         INotificationObserver, ISubscriptionApprovalAction, IDisplay {
 
-    public class ApproveSubscriptionForceApplyPromptDisplayText extends
-            CancelForceApplyAndIncreaseLatencyDisplayText {
+    public class ApproveSubscriptionForceApplyPromptDisplayText
+            extends CancelForceApplyAndIncreaseLatencyDisplayText {
         /**
          * Constructor.
          */
@@ -146,12 +155,12 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
     }
 
     /** Help file */
-    protected final String HELP_FILE = "help/subscriptionApprovalHelp.xml";
+    protected static final String HELP_FILE = "help/subscriptionApprovalHelp.xml";
 
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubscriptionApprovalDlg.class);
 
-    private final ISubscriptionService subscriptionService = DataDeliveryServices
+    private final SubscriptionService subscriptionService = DataDeliveryServices
             .getSubscriptionService();
 
     private final SendToServerSubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
@@ -166,7 +175,7 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            The parent Shell
      */
@@ -176,22 +185,11 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
         setText("Subscription Approval");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
-     */
     @Override
     protected Object constructShellLayoutData() {
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
         // Create the main layout for the shell.
@@ -202,13 +200,6 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
         return mainLayout;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
         shell.setMinimumSize(750, 320);
@@ -366,16 +357,16 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
             // user permission
             boolean site = false;
 
-            if (response
-                    .hasPermission(DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE
+            if (response.hasPermission(
+                    DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE
                             .toString())) {
                 site = true;
             }
 
             TableDataManager<SubscriptionApprovalRowData> pendingSubData = tableComp
                     .getPendingSubData();
-            ArrayList<SubscriptionApprovalRowData> approveList = new ArrayList<SubscriptionApprovalRowData>();
-            ArrayList<String> notApprovedSubList = new ArrayList<String>();
+            ArrayList<SubscriptionApprovalRowData> approveList = new ArrayList<>();
+            ArrayList<String> notApprovedSubList = new ArrayList<>();
             for (int idx : tableComp.getTable().getSelectionIndices()) {
                 SubscriptionApprovalRowData approvedItem = pendingSubData
                         .getDataRow(idx);
@@ -392,15 +383,15 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
                 }
             }
 
-            if (approveList.size() > 0) {
+            if (!approveList.isEmpty()) {
                 approveSubs(approveList);
             }
 
-            if (notApprovedSubList.size() > 0) {
-                StringBuilder buffer = new StringBuilder(
-                        user.uniqueId().toString()
-                                + " is not authorized to approve pending subscriptions belonging to other users. "
-                                + "\nNot authorized to approve the following subscriptions:\n\n");
+            if (!notApprovedSubList.isEmpty()) {
+                StringBuilder buffer = new StringBuilder(user.uniqueId()
+                        .toString()
+                        + " is not authorized to approve pending subscriptions belonging to other users. "
+                        + "\nNot authorized to approve the following subscriptions:\n\n");
                 for (String name : notApprovedSubList) {
                     buffer.append(name).append("\n");
                 }
@@ -420,12 +411,10 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
             String msg = user.uniqueId()
                     + " is not authorized to Approve/Deny subscriptions.";
 
-            return permissionsService
-                    .checkPermissions(user, msg,
-                            DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE
-                                    .toString(),
-                            DataDeliveryPermission.SUBSCRIPTION_APPROVE_USER
-                                    .toString());
+            return permissionsService.checkPermissions(user, msg,
+                    DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE.toString(),
+                    DataDeliveryPermission.SUBSCRIPTION_APPROVE_USER
+                            .toString());
         } catch (AuthException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to check user permissions.", e);
@@ -446,9 +435,9 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
     @Override
     public void handleDeny() {
         if (tableComp.getTable().getSelectionCount() == 0) {
-            DataDeliveryUtils
-                    .showMessage(getShell(), SWT.ERROR, "No Rows Selected",
-                            "Please select a row or rows to delete");
+            DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
+                    "No Rows Selected",
+                    "Please select a row or rows to delete");
             return;
         }
         getShell().setCursor(getDisplay().getSystemCursor(SWT.CURSOR_WAIT));
@@ -461,15 +450,15 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
                 // user permission
                 boolean site = false;
 
-                if (response
-                        .hasPermission(DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE
+                if (response.hasPermission(
+                        DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE
                                 .toString())) {
                     site = true;
                 }
 
                 TableDataManager<SubscriptionApprovalRowData> pendingSubData = tableComp
                         .getPendingSubData();
-                ArrayList<SubscriptionApprovalRowData> deleteList = new ArrayList<SubscriptionApprovalRowData>();
+                ArrayList<SubscriptionApprovalRowData> deleteList = new ArrayList<>();
                 final String username = user.uniqueId().toString();
                 for (int idx : tableComp.getTable().getSelectionIndices()) {
                     SubscriptionApprovalRowData removedItem = pendingSubData
@@ -499,13 +488,12 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
 
                             subscriptionNotificationService
                                     .sendDeniedPendingSubscriptionNotification(
-                                            sub, username, sub.getName()
-                                                    + ":  " + denyMessage);
+                                            sub, username, sub.getName() + ":  "
+                                                    + denyMessage);
                         } catch (RegistryHandlerException e) {
-                            statusHandler
-                                    .handle(Priority.PROBLEM,
-                                            "Unable to delete pending subscription.",
-                                            e);
+                            statusHandler.handle(Priority.PROBLEM,
+                                    "Unable to delete pending subscription.",
+                                    e);
                         }
                     }
 
@@ -546,7 +534,7 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
 
             Subscription cachedSiteSubscription = null;
             boolean isPromotedToShared = checkForSubscriptionPromotion(ps, s);
-            if (isPromotedToShared == true) {
+            if (isPromotedToShared) {
                 cachedSiteSubscription = s;
                 Set officeIDs = s.getOfficeIDs();
                 SharedSubscription sharedSub = new SharedSubscription(s);
@@ -587,16 +575,9 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
         tableComp.repopulate();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.notification.INotificationObserver#
-     * notificationArrived
-     * (com.raytheon.uf.viz.core.notification.NotificationMessage[])
-     */
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
-        final ArrayList<InitialPendingSubscription> updatedSubscriptions = new ArrayList<InitialPendingSubscription>();
+        final ArrayList<InitialPendingSubscription> updatedSubscriptions = new ArrayList<>();
         try {
             for (NotificationMessage msg : messages) {
                 Object obj = msg.getMessagePayload();
@@ -610,11 +591,11 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
 
-        if (updatedSubscriptions.isEmpty() == false) {
+        if (!updatedSubscriptions.isEmpty()) {
             VizApp.runAsync(new Runnable() {
                 @Override
                 public void run() {
-                    if (isDisposed() == false) {
+                    if (!isDisposed()) {
                         tableComp.updateTable(updatedSubscriptions);
                     }
                 }
@@ -627,21 +608,22 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
      */
     @Override
     public boolean displayYesNoPopup(String title, String message) {
-        return DataDeliveryUtils.showYesNoMessage(getShell(), title, message) == SWT.YES;
+        return DataDeliveryUtils.showYesNoMessage(getShell(), title,
+                message) == SWT.YES;
     }
 
     /**
      * Check to see if the Pending subscription will promote the existing
      * Subscription from a Site Subscription to a Shared Subscription.
-     * 
+     *
      * @param ps
      *            Pending Subscription
      * @param s
      *            Subscription
      * @return
      */
-    private boolean checkForSubscriptionPromotion(
-            InitialPendingSubscription ps, Subscription s) {
+    private boolean checkForSubscriptionPromotion(InitialPendingSubscription ps,
+            Subscription s) {
 
         Set<String> pendingOfficeIDs = ps.getOfficeIDs();
         Set<String> subOfficeIDs = s.getOfficeIDs();
@@ -663,10 +645,10 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
 
     /**
      * Delete DataSetLatency entities for a subscription (if one exists).
-     * 
+     *
      * DataSetLatency objects are not registry entities. Changes to a
      * Subscription will not automatically trigger their deletion.
-     * 
+     *
      * @param subscription
      *            Subscription to delete any existing DataSetLatency entities
      *            for
@@ -686,12 +668,13 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
 
     /**
      * Deletes a subscription and its associations.
-     * 
+     *
      * @param username
-     * 
+     *
      * @param subscription
      */
-    private void deleteSubscription(String username, Subscription subscription) {
+    private void deleteSubscription(String username,
+            Subscription subscription) {
 
         try {
             resetSubscriptionDataSetLatency(subscription);
@@ -699,8 +682,8 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
                     .get(SubscriptionHandler.class);
             handler.delete(username, subscription);
         } catch (RegistryHandlerException e) {
-            statusHandler.error(
-                    "Unable to delete duplicate (Site) Subscription "
+            statusHandler
+                    .error("Unable to delete duplicate (Site) Subscription "
                             + subscription.getName(), e);
         }
 

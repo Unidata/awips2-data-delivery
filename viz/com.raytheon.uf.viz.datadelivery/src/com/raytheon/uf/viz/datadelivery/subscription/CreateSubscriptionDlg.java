@@ -60,8 +60,10 @@ import com.raytheon.uf.common.auth.req.IPermissionsService;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionStatusSummary;
 import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyService;
+import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
+import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
@@ -69,10 +71,12 @@ import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
+import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
+import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetQuery;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
@@ -107,65 +111,82 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
 
 /**
  * The Data Delivery Create Subscription Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 9, 2012             mpduff       Initial creation.
- * Mar 29, 2012 431        jpiatt       Edit name update.
- * Jun 21, 2012 736        djohnson     Change OPERATION_STATUS to OperationStatus.
- * Jul 10, 2012 455        djohnson     Disallow creating subscriptions with empty names,
- *                                      don't pull all subscriptions to check for an existing one by name.
- * Jul 16, 2012 702        jpiatt       Modifications for group name.
- * Aug 02, 2012 955        djohnson     Type-safe registry query/responses.
- * Aug 10, 2012 1002       mpduff       Implementing dataset size estimation.
- * Aug 10, 2012 1022       djohnson     {@link DataSetQuery} requires provider name, set NO_GROUP if user doesn't specify a group.
- * Aug 21, 2012 712        mpduff       Add registry ID to subscription objects at creation time
- * Aug 29, 2012 223        mpduff       Add Cycle times for gridded data.  Made to follow MVP pattern.
- * Sep 17, 2012 223        mpduff       Add wait cursor to ok button click.
- * Oct  3, 2012 1103       jpiatt       Changed label.
- * Nov 20, 2012 1286       djohnson     Implement IDisplay to display yes/no prompt.
- * Dec 13, 2012 1391       bgonzale     Added cancel/ok selection status.
- * Jan 02, 2013 1441       djohnson     Add isGroupSelected().
- * Jan 04, 2013 1420       mpduff       Add latency.
- * Jan 25, 2013 1528       djohnson    Use priority enum instead of raw integers.
- * Apr 08, 2013 1826       djohnson    Remove delivery options.
- * May 15, 2013 1040       mpduff      Add Shared sites.
- * Jun 04, 2013  223       mpduff      Modify for point data.
- * Jun 12, 2013 2038       djohnson    No longer modal.
- * Jul 26, 2013   2232     mpduff      Refactored Data Delivery permissions.
- * Aug 21, 2013   1848     mpduff      Check subscription.create and shared.subscription.create.
- * Aug 30, 2013   2288     bgonzale    Added display of priority and latency rules.
- * Sep 04, 2013   2314     mpduff      Pass in the office to Shared Subscription Dialog.
- * Sep 30, 2013   1797     dhladky     separated Time from GriddedTime
- * Oct 11, 2013   2386     mpduff      Refactor DD Front end.
- * Oct 15, 2013   2477     mpduff      Fix bug in group settings.
- * Oct 23, 2013   2484     dhladky     Unique ID for subscriptions updated.
- * Oct 21, 2013   2292     mpduff      Close dialog on OK.
- * Nov 07, 2013   2291     skorolev    Used showText() method for "Unable to Create Subscription" message.
- * Nov 08, 2013   2506     bgonzale    Removed send notification when a subscription is updated and created.
- * Jan 14, 2014   2459     mpduff      Change Subscription status code
- * Feb 11, 2014   2771     bgonzale    Use Data Delivery ID instead of Site.
- * Mar 31, 2014   2889     dhladky     Added username for notification center tracking.
- * May 15, 2014   3113     mpduff      Don't display the gridded cycle composite if no cycles.
- * Aug 18, 2014   2746     ccody       Non-local Subscription changes not updating dialogs
- * Sep 05, 2014   2131     dhladky     Added PDA data type subscriptions
- * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
- * Dec 01, 2014   3550     ccody       Added extended Latency Processing
- * Jan 05, 2015   3898     ccody       Delete existing Site subscription if it is updated to a Shared Subscription
- * Feb 13, 2015   3852     dhladky     All messaging is done from the BWM and Registry regarding subscriptions.
- * May 17, 2015   4047     dhladky     Verified non-blocking.
- * Oct 15, 2015   4657     rferrel     Make blocking so parent dialog stays busy.
- * Feb 01, 2016   5289     tgurney     Add missing minimize button in trim
- * Mar 15, 2016   5482     randerso    Fix GUI sizing issues
- * Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces.
- * Nov 08, 2016   5976     bsteffen    Use VizApp for GUI execution.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 09, 2012           mpduff    Initial creation.
+ * Mar 29, 2012  431      jpiatt    Edit name update.
+ * Jun 21, 2012  736      djohnson  Change OPERATION_STATUS to OperationStatus.
+ * Jul 10, 2012  455      djohnson  Disallow creating subscriptions with empty
+ *                                  names, don't pull all subscriptions to check
+ *                                  for an existing one by name.
+ * Jul 16, 2012  702      jpiatt    Modifications for group name.
+ * Aug 02, 2012  955      djohnson  Type-safe registry query/responses.
+ * Aug 10, 2012  1002     mpduff    Implementing dataset size estimation.
+ * Aug 10, 2012  1022     djohnson  {@link DataSetQuery} requires provider name,
+ *                                  set NO_GROUP if user doesn't specify a
+ *                                  group.
+ * Aug 21, 2012  712      mpduff    Add registry ID to subscription objects at
+ *                                  creation time
+ * Aug 29, 2012  223      mpduff    Add Cycle times for gridded data.  Made to
+ *                                  follow MVP pattern.
+ * Sep 17, 2012  223      mpduff    Add wait cursor to ok button click.
+ * Oct 03, 2012  1103     jpiatt    Changed label.
+ * Nov 20, 2012  1286     djohnson  Implement IDisplay to display yes/no prompt.
+ * Dec 13, 2012  1391     bgonzale  Added cancel/ok selection status.
+ * Jan 02, 2013  1441     djohnson  Add isGroupSelected().
+ * Jan 04, 2013  1420     mpduff    Add latency.
+ * Jan 25, 2013  1528     djohnson  Use priority enum instead of raw integers.
+ * Apr 08, 2013  1826     djohnson  Remove delivery options.
+ * May 15, 2013  1040     mpduff    Add Shared sites.
+ * Jun 04, 2013  223      mpduff    Modify for point data.
+ * Jun 12, 2013  2038     djohnson  No longer modal.
+ * Jul 26, 2013  2232     mpduff    Refactored Data Delivery permissions.
+ * Aug 21, 2013  1848     mpduff    Check subscription.create and
+ *                                  shared.subscription.create.
+ * Aug 30, 2013  2288     bgonzale  Added display of priority and latency rules.
+ * Sep 04, 2013  2314     mpduff    Pass in the office to Shared Subscription
+ *                                  Dialog.
+ * Sep 30, 2013  1797     dhladky   separated Time from GriddedTime
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Oct 15, 2013  2477     mpduff    Fix bug in group settings.
+ * Oct 23, 2013  2484     dhladky   Unique ID for subscriptions updated.
+ * Oct 21, 2013  2292     mpduff    Close dialog on OK.
+ * Nov 07, 2013  2291     skorolev  Used showText() method for "Unable to Create
+ *                                  Subscription" message.
+ * Nov 08, 2013  2506     bgonzale  Removed send notification when a
+ *                                  subscription is updated and created.
+ * Jan 14, 2014  2459     mpduff    Change Subscription status code
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * May 15, 2014  3113     mpduff    Don't display the gridded cycle composite if
+ *                                  no cycles.
+ * Aug 18, 2014  2746     ccody     Non-local Subscription changes not updating
+ *                                  dialogs
+ * Sep 05, 2014  2131     dhladky   Added PDA data type subscriptions
+ * Oct 28, 2014  2748     ccody     Remove Live update. Updates are event
+ *                                  driven.
+ * Dec 01, 2014  3550     ccody     Added extended Latency Processing
+ * Jan 05, 2015  3898     ccody     Delete existing Site subscription if it is
+ *                                  updated to a Shared Subscription
+ * Feb 13, 2015  3852     dhladky   All messaging is done from the BWM and
+ *                                  Registry regarding subscriptions.
+ * May 17, 2015  4047     dhladky   Verified non-blocking.
+ * Oct 15, 2015  4657     rferrel   Make blocking so parent dialog stays busy.
+ * Feb 01, 2016  5289     tgurney   Add missing minimize button in trim
+ * Mar 15, 2016  5482     randerso  Fix GUI sizing issues
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces.
+ * Nov 08, 2016  5976     bsteffen  Use VizApp for GUI execution.
+ * Apr 25, 2017  1045     tjensen   Create Adhoc subscriptions for latest when
+ *                                  creating a recurring subscription
  *
  * </pre>
- * 
+ *
  * @author mpduff
  * @version 1.0
  */
@@ -175,11 +196,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             .getHandler(CreateSubscriptionDlg.class);
 
     /** Pending approval message */
-    private final String PENDING_APPROVAL_MESSAGE = "The subscription is awaiting approval.\n\n"
+    private static final String PENDING_APPROVAL_MESSAGE = "The subscription is awaiting approval.\n\n"
             + "A notification message will be generated upon approval.";
 
     /** Subscription retrieval service */
-    static ISubscriptionService subscriptionService = DataDeliveryServices
+    private static SubscriptionService subscriptionService = DataDeliveryServices
             .getSubscriptionService();
 
     /** Subscription notification service */
@@ -187,7 +208,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             .getSubscriptionNotificationService();
 
     /** Constant */
-    private final String UPDATED_TITLE = "Subscription Updated";
+    private static final String UPDATED_TITLE = "Subscription Updated";
 
     /** The Main Composite */
     private Composite mainComp;
@@ -216,20 +237,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     /** Create/edit flag */
     private final boolean create;
 
-    /** OK button */
-    private Button okBtn;
-
     /** Hour button */
     private Button[] hourBtnArr;
-
-    /** Cycle composite */
-    private Composite cycleComp;
-
-    /** Deselect All button */
-    private Button deselectAllBtn;
-
-    /** Select All button */
-    private Button selectAllBtn;
 
     /** Did the user Status.OK or SWT.CANCEL subscription creation */
     private int status = SWT.NONE;
@@ -252,10 +261,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     /** The dataset object */
     private final DataSet dataSet;
 
-
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            The parent shell
      * @param create
@@ -269,8 +277,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             DataSet dataSet) {
         // Make blocking so parent shell stays busy until the dialog closes.
         super(parent, SWT.DIALOG_TRIM | SWT.MIN,
-                CAVE.INDEPENDENT_SHELL
-                | CAVE.PERSPECTIVE_INDEPENDENT);
+                CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT);
         this.create = create;
         this.dataSet = dataSet;
 
@@ -285,7 +292,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
      * .eclipse.swt.widgets.Shell)
@@ -318,8 +325,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
         if (this.subscription.getDataSetType() == DataType.GRID) {
             // cycle times
-            cycleTimes = Sets.newTreeSet(((OpenDapGriddedDataSet) dataSet)
-                    .getCycles());
+            cycleTimes = Sets
+                    .newTreeSet(((OpenDapGriddedDataSet) dataSet).getCycles());
             latencyRule = ruleManager.getLatency(subscription, cycleTimes);
             priorityRule = ruleManager.getPriority(subscription, cycleTimes);
             isReadOnlyLatency = false;
@@ -363,11 +370,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         populate();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
         // Create the main layout for the shell.
@@ -394,8 +396,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         subName.setText("Name: ");
 
         // If in Edit mode do not allow Subscription Name to be changed
-        subNameTxt = new Text(subInfoGroup, SWT.BORDER
-                | (create ? SWT.None : SWT.READ_ONLY));
+        subNameTxt = new Text(subInfoGroup,
+                SWT.BORDER | (create ? SWT.None : SWT.READ_ONLY));
         if (!create) {
             subNameTxt.setBackground(subInfoGroup.getBackground());
         }
@@ -470,8 +472,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 + StringUtil.NEWLINE + "Permission: "
                 + createSharedSubPermission;
         try {
-            if (DataDeliveryServices
-                    .getPermissionsService()
+            if (DataDeliveryServices.getPermissionsService()
                     .checkPermissions(user, msg, createSharedSubPermission,
                             createSubPermission)
                     .hasPermission(createSharedSubPermission)) {
@@ -495,8 +496,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 });
             }
         } catch (AuthException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
+            statusHandler.handle(Priority.PROBLEM, e1.getLocalizedMessage(),
+                    e1);
         }
         btn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -520,11 +521,12 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         selectedSiteLbl = new Label(group, SWT.BORDER);
         selectedSiteLbl.setFont(font);
         selectedSiteLbl.setText("");
-        selectedSiteLbl.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
-                false));
+        selectedSiteLbl
+                .setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         if (!create) {
-            if (subscription != null && subscription.getOfficeIDs().size() > 0) {
+            if (subscription != null
+                    && subscription.getOfficeIDs().size() > 0) {
                 String[] siteArr = subscription.getOfficeIDs().toArray(
                         new String[subscription.getOfficeIDs().size()]);
                 processSites(siteArr);
@@ -544,7 +546,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         btnComp.setLayoutData(gd);
 
         int buttonWidth = btnComp.getDisplay().getDPI().x;
-        okBtn = new Button(btnComp, SWT.PUSH);
+        Button okBtn = new Button(btnComp, SWT.PUSH);
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         gd.minimumWidth = buttonWidth;
         okBtn.setLayoutData(gd);
@@ -582,11 +584,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         });
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialog#preOpened()
-     */
     @Override
     protected void preOpened() {
         super.preOpened();
@@ -616,7 +613,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
         gl = new GridLayout(8, false);
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        cycleComp = new Composite(cycleGroup, SWT.NONE);
+        Composite cycleComp = new Composite(cycleGroup, SWT.NONE);
         cycleComp.setLayout(gl);
         cycleComp.setLayoutData(gd);
 
@@ -637,7 +634,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         selectAllComp.setLayoutData(gd);
 
         GridData btnData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        selectAllBtn = new Button(selectAllComp, SWT.PUSH);
+        Button selectAllBtn = new Button(selectAllComp, SWT.PUSH);
         selectAllBtn.setLayoutData(btnData);
         selectAllBtn.setText("Select All");
         selectAllBtn.setToolTipText("Select all cycle times");
@@ -652,7 +649,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         });
 
         btnData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        deselectAllBtn = new Button(selectAllComp, SWT.PUSH);
+        Button deselectAllBtn = new Button(selectAllComp, SWT.PUSH);
         deselectAllBtn.setLayoutData(btnData);
         deselectAllBtn.setText("Deselect All");
         deselectAllBtn.setToolTipText("Deselect all cycle times");
@@ -669,7 +666,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Handle the mouse event and display the tooltip.
-     * 
+     *
      * @param e
      *            MouseEvent
      * @param msg
@@ -682,11 +679,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         DataDeliveryGUIUtils.showTooltip(this.shell, pos.x, pos.y, msg);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#disposed()
-     */
     @Override
     protected void disposed() {
         super.disposed();
@@ -697,7 +689,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Get the subscription Name.
-     * 
+     *
      * @return
      */
     private String getSubscriptionName() {
@@ -706,7 +698,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the subscription name.
-     * 
+     *
      * @param subscriptionName
      *            The subscription name
      */
@@ -718,7 +710,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Get the subscription description
-     * 
+     *
      * @return
      */
     private String getSubscriptionDescription() {
@@ -727,7 +719,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the subscription description.
-     * 
+     *
      * @param subscriptionDescription
      *            description of the subscription
      */
@@ -737,7 +729,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the no expiration date checkbox
-     * 
+     *
      * @param noExpiration
      *            true of the subscription does not expire
      */
@@ -747,7 +739,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the start date
-     * 
+     *
      * @param startDate
      *            Start date of the subscription
      */
@@ -757,7 +749,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the expiration date
-     * 
+     *
      * @param expDate
      *            expiration date of the subscription
      */
@@ -767,7 +759,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the always active selection.
-     * 
+     *
      * @param active
      *            true if the subscription is always active
      */
@@ -777,7 +769,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the active start date
-     * 
+     *
      * @param activeStartDate
      *            Date the subscription becomes active
      */
@@ -787,7 +779,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the active end date
-     * 
+     *
      * @param activeEndDate
      *            Date the subscription stops being active
      */
@@ -797,7 +789,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the priority selection
-     * 
+     *
      * @param priority
      *            Priority of the subscription
      */
@@ -807,7 +799,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the group name.
-     * 
+     *
      * @param groupName
      *            The group name to set
      */
@@ -817,7 +809,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the subscription date fields enabled/disabled
-     * 
+     *
      * @param enabled
      *            true if subscription dates enabled
      */
@@ -827,7 +819,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the start date button enabled/disabled
-     * 
+     *
      * @param enabled
      *            true if start date button is enabled
      */
@@ -837,7 +829,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the end date button enabled/disabled
-     * 
+     *
      * @param enabled
      *            true if end date button is enabled
      */
@@ -847,7 +839,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the active date fields enabled/disabled
-     * 
+     *
      * @param enabled
      *            true if active dates buttons are enabled
      */
@@ -857,7 +849,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the active end date button enabled/disabled
-     * 
+     *
      * @param enabled
      *            true if active end date button is enabled
      */
@@ -867,7 +859,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the active start date button enabled/disabled
-     * 
+     *
      * @param enabled
      *            true if active start date button is enabled
      */
@@ -884,7 +876,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Display a popup message
-     * 
+     *
      * @param title
      *            The title
      * @param message
@@ -896,7 +888,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Display an error popup.
-     * 
+     *
      * @param title
      *            The title
      * @param message
@@ -908,11 +900,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Get list of selected cycle times
-     * 
+     *
      * @return Cycle times
      */
     private List<Integer> getCycleTimes() {
-        ArrayList<Integer> cycleList = new ArrayList<Integer>();
+        ArrayList<Integer> cycleList = new ArrayList<>();
         if (hourBtnArr != null) {
             for (Button b : hourBtnArr) {
                 if (b.getSelection()) {
@@ -926,7 +918,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the date text field enabled.
-     * 
+     *
      * @param flag
      *            true for enabled
      */
@@ -936,7 +928,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the active text field enabled.
-     * 
+     *
      * @param flag
      *            true for enabled
      */
@@ -946,7 +938,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Select the provided cycles.
-     * 
+     *
      * @param cycleStrings
      *            List of cycles to select
      */
@@ -960,7 +952,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * The status of user selection.
-     * 
+     *
      * @return The user's selected status
      */
     public int getStatus() {
@@ -969,7 +961,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the user status.
-     * 
+     *
      * @param status
      *            The status
      */
@@ -979,7 +971,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the subscription.
-     * 
+     *
      * @param subscription
      *            The subscription to use
      */
@@ -989,7 +981,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Process the site list
-     * 
+     *
      * @param sites
      *            list of sites
      */
@@ -1017,7 +1009,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Get the shared sites.
-     * 
+     *
      * @return Array of shared site ids
      */
     public String[] getSharedSites() {
@@ -1026,18 +1018,18 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Set the office Ids.
-     * 
+     *
      * @param officeIDs
      *            The office ids to set
      */
     public void setOfficeIds(Set<String> officeIDs) {
-        List<String> list = new ArrayList<String>(officeIDs);
+        List<String> list = new ArrayList<>(officeIDs);
         this.sharedSites = list.toArray(new String[officeIDs.size()]);
     }
 
     /**
      * The OK Button action.
-     * 
+     *
      * @return
      */
     private boolean handleOkAction() {
@@ -1064,6 +1056,304 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             subscription.setOfficeIDs(officeList);
         }
 
+        // Populate the subscription with the dialog inputs
+        populateSubscriptionFromInputs();
+
+        IUser user = UserController.getUserObject();
+
+        PendingSubscriptionHandler handler = DataDeliveryHandlers
+                .getPendingSubscriptionHandler();
+
+        String currentUser = LocalizationManager.getInstance().getCurrentUser();
+        final String username = user.uniqueId().toString();
+
+        // Check for permission
+        boolean autoApprove = checkApprovalPermisssions(user);
+
+        if (this.create) {
+            cachedSiteSubscription = null;
+
+            setSubscriptionId(subscription);
+            if (autoApprove) {
+                final BlockingQueue<SubscriptionStatusSummary> exchanger = new ArrayBlockingQueue<>(
+                        1);
+
+                final Shell jobShell = getShell();
+                Job job = new Job("Creating Subscription...") {
+                    @Override
+                    protected IStatus run(IProgressMonitor monitor) {
+                        DataDeliveryGUIUtils.markBusyInUIThread(jobShell);
+                        SubscriptionServiceResult result = storeSubscription(
+                                subscription, username);
+                        if (result != null) {
+                            if (result.isAllowFurtherEditing()) {
+                                return new Status(Status.CANCEL,
+                                        CreateSubscriptionDlg.class.getName(),
+                                        result.getMessage());
+                            }
+                            SubscriptionStatusSummary sum = result
+                                    .getSubscriptionStatusSummary();
+
+                            exchanger.add(sum);
+
+                            // Also schedule an immediate adhoc for the latest
+                            storeAdhocFromRecurring(currentUser);
+
+                            return new Status(Status.OK,
+                                    CreateSubscriptionDlg.class.getName(),
+                                    result.getMessage());
+                        }
+                        return new Status(Status.ERROR,
+                                CreateSubscriptionDlg.class.getName(),
+                                "Error Storing Subscription");
+                    }
+                };
+                job.addJobChangeListener(new JobChangeAdapter() {
+                    @Override
+                    public void done(final IJobChangeEvent event) {
+                        try {
+                            final IStatus status = event.getResult();
+                            final boolean subscriptionCreated = status.isOK();
+
+                            if (!Strings.isNullOrEmpty(status.getMessage())) {
+                                VizApp.runAsync(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (!isDisposed()) {
+                                            if (subscriptionCreated) {
+                                                try {
+                                                    displaySummary(
+                                                            exchanger.take(),
+                                                            status.getMessage());
+
+                                                } catch (InterruptedException e) {
+                                                    statusHandler.handle(
+                                                            Priority.PROBLEM,
+                                                            e.getLocalizedMessage(),
+                                                            e);
+                                                }
+                                                setStatus(Status.OK);
+                                                close();
+                                            } else {
+                                                setStatus(Status.CANCEL);
+                                                DataDeliveryUtils.showText(
+                                                        getShell(),
+                                                        "Unable to Create Subscription",
+                                                        status.getMessage());
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        } finally {
+                            DataDeliveryGUIUtils
+                                    .markNotBusyInUIThread(jobShell);
+                        }
+                    }
+                });
+                job.schedule();
+
+                return false;
+            }
+            // Create: Auto Approve == false
+            InitialPendingSubscription pendingSub = subscription
+                    .initialPending(currentUser);
+            try {
+                handler.store(username, pendingSub);
+
+                this.subscription = pendingSub;
+
+                subscriptionNotificationService
+                        .sendCreatedPendingSubscriptionNotification(pendingSub,
+                                username);
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to create pending subscription.", e);
+            }
+        } else {
+            /*
+             * Update Existing Subscription. Check for pending subscription, can
+             * only have one pending change
+             */
+
+            // Create the registry ids
+            setSubscriptionId(subscription);
+
+            PendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
+                    .get(PendingSubscriptionHandler.class);
+            try {
+                InitialPendingSubscription result = pendingSubHandler
+                        .getBySubscription(subscription);
+                if (result != null) {
+                    String msg = "There is already an edited version of this subscription.\n\nPlease "
+                            + "reconcile the pending subscription before making further edits.";
+                    displayPopup("Pending", msg);
+                    return false;
+                }
+            } catch (RegistryHandlerException e1) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to retrieve pending subscriptions.", e1);
+                return false;
+            }
+
+            if (autoApprove) {
+                try {
+                    final SubscriptionServiceResult response = subscriptionService
+                            .update(username, subscription,
+                                    new CancelForceApplyAndIncreaseLatencyDisplayText(
+                                            "update", getShell()));
+
+                    /*
+                     * If this save promotes a Site to a Shared; then Delete
+                     * Existing SiteSubscription
+                     */
+                    if (cachedSiteSubscription != null) {
+                        deleteSubscription(username, cachedSiteSubscription);
+                    }
+
+                    /*
+                     * Subscription Data Latency operates off of Provider and
+                     * Data Set Name; it is not directly tied to the
+                     * Subscription.
+                     */
+                    resetSubscriptionDataSetLatency(subscription);
+                    if (response.hasMessageToDisplay()) {
+                        displayPopup(UPDATED_TITLE, response.getMessage());
+                    }
+
+                    /*
+                     * If there was a force apply prompt, and the user selects
+                     * no, then we want to allow them to continue editing the
+                     * subscription
+                     */
+                    if (response.isAllowFurtherEditing()) {
+                        return false;
+                    }
+
+                    if (cachedSiteSubscription != null) {
+                        String responseMessage = response.getMessage();
+                        if (responseMessage != null && responseMessage
+                                .indexOf(" has been updated") >= 0) {
+                        }
+                    }
+                } catch (RegistryHandlerException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Unable to update subscription.", e);
+                }
+            } else {
+                // Update Pending Subscription
+                InitialPendingSubscription pendingSub = subscription
+                        .initialPending(currentUser);
+                pendingSub
+                        .setChangeReason(this.changeReasonTxt.getText().trim());
+
+                // Create the registry ids
+                setSubscriptionId(pendingSub);
+                setSubscriptionId(subscription);
+                try {
+                    pendingSubHandler.update(username, pendingSub);
+
+                    subscriptionNotificationService
+                            .sendCreatedPendingSubscriptionForSubscriptionNotification(
+                                    pendingSub, username);
+
+                    final String msg = PENDING_APPROVAL_MESSAGE;
+                    displayPopup("Subscription Pending", msg);
+                } catch (RegistryHandlerException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Unable to create pending subscription.", e);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private void storeAdhocFromRecurring(String currentUser) {
+        AdhocSubscription adhoc = new AdhocSubscription(
+                (RecurringSubscription) subscription);
+        DataSetMetaData dataSetMetaData = null;
+
+        try {
+            if (dataSet.isMoving()) {
+                dataSetMetaData = DataDeliveryHandlers
+                        .getDataSetMetaDataHandler()
+                        .getMostRecentDataSetMetaDataByIntersection(
+                                adhoc.getDataSetName(), adhoc.getProvider(),
+                                adhoc.getCoverage().getRequestEnvelope());
+            } else {
+                dataSetMetaData = DataDeliveryHandlers
+                        .getDataSetMetaDataHandler()
+                        .getMostRecentDataSetMetaData(adhoc.getDataSetName(),
+                                adhoc.getProvider());
+            }
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "No DataSetMetaData matching query! DataSetName: "
+                            + adhoc.getDataSetName() + " Provider: "
+                            + adhoc.getProvider(),
+                    e);
+        }
+        if (dataSetMetaData == null) {
+            statusHandler.info(String.format(
+                    "No dataset metadata for dataset[%s] intersect subscription area for subscription [%s].",
+                    adhoc.getDataSetName(), adhoc.getName()));
+        } else {
+            statusHandler.info(String.format(
+                    "Found most recent metadata for adhoc subscription [%s], using url [%s]",
+                    adhoc.getName(), dataSetMetaData.getUrl()));
+            adhoc.setUrl(dataSetMetaData.getUrl());
+
+            /*
+             * Time for recurring subscription was previously set by
+             * SubsetManagerDlg, so we have the right type of Time object
+             * created. Just need to change start and end times.
+             */
+            adhoc.getTime().setStart(dataSetMetaData.getDate());
+            if (adhoc.getTime().getEnd() == null) {
+                adhoc.getTime().setEnd(dataSetMetaData.getDate());
+            }
+            try {
+                adhoc.setSubscriptionType(SubscriptionType.QUERY);
+                SubscriptionServiceResult result = subscriptionService.store(
+                        currentUser, adhoc,
+                        new CancelForceApplyAndIncreaseLatencyDisplayText(
+                                "create", getShell()));
+
+                if (result.hasMessageToDisplay()) {
+                    DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                            "Query Scheduled", result.getMessage());
+                }
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error requesting adhoc data.", e);
+            }
+        }
+    }
+
+    private boolean checkApprovalPermisssions(IUser user) {
+        IPermissionsService permissionsService = DataDeliveryServices
+                .getPermissionsService();
+        boolean autoApprove = false;
+        if (permissionsService instanceof RequestFromServerPermissionsService) {
+            try {
+                /*
+                 * check to see if user is authorized to approve. If so then
+                 * auto-approve
+                 */
+                autoApprove = ((RequestFromServerPermissionsService) permissionsService)
+                        .checkPermissionToChangeSubscription(user,
+                                PENDING_APPROVAL_MESSAGE, subscription)
+                        .isAuthorized();
+            } catch (AuthException e) {
+                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
+                        e);
+            }
+        }
+        return autoApprove;
+    }
+
+    private void populateSubscriptionFromInputs() {
         // Data are valid, now add info to the subscription object and store
         subscription.setProvider(dataSet.getProviderName());
 
@@ -1071,8 +1361,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             // Set group name and area
             subscription.setGroupName(this.groupSelectComp.getGroupName());
             if (groupDefinition.isArealDataSet()) {
-                subscription.getCoverage().setEnvelope(
-                        groupDefinition.getEnvelope());
+                subscription.getCoverage()
+                        .setEnvelope(groupDefinition.getEnvelope());
             }
         }
 
@@ -1141,226 +1431,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         subscription.setLatencyInMinutes(priorityComp.getLatencyValue());
-
-        IUser user = UserController.getUserObject();
-
-        PendingSubscriptionHandler handler = DataDeliveryHandlers
-                .getPendingSubscriptionHandler();
-
-        String currentUser = LocalizationManager.getInstance().getCurrentUser();
-        final String username = user.uniqueId().toString();
-
-        // Check for permission
-        IPermissionsService permissionsService = DataDeliveryServices
-                .getPermissionsService();
-        boolean autoApprove = false;
-        if (permissionsService instanceof RequestFromServerPermissionsService) {
-            try {
-                // check to see if user is authorized to approve. If so then
-                // auto-approve
-                autoApprove = ((RequestFromServerPermissionsService) permissionsService)
-                        .checkPermissionToChangeSubscription(user,
-                                PENDING_APPROVAL_MESSAGE, subscription)
-                        .isAuthorized();
-            } catch (AuthException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            }
-        }
-        if (this.create) {
-            cachedSiteSubscription = null;
-
-            setSubscriptionId(subscription);
-            if (autoApprove) {
-                final BlockingQueue<SubscriptionStatusSummary> exchanger = new ArrayBlockingQueue<SubscriptionStatusSummary>(
-                        1);
-
-                final Shell jobShell = getShell();
-                Job job = new Job("Creating Subscription...") {
-                    @Override
-                    protected IStatus run(IProgressMonitor monitor) {
-                        DataDeliveryGUIUtils.markBusyInUIThread(jobShell);
-                        SubscriptionServiceResult result = storeSubscription(
-                                subscription, username);
-                        if (result != null) {
-                            if (result.isAllowFurtherEditing()) {
-                                return new Status(Status.CANCEL,
-                                        CreateSubscriptionDlg.class.getName(),
-                                        result.getMessage());
-                            } else {
-                                SubscriptionStatusSummary sum = result
-                                        .getSubscriptionStatusSummary();
-
-                                exchanger.add(sum);
-                                return new Status(Status.OK,
-                                        CreateSubscriptionDlg.class.getName(),
-                                        result.getMessage());
-                            }
-                        } else {
-                            return new Status(Status.ERROR,
-                                    CreateSubscriptionDlg.class.getName(),
-                                    "Error Storing Subscription");
-                        }
-                    }
-                };
-                job.addJobChangeListener(new JobChangeAdapter() {
-                    @Override
-                    public void done(final IJobChangeEvent event) {
-                        try {
-                            final IStatus status = event.getResult();
-                            final boolean subscriptionCreated = status.isOK();
-
-                            if (!Strings.isNullOrEmpty(status.getMessage())) {
-                                VizApp.runAsync(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (!isDisposed()) {
-                                            if (subscriptionCreated) {
-                                                try {
-                                                    displaySummary(
-                                                            exchanger.take(),
-                                                            status.getMessage());
-
-                                                } catch (InterruptedException e) {
-                                                    statusHandler.handle(
-                                                            Priority.PROBLEM,
-                                                            e.getLocalizedMessage(),
-                                                            e);
-                                                }
-                                                setStatus(Status.OK);
-                                                close();
-                                            } else {
-                                                setStatus(Status.CANCEL);
-                                                DataDeliveryUtils
-                                                        .showText(
-                                                                getShell(),
-                                                                "Unable to Create Subscription",
-                                                                status.getMessage());
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        } finally {
-                            DataDeliveryGUIUtils
-                                    .markNotBusyInUIThread(jobShell);
-                        }
-                    }
-                });
-                job.schedule();
-                return false;
-            } else {
-                // Create: Auto Approve == false
-                InitialPendingSubscription pendingSub = subscription
-                        .initialPending(currentUser);
-                try {
-                    handler.store(username, pendingSub);
-
-                    this.subscription = pendingSub;
-
-                    subscriptionNotificationService
-                            .sendCreatedPendingSubscriptionNotification(
-                                    pendingSub, username);
-                } catch (RegistryHandlerException e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Unable to create pending subscription.", e);
-                }
-            }
-        } else {
-            // Update Existing Subscription
-            // Check for pending subscription, can only have one pending change
-
-            // Create the registry ids
-            setSubscriptionId(subscription);
-
-            PendingSubscriptionHandler pendingSubHandler = RegistryObjectHandlers
-                    .get(PendingSubscriptionHandler.class);
-            try {
-                InitialPendingSubscription result = pendingSubHandler
-                        .getBySubscription(subscription);
-                if (result != null) {
-                    String msg = "There is already an edited version of this subscription.\n\nPlease "
-                            + "reconcile the pending subscription before making further edits.";
-                    displayPopup("Pending", msg);
-                    return false;
-                }
-            } catch (RegistryHandlerException e1) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Unable to retrieve pending subscriptions.", e1);
-                return false;
-            }
-
-            if (autoApprove) {
-                try {
-                    final SubscriptionServiceResult response = subscriptionService
-                            .update(username,
-                                    subscription,
-                                    new CancelForceApplyAndIncreaseLatencyDisplayText(
-                                            "update", getShell()));
-
-                    // If this save promotes a Site to a Shared; then Delete
-                    // Existing SiteSubscription
-                    if (cachedSiteSubscription != null) {
-                        deleteSubscription(username, cachedSiteSubscription);
-                    }
-
-                    // Subscription Data Latency operates off of Provider and
-                    // Data Set Name; it is not directly tied to the
-                    // Subscription.
-                    resetSubscriptionDataSetLatency(subscription);
-                    if (response.hasMessageToDisplay()) {
-                        displayPopup(UPDATED_TITLE, response.getMessage());
-                    }
-
-                    // If there was a force apply prompt, and the user
-                    // selects no, then we want to allow them to
-                    // continue editing the subscription
-                    if (response.isAllowFurtherEditing()) {
-                        return false;
-                    }
-
-                    if (cachedSiteSubscription != null) {
-                        String responseMessage = response.getMessage();
-                        if (responseMessage != null
-                                && responseMessage.indexOf(" has been updated") > 0) {
-                        }
-                    }
-                } catch (RegistryHandlerException e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Unable to update subscription.", e);
-                }
-            } else {
-                // Update Pending Subscription
-                InitialPendingSubscription pendingSub = subscription
-                        .initialPending(currentUser);
-                pendingSub.setChangeReason(this.changeReasonTxt.getText()
-                        .trim());
-
-                // Create the registry ids
-                setSubscriptionId(pendingSub);
-                setSubscriptionId(subscription);
-                try {
-                    pendingSubHandler.update(username, pendingSub);
-
-                    subscriptionNotificationService
-                            .sendCreatedPendingSubscriptionForSubscriptionNotification(
-                                    pendingSub, username);
-
-                    final String msg = PENDING_APPROVAL_MESSAGE;
-                    displayPopup("Subscription Pending", msg);
-                } catch (RegistryHandlerException e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Unable to create pending subscription.", e);
-                }
-            }
-        }
-
-        return true;
     }
 
     /**
      * Validate the dialog's data
-     * 
+     *
      * @return true if valid
      */
     private boolean validate() {
@@ -1375,15 +1450,14 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         datesValid = this.durationValidChk();
         activeDatesValid = this.activePeriodValidChk();
         int maxLatency = 0;
-        if (subscription.getDataSetType() == DataType.POINT) {
+        if (subscription.getDataSetType() == DataType.POINT
+                || subscription.getDataSetType() == DataType.PDA) {
             maxLatency = DataDeliveryUtils.getMaxLatency(subscription);
         } else if (subscription.getDataSetType() == DataType.GRID) {
             maxLatency = DataDeliveryUtils.getMaxLatency(getCycleTimes());
-        } else if (subscription.getDataSetType() == DataType.PDA) {
-            maxLatency = DataDeliveryUtils.getMaxLatency(subscription);
         }
-        latencyValid = DataDeliveryGUIUtils.latencyValidChk(
-                priorityComp.getLatencyValue(), maxLatency);
+        latencyValid = DataDeliveryGUIUtils
+                .latencyValidChk(priorityComp.getLatencyValue(), maxLatency);
         if (!latencyValid) {
             displayErrorPopup("Invalid Latency",
                     "Invalid latency value entered.\n\n"
@@ -1402,8 +1476,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 return false;
             }
 
-            if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(
-                    subscriptionName.trim()).find()) {
+            if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN
+                    .matcher(subscriptionName.trim()).find()) {
                 displayErrorPopup(DataDeliveryGUIUtils.INVALID_CHARS_TITLE,
                         DataDeliveryGUIUtils.INVALID_CHARS_MESSAGE);
 
@@ -1421,10 +1495,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     return false;
                 }
             } catch (RegistryHandlerException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to check for an existing subscription by name.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to check for an existing subscription by name.",
+                        e);
             }
         }
 
@@ -1433,8 +1506,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         // if group selected check if properties match saved group
-        if (!GroupDefinition.NO_GROUP.equals(this.groupSelectComp
-                .getGroupName()) && valid) {
+        if (!GroupDefinition.NO_GROUP
+                .equals(this.groupSelectComp.getGroupName()) && valid) {
             groupDefinition = GroupDefinitionManager
                     .getGroup(this.groupSelectComp.getGroupName());
 
@@ -1456,7 +1529,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
             if (durStart != null && durEnd != null && formDurStart != null
                     && formDurEnd != null) {
-                if (durStart.equals(formDurStart) && durEnd.equals(formDurEnd)) {
+                if (durStart.equals(formDurStart)
+                        && durEnd.equals(formDurEnd)) {
                     groupDurValid = true;
                 }
             } else if (durStart == null && durEnd == null
@@ -1474,10 +1548,10 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             String formActiveEnd = this.activePeriodComp.getActiveEndText();
 
             if (!formActiveStart.isEmpty() && !formActiveStart.isEmpty()) {
-                activeStartStr = DataDeliveryGUIUtils.getActiveFormat().format(
-                        activeStart);
-                activeEndStr = DataDeliveryGUIUtils.getActiveFormat().format(
-                        activeEnd);
+                activeStartStr = DataDeliveryGUIUtils.getActiveFormat()
+                        .format(activeStart);
+                activeEndStr = DataDeliveryGUIUtils.getActiveFormat()
+                        .format(activeEnd);
             }
 
             if (activeStartStr != null && activeEndStr != null
@@ -1497,8 +1571,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         if (!groupDurValid || !groupActiveValid) {
-            displayErrorPopup(
-                    "Invalid Group Values",
+            displayErrorPopup("Invalid Group Values",
                     "Values do not match selected group values.\n\n"
                             + "The group name will not be saved with the subscription.");
             valid = true;
@@ -1514,7 +1587,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Check if duration dates are valid
-     * 
+     *
      * @return true if valid
      */
     private boolean durationValidChk() {
@@ -1557,7 +1630,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Check if dates are valid.
-     * 
+     *
      * @return true if dates are valid
      */
     private boolean activePeriodValidChk() {
@@ -1590,7 +1663,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Add the registry id to the subscription object.
-     * 
+     *
      * @param sub
      *            The subscription to get the registry id
      */
@@ -1604,7 +1677,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Store the subscription for the user.
-     * 
+     *
      * @param subscription
      *            the subscription
      * @param username
@@ -1650,7 +1723,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         if (subscription.getGroupName() != null
-                && !subscription.getGroupName().equals("None")) {
+                && !"None".equals(subscription.getGroupName())) {
             setGroupName(subscription.getGroupName());
         }
 
@@ -1702,7 +1775,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             List<Integer> cycleTimes = ((GriddedTime) subscription.getTime())
                     .getCycleTimes();
             if (!CollectionUtil.isNullOrEmpty(cycleTimes)) {
-                List<String> cycleStrings = new ArrayList<String>();
+                List<String> cycleStrings = new ArrayList<>();
 
                 for (int cycle : cycleTimes) {
                     if (cycle < 10) {
@@ -1724,7 +1797,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Populate the view based on the group name selected.
-     * 
+     *
      * @param groupName
      *            The selected group name
      */
@@ -1783,7 +1856,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     /**
      * Calculate the next occurrence of the month and day on the specified date
      * object.
-     * 
+     *
      * @param dateWithMonthAndDay
      *            the date to retrieve the month and day from
      * @param yearToStartAt
@@ -1791,7 +1864,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      *            to not before the current time
      * @param now
      *            the current calendar
-     * 
+     *
      * @return the date object of the next occurrence
      */
     private static Date calculateNextOccurenceOfMonthAndDay(
@@ -1807,15 +1880,16 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Delete DataSetLatency entities for a subscription (if one exists).
-     * 
+     *
      * DataSetLatency objects are not registry entities. Changes to a
      * Subscription will not automatically trigger their deletion.
-     * 
+     *
      * @param subscription
      *            Subscription to delete any existing DataSetLatency entities
      *            for
      */
-    private void resetSubscriptionDataSetLatency(Subscription subscription) {
+    private static void resetSubscriptionDataSetLatency(
+            Subscription subscription) {
 
         if (subscription != null) {
             String dataSetName = subscription.getDataSetName();
@@ -1830,12 +1904,13 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /**
      * Deletes a subscription and its associations.
-     * 
+     *
      * @param username
-     * 
+     *
      * @param subscription
      */
-    private void deleteSubscription(String username, Subscription subscription) {
+    private void deleteSubscription(String username,
+            Subscription subscription) {
 
         try {
             resetSubscriptionDataSetLatency(subscription);
@@ -1843,8 +1918,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     .get(SubscriptionHandler.class);
             handler.delete(username, subscription);
         } catch (RegistryHandlerException e) {
-            statusHandler.error(
-                    "Unable to delete duplicate (Site) Subscription "
+            statusHandler
+                    .error("Unable to delete duplicate (Site) Subscription "
                             + subscription.getName(), e);
         }
 

@@ -80,46 +80,54 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * {@link SubsetManagerDlg} for gridded data sets.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 22, 2012 0743       djohnson     Initial creation
- * Aug 29, 2012 0223       mpduff       Removed call to add cycle times to subscription.
- * Sep 27, 2012 1202       bgonzale     Fixed dateStringtoDateMap key creation.
- * Oct 05, 2012 1241       djohnson     Replace RegistryManager calls with registry handler calls.
- * Oct 11, 2012 1263       jpiatt       Modified for cancel flag.
- * Dec 10, 2012 1259       bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Jan 04, 2013 1299       djohnson     Add logging of invalid forecast hour information if it occurs again.
- * Jan 04, 2013 1420       mpduff       Pass cycles in for rules.
- * Jan 18, 2013 1414       bsteffen     Add ensemble tab.
- * Jan 28, 2013 1533       djohnson     Update the calculated dataset size after loading subset xml.
- * Mar 21, 2013 1794       djohnson     Add option to create a shared subscription, if phase3 code is available.
- * Mar 29, 2013 1841       djohnson     Subscription is now UserSubscription.
- * May 21, 2013 2020       mpduff       Rename UserSubscription to SiteSubscription.
- * Jun 04, 2013  223       mpduff       Added grid specific items to this class.
- * Jun 11, 2013 2064       mpduff       Fix editing of subscriptions.
- * Jun 14, 2013 2108       mpduff       Refactored DataSizeUtils.
- * Jul 18, 2013 2205       djohnson     If null time is selected from the dialog, return null for the adhoc.
- * Sept 25, 2013 1797      dhladky      Separated Time from GriddedTime
- * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
- * Sept 04, 2014 2131      dhladky      Changes to allow for PDA data type
- * Jul 08, 2015 4566       dhladky      Use AWIPS naming rather than provider naming.
- * 
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 22, 2012  743      djohnson  Initial creation
+ * Aug 29, 2012  223      mpduff    Removed call to add cycle times to
+ *                                  subscription.
+ * Sep 27, 2012  1202     bgonzale  Fixed dateStringtoDateMap key creation.
+ * Oct 05, 2012  1241     djohnson  Replace RegistryManager calls with registry
+ *                                  handler calls.
+ * Oct 11, 2012  1263     jpiatt    Modified for cancel flag.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Jan 04, 2013  1299     djohnson  Add logging of invalid forecast hour
+ *                                  information if it occurs again.
+ * Jan 04, 2013  1420     mpduff    Pass cycles in for rules.
+ * Jan 18, 2013  1414     bsteffen  Add ensemble tab.
+ * Jan 28, 2013  1533     djohnson  Update the calculated dataset size after
+ *                                  loading subset xml.
+ * Mar 21, 2013  1794     djohnson  Add option to create a shared subscription,
+ *                                  if phase3 code is available.
+ * Mar 29, 2013  1841     djohnson  Subscription is now UserSubscription.
+ * May 21, 2013  2020     mpduff    Rename UserSubscription to SiteSubscription.
+ * Jun 04, 2013  223      mpduff    Added grid specific items to this class.
+ * Jun 11, 2013  2064     mpduff    Fix editing of subscriptions.
+ * Jun 14, 2013  2108     mpduff    Refactored DataSizeUtils.
+ * Jul 18, 2013  2205     djohnson  If null time is selected from the dialog,
+ *                                  return null for the adhoc.
+ * Sep 25, 2013  1797     dhladky   Separated Time from GriddedTime
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Sep 04, 2014  2131     dhladky   Changes to allow for PDA data type
+ * Jul 08, 2015  4566     dhladky   Use AWIPS naming rather than provider
+ *                                  naming.
+ * Apr 25, 2017  1045     tjensen   Update for moving datasets
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  * @version 1.0
  */
 
 public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
-    private final String TIMING_TAB_GRID = "Forecast Hours";
+    private static final String TIMING_TAB_GRID = "Forecast Hours";
 
-    private final String NO_DATA_FOR_DATE_AND_CYCLE = "No data is available for the specified date and cycle combination.";
+    private static final String NO_DATA_FOR_DATE_AND_CYCLE = "No data is available for the specified date and cycle combination.";
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -134,9 +142,9 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         }
     };
 
-    private final List<String> asString = new ArrayList<String>();
+    private final List<String> asString = new ArrayList<>();
 
-    private final Map<String, ImmutableDate> dateStringToDateMap = new HashMap<String, ImmutableDate>();
+    private final Map<String, ImmutableDate> dateStringToDateMap = new HashMap<>();
 
     private boolean useLatestDate = true;
 
@@ -153,7 +161,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            parent shell
      * @param loadDataSet
@@ -171,7 +179,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            parent shell
      * @param dataSet
@@ -191,7 +199,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            parent shell
      * @param dataSet
@@ -238,8 +246,8 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             TabItem ensembleTabItem = new TabItem(tabFolder, SWT.NONE, 2);
             Composite ensembleComp = new Composite(tabFolder, SWT.NONE);
             ensembleComp.setLayout(new GridLayout(1, false));
-            ensembleComp.setLayoutData(new GridData(SWT.CENTER, SWT.DEFAULT,
-                    true, false));
+            ensembleComp.setLayoutData(
+                    new GridData(SWT.CENTER, SWT.DEFAULT, true, false));
             ensembleTabItem.setControl(ensembleComp);
             ensembleTab = new GriddedEnsembleSubsetTab(ensembleComp,
                     griddedDataSet.getEnsemble());
@@ -255,10 +263,10 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         spatialTab.setControl(spatialComp);
         spatialTabControls = new SpatialSubsetTab(spatialComp, dataSet, this);
 
-        SortedSet<Integer> forecastHours = new TreeSet<Integer>(
+        SortedSet<Integer> forecastHours = new TreeSet<>(
                 griddedDataSet.getForecastHours());
 
-        List<String> forecastHoursAsString = new ArrayList<String>();
+        List<String> forecastHoursAsString = new ArrayList<>();
         for (Integer integer : forecastHours) {
             forecastHoursAsString.add(Integer.toString(integer));
         }
@@ -309,20 +317,12 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         vTab.populate(vertList, dataSet);
 
         TimeXML time = subsetXml.getTime();
-        this.timingTabControls.setSelectedForecastHours(((GriddedTimeXML) time)
-                .getFcstHours());
+        this.timingTabControls.setSelectedForecastHours(
+                ((GriddedTimeXML) time).getFcstHours());
 
         updateDataSize();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.subscription.subset.SubsetManagerDlg
-     * #loadFromSubscription
-     * (com.raytheon.uf.common.datadelivery.registry.Subscription)
-     */
     @Override
     protected void loadFromSubscription(Subscription subscription) {
         super.loadFromSubscription(subscription);
@@ -338,7 +338,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         this.timingTabControls.setSelectedForecastHours(timeXml.getFcstHours());
 
         // Vertical/Parameters
-        Map<String, VerticalXML> levelMap = new HashMap<String, VerticalXML>();
+        Map<String, VerticalXML> levelMap = new HashMap<>();
         List<Parameter> paramaterList = this.subscription.getParameter();
 
         for (Parameter p : paramaterList) {
@@ -346,8 +346,8 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                 if (!levelMap.containsKey(levelType.getKey())) {
                     VerticalXML v = new VerticalXML();
                     if (levelType.getUnit() == null) {
-                        v.setLayerType(String.valueOf(levelType
-                                .getDescription()));
+                        v.setLayerType(
+                                String.valueOf(levelType.getDescription()));
                     } else {
                         v.setLayerType(levelType.getDescription() + " ("
                                 + levelType.getUnit() + "" + ")");
@@ -366,14 +366,14 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                     final List<Integer> selectedLevelIndices = levels
                             .getSelectedLevelIndices();
                     for (int index : selectedLevelIndices) {
-                        v.addLevel(String.valueOf(levels.getLevel().get(index)));
+                        v.addLevel(
+                                String.valueOf(levels.getLevel().get(index)));
                     }
                 }
             }
         }
 
-        ArrayList<VerticalXML> vertList = new ArrayList<VerticalXML>(
-                levelMap.values());
+        ArrayList<VerticalXML> vertList = new ArrayList<>(levelMap.values());
         vTab.populate(vertList, dataSet);
 
         // Area
@@ -466,7 +466,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Warns of an invalid forecast hour index, with debugging information.
-     * 
+     *
      * @param subscription
      *            the time object
      * @param numberOfFcstHours
@@ -485,14 +485,15 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             writer.append("Unable to convert the subscription object to xml:");
             e.printStackTrace(new PrintWriter(writer));
             subscriptionAsXml = writer.toString();
+            statusHandler.error(
+                    "Unable to convert the subscription object to xml", e);
         }
 
-        statusHandler
-                .handle(Priority.WARN,
-                        String.format(
-                                "Invalid value for selected forecast hour.  Expected less than [%s] but was [%s].\nSubscription represented as XML:\n%s",
-                                numberOfFcstHours, idx, subscriptionAsXml),
-                        new IllegalStateException("Debugging stacktrace"));
+        statusHandler.handle(Priority.WARN,
+                String.format(
+                        "Invalid value for selected forecast hour.  Expected less than [%s] but was [%s].\nSubscription represented as XML:\n%s",
+                        numberOfFcstHours, idx, subscriptionAsXml),
+                new IllegalStateException("Debugging stacktrace"));
     }
 
     /**
@@ -529,18 +530,28 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
      * {@inheritDoc}
      */
     @Override
-    protected GriddedTime setupDataSpecificTime(Time subTime, Subscription sub) {
+    protected GriddedTime setupDataSpecificTime(Time subTime,
+            Subscription sub) {
         GriddedTime newTime = (GriddedTime) subTime;
         GriddedDataSet griddedDataSet = (GriddedDataSet) dataSet;
 
         if (asString.isEmpty()) {
-            SortedSet<ImmutableDate> newestToOldest = new TreeSet<ImmutableDate>(
+            SortedSet<ImmutableDate> newestToOldest = new TreeSet<>(
                     Ordering.natural().reverse());
             try {
-                newestToOldest.addAll(DataDeliveryHandlers
-                        .getDataSetMetaDataHandler().getDatesForDataSet(
-                                dataSet.getDataSetName(),
-                                dataSet.getProviderName()));
+                if (dataSet.isMoving()) {
+                    newestToOldest.addAll(DataDeliveryHandlers
+                            .getDataSetMetaDataHandler()
+                            .getDatesForDataSetByIntersection(
+                                    dataSet.getDataSetName(),
+                                    dataSet.getProviderName(),
+                                    sub.getCoverage().getRequestEnvelope()));
+                } else {
+                    newestToOldest.addAll(DataDeliveryHandlers
+                            .getDataSetMetaDataHandler()
+                            .getDatesForDataSet(dataSet.getDataSetName(),
+                                    dataSet.getProviderName()));
+                }
             } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Unable to retrieve dates for the dataset!", e);
@@ -577,28 +588,37 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             newTime.addCycleTime(cycle);
             String selectedDate = selection.getDate();
             metaData = retrieveFilteredDataSetMetaData(selectedDate, cycle);
-            if (metaData == null) {
-                return null;
-            } else {
-                time = (GriddedTime) metaData.getTime();
-                time.addCycleTime(cycle);
-                return time;
-            }
         } else {
-            // If use latest data is selected then add all cycle times, the
-            // retrieval generator will determine which one to use.
-            time = griddedDataSet.getTime();
-            for (Integer c : new TreeSet<Integer>(griddedDataSet.getCycles())) {
-                time.addCycleTime(c);
+            // If useLatest, grab the most recent matching metadata
+            try {
+                if (dataSet.isMoving()) {
+                    metaData = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                            .getMostRecentDataSetMetaDataByIntersection(
+                                    dataSet.getDataSetName(),
+                                    dataSet.getProviderName(),
+                                    sub.getCoverage().getRequestEnvelope());
+                } else {
+                    metaData = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                            .getMostRecentDataSetMetaData(
+                                    dataSet.getDataSetName(),
+                                    dataSet.getProviderName());
+                }
+
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to retrieve dates for the dataset!", e);
             }
         }
-
+        if (metaData == null) {
+            return null;
+        }
+        time = (GriddedTime) metaData.getTime();
         return time;
     }
 
     /**
      * Retrieve the filtered {@link DATASETMETADATA}.
-     * 
+     *
      * @return the DataSetMetaData that applies, or null if none
      */
     protected DataSetMetaData retrieveFilteredDataSetMetaData(
@@ -626,7 +646,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
      * subscription. It will either be null for a reoccurring subscription, or
      * the {@link DataSetMetaData} url if an adhoc query is being performed for
      * a non-latest date.
-     * 
+     *
      * @return the url to use
      */
     public String getSubscriptionUrl() {
@@ -646,8 +666,14 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         sub.setDataSetType(dataSet.getDataSetType());
         sub.setDataSetName(dataSet.getDataSetName());
 
-        GriddedTime dataSetTime = griddedDataSet.getTime();
+        GriddedCoverage cov = griddedDataSet.getCoverage();
+        cov.setModelName(dataSet.getDataSetName());
+        cov.setGridName(getNameText());
+        GridCoverage coverage = cov.getGridCoverage();
+        coverage.setName(getNameText());
+        setCoverage(sub, cov);
 
+        GriddedTime dataSetTime = griddedDataSet.getTime();
         GriddedTime newTime = new GriddedTime();
 
         if (sub instanceof AdhocSubscription) {
@@ -661,7 +687,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             List<String> fcstHours = time.getFcstHours();
             String[] selectedItems = this.timingTabControls
                     .getSelectedFcstHours();
-            List<Integer> fcstIndices = new ArrayList<Integer>();
+            List<Integer> fcstIndices = new ArrayList<>();
             for (String hr : selectedItems) {
                 fcstIndices.add(fcstHours.indexOf(hr));
             }
@@ -680,21 +706,13 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             sub.setTime(newTime);
         }
 
-        GriddedCoverage cov = griddedDataSet.getCoverage();
-        cov.setModelName(dataSet.getDataSetName());
-        cov.setGridName(getNameText());
-        GridCoverage coverage = cov.getGridCoverage();
-        coverage.setName(getNameText());
-
-        setCoverage(sub, cov);
-
-        sub.setUrl(getSubscriptionUrl());
+        sub.setUrl(this.metaData.getUrl());
 
         List<String> fcstHours = newTime.getFcstHours();
 
         // Set the gridded specific data on the time object
         String[] selectedItems = this.timingTabControls.getSelectedFcstHours();
-        List<Integer> fcstIndices = new ArrayList<Integer>();
+        List<Integer> fcstIndices = new ArrayList<>();
         for (String hr : selectedItems) {
             fcstIndices.add(fcstHours.indexOf(hr));
         }

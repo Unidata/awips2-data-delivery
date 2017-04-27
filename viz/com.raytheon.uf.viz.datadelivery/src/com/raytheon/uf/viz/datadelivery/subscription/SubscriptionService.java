@@ -71,48 +71,62 @@ import com.raytheon.uf.viz.datadelivery.system.SystemRuleManager;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
- * Basic implementation of the {@link ISubscriptionService}.
+ * Services for working with subscriptions.
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 07, 2012 1286       djohnson     Initial creation
- * Nov 20, 2012 1286       djohnson     Use propose schedule methods to see effects of subscription scheduling.
- * Nov 28, 2012 1286       djohnson     Add more notification methods.
- * Dec 11, 2012 1404       mpduff       Add message to sendDeletedSubscriptionNotification.
- * Dec 11, 2012 1403       djohnson     Adhoc subscriptions no longer go to the registry.
- * Dec 18, 2012 1443       bgonzale     Open force apply prompt pop-up on the UI thread.
- * Dec 20, 2012 1413       bgonzale     Added new pending approve and denied request and responses.
- * Jan 04, 2013 1441       djohnson     Separated out notification methods into their own service.
- * Jan 28, 2013 1530       djohnson     Reset unscheduled flag with each update.
- * Mar 29, 2013 1841       djohnson     Subscription is now UserSubscription.
- * May 14, 2013 2000       djohnson     Check for subscription overlap/duplication.
- * May 23, 2013 1650       djohnson     Move out some presentation logic to DisplayForceApplyPromptDialog.
- * Jun 12, 2013 2038       djohnson     Launch subscription manager on the UI thread.
- * Jul 18, 2013 1653       mpduff       Add SubscriptionStatusSummary.
- * Jul 26, 2013 2232       mpduff       Refactored Data Delivery permissions.
- * Sept 25, 2013 1797      dhladky      separated time from gridded time
- * Oct 12, 2013 2460       dhladky      restored adhoc subscriptions to registry storage.
- * Oct 22, 2013  2292      mpduff       Removed subscriptionOverlapService.
- * Nov 07, 2013  2291      skorolev     Used showText() method for "Shared Subscription" message.
- * Jan 26, 2014  2259      mpduff       Turn off subs to be deactivated.
- * Feb 04, 2014  2677      mpduff       Don't do overlap checks when deactivating subs.
- * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
- * Oct 15, 2014  3664      ccody        Added notification for scheduling status of subscriptions changes
- * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
- * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
- * Feb 21, 2017  746       bsteffen     Do not deactivate after increasing latency.
- * Apr 10, 2017  6074      mapeters     Activate after increasing latency.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 07, 2012  1286     djohnson  Initial creation
+ * Nov 20, 2012  1286     djohnson  Use propose schedule methods to see effects
+ *                                  of subscription scheduling.
+ * Nov 28, 2012  1286     djohnson  Add more notification methods.
+ * Dec 11, 2012  1404     mpduff    Add message to
+ *                                  sendDeletedSubscriptionNotification.
+ * Dec 11, 2012  1403     djohnson  Adhoc subscriptions no longer go to the
+ *                                  registry.
+ * Dec 18, 2012  1443     bgonzale  Open force apply prompt pop-up on the UI
+ *                                  thread.
+ * Dec 20, 2012  1413     bgonzale  Added new pending approve and denied request
+ *                                  and responses.
+ * Jan 04, 2013  1441     djohnson  Separated out notification methods into
+ *                                  their own service.
+ * Jan 28, 2013  1530     djohnson  Reset unscheduled flag with each update.
+ * Mar 29, 2013  1841     djohnson  Subscription is now UserSubscription.
+ * May 14, 2013  2000     djohnson  Check for subscription overlap/duplication.
+ * May 23, 2013  1650     djohnson  Move out some presentation logic to
+ *                                  DisplayForceApplyPromptDialog.
+ * Jun 12, 2013  2038     djohnson  Launch subscription manager on the UI
+ *                                  thread.
+ * Jul 18, 2013  1653     mpduff    Add SubscriptionStatusSummary.
+ * Jul 26, 2013  2232     mpduff    Refactored Data Delivery permissions.
+ * Sep 25, 2013  1797     dhladky   separated time from gridded time
+ * Oct 12, 2013  2460     dhladky   restored adhoc subscriptions to registry
+ *                                  storage.
+ * Oct 22, 2013  2292     mpduff    Removed subscriptionOverlapService.
+ * Nov 07, 2013  2291     skorolev  Used showText() method for "Shared
+ *                                  Subscription" message.
+ * Jan 26, 2014  2259     mpduff    Turn off subs to be deactivated.
+ * Feb 04, 2014  2677     mpduff    Don't do overlap checks when deactivating
+ *                                  subs.
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Oct 15, 2014  3664     ccody     Added notification for scheduling status of
+ *                                  subscriptions changes
+ * Nov 19, 2014  3852     dhladky   Resurrected the Unscheduled state.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Feb 21, 2017  746      bsteffen  Do not deactivate after increasing latency.
+ * Apr 10, 2017  6074     mapeters  Activate after increasing latency.
+ * Apr 25, 2017  1045     tjensen   Update for moving datasets
  *
  * </pre>
  *
  * @author djohnson
  */
 
-public class SubscriptionService implements ISubscriptionService {
+public class SubscriptionService {
     private static final String PENDING_SUBSCRIPTION_AWAITING_APPROVAL = "The subscription is awaiting approval.\n\n"
             + "A notification message will be generated upon approval.";
 
@@ -158,7 +172,7 @@ public class SubscriptionService implements ISubscriptionService {
          * @param displayTextStrategy
          * @param message
          */
-        public void displayMessage(
+        public static void displayMessage(
                 IForceApplyPromptDisplayText displayTextStrategy,
                 final String message) {
             final Shell shell = displayTextStrategy.getShell();
@@ -215,7 +229,11 @@ public class SubscriptionService implements ISubscriptionService {
      * Enumeration of force apply responses.
      */
     public static enum ForceApplyPromptResponse {
-        CANCEL, INCREASE_LATENCY, EDIT_SUBSCRIPTIONS, FORCE_APPLY_DEACTIVATED, FORCE_APPLY_UNSCHEDULED;
+        CANCEL,
+        INCREASE_LATENCY,
+        EDIT_SUBSCRIPTIONS,
+        FORCE_APPLY_DEACTIVATED,
+        FORCE_APPLY_UNSCHEDULED;
     }
 
     /**
@@ -285,7 +303,7 @@ public class SubscriptionService implements ISubscriptionService {
      * @param
      * @return the subscription service
      */
-    public static ISubscriptionService newInstance(
+    public static SubscriptionService newInstance(
             SendToServerSubscriptionNotificationService notificationService,
             BandwidthService bandwidthService,
             IPermissionsService permissionsService) {
@@ -294,9 +312,15 @@ public class SubscriptionService implements ISubscriptionService {
     }
 
     /**
-     * {@inheritDoc}
+     * Store the subscription.
+     *
+     * @param subscription
+     *            the subscription to store
+     * @param dataSet
+     * @param displayTextStrategy
+     * @return the result object
+     * @throws RegistryHandlerException
      */
-    @Override
     public SubscriptionServiceResult store(final String username,
             final Subscription subscription,
             IForceApplyPromptDisplayText displayTextStrategy)
@@ -326,10 +350,13 @@ public class SubscriptionService implements ISubscriptionService {
     }
 
     /**
-     * {@inheritDoc}
+     * Update the subscription.
      *
+     * @param subscription
+     *            the subscription to update
+     * @param displayTextStrategy
+     * @return the result object
      */
-    @Override
     public SubscriptionServiceResult update(final String username,
             final Subscription subscription,
             IForceApplyPromptDisplayText displayTextStrategy)
@@ -353,9 +380,14 @@ public class SubscriptionService implements ISubscriptionService {
     }
 
     /**
-     * {@inheritDoc}
+     * Update the subscriptions.
+     *
+     * @param subscriptions
+     *            the subscriptions to update
+     * @param displayTextStrategy
+     * @return the result object
+     * @throws RegistryHandlerException
      */
-    @Override
     public SubscriptionServiceResult update(final String username,
             final List<Subscription> subs,
             IForceApplyPromptDisplayText displayTextStrategy)
@@ -378,9 +410,14 @@ public class SubscriptionService implements ISubscriptionService {
     }
 
     /**
-     * {@inheritDoc}
+     * Update the subscriptions, checking for an existing pending change
+     * already.
+     *
+     * @param subscriptions
+     * @param displayTextStrategy
+     * @return the result
+     * @throws RegistryHandlerException
      */
-    @Override
     public SubscriptionServiceResult updateWithPendingCheck(String username,
             final List<Subscription> subscriptions,
             IForceApplyPromptDisplayText displayTextStrategy)
@@ -477,16 +514,23 @@ public class SubscriptionService implements ISubscriptionService {
     }
 
     /**
-     * {@inheritDoc}
+     * Store the adhoc subscription.
+     *
+     * @param subscription
+     *            the subscription to store
+     * @param display
+     *            the display to use to prompt the user
+     * @param displayTextStrategy
+     * @return the result object
+     * @throws RegistryHandlerException
      */
-    @Override
     public SubscriptionServiceResult store(final String username,
             final AdhocSubscription sub,
             IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
 
         final List<Subscription> subscriptions = Arrays
-                .<Subscription>asList(sub);
+                .<Subscription> asList(sub);
         final String successMessage = "The query was successfully stored.";
         final ServiceInteraction action = new ServiceInteraction() {
             @Override
@@ -717,7 +761,7 @@ public class SubscriptionService implements ISubscriptionService {
      *            the subscriptions which were attempting to schedule
      * @param dataSize
      */
-    private ForceApplyPromptConfiguration getWouldCauseUnscheduledSubscriptionsPortion(
+    private static ForceApplyPromptConfiguration getWouldCauseUnscheduledSubscriptionsPortion(
             Set<String> unscheduledSubscriptions,
             List<Subscription> subscriptions,
             IProposeScheduleResponse proposeScheduleResponse,
@@ -750,10 +794,9 @@ public class SubscriptionService implements ISubscriptionService {
                     proposeScheduleResponse.getRequiredDataSetSize(),
                     displayTextStrategy, subscription,
                     unscheduledSubscriptions);
-        } else {
-            return new ForceApplyPromptConfiguration(TITLE, msg.toString(),
-                    displayTextStrategy, unscheduledSubscriptions);
         }
+        return new ForceApplyPromptConfiguration(TITLE, msg.toString(),
+                displayTextStrategy, unscheduledSubscriptions);
     }
 
     /**
@@ -762,7 +805,7 @@ public class SubscriptionService implements ISubscriptionService {
      * @param unscheduledSubscriptions
      *            the unscheduled subscriptions
      */
-    private void getUnscheduledSubscriptionsPortion(StringBuilder msg,
+    private static void getUnscheduledSubscriptionsPortion(StringBuilder msg,
             Set<String> unscheduledSubscriptions) {
         appendCollectionPortion(msg,
                 "\n\nThe following subscriptions did not fully schedule with the bandwidth management system:",
@@ -779,8 +822,8 @@ public class SubscriptionService implements ISubscriptionService {
      * @param collection
      *            the collection of items
      */
-    private void appendCollectionPortion(StringBuilder msg, String preamble,
-            Collection<String> collection) {
+    private static void appendCollectionPortion(StringBuilder msg,
+            String preamble, Collection<String> collection) {
         if (collection.isEmpty()) {
             return;
         }
@@ -802,7 +845,7 @@ public class SubscriptionService implements ISubscriptionService {
                         pendingSub, username);
     }
 
-    private void updateSubscriptionsByNameToUnscheduled(String username,
+    private static void updateSubscriptionsByNameToUnscheduled(String username,
             java.util.Collection<String> subscriptionNames)
             throws RegistryHandlerException {
         SubscriptionHandler subscriptionHandler = DataDeliveryHandlers
@@ -829,7 +872,7 @@ public class SubscriptionService implements ISubscriptionService {
      * @param subscription
      * @return
      */
-    private int getMaximumAllowableLatency(Subscription subscription) {
+    private static int getMaximumAllowableLatency(Subscription subscription) {
 
         Time subTime = subscription.getTime();
 

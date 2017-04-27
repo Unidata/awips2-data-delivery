@@ -72,7 +72,7 @@ import com.raytheon.uf.viz.datadelivery.filter.MetaDataManager;
 import com.raytheon.uf.viz.datadelivery.handlers.VizSubscriptionHandler;
 import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
 import com.raytheon.uf.viz.datadelivery.subscription.CreateSubscriptionDlg;
-import com.raytheon.uf.viz.datadelivery.subscription.ISubscriptionService;
+import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.ForceApplyPromptResponse;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.IForceApplyPromptDisplayText;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionServiceResult;
@@ -87,11 +87,11 @@ import com.raytheon.viz.ui.presenter.IDisplay;
 
 /**
  * Data Delivery Subset Manager Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jan 17, 2012           mpduff    Initial creation.
@@ -102,7 +102,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Aug 02, 2012  955      djohnson  Type-safe registry query/responses.
  * Aug 08, 2012  863      jpiatt    Added clean & dirty checks.
  * Aug 10, 2012  1002     mpduff    Implementing dataset size estimation.
- * Aug 10, 2012  1022     djohnson  {@link SubsetXML} requires provider name, 
+ * Aug 10, 2012  1022     djohnson  {@link SubsetXML} requires provider name,
  *                                  use {@link GriddedDataSet}.
  * Aug 22, 2012  743      djohnson  Subclass for data type specific operations.
  * Aug 29, 2012  223      mpduff    Set cycle times in new sub object if not in
@@ -181,23 +181,23 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Apr 21, 2015  5482     randerso  Fixed GUI sizing issues
  * Jul 05, 2016  5683     tjensen   Added checks for null on cancel
  * Nov 08, 2016  5976     bsteffen  Use VizApp for GUI execution.
- * 
+ *
  * </pre>
- * 
+ *
  * @author mpduff
  */
 public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         ITabAction, IDataSize, IDisplay, IForceApplyPromptDisplayText {
     /** constant */
-    private final static String DATASETS_NOT_SUPPORTED = "Datasets of type [%s] are currently not supported!";
+    private static final String DATASETS_NOT_SUPPORTED = "Datasets of type [%s] are currently not supported!";
 
-    protected final String POPUP_TITLE = "Notice";
+    protected static final String POPUP_TITLE = "Notice";
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubsetManagerDlg.class);
 
-    private final ISubscriptionService subscriptionService = DataDeliveryServices
+    private final SubscriptionService subscriptionService = DataDeliveryServices
             .getSubscriptionService();
 
     /** Subset Name text box */
@@ -205,9 +205,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /** Estimated size informational label */
     protected Label sizeLbl;
-
-    /** TabFolder object */
-    private TabFolder tabFolder;
 
     /** Saved subset tab */
     private SavedSubsetTab subsetTab;
@@ -234,13 +231,13 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     protected boolean initialized = false;
 
     /** Subset manager constant */
-    protected final String DD_SUBSET_MANAGER = "Data Delivery Subset Manager - ";
+    protected static final String DD_SUBSET_MANAGER = "Data Delivery Subset Manager - ";
 
     /** Vertical tab text */
-    protected final String VERTICAL_TAB = "Vertical Levels/Parameters";
+    protected static final String VERTICAL_TAB = "Vertical Levels/Parameters";
 
     /** Spatial tab text */
-    protected final String SPATIAL_TAB = "Spatial";
+    protected static final String SPATIAL_TAB = "Spatial";
 
     /** The create subscription dialog */
     private CreateSubscriptionDlg subDlg;
@@ -250,7 +247,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Constructor
-     * 
+     *
      * @param shell
      *            The parent Shell
      * @param loadDataSet
@@ -267,10 +264,10 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Constructor
-     * 
+     *
      * @param shell
      *            The parent Shell
-     * 
+     *
      * @param dataSet
      *            The DataSetMetaData
      */
@@ -280,7 +277,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Constructor for editing a subscription.
-     * 
+     *
      * @param shell
      *            The parent Shell
      * @param loadDataSet
@@ -304,7 +301,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Create the type specific tabs.
-     * 
+     *
      * @param tabFolder
      */
     abstract void createTabs(TabFolder tabFolder);
@@ -316,11 +313,12 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     /**
      * Setup the timing information specific to the data type.
      */
-    protected abstract Time setupDataSpecificTime(Time newTime, Subscription sub);
+    protected abstract Time setupDataSpecificTime(Time newTime,
+            Subscription sub);
 
     /**
      * Get the Time object.
-     * 
+     *
      * @return The time object
      */
     protected abstract TimeXML getTimeXmlFromSubscription();
@@ -328,13 +326,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     /** Get the data time information */
     protected abstract TimeXML getDataTimeInfo();
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
 
@@ -367,22 +358,11 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         setText(DD_SUBSET_MANAGER + dataSet.getDataSetName());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
         return new GridLayout(1, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
-     */
     @Override
     protected Object constructShellLayoutData() {
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
@@ -392,17 +372,12 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     private void createTabFolder() {
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
 
-        tabFolder = new TabFolder(shell, SWT.NONE);
+        TabFolder tabFolder = new TabFolder(shell, SWT.NONE);
         tabFolder.setLayoutData(gd);
         createCommonTabs(tabFolder);
         tabFolder.pack();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#opened()
-     */
     @Override
     protected void opened() {
         // Set the min size of the shell to the current
@@ -442,7 +417,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         nameLbl.setText("Subset Name: ");
 
         nameText = new Text(subsetComp, SWT.BORDER);
-        nameText.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        nameText.setLayoutData(
+                new GridData(SWT.FILL, SWT.DEFAULT, true, false));
         nameText.setToolTipText("Enter a subset name");
         nameText.setEnabled(create);
     }
@@ -466,8 +442,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             subscribeBtn.setToolTipText("Click to continue editing");
         } else {
             subscribeBtn.setText("Subscribe...");
-            subscribeBtn
-                    .setToolTipText("Click to create a subscription to a subset");
+            subscribeBtn.setToolTipText(
+                    "Click to create a subscription to a subset");
         }
         subscribeBtn.setLayoutData(gd);
         subscribeBtn.addSelectionListener(new SelectionAdapter() {
@@ -491,14 +467,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                             subscription.getRoute());
                 }
                 if (mySub == null) {
-                    statusHandler
-                            .warn("Unable to process subscription creation. Null subscription received. Canceling...");
+                    statusHandler.warn(
+                            "Unable to process subscription creation. Null subscription received. Canceling...");
                 } else {
                     launchCreateSubscriptionGui(mySub);
                 }
 
                 // Enable the subscription button if it is not disposed.
-                if (subscribeBtn.isDisposed() == false) {
+                if (!subscribeBtn.isDisposed()) {
                     subscribeBtn.setEnabled(true);
                 }
             }
@@ -532,7 +508,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Launch the Create Subscription GUI.
-     * 
+     *
      * @param sub
      *            The subscription object
      */
@@ -549,7 +525,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * Launch the Create Subscription GUI
      */
     private boolean handleOK(Subscription sub) {
-        if (this.validated(true)) {
+        if (this.validated()) {
             if (subDlg != null && !subDlg.isDisposed()) {
                 subDlg.bringToTop();
             } else {
@@ -567,7 +543,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * * u Query button action handler.
      */
     private void handleQuery() {
-        boolean valid = this.validated(false);
+        boolean valid = this.validated();
 
         if (valid) {
             // Check for existing subscription
@@ -584,10 +560,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                     return;
                 }
             } catch (RegistryHandlerException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to check for an existing subscription by name.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to check for an existing subscription by name.",
+                        e);
             }
 
             AdhocSubscription as = createSubscription(new AdhocSubscription(),
@@ -600,8 +575,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 String currentUser = LocalizationManager.getInstance()
                         .getCurrentUser();
                 as.setSubscriptionType(SubscriptionType.QUERY);
-                SubscriptionServiceResult result = subscriptionService.store(
-                        currentUser, as, this);
+                SubscriptionServiceResult result = subscriptionService
+                        .store(currentUser, as, this);
 
                 if (result.hasMessageToDisplay()) {
                     DataDeliveryUtils.showMessage(getShell(), SWT.OK,
@@ -616,14 +591,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Create the user subscription.
-     * 
+     *
      * @param <T>
      *            The subscription object reference type
      * @param sub
      *            The subscription to populate
      * @param defaultRoute
      *            the route for the subscription
-     * 
+     *
      * @return the populated subscription
      */
     protected <T extends SiteSubscription> T createSubscription(T sub,
@@ -633,8 +608,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         Preconditions.checkNotNull(defaultRoute,
                 "A defaultRoute must be provided.");
 
-        sub.setOwner((create) ? LocalizationManager.getInstance()
-                .getCurrentUser() : this.subscription.getOwner());
+        sub.setOwner(
+                (create) ? LocalizationManager.getInstance().getCurrentUser()
+                        : this.subscription.getOwner());
         sub.setOriginatingSite(DataDeliveryUtils.getDataDeliveryId());
         sub.setSubscriptionType(SubscriptionType.RECURRING);
 
@@ -643,14 +619,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Sets up common subscription attributes.
-     * 
+     *
      * @param <T>
      *            The subscription object reference type
      * @param sub
      *            The subscription to populate
      * @param the
      *            route for the subscription
-     * 
+     *
      * @return the populated subscription
      */
     private <T extends Subscription> T setupCommonSubscriptionAttributes(T sub,
@@ -719,24 +695,21 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 }
             };
 
-            DataDeliveryUtils
-                    .showCallbackMessageBox(
-                            shell,
-                            SWT.YES | SWT.NO,
-                            "Cancel Changes?",
-                            "Are you sure you wish to close without saving your subset?",
-                            callback);
+            DataDeliveryUtils.showCallbackMessageBox(shell, SWT.YES | SWT.NO,
+                    "Cancel Changes?",
+                    "Are you sure you wish to close without saving your subset?",
+                    callback);
         }
     }
 
     /**
      * Validate user has selected the necessary items.
-     * 
+     *
      * @param subscription
      *            true for subscription, false for adhoc query
      * @return true if filled out correctly
      */
-    private boolean validated(boolean subscription) {
+    private boolean validated() {
         String name = nameText.getText();
 
         // Is Subset Name entered
@@ -777,7 +750,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     }
 
     protected Collection<String> getInvalidTabs() {
-        Collection<String> invalidTabs = new ArrayList<String>(3);
+        Collection<String> invalidTabs = new ArrayList<>(3);
 
         if (!spatialTabControls.isValid()) {
             invalidTabs.add(SPATIAL_TAB);
@@ -798,11 +771,11 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             return;
         }
 
-        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(
-                nameText.getText().trim()).find()) {
-            DataDeliveryUtils
-                    .showMessage(getShell(), SWT.ERROR, "Invalid Characters",
-                            "Invalid characters. The Subset Name may only contain letters/numbers/dashes.");
+        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN
+                .matcher(nameText.getText().trim()).find()) {
+            DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
+                    "Invalid Characters",
+                    "Invalid characters. The Subset Name may only contain letters/numbers/dashes.");
             return;
         }
 
@@ -852,8 +825,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
             sb.append("Adjust the selected area and try again.");
 
-            int answer = DataDeliveryUtils.showMessage(getShell(), SWT.OK
-                    | SWT.CANCEL, "Validation Error", sb.toString());
+            int answer = DataDeliveryUtils.showMessage(getShell(),
+                    SWT.OK | SWT.CANCEL, "Validation Error", sb.toString());
 
             return answer == SWT.OK ? true : false;
         }
@@ -863,7 +836,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Populate the subset XML data object.
-     * 
+     *
      * @param subset
      *            The SubsetXML object to populate
      */
@@ -892,21 +865,21 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     /**
      * Load saved subset button action handler. This action takes the settings
      * from the saved subset and applies them to the current data set.
-     * 
+     *
      * @param subsetName
      *            Name of the subset to load
      */
     @Override
     public void handleLoadSubset(String subsetName) {
-        SubsetXML loadedSubsetXml = SubsetFileManager.getInstance().loadSubset(
-                subsetName, dataSet.getDataSetType());
+        SubsetXML loadedSubsetXml = SubsetFileManager.getInstance()
+                .loadSubset(subsetName, dataSet.getDataSetType());
 
         loadFromSubsetXML(loadedSubsetXml);
     }
 
     /**
      * Populate the dialog from the SubsetXML object.
-     * 
+     *
      * @param subsetXml
      *            The subset xml object
      */
@@ -924,7 +897,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Populate the dialog from the Subscription object.
-     * 
+     *
      * @param subscription
      *            The subscription object
      */
@@ -961,7 +934,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     /**
      * Constructs the appropriate subset dialog based upon the {@link DataSet}
      * type.
-     * 
+     *
      * @param shell
      *            the current dialog shell
      * @param dataSet
@@ -976,14 +949,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         } else if (dataSet.getDataSetType() == DataType.PDA) {
             return new PDASubsetManagerDlg(shell, (PDADataSet) dataSet);
         }
-        throw new IllegalArgumentException(String.format(
-                DATASETS_NOT_SUPPORTED, dataSet.getClass().getName()));
+        throw new IllegalArgumentException(String.format(DATASETS_NOT_SUPPORTED,
+                dataSet.getClass().getName()));
     }
 
     /**
      * Constructs the appropriate subset dialog based upon the
      * {@link Subscription#getDataSetType()}.
-     * 
+     *
      * @param shell
      *            the current dialog shell
      * @param loadDataSet
@@ -995,21 +968,22 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     public static SubsetManagerDlg fromSubscription(Shell shell,
             boolean loadDataSet, Subscription subscription) {
         if (DataType.GRID == subscription.getDataSetType()) {
-            return new GriddedSubsetManagerDlg(shell, loadDataSet, subscription);
+            return new GriddedSubsetManagerDlg(shell, loadDataSet,
+                    subscription);
         } else if (DataType.POINT == subscription.getDataSetType()) {
             return new PointSubsetManagerDlg(shell, loadDataSet, subscription);
         } else if (DataType.PDA == subscription.getDataSetType()) {
             return new PDASubsetManagerDlg(shell, loadDataSet, subscription);
         }
 
-        throw new IllegalArgumentException(String.format(
-                DATASETS_NOT_SUPPORTED, subscription.getDataSetType()));
+        throw new IllegalArgumentException(String.format(DATASETS_NOT_SUPPORTED,
+                subscription.getDataSetType()));
     }
 
     /**
      * Constructs the appropriate subset dialog based upon the {@link DataSet}
      * type.
-     * 
+     *
      * @param shell
      *            the current dialog shell
      * @param data
@@ -1033,8 +1007,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             return new PDASubsetManagerDlg(shell, (PDADataSet) data, true,
                     subset);
         }
-        throw new IllegalArgumentException(String.format(
-                DATASETS_NOT_SUPPORTED, data.getClass().getName()));
+        throw new IllegalArgumentException(String.format(DATASETS_NOT_SUPPORTED,
+                data.getClass().getName()));
     }
 
     /**
@@ -1042,7 +1016,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      */
     @Override
     public boolean displayYesNoPopup(String title, String message) {
-        return DataDeliveryUtils.showYesNoMessage(getShell(), title, message) == SWT.YES;
+        return DataDeliveryUtils.showYesNoMessage(getShell(), title,
+                message) == SWT.YES;
     }
 
     /**
@@ -1058,17 +1033,15 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         case CANCEL:
             return "Do not store the adhoc query";
         case FORCE_APPLY_DEACTIVATED:
-            if (singleSubscription
-                    && wouldBeUnscheduledSubscriptions.contains(subscription
-                            .getName())) {
+            if (singleSubscription && wouldBeUnscheduledSubscriptions
+                    .contains(subscription.getName())) {
                 // Can't force apply a query that won't ever be processed
                 return null;
             }
             return "Store the adhoc query and unschedule the subscriptions";
         case FORCE_APPLY_UNSCHEDULED:
-            if (singleSubscription
-                    && wouldBeUnscheduledSubscriptions.contains(subscription
-                            .getName())) {
+            if (singleSubscription && wouldBeUnscheduledSubscriptions
+                    .contains(subscription.getName())) {
                 // Can't force apply a query that won't ever be processed
                 return null;
             }
@@ -1094,7 +1067,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     /**
      * Set the coverage into the subscription.
-     * 
+     *
      * @param sub
      *            The subscription needing the coverage
      */

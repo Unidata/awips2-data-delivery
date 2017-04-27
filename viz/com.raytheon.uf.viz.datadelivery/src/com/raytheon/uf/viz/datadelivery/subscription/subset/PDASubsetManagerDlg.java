@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
@@ -67,11 +66,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * {@link SubsetManagerDlg} for point data sets.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------------------------
  * Aug 14, 2014  3121     dhladky   Initial creation.
@@ -80,9 +79,10 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jul 05, 2016  5683     tjensen   Added handling for null returns
  * Aug 17, 2016  5772     rjpeter   Fix time handling.
  * Oct 03, 2016  5772     tjensen   Set URL for PDA adhoc queries
- * 
+ * Apr 25, 2017  1045     tjensen   Update for moving datasets
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  */
 
@@ -91,9 +91,9 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDASubsetManagerDlg.class);
 
-    private final String TIMING_TAB_TEXT = "Retrieval Times";
+    private static final String TIMING_TAB_TEXT = "Retrieval Times";
 
-    private final String NO_DATA_FOR_DATE = "No data is available for the specified time.";
+    private static final String NO_DATA_FOR_DATE = "No data is available for the specified time.";
 
     /** Point data size utility */
     private PDADataSizeUtils dataSize;
@@ -107,7 +107,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            parent shell
      * @param loadDataSet
@@ -125,7 +125,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            parent shell
      * @param dataSet
@@ -146,7 +146,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            the parent shell
      * @param dataSet
@@ -162,7 +162,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     /**
      * Creates the date formatter
      */
-    private SimpleDateFormat createDateFormatter() {
+    private static SimpleDateFormat createDateFormatter() {
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy - HH:mm'Z'");
         sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
         return sdf;
@@ -182,8 +182,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         timingComp.setLayout(tgl);
         timingComp.setLayoutData(tgd);
         timingTab.setControl(timingComp);
-        SortedSet<ImmutableDate> dates = retrieveDatesForDataSet(
-                dataSet.getDataSetName(), dataSet.getProviderName());
+        SortedSet<ImmutableDate> dates = retrieveDatesForDataSet(null);
         timingTabControls = new PDATimingSubsetTab(timingComp, this, shell,
                 dates);
         TabItem spatialTab = new TabItem(tabFolder, SWT.NONE);
@@ -208,8 +207,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         ReferencedEnvelope env = spatialTabControls.getEnvelope();
 
         // Update the data set size label text.
-        this.sizeLbl.setText(SizeUtil.prettyByteSize(dataSize
-                .getDataSetSizeInBytes(env)));
+        this.sizeLbl.setText(
+                SizeUtil.prettyByteSize(dataSize.getDataSetSizeInBytes(env)));
     }
 
     @SuppressWarnings({ "rawtypes" })
@@ -223,8 +222,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     }
 
     protected Time handleAdhocDataSpecificTime(Subscription sub) {
-        SortedSet<ImmutableDate> newestToOldest = retrieveDatesForDataSet(
-                sub.getDataSetName(), sub.getProvider());
+
+        SortedSet<ImmutableDate> newestToOldest = retrieveDatesForDataSet(sub);
 
         if ((newestToOldest == null) || newestToOldest.isEmpty()) {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
@@ -278,7 +277,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      * subscription. It will either be null for a reoccurring subscription, or
      * the {@link DataSetMetaData} url if an adhoc query is being performed for
      * a non-latest date.
-     * 
+     *
      * @return the url to use
      */
     public String getSubscriptionUrl() {
@@ -287,8 +286,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     protected Time handleRecurringDataSpecificTime(Subscription sub) {
         Time time = null;
-        SortedSet<ImmutableDate> newestToOldest = retrieveDatesForDataSet(
-                sub.getDataSetName(), sub.getProvider());
+        SortedSet<ImmutableDate> newestToOldest = retrieveDatesForDataSet(sub);
 
         if ((newestToOldest != null) && newestToOldest.isEmpty()) {
             metaData = retrieveFilteredDataSetMetaData(newestToOldest.first());
@@ -314,7 +312,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    protected Subscription populateSubscription(Subscription sub, boolean create) {
+    protected Subscription populateSubscription(Subscription sub,
+            boolean create) {
 
         sub.setProvider(dataSet.getProviderName());
         sub.setDataSetName(dataSet.getDataSetName());
@@ -338,8 +337,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         Map<String, Parameter> paramMap = dataSet.getParameters();
         List<DataLevelType> levelTypeList = new ArrayList<>();
         levelTypeList.add(new DataLevelType(DataLevelType.LevelType.SFC));
-        for (String key : paramMap.keySet()) {
-            Parameter p = paramMap.get(key);
+        for (Parameter p : paramMap.values()) {
             p.setDataType(DataType.PDA);
             p.setLevelType(levelTypeList);
             paramList.add(p);
@@ -385,15 +383,16 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Retrieve the filtered {@link DATASETMETADATA}.
-     * 
+     *
      * @return the DataSetMetaData that applies, or null if none
      */
     @SuppressWarnings("rawtypes")
-    protected DataSetMetaData retrieveFilteredDataSetMetaData(Date selectedDate) {
+    protected DataSetMetaData retrieveFilteredDataSetMetaData(
+            Date selectedDate) {
         try {
             PDADataSetMetaData dsmd = (PDADataSetMetaData) DataDeliveryHandlers
-                    .getDataSetMetaDataHandler().getByDataSetDate(
-                            dataSet.getDataSetName(),
+                    .getDataSetMetaDataHandler()
+                    .getByDataSetDate(dataSet.getDataSetName(),
                             dataSet.getProviderName(), selectedDate);
             return dsmd;
         } catch (RegistryHandlerException e) {
@@ -405,29 +404,33 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Retrieve the filtered {@link DATES}.
-     * 
+     *
      * @return the Set<ImmutableDate> that apply, or null if none
      */
     protected SortedSet<ImmutableDate> retrieveDatesForDataSet(
-            String dataSetName, String providerName) {
-
+            Subscription sub) {
+        SortedSet<ImmutableDate> newestToOldest = new TreeSet<>(
+                Ordering.natural().reverse());
         try {
-            Set<ImmutableDate> sdates = DataDeliveryHandlers
-                    .getDataSetMetaDataHandler().getDatesForDataSet(
-                            dataSetName, providerName);
-            if ((sdates == null) || sdates.isEmpty()) {
-                return null;
+            if (dataSet.isMoving() && sub != null) {
+                newestToOldest.addAll(DataDeliveryHandlers
+                        .getDataSetMetaDataHandler()
+                        .getDatesForDataSetByIntersection(
+                                dataSet.getDataSetName(),
+                                dataSet.getProviderName(),
+                                sub.getCoverage().getRequestEnvelope()));
+            } else {
+                newestToOldest
+                        .addAll(DataDeliveryHandlers.getDataSetMetaDataHandler()
+                                .getDatesForDataSet(dataSet.getDataSetName(),
+                                        dataSet.getProviderName()));
             }
-
-            SortedSet<ImmutableDate> newestToOldest = new TreeSet<>(Ordering
-                    .natural().reverse());
-            newestToOldest.addAll(sdates);
-
-            return newestToOldest;
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error retrieving applicable Dates.", e);
             return null;
         }
+        return newestToOldest;
+
     }
 }
