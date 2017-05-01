@@ -1,7 +1,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
-  http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <!-- Moved in to an EDEX specific file so that the registration of handlers 
         Spring file can be reused for automated testing -->
@@ -58,24 +58,20 @@
         <property name="registryHandler" ref="registryHandler" />
     </bean>
 
-
     <bean name="ParameterHandler"
         class="com.raytheon.uf.common.datadelivery.registry.handlers.ParameterHandler">
         <property name="registryHandler" ref="registryHandler" />
     </bean>
-
 
     <bean name="ParameterLevelHandler"
         class="com.raytheon.uf.common.datadelivery.registry.handlers.ParameterLevelHandler">
         <property name="registryHandler" ref="registryHandler" />
     </bean>
 
-
     <bean name="DataSetMetaDataHandler"
         class="com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler">
         <property name="registryHandler" ref="registryHandler" />
     </bean>
-
 
     <bean name="GriddedDataSetMetaDataHandler"
         class="com.raytheon.uf.common.datadelivery.registry.handlers.GriddedDataSetMetaDataHandler">
@@ -92,4 +88,4 @@
         <property name="registryHandler" ref="registryHandler" />
     </bean>
 
-</beans>  
+</beans>

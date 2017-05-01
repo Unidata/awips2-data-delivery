@@ -1,12 +1,14 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
-  http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="dataDeliveryRetrievalDecoder"
-    class="com.raytheon.uf.edex.datadelivery.retrieval.SbnDataDeliveryRetrievalDecoder">
-    <constructor-arg value="notifyRetrieval" />
-</bean>
+        class="com.raytheon.uf.edex.datadelivery.retrieval.SbnDataDeliveryRetrievalDecoder">
+        <constructor-arg value="notifyRetrieval" />
+    </bean>
 
     <camelContext id="dataDeliveryRetrieval-camel"
         xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
@@ -23,4 +25,5 @@
             </doTry>
         </route>
     </camelContext>
+
 </beans>

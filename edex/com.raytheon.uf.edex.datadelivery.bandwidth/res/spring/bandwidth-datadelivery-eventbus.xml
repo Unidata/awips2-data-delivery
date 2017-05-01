@@ -1,8 +1,9 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
-  http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
-
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="bandwidthEventBus"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.notification.BandwidthEventBusBean" />
@@ -18,36 +19,36 @@
     <bean factory-bean="bandwidthEventBus" factory-method="register">
         <constructor-arg ref="bandwidthManager" />
     </bean>
-    
-     <!-- External endpoint for listening to registry events. 
-	     when the ${registry.event.external.publish} prop is set to true.  
-	     (false) when DD and the registry run on the same JVM. -->
-	     
-	<bean id="bandwidthRegistryMessageHandler"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.notification.BandwidthRegistryMessageHandler">
-	</bean>    
-	
-	<bean factory-bean="eventBus" factory-method="register">
-        <constructor-arg ref="bandwidthRegistryMessageHandler" />
-    </bean> 
 
-	<camelContext id="externalRegistryEventDelivery-camel"
-		xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
-		<endpoint id="externalEventDelivery"
-			uri="jms-generic:topic:externalEventTopic" />
-		<route id="registryExternalPublishTopic">
-			<from ref="externalEventDelivery" />
-			<doTry>
-				<pipeline>
-					<bean ref="serializationUtil" method="transformFromThrift"/>
-					<bean ref="bandwidthRegistryMessageHandler" method="notify" />
-				</pipeline>
-				<doCatch>
-					<exception>java.lang.Throwable</exception>
-					<to uri="log:externalRegistryEventDelivery?level=ERROR" />
-				</doCatch>
-			</doTry>
-		</route>
-	</camelContext>
+     <!-- External endpoint for listening to registry events. 
+          when the ${registry.event.external.publish} prop is set to true.  
+          (false) when DD and the registry run on the same JVM. -->
+
+    <bean id="bandwidthRegistryMessageHandler"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.notification.BandwidthRegistryMessageHandler">
+    </bean>
+
+    <bean factory-bean="eventBus" factory-method="register">
+        <constructor-arg ref="bandwidthRegistryMessageHandler" />
+    </bean>
+
+    <camelContext id="externalRegistryEventDelivery-camel"
+        xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
+        <endpoint id="externalEventDelivery"
+            uri="jms-generic:topic:externalEventTopic" />
+        <route id="registryExternalPublishTopic">
+            <from ref="externalEventDelivery" />
+            <doTry>
+                <pipeline>
+                    <bean ref="serializationUtil" method="transformFromThrift"/>
+                    <bean ref="bandwidthRegistryMessageHandler" method="notify" />
+                </pipeline>
+                <doCatch>
+                    <exception>java.lang.Throwable</exception>
+                    <to uri="log:externalRegistryEventDelivery?level=ERROR" />
+                </doCatch>
+            </doTry>
+        </route>
+    </camelContext>
 
 </beans>

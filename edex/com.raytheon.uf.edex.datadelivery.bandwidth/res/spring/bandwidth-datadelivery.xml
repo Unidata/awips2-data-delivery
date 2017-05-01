@@ -1,97 +1,97 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd   
-  http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean id="propertyPlaceholderConfigurer"
-		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-		<property name="locations">
-			<list>
-				<value>classpath:/com.raytheon.uf.edex.datadelivery.bandwidth.properties
-				</value>
-			</list>
-		</property>
-		<property name="searchSystemEnvironment">
-			<value type="boolean">false</value>
-		</property>
-		<property name="ignoreUnresolvablePlaceholders">
-			<value type="boolean">true</value>
-		</property>
-	</bean>
+    <bean id="propertyPlaceholderConfigurer"
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:/com.raytheon.uf.edex.datadelivery.bandwidth.properties
+                </value>
+            </list>
+        </property>
+        <property name="searchSystemEnvironment">
+            <value type="boolean">false</value>
+        </property>
+        <property name="ignoreUnresolvablePlaceholders">
+            <value type="boolean">true</value>
+        </property>
+    </bean>
 
-	<bean id="bandwidthDao" factory-bean="bandwidthContextFactory"
-		factory-method="getBandwidthDao" />
+    <bean id="bandwidthDao" factory-bean="bandwidthContextFactory"
+        factory-method="getBandwidthDao" />
 
-	<bean id="bandwidthBucketDao" factory-bean="bandwidthContextFactory"
-		factory-method="getBandwidthBucketDao" />
+    <bean id="bandwidthBucketDao" factory-bean="bandwidthContextFactory"
+        factory-method="getBandwidthBucketDao" />
 
-	<!-- TODO: Move the associations between a bucket and its allocations into 
-		the database -->
-	<bean id="bandwidthBucketAllocationAssociator"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.InMemoryBandwidthBucketAllocationAssociator">
-		<constructor-arg ref="bandwidthDao" />
-		<constructor-arg ref="bandwidthBucketDao" />
-	</bean>
+    <!-- TODO: Move the associations between a bucket and its allocations into 
+        the database -->
+    <bean id="bandwidthBucketAllocationAssociator"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.InMemoryBandwidthBucketAllocationAssociator">
+        <constructor-arg ref="bandwidthDao" />
+        <constructor-arg ref="bandwidthBucketDao" />
+    </bean>
 
-	<bean id="bandwidthDbInit" factory-bean="bandwidthContextFactory"
-		factory-method="getBandwidthDbInit" />
+    <bean id="bandwidthDbInit" factory-bean="bandwidthContextFactory"
+        factory-method="getBandwidthDbInit" />
 
-	<bean id="bandwidthMapConfigFile" factory-bean="bandwidthContextFactory"
-		factory-method="getBandwidthMapConfigFile" />
+    <bean id="bandwidthMapConfigFile" factory-bean="bandwidthContextFactory"
+        factory-method="getBandwidthMapConfigFile" />
 
-	<bean id="bandwidthManager" factory-bean="bandwidthContextFactory"
-		factory-method="getBandwidthManager" depends-on="bandwidthUtil"
-		init-method="init">
-		<constructor-arg ref="bandwidthDbInit" />
-		<constructor-arg ref="bandwidthDao" />
-		<constructor-arg ref="retrievalManager" />
-		<constructor-arg ref="bandwidthDaoUtil" />
-		<constructor-arg ref="registryIdUtil" />
-		<property name="aggregator" ref="aggregator" />
-		<property name="initializer" ref="bandwidthInitializer" />
-	</bean>
+    <bean id="bandwidthManager" factory-bean="bandwidthContextFactory"
+        factory-method="getBandwidthManager" depends-on="bandwidthUtil"
+        init-method="init">
+        <constructor-arg ref="bandwidthDbInit" />
+        <constructor-arg ref="bandwidthDao" />
+        <constructor-arg ref="retrievalManager" />
+        <constructor-arg ref="bandwidthDaoUtil" />
+        <constructor-arg ref="registryIdUtil" />
+        <property name="aggregator" ref="aggregator" />
+        <property name="initializer" ref="bandwidthInitializer" />
+    </bean>
 
     <bean id="subscriptionLatencyCalculator"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.util.SubscriptionValueLatencyCalculator">
         <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
     </bean>
 
-	<bean id="bandwidthUtil"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil"
-		factory-method="getInstance" depends-on="registerDataDeliveryHandlers">
-		<property name="subscriptionLatencyCalculator" ref="subscriptionLatencyCalculator" />
-		<property name="subscriptionRescheduleStrategy">
-			<bean
-				class="com.raytheon.uf.edex.datadelivery.bandwidth.util.AlwaysRescheduleSubscriptions" />
-		</property>
-	</bean>
+    <bean id="bandwidthUtil"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil"
+        factory-method="getInstance" depends-on="registerDataDeliveryHandlers">
+        <property name="subscriptionLatencyCalculator" ref="subscriptionLatencyCalculator" />
+        <property name="subscriptionRescheduleStrategy">
+            <bean
+                class="com.raytheon.uf.edex.datadelivery.bandwidth.util.AlwaysRescheduleSubscriptions" />
+        </property>
+    </bean>
 
-	<bean id="bandwidthDaoUtil"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil">
-		<constructor-arg ref="bandwidthDao" />
-		<constructor-arg ref="retrievalManager" />
-	</bean>
+    <bean id="bandwidthDaoUtil"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil">
+        <constructor-arg ref="bandwidthDao" />
+        <constructor-arg ref="retrievalManager" />
+    </bean>
 
-	<bean id="BandwidthMap"
-		class="com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap"
-		factory-method="load">
-		<constructor-arg ref="bandwidthMapConfigFile" />
-	</bean>
+    <bean id="BandwidthMap"
+        class="com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap"
+        factory-method="load">
+        <constructor-arg ref="bandwidthMapConfigFile" />
+    </bean>
 
-	<bean id="aggregator"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.processing.SimpleSubscriptionAggregator">
-		<constructor-arg ref="bandwidthDao" />
-	</bean>
+    <bean id="aggregator"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.processing.SimpleSubscriptionAggregator">
+        <constructor-arg ref="bandwidthDao" />
+    </bean>
 
-	<!-- The shared monitor object between the RetrievalAgentManager and its 
-		Agents -->
-	<bean id="retrievalAgentNotifier" class="java.lang.Object" />
+    <!-- The shared monitor object between the RetrievalAgentManager and its 
+        Agents -->
+    <bean id="retrievalAgentNotifier" class="java.lang.Object" />
 
-	<bean id="retrievalManager"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager">
-		<constructor-arg ref="bandwidthDao" />
-		<property name="retrievalPlans" ref="retrievalPlans" />
-	</bean>
+    <bean id="retrievalManager"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager">
+        <constructor-arg ref="bandwidthDao" />
+        <property name="retrievalPlans" ref="retrievalPlans" />
+    </bean>
 
     <bean id="registryBandwidthUtilizationListener"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.registry.RegistryBandwidthUtilizationListener">
@@ -101,25 +101,25 @@
         <constructor-arg ref="bandwidthBucketDao" />
     </bean>
 
-	<bean id="subscriptionLatencyCheck"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.SubscriptionLatencyCheck"
-		init-method="start">
-		<constructor-arg ref="bandwidthBucketDao" />
-		<constructor-arg ref="bandwidthDao" />
-		<constructor-arg ref="SubscriptionHandler" />
-		<constructor-arg ref="DataSetHandler" />
-		<constructor-arg ref="dataSetLatencyDao" />
-	</bean>
+    <bean id="subscriptionLatencyCheck"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.SubscriptionLatencyCheck"
+        init-method="start">
+        <constructor-arg ref="bandwidthBucketDao" />
+        <constructor-arg ref="bandwidthDao" />
+        <constructor-arg ref="SubscriptionHandler" />
+        <constructor-arg ref="DataSetHandler" />
+        <constructor-arg ref="dataSetLatencyDao" />
+    </bean>
 
-	<bean id="dataSetLatencyServiceHandler"
-		class="com.raytheon.uf.edex.datadelivery.bandwidth.handler.DataSetLatencyServiceHandler">
-		<property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
-	</bean>
+    <bean id="dataSetLatencyServiceHandler"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.handler.DataSetLatencyServiceHandler">
+        <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
+    </bean>
 
-	<bean factory-bean="handlerRegistry" factory-method="register">
-		<constructor-arg
-			value="com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyRequest" />
-		<constructor-arg ref="dataSetLatencyServiceHandler" />
-	</bean>
+    <bean factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg
+            value="com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyRequest" />
+        <constructor-arg ref="dataSetLatencyServiceHandler" />
+    </bean>
 
 </beans>
