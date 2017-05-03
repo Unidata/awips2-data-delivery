@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -35,37 +35,37 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphSect
 
 /**
  * Utilization header image.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 24, 2013   2430     mpduff      Initial creation
- * 
+ * May 03, 2017   6248     nabowle     Fix spelling of threshold.
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class UtilizationHeaderImage extends AbstractCanvasImage {
     /** Title text */
-    private final String TITLE = "Percent of Bandwidth Used";
+    private static final String TITLE = "Percent of Bandwidth Used";
 
     /** Legend text */
-    private final String LEGEND = "Legend: ";
+    private static final String LEGEND = "Legend: ";
 
     /** Percent sign */
-    private final String PERCENT = "%";
+    private static final String PERCENT = "%";
 
     /** Map of Rectangles -> GraphSection */
-    private final Map<Rectangle, GraphSection> rectPercentMap = new HashMap<Rectangle, GraphSection>();
+    private final Map<Rectangle, GraphSection> rectPercentMap = new HashMap<>();
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param cs
@@ -115,7 +115,7 @@ public class UtilizationHeaderImage extends AbstractCanvasImage {
 
         Color c;
         Rectangle r;
-        int[] thresholdValues = imageMgr.getBandwidthThreholdValues();
+        int[] thresholdValues = imageMgr.getBandwidthThresholdValues();
         for (GraphSection section : imageMgr.getPercentageColorMap().keySet()) {
             StringBuilder percentString = new StringBuilder("> ");
             if (section == GraphSection.MIDDLE) {
@@ -142,12 +142,6 @@ public class UtilizationHeaderImage extends AbstractCanvasImage {
         gc.dispose();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.bandwidth.ui.AbstractCanvasImage#
-     * performAction(org.eclipse.swt.graphics.Point)
-     */
     @Override
     public void performAction(Point mousePt) {
         for (Rectangle rec : this.rectPercentMap.keySet()) {

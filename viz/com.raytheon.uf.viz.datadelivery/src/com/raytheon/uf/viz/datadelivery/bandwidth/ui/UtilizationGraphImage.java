@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -43,28 +43,27 @@ import com.raytheon.uf.viz.datadelivery.bandwidth.ui.BandwidthImageMgr.GraphType
 
 /**
  * Percent utilized graph image.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 20, 2013   2430     mpduff      Initial creation
  * Sep 22, 2014   3607     ccody       Handle uncaught Exception and RuntimeException objects
- * Oct 03, 2014   2749     ccody       Minor change for dynamic graph adjustment for Utilization Graph height 
- *  
- * 
+ * Oct 03, 2014   2749     ccody       Minor change for dynamic graph adjustment for Utilization Graph height
+ * May 03, 2017   6248     nabowle     Fix spelling of threshold.
+ *
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
-
 public class UtilizationGraphImage extends AbstractCanvasImage {
     /** UFStatus handler */
     private final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(GraphDataUtil.class);
+            .getHandler(UtilizationGraphImage.class);
 
     /** Lower percent limit line */
     private int lowerLimitLine;
@@ -76,7 +75,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param cs
@@ -106,7 +105,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
     /**
      * Draw the vertical time lines.
-     * 
+     *
      * @param gc
      *            Graphics Context
      */
@@ -148,12 +147,6 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.bandwidth.ui.AbstractCanvasImage#
-     * disposeResources()
-     */
     @Override
     public void disposeResources() {
         if (bgColor != null) {
@@ -165,13 +158,6 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.bandwidth.ui.AbstractCanvasImage#drawImage
-     * ()
-     */
     @Override
     public void drawImage() {
         GC gc = new GC(image);
@@ -191,7 +177,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
     /**
      * Draw the data.
-     * 
+     *
      * @param gc
      */
     private void drawData(GC gc) {
@@ -221,7 +207,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
         long currentTimeMillis = imageMgr.getCurrentTimeMillis();
         int height = cs.getCanvasHeight();
-        List<GraphPoint> points = new ArrayList<GraphPoint>();
+        List<GraphPoint> points = new ArrayList<>();
         for (BandwidthBucketDescription bucket : data) {
             long bucketSize = bucket.getBucketSize();
             long startTime = bucket.getBucketStartTime();
@@ -229,7 +215,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
             if (startTime < currentTimeMillis) {
                 continue;
             }
-            
+
             int x = Math.round(((startTime - currentTimeMillis) / millisPerPix)
                     + 1 + cs.getXSpaceBuffer());
 
@@ -251,7 +237,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
     /**
      * Draw the bar graph.
-     * 
+     *
      * @param points
      * @param gc
      */
@@ -277,7 +263,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
     /**
      * Draw the line graph.
-     * 
+     *
      * @param points
      * @param gc
      */
@@ -313,7 +299,7 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
     /**
      * Get the color for the point y.
-     * 
+     *
      * @param y
      *            The point
      * @return The color for the point
@@ -333,11 +319,11 @@ public class UtilizationGraphImage extends AbstractCanvasImage {
 
     /**
      * Draw the percent threshold lines.
-     * 
+     *
      * @param gc
      */
     private void drawPercentLines(GC gc) {
-        int[] threshValues = imageMgr.getBandwidthThreholdValues();
+        int[] threshValues = imageMgr.getBandwidthThresholdValues();
         int height = cs.getCanvasHeight();
         lowerLimitLine = 60 - ((int) Math.round(height
                 * (threshValues[0] / 100.0)));

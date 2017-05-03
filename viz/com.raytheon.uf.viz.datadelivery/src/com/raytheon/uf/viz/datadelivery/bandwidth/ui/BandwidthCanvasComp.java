@@ -92,16 +92,16 @@ import com.raytheon.uf.viz.datadelivery.common.ui.SubscriptionViewer;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
- * 
+ *
  * This class contains all of the canvases for graphing data. There are
  * Subscription Graph, Bandwidth Graph, X Label, Y Label, X Header, and Y Header
  * canvases on the display. The Graph, X Label, and Y Label canvases can be
  * zoomed and panned.
- * 
+ *
  * <pre>
- * 
+ *
  *  SOFTWARE HISTORY
- *  
+ *
  *  Date         Ticket#    Engineer    Description
  *  ------------- ---------- ----------- --------------------------
  *  Nov 6, 2012    1269     lvenable    Initial creation.
@@ -125,18 +125,18 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Nov 19, 2014   3852     dhladky     Fixed overload state with Notification Records.
  *  Jan 05, 2015   3950  ccody/dhladky  Change update logic to update 4 times per bandwidth bucket
  *                                      and pertinent notification events (Create,Update,Delete,Activate,Deactivate)
- *  Feb 03, 2015   4041     dhladky     GraphData requests were on the UI thread, moved to Job.  
- *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse  
- *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check   
- *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null 
+ *  Feb 03, 2015   4041     dhladky     GraphData requests were on the UI thread, moved to Job.
+ *  Feb 10, 2015   4048     dhladky     Tooltip text now follows mouse
+ *  Mar 05, 2015   4225     dhladky     Tooltip needed a null check
+ *  Mar 15, 2015   3950     dhladky     Found compromise on update frequency and preventing spamming of BWM. Another ToolTip null
  *  Jun 09, 2015   4047     dhladky     BUG graph blocked CAVE on initial startup, fixed.
  *  Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces
  *  Jan 10, 2017   746      bsteffen    Do not ignore frequent updates.
- * 
+ *  May 03, 2017   6248     nabowle     Fix spelling of threshold.
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
 public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         INotificationObserver {
@@ -151,28 +151,28 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             SubscriptionStatusEvent.class, NotificationRecord.class);
 
     /** Missing value */
-    private final int MISSING = -999;
+    private static final int MISSING = -999;
 
     /** x direction pixel buffer */
-    private final int xSpaceBuffer = 20;
+    private static final int X_SPACE_BUFFER = 20;
 
     /** y direction pixel buffer */
-    private final int ySpaceBuffer = 10;
+    private static final int Y_SPACE_BUFFER = 10;
 
     /** Height without buffer */
-    private final int heightNoBuffer = 420;
+    private static final int HEIGHT_NO_BUFFER = 420;
 
     /** Height with buffer */
-    private final int heightWithBuffer = 420 + ySpaceBuffer * 2;
+    private static final int HEIGHT_WITH_BUFFER = 420 + Y_SPACE_BUFFER * 2;
 
     /** y label width */
-    private final int yLabelWidth = 140;
+    private static final int Y_LABEL_WIDTH = 140;
 
     /** Utilization header image height */
-    private final int utilizationHeaderHeight = 40;
+    private static final int UTILIZATION_HEADER_HEIGHT = 40;
 
     /** Utilization graph image height */
-    private final int utilizationGraphHeight = 60;
+    private static final int UTILIZATION_GRAPH_HEIGHT = 60;
 
     /** Parent composite */
     private final Composite parentComp;
@@ -193,7 +193,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     private Map<CanvasImages, CanvasSettings> canvasSettingsMap;
 
     /** Map of Canvas objects */
-    private final Map<CanvasImages, Canvas> canvasMap = new HashMap<CanvasImages, Canvas>();
+    private final Map<CanvasImages, Canvas> canvasMap = new HashMap<>();
 
     /** Map of Images */
     private Map<CanvasImages, Image> imgMap;
@@ -216,14 +216,11 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** The image manager */
     private BandwidthImageMgr imageMgr;
 
-    /** The subscription names */
-    private Collection<String> subscriptionNames;
-
     /** Graph Update Interval */
     private long updateIntervalMils = 0L;
 
     /** Last graph update time */
-    Timer activeUpdateTimer = null;
+    private Timer activeUpdateTimer = null;
 
     /** the query job **/
     private GraphDataUtil graphDataUtil;
@@ -255,9 +252,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** Utilization graph header canvas */
     private Canvas utilizationHeaderCanvas;
 
-    /** Utilization graph label canvas */
-    private Canvas utilizationLabelCanvas;
-
     /** Utilization graph canvas */
     private Canvas utilizationGraphCanvas;
 
@@ -276,15 +270,12 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /** Last NotificationRecord Message */
     private NotificationRecord lastNotificationRecord = null;
 
-    /** The current instance (Used to remove this as an event listener) */
-    BandwidthCanvasComp bandwidthCanvasComp = null;
-
     /** Universal toolTip for canvas images **/
     private ToolTip toolTip = null;
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Parent composite.
      * @param graphDataUtil
@@ -293,7 +284,6 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     public BandwidthCanvasComp(Composite parentComp) {
         super(parentComp, SWT.BORDER);
 
-        this.bandwidthCanvasComp = this;
         this.parentComp = parentComp;
         this.display = this.parentComp.getDisplay();
         this.graphDataUtil = new GraphDataUtil(this);
@@ -314,7 +304,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
         imageMgr = new BandwidthImageMgr(parentComp, canvasSettingsMap, bgd,
                 System.currentTimeMillis());
-        subscriptionNames = imageMgr.getSubscriptionNames();
+        Collection<String> subscriptionNames = imageMgr.getSubscriptionNames();
 
         getAllCanvasImages();
 
@@ -357,7 +347,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         cornerPointOffset.x = 0;
         cornerPointOffset.y = 0 - cs.getImageHeight() + cs.getCanvasHeight();
 
-        Map<String, Boolean> checkMap = new HashMap<String, Boolean>();
+        Map<String, Boolean> checkMap = new HashMap<>();
         Iterator<String> iter = subscriptionNames.iterator();
         while (iter.hasNext()) {
             String name = iter.next();
@@ -374,7 +364,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 }
 
                 NotificationManagerJob.removeObserver(NOTIFY_MESSAGE_TOPIC,
-                        bandwidthCanvasComp);
+                        BandwidthCanvasComp.this);
                 if (toolTip != null && !toolTip.isDisposed()) {
                     toolTip.dispose();
                 }
@@ -410,7 +400,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Retrieve graph update latency from "datadelivery/bandwidthmap.xml" file.
-     * 
+     *
      * @return Bandwidth Update Latency in milliseconds
      */
     private long retrieveBandwidthBucketSizeMils() {
@@ -440,14 +430,15 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     protected boolean isUpdateableNotification(
             NotificationMessage[] notificationMessages) {
-        if ((isDisposed() == true) || (notificationMessages == null)
-                || (notificationMessages.length == 0)) {
-            return (false);
+        if (isDisposed() || notificationMessages == null
+                || notificationMessages.length == 0) {
+            return false;
         }
 
         // Update the graph for all Notification Records
-        if (notificationMessageChecker.matchesCondition(notificationMessages) == false) {
-            return (false);
+        if (!notificationMessageChecker
+                .matchesCondition(notificationMessages)) {
+            return false;
         }
 
         boolean isUpdateable = false;
@@ -488,11 +479,11 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /**
      * Check the content of the {@link NotificationRecord} to see if BUG needs
      * to be updated.
-     * 
+     *
      * Update BUG on: Subscription: Create (Subscriptions are created in an
      * Active state), Delete, Activate, and Deactivate. Also update on Priority
      * 1 NotificationRecord events.
-     * 
+     *
      * @param notificationRecord
      *            Event Notification Record
      * @return isUpdateable True if BUG needs to update in response to this
@@ -514,7 +505,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                 && category.equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
             String notificationMessage = notificationRecord.getMessage();
             if ((notificationMessage != null)
-                    && (notificationMessage.isEmpty() == false)) {
+                    && (!notificationMessage.isEmpty())) {
                 notificationMessage = notificationMessage.toUpperCase();
                 if (notificationMessage.contains(DataDeliveryUtils.ACTIVATED)
                         || notificationMessage
@@ -530,14 +521,14 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             }
         }
 
-        return (isUpdateable);
+        return isUpdateable;
     }
 
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
 
         boolean isUpdateNeeded = isUpdateableNotification(messages);
-        if (isUpdateNeeded == true) {
+        if (isUpdateNeeded) {
             graphDataUtil.scheduleRetrieval();
         }
     }
@@ -545,12 +536,13 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     private void createUpdateTimer() {
         if (this.activeUpdateTimer == null) {
             ActionListener taskPerformer = new ActionListener() {
+                @Override
                 public void actionPerformed(ActionEvent evt) {
-                    if (isDisposed() == false) {
-                        graphDataUtil.scheduleRetrieval();
-                    } else {
+                    if (isDisposed()) {
                         activeUpdateTimer.stop();
                         activeUpdateTimer = null;
+                    } else {
+                        graphDataUtil.scheduleRetrieval();
                     }
                 }
             };
@@ -567,19 +559,19 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      */
     private void generateCanvasSettings() {
         if (canvasSettingsMap == null) {
-            canvasSettingsMap = new HashMap<CanvasImages, CanvasSettings>();
+            canvasSettingsMap = new HashMap<>();
         } else {
             canvasSettingsMap.clear();
         }
 
         CanvasSettings cs;
 
-        graphSize = calculateGraphImageSize(heightNoBuffer, xSpaceBuffer,
-                ySpaceBuffer);
+        graphSize = calculateGraphImageSize(HEIGHT_NO_BUFFER, X_SPACE_BUFFER,
+                Y_SPACE_BUFFER);
 
         // Create the Graph canvas settings
-        cs = new CanvasSettings(740, heightWithBuffer, graphSize.x,
-                graphSize.y, xSpaceBuffer, ySpaceBuffer);
+        cs = new CanvasSettings(740, HEIGHT_WITH_BUFFER, graphSize.x,
+                graphSize.y, X_SPACE_BUFFER, Y_SPACE_BUFFER);
         canvasSettingsMap.put(CanvasImages.GRAPH, cs);
 
         graphCanvasSize.x = cs.getCanvasWidth();
@@ -587,13 +579,13 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         graphCanvasSettings = cs;
 
         // Create the X label canvas settings
-        cs = new CanvasSettings(740, 60, graphSize.x, 60, xSpaceBuffer,
-                ySpaceBuffer);
+        cs = new CanvasSettings(740, 60, graphSize.x, 60, X_SPACE_BUFFER,
+                Y_SPACE_BUFFER);
         canvasSettingsMap.put(CanvasImages.X_LABEL, cs);
 
         // Create the Y label canvas settings
-        cs = new CanvasSettings(yLabelWidth, heightWithBuffer, yLabelWidth,
-                graphSize.y, xSpaceBuffer, ySpaceBuffer);
+        cs = new CanvasSettings(Y_LABEL_WIDTH, HEIGHT_WITH_BUFFER,
+                Y_LABEL_WIDTH, graphSize.y, X_SPACE_BUFFER, Y_SPACE_BUFFER);
         canvasSettingsMap.put(CanvasImages.Y_LABEL, cs);
 
         // Create the X header canvas settings
@@ -601,26 +593,26 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         canvasSettingsMap.put(CanvasImages.X_HEADER, cs);
 
         // Create the y header canvas settings
-        cs = new CanvasSettings(35, heightWithBuffer, 35, 440, 0, 0);
+        cs = new CanvasSettings(35, HEIGHT_WITH_BUFFER, 35, 440, 0, 0);
         canvasSettingsMap.put(CanvasImages.Y_HEADER, cs);
 
         // Create the bandwidth utilization header settings
-        cs = new CanvasSettings(yLabelWidth, 60, yLabelWidth, 0, 20, 0);
+        cs = new CanvasSettings(Y_LABEL_WIDTH, 60, Y_LABEL_WIDTH, 0, 20, 0);
         canvasSettingsMap.put(CanvasImages.UTILIZATION_LABEL, cs);
 
         // Create the bandwidth utilization graph settings
-        cs = new CanvasSettings(740, 60, graphSize.x, 100, xSpaceBuffer, 0);
+        cs = new CanvasSettings(740, 60, graphSize.x, 100, X_SPACE_BUFFER, 0);
         canvasSettingsMap.put(CanvasImages.UTILIZATION_GRAPH, cs);
 
         // Create the Utilization header canvas settings
-        cs = new CanvasSettings(740, utilizationHeaderHeight, graphSize.x,
-                utilizationHeaderHeight, xSpaceBuffer, 0);
+        cs = new CanvasSettings(740, UTILIZATION_HEADER_HEIGHT, graphSize.x,
+                UTILIZATION_HEADER_HEIGHT, X_SPACE_BUFFER, 0);
         canvasSettingsMap.put(CanvasImages.UTILIZATION_HEADER, cs);
     }
 
     /**
      * Calculate the graph image size.
-     * 
+     *
      * @param origHeight
      *            Original Height
      * @param xBufferMargin
@@ -705,7 +697,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      * Create the utilization graph's label canvas.
      */
     private void createUtilizationLabelCanvas() {
-        utilizationLabelCanvas = new Canvas(this, SWT.DOUBLE_BUFFERED);
+        Canvas utilizationLabelCanvas = new Canvas(this, SWT.DOUBLE_BUFFERED);
         CanvasSettings cs = canvasSettingsMap
                 .get(CanvasImages.UTILIZATION_LABEL);
 
@@ -925,7 +917,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
                 // If the mouse button is not pressed then set the previous
                 // mouse x,y coordinates to the current mouse x,y position.
-                if (mouseDown == false) {
+                if (!mouseDown) {
                     previousMousePoint.x = e.x;
                     previousMousePoint.y = e.y;
                     mouseMarker = e.x;
@@ -992,7 +984,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Set the graph selection.
-     * 
+     *
      * @param me
      *            The Mouse Event object
      */
@@ -1212,7 +1204,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Draw the X header image on the X header canvas.
-     * 
+     *
      * @param gc
      *            Graphics context.
      */
@@ -1222,7 +1214,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Draw the Y header image on the Y header canvas.
-     * 
+     *
      * @param gc
      *            Graphics context.
      */
@@ -1232,7 +1224,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Draw the graph image on the graph canvas.
-     * 
+     *
      * @param gc
      *            Graphics context.
      */
@@ -1260,7 +1252,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Draw the X label image on the X label canvas.
-     * 
+     *
      * @param gc
      *            Graphics context.
      */
@@ -1270,7 +1262,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Draw the Y label image on the Y label canvas.
-     * 
+     *
      * @param gc
      *            Graphics context.
      */
@@ -1288,7 +1280,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /**
      * Display the tool tip text for the data on the map when the mouse hovers
      * over the data.
-     * 
+     *
      * @param me
      *            Mouse event
      * @param ci
@@ -1324,7 +1316,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Action Handler for mouse mouse click in Y Label canvas
-     * 
+     *
      * @param me
      *            Mouse Event
      */
@@ -1345,7 +1337,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Handle the mouse event on the X header canvas.
-     * 
+     *
      * @param me
      *            Mouse event.
      */
@@ -1357,7 +1349,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Handle the mouse event on the Utilization header canvas.
-     * 
+     *
      * @param me
      *            Mouse Event
      */
@@ -1370,7 +1362,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Scroll wheel event handler.
-     * 
+     *
      * @param me
      *            The mouse event
      */
@@ -1526,7 +1518,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Select/Deselect all event handler.
-     * 
+     *
      * @param selectAll
      *            true to select all
      */
@@ -1546,7 +1538,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      * Event handler for view subscription menu
      */
     private void handleViewSubscriptions() {
-        List<String> viewList = new ArrayList<String>();
+        List<String> viewList = new ArrayList<>();
         Map<Rectangle, String> checkBoxMap = imageMgr.getCheckBoxMap();
         for (Rectangle checkBox : checkBoxMap.keySet()) {
             String name = checkBoxMap.get(checkBox);
@@ -1571,7 +1563,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Event handler for the sort calls.
-     * 
+     *
      * @param sortBy
      *            sort scheme
      */
@@ -1589,7 +1581,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Redraw the image.
-     * 
+     *
      * @param ci
      *            The image to redraw
      */
@@ -1602,7 +1594,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
     /**
      * Set the graph data, recalculate the graph sizes to compensate for any
      * subscription additions or deletions, and redraw the images.
-     * 
+     *
      * @param graphData
      *            Bandwidth graph data.
      */
@@ -1622,7 +1614,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Set the color by priority flag.
-     * 
+     *
      * @param colorByPriority
      *            true to color by priority
      */
@@ -1634,7 +1626,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Set the show subscription lines flag.
-     * 
+     *
      * @param showSubLines
      *            True to show the subscription lines
      */
@@ -1696,7 +1688,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * This will update the graph as the data has been updated.
-     * 
+     *
      * This method runs asynchronously.
      */
     public synchronized void dataUpdated() {
@@ -1724,7 +1716,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Set the network for display.
-     * 
+     *
      * @param network
      *            The network to display
      */
@@ -1742,26 +1734,26 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Set the bandwidth used threshold values.
-     * 
+     *
      * @param thresholdValues
      *            The threshold values
      */
     public void setBandwidthThresholdValues(int[] thresholdValues) {
-        imageMgr.setBandwidthThreholdValues(thresholdValues);
+        imageMgr.setBandwidthThresholdValues(thresholdValues);
     }
 
     /**
      * Get the bandwidth used threshold values.
-     * 
+     *
      * @return thresholdValues The threshold values
      */
     public int[] getBandwidthThresholdValues() {
-        return imageMgr.getBandwidthThreholdValues();
+        return imageMgr.getBandwidthThresholdValues();
     }
 
     /**
      * Get the bandwidth threshold colors.
-     * 
+     *
      * @return Threshold colors
      */
     public Map<GraphSection, RGB> getBandwidthThresholdColors() {
@@ -1825,12 +1817,12 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
             // y Label Canvas
             settings = this.getCanvasSettings(CanvasImages.Y_LABEL);
-            settings.updateCanvas(yLabelWidth, graphCanvasHeight, graphSize.x,
+            settings.updateCanvas(Y_LABEL_WIDTH, graphCanvasHeight, graphSize.x,
                     graphSize.y);
 
-            ((GridData) yLabelCanvas.getLayoutData()).widthHint = yLabelWidth;
+            ((GridData) yLabelCanvas.getLayoutData()).widthHint = Y_LABEL_WIDTH;
             ((GridData) yLabelCanvas.getLayoutData()).heightHint = graphCanvasHeight;
-            yLabelCanvas.setSize(yLabelWidth, xHeaderHeight);
+            yLabelCanvas.setSize(Y_LABEL_WIDTH, xHeaderHeight);
 
             imageMgr.setCanvasSetting(CanvasImages.Y_LABEL, settings);
 
@@ -1855,24 +1847,24 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
             // Utilization header
             settings = this.getCanvasSettings(CanvasImages.UTILIZATION_HEADER);
-            settings.updateCanvas(graphCanvasWidth, utilizationHeaderHeight,
-                    graphCanvasWidth, utilizationHeaderHeight);
+            settings.updateCanvas(graphCanvasWidth, UTILIZATION_HEADER_HEIGHT,
+                    graphCanvasWidth, UTILIZATION_HEADER_HEIGHT);
 
             ((GridData) utilizationHeaderCanvas.getLayoutData()).widthHint = graphCanvasWidth;
-            ((GridData) utilizationHeaderCanvas.getLayoutData()).heightHint = utilizationHeaderHeight;
+            ((GridData) utilizationHeaderCanvas.getLayoutData()).heightHint = UTILIZATION_HEADER_HEIGHT;
             utilizationHeaderCanvas
                     .setSize(graphCanvasWidth, graphCanvasHeight);
             imageMgr.setCanvasSetting(CanvasImages.UTILIZATION_HEADER, settings);
 
             // Utilization Graph
             settings = this.getCanvasSettings(CanvasImages.UTILIZATION_GRAPH);
-            settings.updateCanvas(graphCanvasWidth, utilizationGraphHeight,
-                    graphSize.x, utilizationGraphHeight);
+            settings.updateCanvas(graphCanvasWidth, UTILIZATION_GRAPH_HEIGHT,
+                    graphSize.x, UTILIZATION_GRAPH_HEIGHT);
 
             ((GridData) utilizationGraphCanvas.getLayoutData()).widthHint = graphCanvasWidth;
-            ((GridData) utilizationGraphCanvas.getLayoutData()).heightHint = utilizationGraphHeight;
+            ((GridData) utilizationGraphCanvas.getLayoutData()).heightHint = UTILIZATION_GRAPH_HEIGHT;
             utilizationGraphCanvas.setSize(graphCanvasWidth,
-                    utilizationGraphHeight);
+                    UTILIZATION_GRAPH_HEIGHT);
             imageMgr.setCanvasSetting(CanvasImages.UTILIZATION_GRAPH, settings);
 
             imageMgr.updateImageMap(canvasSettingsMap);
@@ -1881,10 +1873,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Get the canvas width.
-     * 
+     *
      * @param image
      *            the image
-     * 
+     *
      * @return the canvas' width
      */
     private int getCanvasWidth(CanvasImages image) {
@@ -1893,10 +1885,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Get the canvas height.
-     * 
+     *
      * @param image
      *            the image
-     * 
+     *
      * @return the canvas' height
      */
     private int getCanvasHeight(CanvasImages image) {
@@ -1905,10 +1897,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
     /**
      * Get the canvas settings.
-     * 
+     *
      * @param image
      *            The CanvasImage
-     * 
+     *
      * @return the CanvasSettings object for the image
      */
     private CanvasSettings getCanvasSettings(CanvasImages image) {
