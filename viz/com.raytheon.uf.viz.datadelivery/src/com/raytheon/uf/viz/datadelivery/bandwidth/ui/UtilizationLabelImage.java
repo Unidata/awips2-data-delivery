@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,26 +26,26 @@ import org.eclipse.swt.widgets.Composite;
 
 /**
  * Utilization graph label image.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 20, 2013   2430         mpduff     Initial creation
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------
+ * Sep 20, 2013  2430     mpduff    Initial creation
+ * May 03, 2017  6248     nabowle   Fix spelling of threshold.
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class UtilizationLabelImage extends AbstractCanvasImage {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param cs
@@ -60,25 +60,12 @@ public class UtilizationLabelImage extends AbstractCanvasImage {
         this.imageMgr = imageMgr;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.bandwidth.ui.AbstractCanvasImage#
-     * disposeResources()
-     */
     @Override
     public void disposeResources() {
         // No-op
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.bandwidth.ui.AbstractCanvasImage#drawImage
-     * ()
-     */
     @Override
     public void drawImage() {
         GC gc = new GC(image);
@@ -90,7 +77,7 @@ public class UtilizationLabelImage extends AbstractCanvasImage {
 
         // Get the scale labels/ These are double so the division is floating
         // point division
-        int[] threshValues = imageMgr.getBandwidthThreholdValues();
+        int[] threshValues = imageMgr.getBandwidthThresholdValues();
         double lowerValue = threshValues[0];
         double upperValue = threshValues[1];
 
@@ -147,7 +134,7 @@ public class UtilizationLabelImage extends AbstractCanvasImage {
      * @return the lowerValue
      */
     public int getLowerValue() {
-        return imageMgr.getBandwidthThreholdValues()[0];
+        return imageMgr.getBandwidthThresholdValues()[0];
     }
 
     /**
@@ -155,14 +142,14 @@ public class UtilizationLabelImage extends AbstractCanvasImage {
      *            the lowerValue to set
      */
     public void setLowerValue(int lowerValue) {
-        this.imageMgr.getBandwidthThreholdValues()[0] = lowerValue;
+        this.imageMgr.getBandwidthThresholdValues()[0] = lowerValue;
     }
 
     /**
      * @return the upperValue
      */
     public int getUpperValue() {
-        return imageMgr.getBandwidthThreholdValues()[1];
+        return imageMgr.getBandwidthThresholdValues()[1];
     }
 
     /**
@@ -170,6 +157,6 @@ public class UtilizationLabelImage extends AbstractCanvasImage {
      *            the upperValue to set
      */
     public void setUpperValue(int upperValue) {
-        this.imageMgr.getBandwidthThreholdValues()[1] = upperValue;
+        this.imageMgr.getBandwidthThresholdValues()[1] = upperValue;
     }
 }

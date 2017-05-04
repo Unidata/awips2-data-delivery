@@ -22,7 +22,6 @@ package com.raytheon.uf.viz.datadelivery.bandwidth.ui;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.swt.graphics.Image;
@@ -38,29 +37,34 @@ import com.raytheon.uf.viz.core.RGBColors;
 
 /**
  * Bandwidth utilization graph image manager.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 28, 2012   1269     lvenable    Initial creation
- * Dec 13, 2012   1269     lvenable    Fixes and updates.
- * Jan 25, 2013   1528     djohnson    Subscription priority is now an enum on subscriptions.
- * Jan 28, 2013   1529     djohnson    Add hasSubscriptionNameChecked().
- * Oct 28, 2013   2430     mpduff      Add % of bandwidth utilized graph.
- * Nov 19, 2013   1531     mpduff      Update the settings.
- * Dec 17, 2013   2633     mpduff      Keep data used to regenerate images.
- * Sep 22, 2014   3607     ccody       Prevent NullPointerException on image regeneration for populateCanvasMap
- * Oct 28, 2014   2748     ccody       Remove Live update. Updates are event driven.
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 28, 2012  1269     lvenable  Initial creation
+ * Dec 13, 2012  1269     lvenable  Fixes and updates.
+ * Jan 25, 2013  1528     djohnson  Subscription priority is now an enum on
+ *                                  subscriptions.
+ * Jan 28, 2013  1529     djohnson  Add hasSubscriptionNameChecked().
+ * Oct 28, 2013  2430     mpduff    Add % of bandwidth utilized graph.
+ * Nov 19, 2013  1531     mpduff    Update the settings.
+ * Dec 17, 2013  2633     mpduff    Keep data used to regenerate images.
+ * Sep 22, 2014  3607     ccody     Prevent NullPointerException on image
+ *                                  regeneration for populateCanvasMap
+ * Oct 28, 2014  2748     ccody     Remove Live update. Updates are event
+ *                                  driven.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * May 02, 2017  6248     nabowle   Reuse AbstractCanvasImage objects when
+ *                                  updating the image map. Fix threshold
+ *                                  spelling.
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
-
 public class BandwidthImageMgr {
     /**
      * Image type enumeration.
@@ -106,10 +110,10 @@ public class BandwidthImageMgr {
     private Map<CanvasImages, AbstractCanvasImage> canvasImgMap;
 
     /** Map of Subscription name -> check box flag */
-    private Map<String, Boolean> checkMap = new HashMap<String, Boolean>();
+    private Map<String, Boolean> checkMap = new HashMap<>();
 
     /** Map of Rectangle object -> Subscription name */
-    private Map<Rectangle, String> checkBoxMap = new HashMap<Rectangle, String>();
+    private Map<Rectangle, String> checkBoxMap = new HashMap<>();
 
     /** Color by priority flag */
     private boolean colorByPriority = true;
@@ -130,8 +134,8 @@ public class BandwidthImageMgr {
     private Map<SubscriptionPriority, RGB> priorityColorMap;
 
     /** Map of percentage to colors. This holds the colors changed by the user. */
-    private Map<GraphSection, RGB> percentageColorMap = new LinkedHashMap<GraphSection, RGB>(
-            3);
+    private Map<GraphSection, RGB> percentageColorMap = new EnumMap<>(
+            GraphSection.class);
 
     /** The bandwidth graph type */
     private GraphType bandwidthGraphType = GraphType.LINE;
@@ -139,7 +143,7 @@ public class BandwidthImageMgr {
     /** The network currently displayed in the graph */
     private Network network = Network.OPSNET;
 
-    private int[] bandwidthThreholdValues = new int[] { 33, 66 };
+    private int[] bandwidthThresholdValues = new int[] { 33, 66 };
 
     private final Composite parentComp;
 
@@ -147,7 +151,7 @@ public class BandwidthImageMgr {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param canvasSettingsMap
@@ -168,14 +172,14 @@ public class BandwidthImageMgr {
 
     /**
      * Initialize components.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param graphData
      *            Graph Data
      */
     private void init(Map<CanvasImages, CanvasSettings> canvasSettingsMap) {
-        priorityColorMap = new EnumMap<SubscriptionPriority, RGB>(
+        priorityColorMap = new EnumMap<>(
                 SubscriptionPriority.class);
         priorityColorMap.put(SubscriptionPriority.LOW, new RGB(6, 122, 255));
         priorityColorMap.put(SubscriptionPriority.NORMAL, new RGB(0, 255, 0));
@@ -186,13 +190,13 @@ public class BandwidthImageMgr {
                 RGBColors.getRGBColor("yellow"));
         percentageColorMap.put(GraphSection.UPPER, new RGB(255, 0, 0));
 
-        canvasImgMap = new HashMap<BandwidthImageMgr.CanvasImages, AbstractCanvasImage>();
+        canvasImgMap = new EnumMap<>(CanvasImages.class);
         populateCanvasMap(parentComp, graphData, canvasSettingsMap);
     }
 
     /**
      * Populate the canvas map.
-     * 
+     *
      * @param parentComp
      *            Parent composite
      * @param graphData
@@ -258,7 +262,7 @@ public class BandwidthImageMgr {
 
     /**
      * Generate the graph images.
-     * 
+     *
      * @param graphData
      *            The graph data object
      */
@@ -271,7 +275,7 @@ public class BandwidthImageMgr {
 
     /**
      * Update the canvas settings for the specified canvas.
-     * 
+     *
      * @param ci
      *            Canvas image.
      * @param cs
@@ -283,7 +287,7 @@ public class BandwidthImageMgr {
 
     /**
      * Regenerate the images.
-     * 
+     *
      * @param ci
      *            CanvasImage to regenerate
      */
@@ -293,7 +297,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the image.
-     * 
+     *
      * @param ci
      *            The CanvasImages image to get
      * @return The image
@@ -304,11 +308,11 @@ public class BandwidthImageMgr {
 
     /**
      * Get all images.
-     * 
+     *
      * @return Map of CanvasImages -> image
      */
     public Map<CanvasImages, Image> getAllImages() {
-        Map<CanvasImages, Image> imgMap = new HashMap<BandwidthImageMgr.CanvasImages, Image>();
+        Map<CanvasImages, Image> imgMap = new EnumMap<>(CanvasImages.class);
 
         for (CanvasImages ci : CanvasImages.values()) {
             imgMap.put(ci, canvasImgMap.get(ci).getImage());
@@ -319,7 +323,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the display text for mouseovers
-     * 
+     *
      * @param mouseCoord
      *            Coordinate of the mouse
      * @param ci
@@ -332,7 +336,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the subscription names.
-     * 
+     *
      * @return Collection of subscription names
      */
     public Collection<String> getSubscriptionNames() {
@@ -342,7 +346,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the checked subscription map.
-     * 
+     *
      * @param checkMap
      *            The checkMap
      */
@@ -352,7 +356,7 @@ public class BandwidthImageMgr {
 
     /**
      * Is the subscription checked?
-     * 
+     *
      * @param name
      *            Subscription name
      * @return true if checked
@@ -367,7 +371,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the subscription name to check.
-     * 
+     *
      * @param name
      *            Subscription name.
      * @param checked
@@ -379,7 +383,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the check box map.
-     * 
+     *
      * @param checkBoxMap
      *            the checkBoxMap to set
      */
@@ -396,7 +400,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the color by priority flag.
-     * 
+     *
      * @return true if coloring by priority
      */
     public boolean isColorByPriority() {
@@ -405,7 +409,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the color by priority flag.
-     * 
+     *
      * @param colorByPriority
      */
     public void setColorByPriority(boolean colorByPriority) {
@@ -414,7 +418,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the show subscription lines flag.
-     * 
+     *
      * @param showSubLines
      */
     public void setShowSubscriptionLines(boolean showSubLines) {
@@ -423,7 +427,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the show subscription lines flag.
-     * 
+     *
      * @return true if subscription lines should be drawn
      */
     public boolean isShowSubscriptionLines() {
@@ -432,7 +436,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the sort method.
-     * 
+     *
      * @param sortBy
      *            The method to sort by
      */
@@ -442,7 +446,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the sort method.
-     * 
+     *
      * @return The sort method
      */
     public SortBy getSortBy() {
@@ -451,7 +455,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the current time in millis
-     * 
+     *
      * @return the current time
      */
     public long getCurrentTimeMillis() {
@@ -483,10 +487,10 @@ public class BandwidthImageMgr {
 
     /**
      * Is there a selection for the canvas?
-     * 
+     *
      * @param ci
      *            Canvas to check for selection
-     * 
+     *
      * @return true if there is a selection
      */
     public boolean hasSelection(CanvasImages ci) {
@@ -495,7 +499,7 @@ public class BandwidthImageMgr {
 
     /**
      * Clear the canvas selection.
-     * 
+     *
      * @param ci
      *            The canvas to clear
      */
@@ -505,7 +509,7 @@ public class BandwidthImageMgr {
 
     /**
      * Perform an action on the specified image with the provided mouse point.
-     * 
+     *
      * @param ci
      *            Canvas image to perform the action on.
      * @param mousePoint
@@ -517,7 +521,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the RGB color associated with the specified priority.
-     * 
+     *
      * @param priority
      *            Priority.
      * @return RGB color.
@@ -528,7 +532,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the color associated with the specified priority.
-     * 
+     *
      * @param priority
      *            Priority.
      * @param rgb
@@ -545,7 +549,7 @@ public class BandwidthImageMgr {
 
     /**
      * Check whether there is a checked subscription name.
-     * 
+     *
      * @return true if at least one subscription name is checked
      */
     public boolean hasSubscriptionNameChecked() {
@@ -569,7 +573,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the RGB color associated with the specified percentage.
-     * 
+     *
      * @param percentString
      *            The percent string
      * @return RGB color.
@@ -580,10 +584,10 @@ public class BandwidthImageMgr {
 
     /**
      * Set the color associated with the specified percentage.
-     * 
+     *
      * @param section
      *            The GraphSection
-     * 
+     *
      * @param rgb
      *            RGB color.
      */
@@ -593,7 +597,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the bandwidth used graph type.
-     * 
+     *
      * @param type
      *            The graph type
      */
@@ -603,7 +607,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the bandwidth graph type.
-     * 
+     *
      * @return The Bandwidth graph type
      */
     public GraphType getBandwidthGraphType() {
@@ -612,7 +616,7 @@ public class BandwidthImageMgr {
 
     /**
      * Set the network.
-     * 
+     *
      * @param network
      *            The network
      */
@@ -622,7 +626,7 @@ public class BandwidthImageMgr {
 
     /**
      * Get the network.
-     * 
+     *
      * @return The network
      */
     public Network getNetwork() {
@@ -630,61 +634,31 @@ public class BandwidthImageMgr {
     }
 
     /**
-     * @return the bandwidthThreholdValues
+     * @return the bandwidthThresholdValues
      */
-    public int[] getBandwidthThreholdValues() {
-        return bandwidthThreholdValues;
+    public int[] getBandwidthThresholdValues() {
+        return bandwidthThresholdValues;
     }
 
     /**
-     * @param bandwidthThreholdValues
-     *            the bandwidthThreholdValues to set
+     * @param bandwidthThresholdValues
+     *            the bandwidthThresholdValues to set
      */
-    public void setBandwidthThreholdValues(int[] bandwidthThreholdValues) {
-        this.bandwidthThreholdValues = bandwidthThreholdValues;
+    public void setBandwidthThresholdValues(int[] bandwidthThresholdValues) {
+        this.bandwidthThresholdValues = bandwidthThresholdValues;
     }
 
     /**
      * Update the image map with new settings.
-     * 
+     *
      * @param canvasSettingsMap
      */
     public void updateImageMap(
             Map<CanvasImages, CanvasSettings> canvasSettingsMap) {
-        // Graph image
-        CanvasSettings cs = canvasSettingsMap.get(CanvasImages.GRAPH);
-        AbstractCanvasImage aci = new GraphImage(parentComp, cs, graphData,
-                this);
-        canvasImgMap.get(CanvasImages.GRAPH).disposeImage();
-        canvasImgMap.put(CanvasImages.GRAPH, aci);
-
-        // X label image
-        cs = canvasSettingsMap.get(CanvasImages.X_LABEL);
-        aci = new XLabelImage(parentComp, cs, graphData);
-        canvasImgMap.get(CanvasImages.X_LABEL).disposeImage();
-        canvasImgMap.put(CanvasImages.X_LABEL, aci);
-
-        // Y label image
-        cs = canvasSettingsMap.get(CanvasImages.Y_LABEL);
-        aci = new YLabelImage(parentComp, cs, graphData, this);
-        canvasImgMap.get(CanvasImages.Y_LABEL).disposeImage();
-        canvasImgMap.put(CanvasImages.Y_LABEL, aci);
-
-        // X header image
-        cs = canvasSettingsMap.get(CanvasImages.X_HEADER);
-        aci = new XHeaderImage(parentComp, cs, graphData, this);
-        canvasImgMap.get(CanvasImages.X_HEADER).disposeImage();
-        canvasImgMap.put(CanvasImages.X_HEADER, aci);
-
-        // Y header image
-        cs = canvasSettingsMap.get(CanvasImages.Y_HEADER);
-        aci = new YHeaderImage(parentComp, cs, graphData);
-        canvasImgMap.get(CanvasImages.Y_HEADER).disposeImage();
-        canvasImgMap.put(CanvasImages.Y_HEADER, aci);
-
         // Regenerate all of the images
         for (CanvasImages ci : CanvasImages.values()) {
-            canvasImgMap.get(ci).regenerateImage();
+            canvasImgMap.get(ci).regenerateImage(this.graphData,
+                    canvasSettingsMap.get(ci));
         }
     }
 }

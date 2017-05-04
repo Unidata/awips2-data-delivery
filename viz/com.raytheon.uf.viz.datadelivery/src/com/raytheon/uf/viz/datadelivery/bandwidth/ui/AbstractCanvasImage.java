@@ -36,26 +36,27 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Canvas image class.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 28, 2012    1269    lvenable    Initial creation.
  * Dec 13, 2012    1269    lvenable    Fixes and updates.
  * Nov 25, 2013    2545    mpduff      Data sorted by network.
- * 
+ * May 03, 2017    6248    nabowle     Add {@link
+ *                                     #regenerateImage(BandwidthGraphData,
+ *                                     CanvasSettings)}
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
-
 public abstract class AbstractCanvasImage {
     /** No display value string */
-    public final String NO_DISPLAY_STRING = "No Display Value";
+    public static final String NO_DISPLAY_STRING = "No Display Value";
 
     /** The canvas settings */
     protected CanvasSettings cs;
@@ -79,7 +80,7 @@ public abstract class AbstractCanvasImage {
     protected long millisPerPix = 0;
 
     /** Milliseconds in 48 hours */
-    protected final long millis48Hrs = TimeUtil.MILLIS_PER_HOUR * 48;
+    protected static final long millis48Hrs = TimeUtil.MILLIS_PER_HOUR * 48;
 
     /** The GMT Time Zone */
     protected final TimeZone timeZone = TimeZone.getTimeZone("GMT");
@@ -89,7 +90,7 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentComp
      *            The parent composite
      * @param cs
@@ -124,7 +125,7 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Set the canvas settings.
-     * 
+     *
      * @param cs
      *            Canvas setting.
      */
@@ -143,7 +144,7 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Regenerate the images with the new data.
-     * 
+     *
      * @param graphData
      *            New graph data object
      */
@@ -153,8 +154,24 @@ public abstract class AbstractCanvasImage {
     }
 
     /**
+     * Regenerate the images with the new data and canvas settings.
+     *
+     * @param graphData
+     *            New graph data object
+     * @param canvasSettings
+     *            The new canvas settings.
+     */
+    public void regenerateImage(BandwidthGraphData graphData,
+            CanvasSettings canvasSettings) {
+        if (canvasSettings != null) {
+            this.cs = canvasSettings;
+        }
+        regenerateImage(graphData);
+    }
+
+    /**
      * Get the canvas settings.
-     * 
+     *
      * @return The canvas settings
      */
     public CanvasSettings getCanvasSettings() {
@@ -163,7 +180,7 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Get the image.
-     * 
+     *
      * @return The image
      */
     public Image getImage() {
@@ -172,10 +189,10 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Get the tool tip string for this coordinate.
-     * 
+     *
      * @param mouseCoord
      *            The mouse coordinate
-     * 
+     *
      * @return The display string or null if no tool tip text available
      */
     public String getToolTipText(Point mouseCoord) {
@@ -184,7 +201,7 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Is there a selection in this canvas?
-     * 
+     *
      * @return true if a selection exists
      */
     public boolean hasSelection() {
@@ -193,7 +210,7 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Perform an action when called.
-     * 
+     *
      * @param mousePt
      *            Mouse coordinate where the mouse was clicked.
      */
@@ -203,13 +220,13 @@ public abstract class AbstractCanvasImage {
 
     /**
      * Get the data sorted.
-     * 
+     *
      * @return List of subscription names
      */
     public final List<String> getSortedData() {
 
         if (graphData == null) {
-            return new ArrayList<String>();
+            return new ArrayList<>();
         }
 
         switch (imageMgr.getSortBy()) {
@@ -228,7 +245,7 @@ public abstract class AbstractCanvasImage {
             return graphData.getSubscriptionsSortedByTime(
                     imageMgr.getNetwork(), imageMgr.getSortTimeMillis(), false);
         default:
-            return new ArrayList<String>();
+            return new ArrayList<>();
         }
     }
 
