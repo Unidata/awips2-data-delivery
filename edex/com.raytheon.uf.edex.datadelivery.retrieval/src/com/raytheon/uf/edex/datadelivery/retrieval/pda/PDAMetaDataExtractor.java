@@ -1,64 +1,187 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.pda;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
+package com.raytheon.uf.edex.datadelivery.retrieval.pda;
+
+import java.text.ParseException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 
 import com.raytheon.uf.common.datadelivery.registry.Connection;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
-import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.MetaDataPattern;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
+import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParseException;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAMetaDataUtil;
+
+import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
+import net.opengis.ows.v_1_0_0.BoundingBoxType;
 
 /**
  * Abstract Class for PDA MetaData extraction
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * July 08, 2014 3120        dhladky     Initial creation
- * Sept 11, 2015 4881        dhladky     Improved debug tracking.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Jul 08, 2014  3120     dhladky   Initial creation
+ * Sep 11, 2015  4881     dhladky   Improved debug tracking.
+ * Mar 31, 2017  6186     rjpeter   Refactored
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
- * @param <D>
  */
+public abstract class PDAMetaDataExtractor
+        extends MetaDataExtractor<BriefRecordType, String> {
+    protected static final String SAT_FORMAT = "SAT_FORMAT";
 
-public abstract class PDAMetaDataExtractor<O, D> extends MetaDataExtractor<O, D> {
-    
-    /** DEBUG PDA system **/
-    private static final String DEBUG = "DEBUG";
-    
-    /** debug state */
-    protected Boolean debug = false;
-    
-    public PDAMetaDataExtractor() {
+    protected static final String END_TIME_FORMAT = "END_TIME_FORMAT";
+
+    protected static final String START_TIME_FORMAT = "START_TIME_FORMAT";
+
+    public static final String PARAM_NAME = "providerParamName";
+
+    public static final String RES_NAME = "providerResName";
+
+    public static final String SAT_NAME = "providerSatName";
+
+    public static final String COLLECTION_NAME = "collectionName";
+
+    public static final String METADATA_ID = "metadataId";
+
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    protected final PDAMetaDataUtil metadataUtil = PDAMetaDataUtil
+            .getInstance();
+
+    protected final MetaDataPattern metaDataPattern;
+
+    protected final String metadataId;
+
+    protected final String title;
+
+    protected final BoundingBoxType boundingBox;
+
+    protected Time time;
+
+    public PDAMetaDataExtractor(MetaDataPattern metaDataPattern,
+            String metadataId, String title, BoundingBoxType boundingBox) {
         super(new Connection());
-        
-        serviceConfig = HarvesterServiceManager.getInstance().getServiceConfig(
-                ServiceType.PDA);
-        // debugging MetaData parsing.
-        String debugVal = serviceConfig.getConstantValue(DEBUG);
-        debug = Boolean.valueOf(debugVal);
+        this.metaDataPattern = metaDataPattern;
+        this.metadataId = metadataId;
+        this.title = title;
+        this.boundingBox = boundingBox;
     }
 
+    /**
+     * Whether the extractor can be utilized to parse the provided metadata.
+     *
+     * @return
+     */
+    public abstract boolean accept();
+
+    /**
+     * Return the coverage generated by the passed metadata.
+     *
+     * @return
+     * @throws MetaDataParseException
+     */
+    public abstract Coverage getCoverage() throws MetaDataParseException;
+
+    @Override
+    public void setDataDate() throws Exception {
+        // No implementation in PDA extractor
+    }
+
+    protected void validateParamData(String param, String res, String sat,
+            String startTime, String endTime) throws MetaDataParseException {
+        if (param == null || "".equals(param)) {
+            throw new MetaDataParseException("No parameter information found");
+        } else {
+            logger.info("param: " + param);
+        }
+
+        if (res == null || "".equals(res)) {
+            throw new MetaDataParseException("No resolution information found");
+        } else {
+            logger.info("resolution: " + res);
+        }
+
+        if (sat == null || "".equals(sat)) {
+            throw new MetaDataParseException("No satellite information found");
+        } else {
+            logger.info("satellite: " + sat);
+        }
+
+        if (startTime == null || "".equals(startTime)) {
+            throw new MetaDataParseException("No start time information found");
+        } else {
+            logger.info("start time: " + startTime);
+        }
+
+        if (endTime == null || "".equals(endTime)) {
+            throw new MetaDataParseException("No end time information found");
+        } else {
+            logger.info("end time: " + endTime);
+        }
+
+        // validate that startTime/endTime match the excepted date format
+        time = new Time();
+        String dateFormat = metaDataPattern.getDateFormat();
+        time.setFormat(dateFormat);
+
+        try {
+            time.setStartDate(startTime);
+            time.setEndDate(endTime);
+        } catch (ParseException e) {
+            throw new MetaDataParseException(
+                    "Couldn't parse start [" + startTime + "] / end [" + endTime
+                            + "] time from format [" + dateFormat + "]");
+        }
+    }
+
+    public Time getTime() {
+        return time;
+    }
 }

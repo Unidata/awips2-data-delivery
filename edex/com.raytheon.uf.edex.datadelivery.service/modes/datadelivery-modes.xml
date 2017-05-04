@@ -41,22 +41,18 @@
         <include>datadelivery-wfo-cron.xml</include>
         <include>bandwidth-datadelivery-.*-wfo.xml</include>
         <exclude>.*datadelivery.*-ncf.*</exclude>
-        <exclude>.*datadelivery.*-monolithic.*</exclude>
-        <exclude>harvester-*</exclude>
-        <exclude>crawler-*</exclude>
+        <exclude>harvester-.*</exclude>
+        <exclude>crawler-.*</exclude>
 	</mode>
     <mode name="centralRegistry">
         <!-- Central Registry production mode -->
         <includeMode>dataDeliveryTemplate</includeMode>
         <include>bandwidth-datadelivery-.*-ncf.xml</include>
         <exclude>.*datadelivery.*-wfo.*</exclude>
-        <exclude>.*datadelivery.*-monolithic.*</exclude>
     </mode>
     <mode name="dataDeliveryTemplate" template="true">
         <include>.*datadelivery.*</include>
         <include>.*bandwidth.*</include>
-        <!-- Exclude the inmemory versions of Spring files -->
-        <exclude>.*bandwidth.*-inmemory.*.xml</exclude>
         <!-- Exclude DPA -->
         <exclude>dpa-datadelivery.xml</exclude>
         <!-- sat plugins -->
@@ -77,22 +73,8 @@
         <!--  General Data plugin requirements for DD -->
         <include>persist-ingest.xml</include>
     </mode>
-    <mode name="inMemoryBandwidthManager">
-        <!-- This is not an edex runtime mode -->
-        <include>bandwidth-datadelivery-inmemory-impl.xml</include>
-        <include>bandwidth-datadelivery.xml</include>
-        <include>bandwidth-datadelivery-wfo.xml</include>
-    </mode>
 	<!-- modes listed below are not supported in a production setting, they 
 		are for DEVELOPMENT purposes only -->
-    <mode name="devRegistry">
-        <includeMode>dataDeliveryTemplate</includeMode>
-        <includeMode>ebxmlRegistry</includeMode>
-        <include>datadelivery-wfo-cron.xml</include>
-        <include>bandwidth-datadelivery-edex-impl-monolithic.xml</include>
-        <include>bandwidth-datadelivery-wfo.xml</include>
-        <exclude>.*datadelivery.*-ncf.*</exclude>
-    </mode>
     <mode name="sbnSimulator">
         <include>.*sbn-simulator-wfo.*</include>
         <include>event-common.xml</include>

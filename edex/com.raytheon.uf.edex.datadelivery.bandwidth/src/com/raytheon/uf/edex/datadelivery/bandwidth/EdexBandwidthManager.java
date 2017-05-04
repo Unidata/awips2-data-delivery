@@ -35,8 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.referencing.operation.TransformException;
 import org.springframework.util.CollectionUtils;
 
 import com.google.common.collect.Lists;
@@ -59,14 +57,12 @@ import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
-import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.event.EventBus;
-import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.ebxml.encoder.RegistryEncoders;
 import com.raytheon.uf.common.registry.ebxml.encoder.RegistryEncoders.Type;
@@ -174,6 +170,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  startup scheduling async now.
  * Aug 09, 2016  5771     rjpeter   Allow concurrent event processing
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
+ * May 04, 2017  6186     rjpeter   Moved intersection logic to DataSetMetaData
  *
  * </pre>
  *
@@ -796,12 +793,24 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
          * an active retrieval will be processed.
          */
         try {
-            List<Subscription> subscriptions = subscriptionHandler
-                    .getActiveByDataSetAndProvider(
-                            dataSetMetaData.getDataSetName(),
-                            dataSetMetaData.getProviderName());
+            List<? extends Subscription> subscriptions = null;
 
-            if (subscriptions.isEmpty()) {
+            // check to see if this site is the NCF
+            if (RegistryIdUtil.getId().equals(RegistryUtil.defaultUser)) {
+                subscriptions = subscriptionHandler
+                        .getSharedSubscriptionHandler()
+                        .getActiveByDataSetAndProvider(
+                                dataSetMetaData.getDataSetName(),
+                                dataSetMetaData.getProviderName());
+            } else {
+                subscriptions = subscriptionHandler.getSiteSubscriptionHandler()
+                        .getActiveByDataSetAndProviderForSite(
+                                dataSetMetaData.getDataSetName(),
+                                dataSetMetaData.getProviderName(),
+                                RegistryIdUtil.getId());
+            }
+
+            if (CollectionUtil.isNullOrEmpty(subscriptions)) {
                 return;
             }
 
@@ -812,96 +821,34 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
             // Create an adhoc for each one, and schedule it
             for (Subscription<T, C> subscription : subscriptions) {
-
-                /*
-                 * If the dataSetMetaData instance has a coverage, this is a
-                 * moving dataset. Compare this coverage to the requested area
-                 * in the subscription to determine if we should attempt a
-                 * retrieval.
-                 */
-                Coverage instanceCoverage = dataSetMetaData
-                        .getInstanceCoverage();
-                if (instanceCoverage != null) {
-                    ReferencedEnvelope intersection;
-                    try {
-                        intersection = MapUtil.reprojectAndIntersect(
-                                subscription.getCoverage().getRequestEnvelope(),
-                                instanceCoverage.getEnvelope());
-
-                        if (intersection.isNull() || intersection.isEmpty()) {
-                            /*
-                             * Skip this subscription since this metadata does
-                             * not overlap with the requested area.
-                             */
-                            statusHandler.info("Skipping subscription '"
-                                    + subscription.getName() + "' for "
-                                    + dataSetMetaData.getUrl()
-                                    + " due to the requested coverage not intersecting "
-                                    + "with the coverage of this instance.");
-
-                            continue;
-                        }
-                    } catch (TransformException e) {
-                        statusHandler
-                                .error("Error checking moving intersection for subscription '"
-                                        + subscription.getName() + "' for "
-                                        + dataSetMetaData.getUrl()
-                                        + ". Skipping retrieval.", e);
+                try {
+                    String skipReason = dataSetMetaData
+                            .satisfiesSubscription(subscription);
+                    if (skipReason != null) {
+                        statusHandler.info("Skipping subscription ["
+                                + subscription.getName() + "] for ["
+                                + dataSetMetaData.getUrl() + "]:" + skipReason);
                         continue;
                     }
+                } catch (Exception e) {
+                    statusHandler.error("Error checking if dataset metadata ["
+                            + dataSetMetaData.getUrl()
+                            + "] satisfies subscription ["
+                            + subscription.getName()
+                            + "], skipping subscription", e);
+                    continue;
                 }
 
-                /*
-                 * Both of these are handled identically, the only difference is
-                 * logging.
-                 */
+                Subscription<T, C> sub = BandwidthUtil
+                        .updateSubscriptionWithDataSetMetaData(subscription,
+                                dataSetMetaData);
+                statusHandler
+                        .info("Updating subscription metadata: " + sub.getName()
+                                + " dataSetMetadata: " + sub.getDataSetName()
+                                + " scheduling subscription for retrieval.");
 
-                if (subscription instanceof SiteSubscription) {
-                    if (subscription.getOfficeIDs()
-                            .contains(RegistryIdUtil.getId())) {
-
-                        Subscription<T, C> sub = BandwidthUtil
-                                .updateSubscriptionWithDataSetMetaData(
-                                        subscription, dataSetMetaData);
-                        statusHandler.info("Updating subscription metadata: "
-                                + sub.getName() + " dataSetMetadata: "
-                                + sub.getDataSetName()
-                                + " scheduling SITE subscription for retrieval.");
-
-                        scheduleAdhoc(new AdhocSubscription<>(
-                                (SiteSubscription<T, C>) sub));
-                    } else {
-                        /*
-                         * Fall through! Doesn't belong to this site, so we
-                         * won't retrieve it.
-                         */
-                    }
-
-                } else if (subscription instanceof SharedSubscription) {
-                    // check to see if this site is the NCF
-                    if (RegistryIdUtil.getId()
-                            .equals(RegistryUtil.defaultUser)) {
-
-                        Subscription<T, C> sub = BandwidthUtil
-                                .updateSubscriptionWithDataSetMetaData(
-                                        subscription, dataSetMetaData);
-                        statusHandler.info("Updating subscription metadata: "
-                                + sub.getName() + " dataSetMetadata: "
-                                + sub.getDataSetName()
-                                + " scheduling SHARED subscription for retrieval.");
-                        scheduleAdhoc(new AdhocSubscription<>(
-                                (SharedSubscription<T, C>) sub));
-                    } else {
-                        /*
-                         * Fall through! Doesn't belong to this site, so we
-                         * won't retrieve it.
-                         */
-                    }
-                } else {
-                    throw new IllegalArgumentException(
-                            "Unexpected state: Subscription type other than Shared or Site encountered! "
-                                    + subscription.getName());
-                }
+                scheduleAdhoc(new AdhocSubscription<>(
+                        (RecurringSubscription<T, C>) sub));
             }
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
@@ -918,12 +865,10 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @throws ParseException
      */
     @Subscribe
+    @AllowConcurrentEvents
     public void updatePDADataSetMetaData(PDADataSetMetaData dataSetMetaData)
             throws ParseException {
-
-        if (dataSetMetaData != null) {
-            updateDataSetMetaData(dataSetMetaData);
-        }
+        updateDataSetMetaData(dataSetMetaData);
     }
 
     /**
@@ -935,12 +880,10 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @throws ParseException
      */
     @Subscribe
+    @AllowConcurrentEvents
     public void updateGriddedDataSetMetaData(
             GriddedDataSetMetaData dataSetMetaData) throws ParseException {
-
-        if (dataSetMetaData != null) {
-            updateDataSetMetaData(dataSetMetaData);
-        }
+        updateDataSetMetaData(dataSetMetaData);
     }
 
     /**
@@ -952,6 +895,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @throws ParseException
      */
     @Subscribe
+    @AllowConcurrentEvents
     public void updatePointDataSetMetaData(PointDataSetMetaData dataSetMetaData)
             throws ParseException {
 

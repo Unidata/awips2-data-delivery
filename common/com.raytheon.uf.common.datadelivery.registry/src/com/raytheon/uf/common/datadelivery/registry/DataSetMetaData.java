@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.datadelivery.registry;
 
 import java.util.Comparator;
@@ -8,7 +27,10 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import org.geotools.geometry.jts.ReferencedEnvelope;
+
 import com.google.common.base.Preconditions;
+import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.registry.annotations.RegistryObject;
 import com.raytheon.uf.common.registry.annotations.RegistryObjectDescription;
 import com.raytheon.uf.common.registry.annotations.RegistryObjectName;
@@ -46,11 +68,11 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * Apr 14, 2013  3012     dhladky   Removed unused methods.
  * Jun 09, 2014  3113     mpduff    Version 1.1 - Added arrivalTime.
  * Apr 05, 2017  1045     tjensen   Add information to support moving dataset
+ * May 04, 2017  6186     rjpeter   Added satisfiesSubscription
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso({ GriddedDataSetMetaData.class, OpenDapGriddedDataSetMetaData.class,
@@ -240,6 +262,34 @@ public abstract class DataSetMetaData<T extends Time, C extends Coverage> {
         this.instanceCoverage = instanceCoverage;
     }
 
+    /**
+     * Check if this DataSetMetaData satisfies the passed Subscription. Returns
+     * null if the subscription is satisfied, otherwise the reason the
+     * subscription is not satisfied is returned.
+     *
+     * @param sub
+     * @return
+     */
+    public String satisfiesSubscription(Subscription<T, C> sub)
+            throws Exception {
+        /*
+         * If the dataSetMetaData instance has a coverage, this is a moving
+         * dataset. Compare this coverage to the requested area in the
+         * subscription.
+         */
+        if (instanceCoverage != null) {
+            ReferencedEnvelope intersection = MapUtil.reprojectAndIntersect(
+                    sub.getCoverage().getRequestEnvelope(),
+                    instanceCoverage.getEnvelope());
+
+            if (intersection.isNull() || intersection.isEmpty()) {
+                return "the subscription coverage does not intersect this instance";
+            }
+        }
+
+        return null;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -248,6 +298,7 @@ public abstract class DataSetMetaData<T extends Time, C extends Coverage> {
         return result;
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
