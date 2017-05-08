@@ -3,19 +3,19 @@ package com.raytheon.uf.common.datadelivery.retrieval.xml;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,22 +38,22 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Service Config
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 20 Oct, 2012 1163       dhladky     Initial creation
- * 07 Nov, 2013 2361       njensen     Remove ISerializableObject
- * 06 Apr, 2016 5424       dhladky     Added retrieval modes sync and async
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------
+ * 20 Oct, 2012  1163     dhladky   Initial creation
+ * 07 Nov, 2013  2361     njensen   Remove ISerializableObject
+ * 06 Apr, 2016  5424     dhladky   Added retrieval modes sync and async
+ * Mar 31, 2017  6186     rjpeter   Support incremental override
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
-
 @XmlRootElement(name = "serviceConfig")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
@@ -98,7 +98,7 @@ public class ServiceConfig {
      */
     private void createConstantsMap() {
         if (constants == null) {
-            constants = new HashMap<String, Constant>();
+            constants = new HashMap<>();
             for (Constant con : getConstant()) {
                 constants.put(con.getName(), con);
             }
@@ -111,7 +111,7 @@ public class ServiceConfig {
 
     /**
      * Gets the constant by name
-     * 
+     *
      * @param name
      * @return
      */
@@ -126,7 +126,7 @@ public class ServiceConfig {
 
     /**
      * Gets the constants value
-     * 
+     *
      * @param name
      * @return
      */
@@ -155,7 +155,7 @@ public class ServiceConfig {
 
     /**
      * Gets the constant for this naming schema
-     * 
+     *
      * @param schemaName
      * @return
      */
@@ -165,13 +165,13 @@ public class ServiceConfig {
 
     /**
      * Speed the searching of naming schemas
-     * 
+     *
      * @return
      */
     private Map<String, Constant> getNamingSchemas() {
 
         if (namingSchemas == null) {
-            namingSchemas = new HashMap<String, Constant>();
+            namingSchemas = new HashMap<>();
 
             for (Constant const1 : getConstant()) {
                 if (const1.getName().startsWith(ALTERNATE_NAMING_SCHEMA)) {
@@ -200,4 +200,41 @@ public class ServiceConfig {
         this.name = name;
     }
 
+    /**
+     * Adds other to this definition, preferring other over this.
+     *
+     * @param other
+     */
+    public void combine(ServiceConfig other) {
+        DateConfig odc = other.getDateConfig();
+        if (odc != null) {
+            if (dateConfig != null) {
+                dateConfig.combine(odc);
+            } else {
+                dateConfig = odc;
+            }
+        }
+
+        DataSetConfig odsc = other.getDataSetConfig();
+        if (odsc != null) {
+            if (dataSetConfig != null) {
+                dataSetConfig.combine(odsc);
+            } else {
+                dataSetConfig = odsc;
+            }
+        }
+
+        List<Constant> oc = other.getConstant();
+        if (oc != null) {
+            // force recreation of maps
+            constants = null;
+            namingSchemas = null;
+
+            if (constant != null) {
+                constant.addAll(oc);
+            } else {
+                constant = oc;
+            }
+        }
+    }
 }

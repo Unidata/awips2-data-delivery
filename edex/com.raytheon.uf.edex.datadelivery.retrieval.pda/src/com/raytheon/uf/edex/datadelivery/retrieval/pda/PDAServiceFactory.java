@@ -1,4 +1,5 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -20,9 +21,6 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  **/
 import java.util.Date;
 
-
-import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
-
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -31,6 +29,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
+import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
 
 /**
  * {@link IServiceFactory} implementation for PDA.
@@ -39,71 +38,45 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2014 3120       dhladky     Initial creation
- * Oct 14, 2014 3127       dhladky     Additional types added.
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------
+ * Jun 13, 2014  3120     dhladky   Initial creation
+ * Oct 14, 2014  3127     dhladky   Additional types added.
+ * Mar 31, 2017  6186     rjpeter   Fixed generics.
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  */
-
-public class PDAServiceFactory<O extends Object, D extends Object>
-        implements IServiceFactory<O, D, Time, Coverage> {
+public class PDAServiceFactory
+        implements IServiceFactory<BriefRecordType, String, Time, Coverage> {
 
     private Provider provider;
 
     public PDAServiceFactory() {
     }
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#getExtractor()
-     */
-    @Override
 
-    public IExtractMetaData<O, D> getExtractor() {
+    @Override
+    public IExtractMetaData<BriefRecordType, String> getExtractor() {
         throw new UnsupportedOperationException("No Extractor Implemented");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.datadelivery.retrieval.ServiceFactory#getParser(
-     * java.util.Date)
-     */
-
     @Override
-    public IParseMetaData<O> getParser(Date lastUpdate) {
+    public IParseMetaData<BriefRecordType> getParser(Date lastUpdate) {
         // pda doesn't care about the date
-        return (IParseMetaData<O>) new PDAMetaDataParser<BriefRecordType>();
+        return new PDAMetaDataParser();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-
     public RetrievalGenerator<Time, Coverage> getRetrievalGenerator() {
         return new PDARetrievalGenerator();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void setProvider(Provider provider) {
         this.provider = provider;
     }
-    
-    /**
-     * Get the provider
-     * @return
-     */
+
+    @Override
     public Provider getProvider() {
         return provider;
     }

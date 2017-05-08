@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,6 +17,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -59,9 +58,6 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
 import com.raytheon.uf.common.gridcoverage.Corner;
 import com.raytheon.uf.common.gridcoverage.GridCoverage;
 import com.raytheon.uf.common.gridcoverage.exception.GridCoverageException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
@@ -126,18 +122,15 @@ import opendap.dap.NoSuchAttributeException;
  *                                     naming
  * Mar 08, 2017  6089        tjensen   Drop date format from parseMetadata calls
  * Apr 05, 2017  1045        tjensen   Update for moving datasets
+ * May 04, 2017  6186        rjpeter   Utilize logger.
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  * @param <O>
  */
 
 class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(OpenDAPMetaDataParser.class);
 
     OpenDAPMetaDataParser() {
         serviceConfig = HarvesterServiceManager.getInstance()
@@ -202,9 +195,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             }
 
         } catch (Exception e) {
-            statusHandler.error(" Couldn't parse Level info: "
-                    + levelType.toString() + " dataset: " + collectionName
-                    + " url: " + gdsmd.getUrl(), e);
+            logger.error(" Couldn't parse Level info: " + levelType.toString()
+                    + " dataset: " + collectionName + " url: " + gdsmd.getUrl(),
+                    e);
         }
 
         return levels;
@@ -291,8 +284,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 gdsmd.setTime(time);
 
             } catch (Exception le) {
-                statusHandler.error(" Couldn't parse Time: " + timecon
-                        + " dataset: " + collectionName + " url: " + url, le);
+                logger.error(" Couldn't parse Time: " + timecon + " dataset: "
+                        + collectionName + " url: " + url, le);
             }
         }
         // process latitude
@@ -320,8 +313,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                 .trim(at.getAttribute(minimum).getValueAt(0)));
 
             } catch (Exception le) {
-                statusHandler.error(" Couldn't parse Latitude: " + lat
-                        + " dataset: " + collectionName + " url: " + url, le);
+                logger.error(" Couldn't parse Latitude: " + lat + " dataset: "
+                        + collectionName + " url: " + url, le);
             }
         }
         // process longitude
@@ -349,8 +342,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 lowerRight.x = maxLon;
 
             } catch (Exception le) {
-                statusHandler.error(" Couldn't parse Longitude: " + lon
-                        + " dataset: " + collectionName + " url: " + url, le);
+                logger.error(" Couldn't parse Longitude: " + lon + " dataset: "
+                        + collectionName + " url: " + url, le);
             }
         }
         // process level settings
@@ -368,8 +361,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                 .floatValue();
 
             } catch (Exception le) {
-                statusHandler.error(" Couldn't parse Levels: " + lev
-                        + " dataset: " + collectionName + " url: " + url, le);
+                logger.error(" Couldn't parse Levels: " + lev + " dataset: "
+                        + collectionName + " url: " + url, le);
             }
         }
         // process any other globals
@@ -383,9 +376,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 gdsmd.setDataSetDescription(
                         OpenDAPParseUtility.getInstance().trim(description));
             } catch (Exception ne) {
-                statusHandler.error(" Couldn't parse Global Dataset Info: "
-                        + nc_global + " dataset: " + collectionName + " url: "
-                        + url, ne);
+                logger.error(" Couldn't parse Global Dataset Info: " + nc_global
+                        + " dataset: " + collectionName + " url: " + url, ne);
             }
         }
         // process ensembles
@@ -395,8 +387,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 dataSet.setEnsemble(
                         OpenDAPParseUtility.getInstance().parseEnsemble(at));
             } catch (Exception en) {
-                statusHandler.error(" Couldn't parse Ensemble: " + ens
-                        + " dataset: " + collectionName + " url: " + url, en);
+                logger.error(" Couldn't parse Ensemble: " + ens + " dataset: "
+                        + collectionName + " url: " + url, en);
             }
         }
 
@@ -424,10 +416,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                 .trim(at.getAttribute(long_name).getValueAt(0));
 
                     } catch (Exception iae) {
-                        statusHandler.handle(Priority.PROBLEM,
-                                "Invalid DAP description block! "
-                                        + providerName,
-                                iae);
+                        logger.error("Invalid DAP description block! "
+                                + providerName, iae);
                     }
                     // Clean up description stuff
                     description = description.replaceAll("^[* ]+", "");
@@ -478,10 +468,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                 .trim(at.getAttribute(missing_value)
                                         .getValueAt(0)));
                     } catch (Exception iae) {
-                        statusHandler.handle(Priority.PROBLEM,
-                                "Invalid DAP missing value block! "
-                                        + providerName,
-                                iae);
+                        logger.error("Invalid DAP missing value block! "
+                                + providerName, iae);
                         parm.setMissingValue(fill);
                     }
 
@@ -490,7 +478,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                                 .trim(at.getAttribute(fill_value)
                                         .getValueAt(0)));
                     } catch (Exception iae) {
-                        statusHandler.handle(Priority.PROBLEM,
+                        logger.error(
                                 "Invalid DAP fill value block! " + providerName,
                                 iae);
                         parm.setMissingValue(fill);
@@ -504,9 +492,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                     parameters.put(parm.getName(), parm);
 
                 } catch (Exception le) {
-                    statusHandler.error(" Couldn't parse Parameter: "
-                            + providerName + " dataset: " + collectionName
-                            + " url: " + url, le);
+                    logger.error(" Couldn't parse Parameter: " + providerName
+                            + " dataset: " + collectionName + " url: " + url,
+                            le);
                 }
             }
         }
@@ -519,7 +507,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         try {
             gridCoverage.initialize();
         } catch (GridCoverageException e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
+            logger.error("Error initializing grid coverage ["
+                    + nameAndDescription + "] for dataSet [" + url + "]", e);
         }
 
         griddedCoverage.setGridCoverage(gridCoverage);
@@ -633,7 +622,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
      * @param param
      * @return
      */
-    private static DataLevelType parseLevelType(Parameter param) {
+    private DataLevelType parseLevelType(Parameter param) {
 
         DataLevelType type = null;
         // SEA ICE special case
@@ -657,7 +646,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
         }
 
         if (type == null) {
-            statusHandler.warn("Unable to determine level type for: "
+            logger.warn("Unable to determine level type for: "
                     + param.getDefinition());
             type = new DataLevelType(LevelType.UNKNOWN);
         }
@@ -735,7 +724,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 try {
                     forecastHoursAsInteger.add(Integer.parseInt(forecastHour));
                 } catch (NumberFormatException nfe) {
-                    statusHandler.warn("Unable to parse [" + forecastHour
+                    logger.warn("Unable to parse [" + forecastHour
                             + "] as an integer!");
                 }
             }
@@ -820,13 +809,12 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             dataSet.applyInfoFromConfig(isMoving, parentCov,
                     getSizeEstFromConfig(dsName, providerName));
 
-            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug("Dataset Name: " + dsName);
-                statusHandler.debug("StartTime:    " + gdsmd.getTime());
-                statusHandler.debug(
+            if (logger.isDebugEnabled()) {
+                logger.debug("Dataset Name: " + dsName);
+                logger.debug("StartTime:    " + gdsmd.getTime());
+                logger.debug(
                         "Offset:       " + dataSet.getAvailabilityOffset());
-                statusHandler
-                        .debug("Arrival Time: " + dataSet.getArrivalTime());
+                logger.debug("Arrival Time: " + dataSet.getArrivalTime());
             }
 
             List<DataSetMetaData<?, ?>> toStore = metaDatas.get(dataSet);

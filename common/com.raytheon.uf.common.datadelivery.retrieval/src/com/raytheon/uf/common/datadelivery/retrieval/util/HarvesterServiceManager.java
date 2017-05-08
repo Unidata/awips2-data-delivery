@@ -1,14 +1,37 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.datadelivery.retrieval.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
-import com.raytheon.uf.common.localization.FileUpdatedMessage;
-import com.raytheon.uf.common.localization.ILocalizationFileObserver;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationPathObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
@@ -21,23 +44,24 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Regex manager
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 27, 2012   1163     dhladky     Initial creation
- * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
- * Nov 07, 2013 2361       njensen     Use JAXBManager for XML
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 27, 2012  1163     dhladky   Initial creation
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Nov 07, 2013  2361     njensen   Use JAXBManager for XML
+ * Mar 31, 2017  6186     rjpeter   Allow incremental override for ServiceConfig, fix notification.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
-
-public class HarvesterServiceManager implements ILocalizationFileObserver {
+public class HarvesterServiceManager implements ILocalizationPathObserver {
 
     /** Path to Prefix config. */
     private static final String CONFIG_FILE_NAME_PREFIX = "datadelivery"
@@ -46,15 +70,12 @@ public class HarvesterServiceManager implements ILocalizationFileObserver {
     /** Path to suffix config. */
     private static final String CONFIG_FILE_NAME_SUFFIX = "ServiceConfig.xml";
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(HarvesterServiceManager.class);
-
     private static final SingleTypeJAXBManager<ServiceConfig> jaxb = SingleTypeJAXBManager
             .createWithoutException(ServiceConfig.class);
 
     /**
      * Get an instance of this singleton.
-     * 
+     *
      * @return Instance of this class
      * @throws FileNotFoundException
      */
@@ -62,43 +83,43 @@ public class HarvesterServiceManager implements ILocalizationFileObserver {
         return instance;
     }
 
-    private final Map<ServiceType, ServiceConfig> services = new EnumMap<ServiceType, ServiceConfig>(
-            ServiceType.class);
+    private final Map<ServiceType, ServiceConfig> services = Collections
+            .synchronizedMap(new EnumMap<>(ServiceType.class));
 
     /** Singleton instance of this class */
     private static final HarvesterServiceManager instance = new HarvesterServiceManager();
 
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(HarvesterServiceManager.class);
 
     /* Private Constructor */
     private HarvesterServiceManager() {
+        try {
+            readConfigXml();
+        } catch (Exception e) {
+            statusHandler.handle(Priority.ERROR, "Error reading config files: ",
+                    e);
+        }
 
+        for (ServiceType serviceType : services.keySet()) {
+            PathManagerFactory.getPathManager().addLocalizationPathObserver(
+                    getConfigFileName(serviceType), this);
+        }
+    }
+
+    @Override
+    public void fileChanged(ILocalizationFile file) {
         try {
             readConfigXml();
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR,
-                    "Error reading config files: ", e);
-        }
-
-    }
-
-    @Override
-    public void fileUpdated(FileUpdatedMessage message) {
-
-        for (ServiceType serviceType : services.keySet()) {
-            if (message.getFileName().equals(getConfigFileName(serviceType))) {
-                try {
-                    readConfigXml();
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.ERROR,
-                            "Serialization error reading file: ", e);
-                }
-            }
+                    "Serialization error reading file: ", e);
         }
     }
 
     /**
      * Gets the resultant configFileName
-     * 
+     *
      * @param serviceType
      * @return
      */
@@ -108,17 +129,14 @@ public class HarvesterServiceManager implements ILocalizationFileObserver {
 
     /**
      * Get the Service Configuration
-     * 
+     *
      * @param serviceType
      * @return
      */
     public ServiceConfig getServiceConfig(ServiceType serviceType) {
+        ServiceConfig config = services.get(serviceType);
 
-        ServiceConfig config = null;
-
-        if (services.containsKey(serviceType)) {
-            config = services.get(serviceType);
-        } else {
+        if (config == null) {
             // try and load it
             try {
                 readConfigXml();
@@ -136,70 +154,55 @@ public class HarvesterServiceManager implements ILocalizationFileObserver {
     /**
      * Read the XML configuration data for the current XML files.
      */
-    public void readConfigXml() throws Exception {
-
+    private void readConfigXml() throws Exception {
         for (ServiceType st : ServiceType.values()) {
-
-            LocalizationFile lf = null;
             IPathManager pm = PathManagerFactory.getPathManager();
-            Map<LocalizationLevel, LocalizationFile> files = pm
-                    .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
-                            getConfigFileName(st));
+            SortedMap<LocalizationLevel, LocalizationFile> files = new TreeMap<>(
+                    pm.getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
+                            getConfigFileName(st)));
 
-            if (files.containsKey(LocalizationLevel.SITE)) {
-                lf = files.get(LocalizationLevel.SITE);
-            } else {
-                lf = files.get(LocalizationLevel.BASE);
+            ServiceConfig sc = null;
+
+            for (LocalizationFile lf : files.values()) {
+                if (lf != null) {
+                    try {
+                        ServiceConfig tmpsc = readServiceConfigXml(lf);
+
+                        if (sc == null) {
+                            sc = tmpsc;
+                        } else {
+                            sc.combine(tmpsc);
+                        }
+
+                    } catch (Exception e) {
+                        statusHandler.handle(Priority.PROBLEM,
+                                "Couldn't read the Service Config file: "
+                                        + lf.toString(),
+                                e);
+                    }
+                }
             }
 
-            if (lf != null) {
-                File file = lf.getFile();
-                // System.out.println("Reading -- " + file.getAbsolutePath());
-                if (!file.exists()) {
-                    statusHandler
-                            .warn("[Data Delivery] Configuration for service: "
-                                    + file.getAbsolutePath()
-                                    + " does not exist.");
-                    continue;
-                }
-
-                ServiceConfig sc = null;
-
-                try {
-                    sc = readServiceConfigXml(file);
-                    services.put(st, sc);
-                } catch (Exception e) {
-                    statusHandler.handle(
-                            Priority.PROBLEM,
-                            "Couldn't read the Service Config file: "
-                                    + file.getAbsolutePath(), e);
-                }
-            } else {
-                // We might not be implementing a particular service so we only
-                // care about it if we are
-                // debugging.
-                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    statusHandler.handle(
-                            Priority.WARN,
-                            "No Service Config file for service: " + st
-                                    + " exists!");
-                }
+            if (sc != null) {
+                services.put(st, sc);
             }
         }
     }
 
     /**
      * Read in service config XML
-     * 
+     *
      * @param file
      * @return
      */
-    private ServiceConfig readServiceConfigXml(File file) throws Exception {
-
+    private ServiceConfig readServiceConfigXml(LocalizationFile file)
+            throws Exception {
         ServiceConfig service = null;
 
-        if (file != null) {
-            service = jaxb.unmarshalFromXmlFile(file);
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                service = jaxb.unmarshalFromInputStream(is);
+            }
         }
 
         return service;

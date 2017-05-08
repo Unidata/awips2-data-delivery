@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.pda;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,8 +17,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -28,13 +26,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.geometry.DirectPosition;
+import javax.xml.bind.JAXBElement;
+
 import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
@@ -43,7 +38,6 @@ import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
-import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
@@ -51,25 +45,15 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.MetaDataPattern;
-import com.raytheon.uf.common.dataplugin.exception.MalformedDataException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
-import com.raytheon.uf.edex.ogc.common.OgcException;
-import com.raytheon.uf.edex.ogc.common.spatial.BoundingBoxUtil;
-import com.raytheon.uf.edex.ogc.common.spatial.CrsLookup;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.geom.MultiPolygon;
-import com.vividsolutions.jts.geom.Polygon;
+import com.raytheon.uf.edex.datadelivery.retrieval.util.PDAMetaDataUtil;
 
 import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
+import net.opengis.cat.csw.v_2_0_2.dc.elements.SimpleLiteral;
+import net.opengis.ows.v_1_0_0.BoundingBoxType;
 
 /**
  * Parse PDA metadata
@@ -96,17 +80,13 @@ import net.opengis.cat.csw.v_2_0_2.BriefRecordType;
  *                                  create
  * Jan 27, 2017  6089     tjensen   Update to work with pipe delimited metadata
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
+ * Mar 31, 2017  6186     rjpeter   Refactored
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
-
-public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(PDAMetaDataParser.class);
+public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
 
     private static final String FILL_VALUE = "fillValue";
 
@@ -116,28 +96,19 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
 
     private static final String FORMAT = "format";
 
-    private static final String COLLECTION_NAME = "collectionName";
-
-    private static final String DATASET_NAME = "dataSetName";
-
-    private static final String PARAM_NAME = "paramName";
-
-    private static final String START_TIME = "startTime";
-
-    private static final String END_TIME = "endTime";
-
     /** DEBUG PDA system **/
     private static final String DEBUG = "DEBUG";
 
     /** debug state */
-    protected boolean debug = false;
+    protected final boolean debug;
+
+    private final PDAMetaDataUtil metadataUtil = PDAMetaDataUtil.getInstance();
 
     public PDAMetaDataParser() {
         serviceConfig = HarvesterServiceManager.getInstance()
                 .getServiceConfig(ServiceType.PDA);
         // debugging MetaData parsing.
-        String debugVal = serviceConfig.getConstantValue(DEBUG);
-        debug = Boolean.valueOf(debugVal);
+        debug = Boolean.valueOf(serviceConfig.getConstantValue(DEBUG));
     }
 
     /**
@@ -154,155 +125,105 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
     @Override
     public void parseMetaData(Provider provider, BriefRecordType record,
             boolean isMetaData) {
-
-        Map<String, String> paramMap = null;
-
-        Date arrivalTime = TimeUtil.newGmtCalendar().getTime();
-        String dsName = null;
-        // Geo coverage of information
-        Coverage coverage = null;
-        // extract time information for record
-        Time time = null;
-        // immutable date used for data set metadata
-        ImmutableDate idate = null;
-        // METADATA ID, unique to each record
-        String metaDataID = record.getIdentifier().get(0).getValue()
-                .getContent().get(0);
-        // physical path relative to root provider URL
-        String relativeDataURL = record.getTitle().get(0).getValue()
-                .getContent().get(0);
-
-        // metadata URL is the full URL path, (not relative) to the file
-        // tack on the root provider URL from the provider connection.
-        String metaDataURL = provider.getConnection().getUrl() + "/"
-                + relativeDataURL;
-
-        if (debug) {
-            statusHandler.info("metaDataID: " + metaDataID);
-            statusHandler.info("relativeURL: " + relativeDataURL);
-            statusHandler.info("metaDataURL: " + metaDataURL);
+        if (record == null) {
+            logger.error("BriefRecord is null, skipping entry");
+            return;
         }
 
-        PDAFileMetaDataExtractor extractor = PDAFileMetaDataExtractor
-                .getInstance();
+        Date arrivalTime = TimeUtil.newGmtCalendar().getTime();
+        String metadataId = getSimpleLiteralValue(record.getIdentifier());
+        String title = getSimpleLiteralValue(record.getTitle());
+        BoundingBoxType boundingBox = null;
 
-        // Check to see if pipe delimited id pattern is used.
-        MetaDataPattern mdp = extractor.getMetaDataPattern("RECORD_ID");
-        if (mdp != null) {
-            Pattern p_id = mdp.getPattern();
-            Matcher m = p_id.matcher(metaDataID);
-            String dateFormat = mdp.getDateFormat();
-            if (m.matches()) {
-                try {
-                    statusHandler
-                            .info("Extracting metadata from metadataID...");
-                    paramMap = extractor.extractMetaData(metaDataID);
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "MetaData extraction error, " + metaDataID, e);
-                    // failure return
-                    return;
-                }
-                dsName = paramMap.get(DATASET_NAME);
+        List<JAXBElement<BoundingBoxType>> bbNodes = record.getBoundingBox();
+        if (bbNodes != null && !bbNodes.isEmpty()) {
+            JAXBElement<BoundingBoxType> jaxbNode = bbNodes.get(0);
 
-                // Only store the metadata Id itself, not the whole field
-                String newId = paramMap.get("metadataId");
-                if (newId != null && !"".equals(newId)) {
-                    metaDataID = newId;
-                }
+            if (jaxbNode != null) {
+                boundingBox = jaxbNode.getValue();
+            }
+        }
 
-                // Lookup for coverage information
-                String polygonPoints = paramMap.get("polygonPoints");
-                if (polygonPoints != null && !("".equals(polygonPoints))) {
-                    try {
-                        coverage = getCoverage(polygonPoints);
-                    } catch (MalformedDataException e) {
-                        statusHandler.error("Invalid Polygon data", e);
-                    }
-                } else {
-                    statusHandler.warn(
-                            "Geometry missing for dataset '" + dsName + "'");
-                }
-            } else {
-                // If not, extract the metadata from the title
-                try {
-                    statusHandler.info("Extracting metadata from title...");
-                    paramMap = extractor
-                            .extractMetaDataFromTitle(relativeDataURL);
-                } catch (MetaDataExtractionException e) {
-                    statusHandler.error("MetaData extraction error on "
-                            + relativeDataURL + ".", e);
-                    // failure return
-                    return;
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "MetaData extraction error, " + relativeDataURL, e);
-                    // failure return
-                    return;
-                }
-                dsName = paramMap.get(DATASET_NAME);
+        /*
+         * metadata URL is the full URL path, (not relative) to the file tack on
+         * the root provider URL from the provider connection.
+         */
+        String metaDataURL = provider.getConnection().getUrl() + "/" + title;
 
-                // set the dateFormat to be for this pattern
-                MetaDataPattern mdpt = extractor
-                        .getMetaDataPattern("RECORD_TITLE");
-                dateFormat = mdpt.getDateFormat();
+        logger.info("metaData id: " + metadataId);
+        logger.info("title: " + title);
+        logger.info("metaDataURL: " + metaDataURL);
 
-                // Lookup for coverage information
-                if (!record.getBoundingBox().isEmpty()) {
-                    coverage = getCoverage(
-                            record.getBoundingBox().get(0).getValue());
-                } else {
-                    statusHandler.warn("Bounding box is empty for dataset '"
-                            + dsName + "'");
-                }
+        if (metadataId == null) {
+            logger.error(
+                    "Required field Identifier of BriefRecord is null. Unable to parse dataset");
+            return;
+        }
+
+        if (title == null) {
+            logger.error(
+                    "Required field title of BriefRecord is null. Unable to parse dataset");
+            return;
+        }
+
+        try {
+            PDAMetaDataExtractor extractor = PDAMetaDataExtractorFactory
+                    .getExtractor(metadataId, title, boundingBox);
+            Map<String, String> paramMap = extractor.extractMetaData(record);
+            Time time = extractor.getTime();
+            ImmutableDate idate = new ImmutableDate(time.getStart());
+
+            String providerMetadataId = paramMap
+                    .get(PDAMetaDataExtractor.METADATA_ID);
+            String providerParam = paramMap
+                    .get(PDAMetaDataExtractor.PARAM_NAME);
+            String providerRes = paramMap.get(PDAMetaDataExtractor.RES_NAME);
+            String providerSat = paramMap.get(PDAMetaDataExtractor.SAT_NAME);
+            String awipsParam = metadataUtil.getParameterName(providerParam);
+            String awipsRes = metadataUtil.getResName(providerRes);
+            String awipsSat = metadataUtil.getSatName(providerSat);
+            String dataSetName = createDataSetName(awipsParam, awipsRes,
+                    awipsSat);
+            String collectionName = awipsSat + " " + awipsRes;
+
+            // check if there is a override to the metadataId
+            if (providerMetadataId != null) {
+                metadataId = providerMetadataId;
             }
 
             // Common regardless of extraction method
-            if ("true".equals(paramMap.get("ignoreData"))) {
-                statusHandler.info("Skipping DataSet '" + dsName + "'");
+            if (checkIgnore(provider, providerParam, time)) {
+                logger.info("Skipping DataSet '" + dataSetName + "'");
                 return;
             }
+
             setDefaultParams(paramMap);
-
-            // use real time parsed from file
-            try {
-                time = getTime(paramMap.get(START_TIME), paramMap.get(END_TIME),
-                        dateFormat);
-                idate = new ImmutableDate(time.getStart());
-            } catch (ParseException e) {
-                statusHandler.error(
-                        "Couldn't parse start (" + paramMap.get(START_TIME)
-                                + ")/end (" + paramMap.get(END_TIME)
-                                + ") time from format: " + dateFormat,
-                        e);
-                return;
-            }
-
             String providerName = provider.getName();
-            boolean isMoving = getIsMovingFromConfig(dsName, providerName);
+            boolean isMoving = getIsMovingFromConfig(dataSetName, providerName);
 
-            /**
-             * This portion of the MetaData parser is only used when a coverage
-             * exists.
-             */
-            if (coverage != null) {
+            Coverage coverage = null;
 
-                statusHandler.info("Preparing to store DataSet: " + dsName);
+            // there is only one parameter per briefRecord at this point
+            Map<String, Parameter> parameters = getParameters(providerParam,
+                    awipsParam, collectionName, provider.getName(),
+                    paramMap.get(UNITS), paramMap.get(FILL_VALUE),
+                    paramMap.get(MISSING_VALUE));
+
+            try {
+                logger.info("Preparing to store DataSet: " + dataSetName);
                 PDADataSet pdaDataSet = new PDADataSet();
-                pdaDataSet.setCollectionName(paramMap.get(COLLECTION_NAME));
-                pdaDataSet.setDataSetName(dsName);
-                pdaDataSet.setProviderName(providerName);
+                pdaDataSet.setCollectionName(collectionName);
+                pdaDataSet.setDataSetName(dataSetName);
+                pdaDataSet.setProviderName(provider.getName());
                 pdaDataSet.setDataSetType(DataType.PDA);
                 pdaDataSet.setTime(time);
                 pdaDataSet.setArrivalTime(arrivalTime.getTime());
-                // there is only one parameter per briefRecord at this point
-                Map<String, Parameter> parameters = getParameters(
-                        paramMap.get(PARAM_NAME), paramMap.get(COLLECTION_NAME),
-                        providerName, paramMap.get(UNITS),
-                        paramMap.get(FILL_VALUE), paramMap.get(MISSING_VALUE));
                 pdaDataSet.setParameters(parameters);
+
                 // set the coverage
+                coverage = extractor.getCoverage();
                 pdaDataSet.setCoverage(coverage);
+
                 // Store the parameter, data Set name, data Set
                 for (Entry<String, Parameter> parm : parameters.entrySet()) {
                     storeParameter(parm.getValue());
@@ -311,18 +232,21 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
                 if (isMoving) {
                     try {
                         pdaDataSet.applyInfoFromConfig(isMoving,
-                                getParentBoundsFromConfig(dsName, providerName),
-                                getSizeEstFromConfig(dsName, providerName));
+                                getParentBoundsFromConfig(dataSetName,
+                                        providerName),
+                                getSizeEstFromConfig(dataSetName,
+                                        providerName));
                     } catch (FactoryException | TransformException e) {
-                        statusHandler
-                                .error("Unable to get Parent Bounds for DataSet '"
-                                        + dsName + "' from " + provider, e);
+                        logger.error(
+                                "Unable to get Parent Bounds for DataSet '"
+                                        + dataSetName + "' from " + provider,
+                                e);
                         return;
                     }
                 }
                 storeDataSet(pdaDataSet);
-            } else {
-                statusHandler.warn("Coverage is null for: " + dsName);
+            } catch (Exception e) {
+                logger.error("Error storing dataSet [" + dataSetName + "]", e);
             }
 
             /*
@@ -330,40 +254,65 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
              * Transaction.
              */
             if (isMetaData) {
+                try {
+                    PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
+                    pdadsmd.setMetaDataID(metadataId);
+                    pdadsmd.setArrivalTime(arrivalTime.getTime());
+                    pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
+                            collectionName, time.getStart().getTime()));
+                    pdadsmd.setTime(time);
+                    pdadsmd.setDataSetName(dataSetName);
+                    pdadsmd.setDataSetDescription(StringUtil.join(Arrays.asList(
+                            metadataId, awipsSat, awipsRes, awipsParam), ' '));
+                    pdadsmd.setDate(idate);
+                    pdadsmd.setProviderName(provider.getName());
 
-                PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
-                pdadsmd.setMetaDataID(metaDataID);
-                pdadsmd.setArrivalTime(arrivalTime.getTime());
-                pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
-                        paramMap.get(COLLECTION_NAME),
-                        time.getStart().getTime()));
-                pdadsmd.setTime(time);
-                pdadsmd.setDataSetName(dsName);
-                pdadsmd.setDataSetDescription(metaDataID + " " + DATASET_NAME);
-                pdadsmd.setDate(idate);
-                pdadsmd.setProviderName(providerName);
+                    /*
+                     * If this is a moving dataset, save the coverage for this
+                     * specific instance of the product in the metadata instead
+                     * of on the dataset itself. Coverage on the dataset will
+                     * store the 'parent coverage' (the outer bounds of where
+                     * this product can be positioned).
+                     */
+                    if (isMoving) {
+                        pdadsmd.setInstanceCoverage(coverage);
+                    }
+                    // In PDA's case it's actually a file name
+                    pdadsmd.setUrl(metaDataURL);
 
-                /*
-                 * If this is a moving dataset, save the coverage for this
-                 * specific instance of the product in the metadata instead of
-                 * on the dataset itself. Coverage on the dataset will store the
-                 * 'parent coverage' (the outer bounds of where this product can
-                 * be positioned).
-                 */
-                if (isMoving) {
-                    pdadsmd.setInstanceCoverage(coverage);
+                    storeMetaData(pdadsmd);
+                } catch (Exception e) {
+                    logger.error("Error storing dataSetMetaData [" + dataSetName
+                            + "]", e);
                 }
-                // In PDA's case it's actually a file name
-                pdadsmd.setUrl(metaDataURL);
-
-                storeMetaData(pdadsmd);
             }
+        } catch (Exception e) {
+            logger.error("Unable to parse BriefRecord [" + metadataId + "]", e);
         }
     }
 
+    /**
+     * Returns the dataSet name.
+     *
+     * @param parameter
+     * @param res
+     * @param sat
+     * @return
+     */
+    protected String createDataSetName(String parameter, String res,
+            String sat) {
+        String dataSetName = parameter + " " + res + " " + sat;
+
+        return dataSetName;
+    }
+
+    /**
+     * Sets default parameters from ServiceConfig into paramMap.
+     *
+     * @param paramMap
+     */
     private void setDefaultParams(Map<String, String> paramMap) {
-        // these aren't satisfied with the file format parsing, use
-        // defaults and pray
+        // these aren't satisfied with any extractor, use defaults
         paramMap.put(FILL_VALUE, serviceConfig.getConstantValue("FILL_VALUE"));
         paramMap.put(MISSING_VALUE,
                 serviceConfig.getConstantValue("MISSING_VALUE"));
@@ -371,215 +320,95 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         paramMap.put(FORMAT, serviceConfig.getConstantValue("DEFAULT_FORMAT"));
     }
 
-    private Coverage getCoverage(String polygonPoints)
-            throws MalformedDataException {
-        Coverage coverage = new Coverage();
-        GeometryFactory factory = new GeometryFactory();
-        CoordinateReferenceSystem crs;
-        String defaultCRS = serviceConfig.getConstantValue("DEFAULT_CRS");
-        try {
-            crs = BoundingBoxUtil.getCrs(defaultCRS);
-        } catch (OgcException e1) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't determine CRS from value: " + defaultCRS, e1);
-            return coverage;
-        }
-
-        // Trim the leading and trailing parens, then split on parens
-        polygonPoints = polygonPoints.replaceAll("^\\(", "");
-        polygonPoints = polygonPoints.replaceAll("\\)$", "");
-
-        /*
-         * String should contain list of points for one or more polygon. Split
-         * the string first by polygon delimited with ")(", then by coordinate
-         * delimited with ",", then to lat and lon delimited by spaces. Then
-         * work in reverse to build Coordinates from the lat and lon, then
-         * Polygons from the Coordinates.
-         */
-        String[] polyList = polygonPoints.split("\\)\\(");
-        Polygon[] polys = new Polygon[polyList.length];
-        int p = 0;
-
-        for (String polyCoords : polyList) {
-            String[] polyPoints = polyCoords.split(",");
-            if (polyPoints.length < 3) {
-                throw new MalformedDataException(
-                        "Invalid number of coordinates received for a polygon. Minimum 3 required; received: "
-                                + polygonPoints);
-            }
-
-            List<Coordinate> coorsList = new ArrayList<>();
-            for (String point : polyPoints) {
-                String[] coord = point.split(" ");
-                /*
-                 * EPSG uses lat/lon instead of lon/lat. A similar check exists
-                 * in the BoundingBoxUtils class that will flip the values when
-                 * they are read back out, so put them in backwards here.
-                 */
-                if (CrsLookup.isEpsgGeoCrs(crs)) {
-                    coorsList.add(new Coordinate(Double.parseDouble(coord[0]),
-                            Double.parseDouble(coord[1])));
-                } else {
-                    coorsList.add(new Coordinate(Double.parseDouble(coord[1]),
-                            Double.parseDouble(coord[0])));
-                }
-            }
-            // Check to make sure the polygon is closed. If not, close it.
-            if (!coorsList.get(0).equals(coorsList.get(coorsList.size() - 1))) {
-                statusHandler
-                        .info("Polygon not closed. Adding closing point to polygon points list: "
-                                + polygonPoints);
-                coorsList.add(coorsList.get(0));
-            }
-            /*
-             * coorsList.toArray() is unable to cast objects to Coordinates, so
-             * do it manually.
-             */
-            Coordinate[] coors = new Coordinate[coorsList.size()];
-            for (int c = 0; c < coors.length; c++) {
-                coors[c] = coorsList.get(c);
-            }
-            LinearRing lr = factory.createLinearRing(coors);
-            polys[p] = factory.createPolygon(lr, null);
-            p++;
-        }
-
-        if (polyList.length > 1) {
-            statusHandler.warn("Encountered metadata with multiple polygons ("
-                    + polyList.length + ") making up its Geometry! "
-                    + "Envelope used will be the envelope containing all polygons.");
-        }
-
-        /*
-         * Combine all Polygons into a MultiPolyon, then get the envelope
-         * containing the polygons. Use the upper and lower corners of that
-         * envelope and the crs to create a ReferencedEnvelope for the Coverage
-         * area.
-         */
-        MultiPolygon multiPoly = new MultiPolygon(polys, factory);
-        Geometry envelope = multiPoly.getEnvelope();
-        Coordinate[] corners = envelope.getCoordinates();
-        statusHandler
-                .info("Envelope Coods: (" + corners[0].x + "," + corners[0].y
-                        + ") to (" + corners[2].x + "," + corners[2].y + ")");
-
-        List<Double> lc = Arrays.asList(corners[0].x, corners[0].y);
-        List<Double> uc = Arrays.asList(corners[2].x, corners[2].y);
-        DirectPosition min = BoundingBoxUtil.convert(lc);
-        DirectPosition max = BoundingBoxUtil.convert(uc);
-
-        try {
-            coverage.setEnvelope(
-                    BoundingBoxUtil.convert2D(min, max, defaultCRS));
-        } catch (OgcException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't determine BoundingBox envelope!", e);
-        }
-
-        return coverage;
-    }
-
     /**
-     * Set the Coverage from the OGC BoundingBox
+     * Check if the data should be skipped.
      *
-     * @param boundingBoxType
      * @param provider
+     * @param param
+     * @param time
+     * @return
      */
-    private Coverage getCoverage(
-            net.opengis.ows.v_1_0_0.BoundingBoxType boundingBoxType) {
+    protected boolean checkIgnore(Provider provider, String param, Time time) {
+        boolean rval = checkExcludeList(param);
 
-        ReferencedEnvelope envelope = null;
-        Coverage coverage = new Coverage();
-
-        try {
-
-            if (debug) {
-                statusHandler.info("Parsed LOWER CORNER: "
-                        + boundingBoxType.getLowerCorner().get(0) + ", "
-                        + boundingBoxType.getLowerCorner().get(1) + " size: "
-                        + boundingBoxType.getLowerCorner().size());
-                statusHandler.info("Parsed UPPER CORNER: "
-                        + boundingBoxType.getUpperCorner().get(0) + ", "
-                        + boundingBoxType.getUpperCorner().get(1) + " size: "
-                        + boundingBoxType.getUpperCorner().size());
-                statusHandler.info("CRS: " + boundingBoxType.getCrs());
-                statusHandler
-                        .info("Dimensions: " + boundingBoxType.getDimensions());
-            }
-
-            envelope = BoundingBoxUtil.convert2D(boundingBoxType);
-
-            Coordinate ul = EnvelopeUtils.getUpperLeftLatLon(envelope);
-            Coordinate lr = EnvelopeUtils.getLowerRightLatLon(envelope);
-            statusHandler.info("Envelope Coods: (" + ul.x + "," + ul.y
-                    + ") to (" + lr.x + "," + lr.y + ")");
-
-            coverage.setEnvelope(envelope);
-
-        } catch (OgcException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't determine BoundingBox envelope!", e);
+        if (!rval && Boolean.parseBoolean(
+                serviceConfig.getConstantValue("CHECK_DATA_RETENTION_TIME"))) {
+            rval = checkRetention(provider, time);
         }
 
-        return coverage;
+        return rval;
     }
 
     /**
-     * Set the time object
+     * Check if the parameter is excluded.
      *
-     * @param dateFormat
-     * @param startTime
-     * @param endTime
+     * @param providerName
      * @return
-     * @throws ParseException
      */
-    private Time getTime(String startTime, String endTime, String dateFormat)
-            throws ParseException {
+    protected boolean checkExcludeList(String providerName) {
+        boolean rval = false;
 
-        Time time = new Time();
-        time.setFormat(dateFormat);
+        if (PDAMetaDataUtil.getInstance().isExcluded(providerName)) {
+            logger.warn("Excluding metadata due to '" + providerName
+                    + "' being on the exclusion list.");
+            rval = true;
+        }
 
-        time.setStartDate(startTime);
-        time.setEndDate(endTime);
-
-        return time;
+        return rval;
     }
 
-    private Map<String, Parameter> getParameters(String paramName,
-            String collectionName, String provider, String units,
-            String fillValue, String missingValue) {
+    /**
+     * Check if product is beyond retention for the provider.
+     *
+     * @param provider
+     * @param time
+     * @return
+     */
+    protected boolean checkRetention(Provider provider, Time time) {
+        long threshold = metadataUtil.getRetentionThreshold(provider.getName());
+        boolean oldDate = false;
+
+        if (threshold > 0) {
+            long sTime = time.getStart().getTime();
+            if (threshold >= sTime) {
+                logger.warn("Excluding metadata due to time of " + sTime
+                        + " being older than retention time of " + threshold);
+                oldDate = true;
+            }
+        }
+
+        return oldDate;
+
+    }
+
+    /**
+     * Get parameters map for product.
+     *
+     * @param providerName
+     * @param awipsName
+     * @param collectionName
+     * @param provider
+     * @param units
+     * @param fillValue
+     * @param missingValue
+     * @return
+     */
+    private Map<String, Parameter> getParameters(String providerName,
+            String awipsName, String collectionName, String provider,
+            String units, String fillValue, String missingValue) {
 
         Map<String, Parameter> params = new HashMap<>(1);
 
         Parameter parm = new Parameter();
         parm = new Parameter();
-        parm.setName(paramName);
-        // in this case there isn't any diff
+        parm.setName(awipsName);
         parm.setProviderName(provider);
-        parm.setDefinition(provider + "-" + collectionName + "-" + paramName);
+        parm.setDefinition(provider + "-" + collectionName + "-" + awipsName);
         parm.setBaseType(serviceConfig.getConstantValue("BASE_TYPE"));
 
-        // fill value
-        if (fillValue == null) {
-            parm.setFillValue(serviceConfig.getConstantValue("FILL_VALUE"));
-        } else {
-            parm.setFillValue(fillValue);
-        }
-
-        // missing value
-        if (missingValue == null) {
-            parm.setMissingValue(
-                    serviceConfig.getConstantValue("MISSING_VALUE"));
-        } else {
-            parm.setMissingValue(missingValue);
-        }
-
-        // units
-        if (units == null) {
-            parm.setUnits(serviceConfig.getConstantValue("UNITS"));
-        } else {
-            parm.setUnits(units);
-        }
+        parm.setFillValue(fillValue);
+        parm.setMissingValue(missingValue);
+        parm.setUnits(units);
 
         /*
          * The standard default for satellite data is EA (Entire Atmosphere).
@@ -592,9 +421,39 @@ public class PDAMetaDataParser<O> extends MetaDataParser<BriefRecordType> {
         parm.setLevelType(types);
         // Set the data type
         parm.setDataType(DataType.PDA);
-        params.put(collectionName, parm);
+        params.put(parm.getName(), parm);
 
         return params;
+    }
+
+    /**
+     * Returns the content of the simpleLiteral of the first node or null if
+     * unable to walk data structure.
+     *
+     * @param node
+     * @return
+     */
+    private String getSimpleLiteralValue(
+            List<JAXBElement<SimpleLiteral>> node) {
+        if (node == null || node.isEmpty()) {
+            return null;
+        }
+
+        JAXBElement<SimpleLiteral> jaxbElement = node.get(0);
+        if (jaxbElement == null) {
+            return null;
+        }
+
+        SimpleLiteral elementVal = jaxbElement.getValue();
+        if (elementVal == null) {
+            return null;
+        }
+        List<String> content = elementVal.getContent();
+        if (content == null || content.isEmpty()) {
+            return null;
+        }
+
+        return content.get(0);
     }
 
 }

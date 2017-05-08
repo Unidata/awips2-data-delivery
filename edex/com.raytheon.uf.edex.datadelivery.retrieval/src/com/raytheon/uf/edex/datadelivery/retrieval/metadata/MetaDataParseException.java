@@ -17,34 +17,55 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.retrieval.interfaces;
-
-import java.util.Date;
-import java.util.Map;
+package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
 
 /**
- * Extract MetaData Interface
+ * Exception during parsing of metadata.
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ------------------------
- * Feb 20, 2011  218      dhladky   Initial creation
- * Jul 10, 2014  2130     dhladky   Expanded to include PDA
- * Mar 31, 2017  6186     rjpeter   Fixed Generics
+ * ------------- -------- --------- -----------------
+ * Mar 28, 2017  6186     rjpeter   Initial creation
  *
  * </pre>
  *
- * @author dhladky
+ * @author rjpeter
  */
-public interface IExtractMetaData<O extends Object, D extends Object> {
+public class MetaDataParseException extends Exception {
 
-    Map<String, D> extractMetaData(O obj) throws Exception;
+    private static final long serialVersionUID = 1L;
 
-    void setDataDate() throws Exception;
+    /**
+     * Default Constructor
+     *
+     */
+    public MetaDataParseException() {
+        super();
+    }
 
-    Date getDataDate();
+    /**
+     * @param message
+     */
+    public MetaDataParseException(String message) {
+        super(message);
+    }
+
+    /**
+     * @param message
+     * @param cause
+     */
+    public MetaDataParseException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
+     * @param cause
+     */
+    public MetaDataParseException(Throwable cause) {
+        super(cause);
+    }
 
 }

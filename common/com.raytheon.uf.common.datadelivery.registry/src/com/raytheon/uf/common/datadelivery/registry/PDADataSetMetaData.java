@@ -12,19 +12,19 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * PDA data set metadata
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------
  * Jun 14, 2014  3120     dhladky   Initial creation
  * Sep 17, 2014  3127     dhladky   Added for geographic subsetting.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
- * 
+ *
  * </pre>
- * 
+ *
  * @version 1.0
  */
 
@@ -51,4 +51,10 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
         this.metaDataID = metaDataID;
     }
 
+    @Override
+    public String satisfiesSubscription(Subscription<Time, Coverage> sub)
+            throws Exception {
+        return super.satisfiesSubscription(sub);
+        // TODO Add parameter intersection check
+    }
 }

@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,6 +17,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
 
 import java.util.Iterator;
 import java.util.List;
@@ -28,6 +27,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.TransformException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
@@ -49,9 +50,6 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
@@ -89,6 +87,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
  * Jul 22, 2016  5752     tjensen   Fix storeDataSet and add additional logging
  *                                  information
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
+ * May 04, 2017  6186     rjpeter   Made logger protected.
  *
  * </pre>
  *
@@ -98,9 +97,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
 @DynamicSerialize
 public abstract class MetaDataParser<O extends Object>
         implements IParseMetaData<O> {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(MetaDataParser.class);
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected ServiceConfig serviceConfig;
 
@@ -111,7 +108,7 @@ public abstract class MetaDataParser<O extends Object>
     /**
      * @param dataSet
      */
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     protected void storeDataSet(final DataSet dataSet) {
 
         String dataSetName = null;
@@ -138,16 +135,16 @@ public abstract class MetaDataParser<O extends Object>
                 DataSetHandler handler = DataDeliveryHandlers
                         .getDataSetHandler();
                 handler.update(RegistryUtil.registryUser, dataSet);
-                statusHandler.info("Dataset [" + dataSetName
+                logger.info("Dataset [" + dataSetName
                         + "] successfully stored in Registry");
                 storeDataSetName(dataSet);
             } else {
-                statusHandler.info(
+                logger.info(
                         "Matching dataset already exists in Registry. No update will be performed.");
             }
 
         } catch (RegistryHandlerException e) {
-            statusHandler.error(
+            logger.error(
                     "Dataset [" + dataSetName + "] failed to store in Registry",
                     e);
         }
@@ -172,8 +169,8 @@ public abstract class MetaDataParser<O extends Object>
             // "url" is ID for metaData
             currentMetaData = handler.getById(metaData.getUrl());
         } catch (RegistryHandlerException e1) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unable to lookup metadata ID: " + metaData.getUrl(), e1);
+            logger.error("Unable to lookup metadata ID: " + metaData.getUrl(),
+                    e1);
         }
 
         if (currentMetaData != null) {
@@ -187,11 +184,11 @@ public abstract class MetaDataParser<O extends Object>
         if (store) {
             try {
                 handler.update(RegistryUtil.registryUser, metaData);
-                statusHandler.info("DataSetMetaData [" + description
+                logger.info("DataSetMetaData [" + description
                         + "] successfully stored in Registry");
             } catch (RegistryHandlerException e) {
-                statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
-                        + description + "] failed to store in Registry", e);
+                logger.error("DataSetMetaData [" + description
+                        + "] failed to store in Registry", e);
 
             }
         }
@@ -218,10 +215,10 @@ public abstract class MetaDataParser<O extends Object>
         try {
             DataDeliveryHandlers.getDataSetNameHandler()
                     .update(RegistryUtil.registryUser, dsn);
-            statusHandler.info("DataSetName object store complete, dataset ["
+            logger.info("DataSetName object store complete, dataset ["
                     + dsn.getDataSetName() + "]");
         } catch (RegistryHandlerException e) {
-            statusHandler.error("DataSetName object store failed:", e);
+            logger.error("DataSetName object store failed:", e);
         }
     }
 
@@ -251,8 +248,8 @@ public abstract class MetaDataParser<O extends Object>
                 // "url" is ID for metaData
                 currentMetaData = handler.getById(dsmd.getUrl());
             } catch (RegistryHandlerException e1) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Unable to lookup metadata ID: " + dsmd.getUrl(), e1);
+                logger.error("Unable to lookup metadata ID: " + dsmd.getUrl(),
+                        e1);
             }
 
             if (currentMetaData != null) {
@@ -266,11 +263,11 @@ public abstract class MetaDataParser<O extends Object>
             if (store) {
                 try {
                     handler.update(RegistryUtil.registryUser, dsmd);
-                    statusHandler.info("DataSetMetaData [" + url
+                    logger.info("DataSetMetaData [" + url
                             + "] successfully stored in Registry");
                 } catch (RegistryHandlerException e) {
-                    statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
-                            + url + "] failed to store in Registry", e);
+                    logger.error("DataSetMetaData [" + url
+                            + "] failed to store in Registry", e);
 
                 }
             }
@@ -302,12 +299,12 @@ public abstract class MetaDataParser<O extends Object>
 
             if (store) {
                 handler.update(RegistryUtil.registryUser, provider);
-                statusHandler.info("Provider [" + provider.getName()
+                logger.info("Provider [" + provider.getName()
                         + "] successfully stored in Registry");
             }
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM, "Provider ["
-                    + provider.getName() + "] failed to store in Registry", e);
+            logger.error("Provider [" + provider.getName()
+                    + "] failed to store in Registry", e);
         }
     }
 
@@ -338,12 +335,12 @@ public abstract class MetaDataParser<O extends Object>
 
             if (store) {
                 handler.update(RegistryUtil.registryUser, parameter);
-                statusHandler.info("Parameter [" + parameter.getName()
+                logger.info("Parameter [" + parameter.getName()
                         + "] successfully stored in Registry");
             }
 
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
+            logger.error(
                     "Failed to store parameter [" + parameter.getName() + "]",
                     e);
         }
