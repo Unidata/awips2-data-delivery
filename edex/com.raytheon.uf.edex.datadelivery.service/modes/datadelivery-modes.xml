@@ -53,6 +53,8 @@
     <mode name="dataDeliveryTemplate" template="true">
         <include>.*datadelivery.*</include>
         <include>.*bandwidth.*</include>
+        <!-- Exclude the inmemory versions of Spring files -->
+        <exclude>.*bandwidth.*-inmemory.*.xml</exclude>
         <!-- Exclude DPA -->
         <exclude>dpa-datadelivery.xml</exclude>
         <!-- sat plugins -->
@@ -73,6 +75,15 @@
         <!--  General Data plugin requirements for DD -->
         <include>persist-ingest.xml</include>
     </mode>
+
+    <!-- Utilized by BandwidthUtil for creating an in memory bandwidth manager -->
+    <mode name="inMemoryBandwidthManager">
+        <!-- This is not an edex runtime mode and is used in memory -->
+        <include>bandwidth-datadelivery-inmemory-impl.xml</include>
+        <include>bandwidth-datadelivery.xml</include>
+        <include>bandwidth-datadelivery-wfo.xml</include>
+    </mode>
+
 	<!-- modes listed below are not supported in a production setting, they 
 		are for DEVELOPMENT purposes only -->
     <mode name="sbnSimulator">
