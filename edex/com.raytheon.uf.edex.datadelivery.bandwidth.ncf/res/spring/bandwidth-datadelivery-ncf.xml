@@ -21,7 +21,7 @@
 
     <util:map id="retrievalPlans">
         <entry key="SBN">
-            <ref local="SBNRetrievalPlan" />
+            <ref bean="SBNRetrievalPlan" />
         </entry>
     </util:map>
 
