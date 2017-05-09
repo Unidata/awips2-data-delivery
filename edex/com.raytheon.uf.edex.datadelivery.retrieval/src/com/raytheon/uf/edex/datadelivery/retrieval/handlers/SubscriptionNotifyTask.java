@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,9 +27,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionRetrievalEvent;
@@ -49,13 +46,13 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 
 /**
- * 
+ *
  * Handles subscription notification.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Aug 09, 2012  1022     djohnson  No longer extends Thread, simplify {@link
@@ -73,40 +70,43 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * May 17, 2016  5662     tjensen   Cleanup duplicate parameters in failed
  *                                  message
- * 
+ * May 09, 2017  6186     rjpeter   Added url
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 public class SubscriptionNotifyTask implements Runnable {
     @VisibleForTesting
     static class SubscriptionDelay implements Delayed {
-        final String subName;
+        private final String subName;
 
-        final Long subRetrievalKey;
+        private final String url;
 
-        final String owner;
+        private final Long subRetrievalKey;
 
-        final String plugin;
+        private final String owner;
 
-        final String provider;
+        private final String plugin;
 
-        final SubscriptionType subscriptionType;
+        private final String provider;
 
-        final Network network;
+        private final SubscriptionType subscriptionType;
 
-        final long delayedUntilMillis;
+        private final Network network;
 
-        final String key;
+        private final long delayedUntilMillis;
 
-        final Long retrievalRequestTime;
+        private final String key;
 
-        SubscriptionDelay(String subName, String owner, String plugin,
-                SubscriptionType subscriptionType, Network network,
-                String provider, Long subRetrievalKey, long delayedUntilMillis,
-                Long retrievalRequestTime) {
+        private final Long retrievalRequestTime;
+
+        SubscriptionDelay(String subName, String url, String owner,
+                String plugin, SubscriptionType subscriptionType,
+                Network network, String provider, Long subRetrievalKey,
+                long delayedUntilMillis, Long retrievalRequestTime) {
             this.subName = subName;
+            this.url = url;
             this.owner = owner;
             this.plugin = plugin;
             this.provider = provider;
@@ -124,8 +124,8 @@ public class SubscriptionNotifyTask implements Runnable {
             if (o instanceof SubscriptionDelay) {
                 SubscriptionDelay oSub = (SubscriptionDelay) o;
 
-                rval = Long.valueOf(delayedUntilMillis).compareTo(
-                        Long.valueOf(oSub.delayedUntilMillis));
+                rval = Long.valueOf(delayedUntilMillis)
+                        .compareTo(Long.valueOf(oSub.delayedUntilMillis));
 
                 if (rval == 0) {
                     rval = subName.compareTo(oSub.subName);
@@ -137,26 +137,6 @@ public class SubscriptionNotifyTask implements Runnable {
             }
 
             return rval;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj instanceof SubscriptionDelay) {
-                SubscriptionDelay other = (SubscriptionDelay) obj;
-
-                EqualsBuilder eqBuilder = new EqualsBuilder();
-                eqBuilder.append(subName, other.subName);
-                eqBuilder.append(owner, other.owner);
-                eqBuilder.append(plugin, other.plugin);
-                eqBuilder.append(subscriptionType, other.subscriptionType);
-                eqBuilder.append(network, other.network);
-                eqBuilder.append(provider, other.provider);
-                eqBuilder.append(subRetrievalKey, other.subRetrievalKey);
-                eqBuilder.append(retrievalRequestTime,
-                        other.retrievalRequestTime);
-                return eqBuilder.isEquals();
-            }
-            return super.equals(obj);
         }
 
         @Override
@@ -174,10 +154,10 @@ public class SubscriptionNotifyTask implements Runnable {
         /**
          * Returns how many milliseconds are remaining until the delayed time
          * has passed.
-         * 
+         *
          * @param currentTimeMillis
          *            the millis to see how much delay is remaining
-         * 
+         *
          * @return how many more milliseconds of delay remaining, or 0 if the
          *         delay has expired
          */
@@ -189,7 +169,7 @@ public class SubscriptionNotifyTask implements Runnable {
         /**
          * Returns The date time (long) of the Data Retrieval Request. has
          * passed.
-         * 
+         *
          * @return retrievalRequestTime Time that Retrieval Request was
          *         generated
          */
@@ -200,17 +180,109 @@ public class SubscriptionNotifyTask implements Runnable {
 
         @Override
         public int hashCode() {
-            HashCodeBuilder hcBuilder = new HashCodeBuilder();
-            hcBuilder.append(subName);
-            hcBuilder.append(owner);
-            hcBuilder.append(plugin);
-            hcBuilder.append(subscriptionType);
-            hcBuilder.append(network);
-            hcBuilder.append(provider);
-            hcBuilder.append(subRetrievalKey);
-            hcBuilder.append(retrievalRequestTime);
+            final int prime = 31;
+            int result = 1;
+            result = prime * result
+                    + (int) (delayedUntilMillis ^ (delayedUntilMillis >>> 32));
+            result = prime * result + ((key == null) ? 0 : key.hashCode());
+            result = prime * result
+                    + ((network == null) ? 0 : network.hashCode());
+            result = prime * result + ((owner == null) ? 0 : owner.hashCode());
+            result = prime * result
+                    + ((plugin == null) ? 0 : plugin.hashCode());
+            result = prime * result
+                    + ((provider == null) ? 0 : provider.hashCode());
+            result = prime * result + ((retrievalRequestTime == null) ? 0
+                    : retrievalRequestTime.hashCode());
+            result = prime * result
+                    + ((subName == null) ? 0 : subName.hashCode());
+            result = prime * result + ((subRetrievalKey == null) ? 0
+                    : subRetrievalKey.hashCode());
+            result = prime * result + ((subscriptionType == null) ? 0
+                    : subscriptionType.hashCode());
+            result = prime * result + ((url == null) ? 0 : url.hashCode());
+            return result;
+        }
 
-            return hcBuilder.toHashCode();
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            SubscriptionDelay other = (SubscriptionDelay) obj;
+            if (delayedUntilMillis != other.delayedUntilMillis) {
+                return false;
+            }
+            if (key == null) {
+                if (other.key != null) {
+                    return false;
+                }
+            } else if (!key.equals(other.key)) {
+                return false;
+            }
+            if (network != other.network) {
+                return false;
+            }
+            if (owner == null) {
+                if (other.owner != null) {
+                    return false;
+                }
+            } else if (!owner.equals(other.owner)) {
+                return false;
+            }
+            if (plugin == null) {
+                if (other.plugin != null) {
+                    return false;
+                }
+            } else if (!plugin.equals(other.plugin)) {
+                return false;
+            }
+            if (provider == null) {
+                if (other.provider != null) {
+                    return false;
+                }
+            } else if (!provider.equals(other.provider)) {
+                return false;
+            }
+            if (retrievalRequestTime == null) {
+                if (other.retrievalRequestTime != null) {
+                    return false;
+                }
+            } else if (!retrievalRequestTime
+                    .equals(other.retrievalRequestTime)) {
+                return false;
+            }
+            if (subName == null) {
+                if (other.subName != null) {
+                    return false;
+                }
+            } else if (!subName.equals(other.subName)) {
+                return false;
+            }
+            if (subRetrievalKey == null) {
+                if (other.subRetrievalKey != null) {
+                    return false;
+                }
+            } else if (!subRetrievalKey.equals(other.subRetrievalKey)) {
+                return false;
+            }
+            if (subscriptionType != other.subscriptionType) {
+                return false;
+            }
+            if (url == null) {
+                if (other.url != null) {
+                    return false;
+                }
+            } else if (!url.equals(other.url)) {
+                return false;
+            }
+            return true;
         }
 
         @Override
@@ -224,7 +296,7 @@ public class SubscriptionNotifyTask implements Runnable {
 
     /**
      * Creates a SubscriptionDelay delayed for 11 seconds.
-     * 
+     *
      * @param record
      *            the record to base from
      * @param startTime
@@ -243,9 +315,9 @@ public class SubscriptionNotifyTask implements Runnable {
                         .getRequestRetrievalTime();
             }
         } catch (SerializationException se) {
-            statusHandler
-                    .error("Error occurred unmarshalling retrieval object for determining Subscriptiong Request time.",
-                            se);
+            statusHandler.error(
+                    "Error occurred unmarshalling retrieval object for determining Subscriptiong Request time.",
+                    se);
         }
 
         if (retrievalRequestTimeLong == null) {
@@ -253,10 +325,10 @@ public class SubscriptionNotifyTask implements Runnable {
         }
         // 11 seconds from start time
         return new SubscriptionDelay(record.getId().getSubscriptionName(),
-                record.getOwner(), record.getPlugin(),
+                record.getId().getUrl(), record.getOwner(), record.getPlugin(),
                 record.getSubscriptionType(), record.getNetwork(),
                 record.getProvider(), record.getSubRetrievalKey(),
-                startTime + 11000, retrievalRequestTimeLong);
+                startTime + 11_000, retrievalRequestTimeLong);
     }
 
     // set written to by other threads
@@ -289,7 +361,8 @@ public class SubscriptionNotifyTask implements Runnable {
             if (nextSub != null) {
                 try {
                     // wait an extra second for a few more to accumulate
-                    long timeToWait = nextSub.getDelay(TimeUnit.MILLISECONDS) + 1000;
+                    long timeToWait = nextSub.getDelay(TimeUnit.MILLISECONDS)
+                            + 1000;
                     Thread.sleep(timeToWait);
                 } catch (InterruptedException e) {
                     // ignore
@@ -313,7 +386,8 @@ public class SubscriptionNotifyTask implements Runnable {
             SubscriptionDelay subToCheck = subscriptionQueue.poll();
             while (subToCheck != null) {
                 Map<RetrievalRequestRecord.State, Integer> stateCounts = dao
-                        .getSubscriptionStateCounts(subToCheck.subName);
+                        .getSubscriptionStateCounts(subToCheck.subName,
+                                subToCheck.url);
                 Integer numPending = stateCounts
                         .get(RetrievalRequestRecord.State.PENDING);
                 Integer numRunning = stateCounts
@@ -325,14 +399,16 @@ public class SubscriptionNotifyTask implements Runnable {
                     event.setOwner(subToCheck.owner);
                     event.setPlugin(subToCheck.plugin);
                     event.setProvider(subToCheck.provider);
-                    event.setSubscriptionType(subToCheck.subscriptionType
-                            .name());
+                    event.setSubscriptionType(
+                            subToCheck.subscriptionType.name());
                     event.setNetwork(subToCheck.network.name());
-                    event.setRetrievalRequestTime(subToCheck.retrievalRequestTime);
+                    event.setRetrievalRequestTime(
+                            subToCheck.retrievalRequestTime);
 
+                    // event needs new key
                     RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
-                    retrievalManagerNotifyEvent.setId(Long
-                            .toString(subToCheck.subRetrievalKey));
+                    retrievalManagerNotifyEvent
+                            .setId(Long.toString(subToCheck.subRetrievalKey));
 
                     // check if any of the retrievals failed
                     Integer numFailed = stateCounts
@@ -350,8 +426,9 @@ public class SubscriptionNotifyTask implements Runnable {
 
                         // generate message
                         List<RetrievalRequestRecord> failedRecs = dao
-                                .getFailedRequests(subToCheck.subName);
-                        StringBuffer sb = new StringBuffer(300);
+                                .getFailedRequests(subToCheck.subName,
+                                        subToCheck.url);
+                        StringBuilder sb = new StringBuilder(300);
                         try {
                             sb.append("Failed parameters: ");
                             List<String> parameters = new ArrayList<>();
@@ -360,10 +437,10 @@ public class SubscriptionNotifyTask implements Runnable {
                                         .getRetrievalObj();
                                 for (RetrievalAttribute<?, ?> att : retrieval
                                         .getAttributes()) {
-                                    if (!parameters.contains(att.getParameter()
-                                            .getName())) {
-                                        parameters.add(att.getParameter()
-                                                .getName());
+                                    if (!parameters.contains(
+                                            att.getParameter().getName())) {
+                                        parameters.add(
+                                                att.getParameter().getName());
                                     }
                                 }
                             }
@@ -373,10 +450,11 @@ public class SubscriptionNotifyTask implements Runnable {
                             sb.delete(sb.length() - 2, sb.length());
                             event.setFailureMessage(sb.toString());
                         } catch (SerializationException e) {
-                            sb.append("Failed parameters: Unable to determine the parameters that failed due to serialization errors.");
-                            statusHandler
-                                    .error("Error occurred unmarshalling retrieval object for determining failed parameters.",
-                                            e);
+                            sb.append(
+                                    "Failed parameters: Unable to determine the parameters that failed due to serialization errors.");
+                            statusHandler.error(
+                                    "Error occurred unmarshalling retrieval object for determining failed parameters.",
+                                    e);
                         }
                     }
                     if (numComplete == null) {
@@ -392,7 +470,7 @@ public class SubscriptionNotifyTask implements Runnable {
 
                     EventBus.publish(event);
                     EventBus.publish(retrievalManagerNotifyEvent);
-                    dao.removeSubscription(subToCheck.subName);
+                    dao.removeSubscription(subToCheck.subName, subToCheck.url);
                 }
 
                 subToCheck = subscriptionQueue.poll();
@@ -401,10 +479,9 @@ public class SubscriptionNotifyTask implements Runnable {
             statusHandler.handle(Priority.ERROR,
                     "Unable to contact the database", e);
         } catch (Exception e) {
-            statusHandler
-                    .handle(Priority.ERROR,
-                            "Unexpected error during Subscription Notify Task processing...",
-                            e);
+            statusHandler.handle(Priority.ERROR,
+                    "Unexpected error during Subscription Notify Task processing...",
+                    e);
         }
     }
 }

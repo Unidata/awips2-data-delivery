@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -41,22 +41,25 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Retrieval Request Record
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 09, 2012            rjpeter      Initial creation
- * Oct 10, 2012 0726       djohnson     Add {@link #subRetrievalKey}.
- * Nov 26, 2012 1340       dhladky      Added additional fields for tracking subscriptions
- * Jan 30, 2013 1543       djohnson     Add PENDING_SBN, give retrieval column a length.
- * Jan 30, 2014 2686       dhladky      refactor of retrieval.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * May 09, 2012           rjpeter   Initial creation
+ * Oct 10, 2012  726      djohnson  Add {@link #subRetrievalKey}.
+ * Nov 26, 2012  1340     dhladky   Added additional fields for tracking
+ *                                  subscriptions
+ * Jan 30, 2013  1543     djohnson  Add PENDING_SBN, give retrieval column a
+ *                                  length.
+ * Jan 30, 2014  2686     dhladky   refactor of retrieval.
+ * May 11, 2015  6186     rjpeter   Updated constructor.
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 @Entity
 @Table(name = "subscription_retrieval")
@@ -107,7 +110,7 @@ public class RetrievalRequestRecord implements
     @DynamicSerializeElement
     private Date insertTime;
 
-    @Column(nullable = false, length = 100000)
+    @Column(nullable = false, length = 100_000)
     @DynamicSerializeElement
     private byte[] retrieval;
 
@@ -121,9 +124,9 @@ public class RetrievalRequestRecord implements
     public RetrievalRequestRecord() {
     }
 
-    public RetrievalRequestRecord(String subscriptionName, int index,
-            Long subRetrievalKey) {
-        id = new RetrievalRequestRecordPK(subscriptionName, index);
+    public RetrievalRequestRecord(String url, String subscriptionName,
+            int index, Long subRetrievalKey) {
+        id = new RetrievalRequestRecordPK(url, subscriptionName, index);
         this.subRetrievalKey = subRetrievalKey;
     }
 
@@ -222,7 +225,7 @@ public class RetrievalRequestRecord implements
 
     /**
      * Convenience method to set the retrieval byte array from an object.
-     * 
+     *
      * @param retrieval
      *            the retrieval
      * @throws SerializationException
@@ -236,15 +239,15 @@ public class RetrievalRequestRecord implements
 
     /**
      * Convenience method to get the retrieval as an object.
-     * 
+     *
      * @return the retrievalObj
      * @throws SerializationException
      *             on error deserializing the retrieval
      */
     public Retrieval getRetrievalObj() throws SerializationException {
         if (retrievalObj == null && retrieval != null) {
-            retrievalObj = SerializationUtil.transformFromThrift(
-                    Retrieval.class, retrieval);
+            retrievalObj = SerializationUtil
+                    .transformFromThrift(Retrieval.class, retrieval);
         }
         return retrievalObj;
     }

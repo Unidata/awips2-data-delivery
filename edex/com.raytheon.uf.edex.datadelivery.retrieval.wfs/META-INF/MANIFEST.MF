@@ -24,6 +24,7 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.
  com.raytheon.uf.edex.plugin.madis.ogc;bundle-version="1.0.0",
  com.raytheon.uf.edex.plugin.madis;bundle-version="1.0.0",
  com.raytheon.uf.edex.wfs;bundle-version="1.0.0",
- com.sun.xml.bind;bundle-version="1.0.0"
+ com.sun.xml.bind;bundle-version="1.0.0",
+ org.slf4j;bundle-version="1.7.21"
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval.wfs,
  com.raytheon.uf.edex.datadelivery.retrieval.wfs.metadata

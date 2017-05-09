@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.dao;
 
 import javax.persistence.CascadeType;
@@ -15,22 +34,25 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 /**
  * Class representing a Subscription that may have been aggregated with other
  * subscriptions to maximize bandwidth usage.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 02, 2012 726        jspinks     Initial creation
- * Oct 16, 2012 0726       djohnson    Added explicit length to subSubscription, 
- *                                     made it nullable for single table strategy.
- * Nov 09, 2012 1286       djohnson    Add reference back to owning BandwidthSubscription.
- * Jun 24, 2013 2106       djohnson    Add copy constructor.
- * Jul 11, 2013 2106       djohnson    Use SubscriptionPriority enum, lazy load the Subscription object.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 02, 2012  726      jspinks   Initial creation
+ * Oct 16, 2012  726      djohnson  Added explicit length to subSubscription,
+ *                                  made it nullable for single table strategy.
+ * Nov 09, 2012  1286     djohnson  Add reference back to owning
+ *                                  BandwidthSubscription.
+ * Jun 24, 2013  2106     djohnson  Add copy constructor.
+ * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority enum, lazy load the
+ *                                  Subscription object.
+ * May 09, 2017  6186     rjpeter   Added url column
+ *
  * </pre>
- * 
- * @version 1.0
+ *
  */
 @Entity
 @DiscriminatorValue("SubscriptionRetrieval")
@@ -57,8 +79,7 @@ public class SubscriptionRetrieval extends BandwidthAllocation {
     private int subscriptionLatency;
 
     @Column
-    @DynamicSerializeElement
-    private String subsumedBy;
+    private String url;
 
     /**
      * Constructor.
@@ -68,7 +89,7 @@ public class SubscriptionRetrieval extends BandwidthAllocation {
 
     /**
      * Copy constructor.
-     * 
+     *
      * @param from
      *            the instance to copy from
      */
@@ -77,7 +98,6 @@ public class SubscriptionRetrieval extends BandwidthAllocation {
         this.setBandwidthSubscription(from.getBandwidthSubscription().copy());
         this.setDataSetAvailablityDelay(from.dataSetAvailablityDelay);
         this.setSubscriptionLatency(from.getSubscriptionLatency());
-        this.setSubsumedBy(from.getSubsumedBy());
     }
 
     /**
@@ -94,17 +114,6 @@ public class SubscriptionRetrieval extends BandwidthAllocation {
         return subscriptionLatency;
     }
 
-    public String getSubsumedBy() {
-        return subsumedBy;
-    }
-
-    /**
-     * @return the subsumed
-     */
-    public boolean isSubsumed() {
-        return (subsumedBy != null);
-    }
-
     public void setDataSetAvailablityDelay(int dataSetAvailablityDelay) {
         this.dataSetAvailablityDelay = dataSetAvailablityDelay;
 
@@ -116,10 +125,6 @@ public class SubscriptionRetrieval extends BandwidthAllocation {
      */
     public void setSubscriptionLatency(int subscriptionLatency) {
         this.subscriptionLatency = subscriptionLatency;
-    }
-
-    public void setSubsumedBy(String subsumedBy) {
-        this.subsumedBy = subsumedBy;
     }
 
     /**
@@ -136,6 +141,14 @@ public class SubscriptionRetrieval extends BandwidthAllocation {
     public void setBandwidthSubscription(
             BandwidthSubscription bandwidthSubscription) {
         this.bandwidthSubscription = bandwidthSubscription;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     /**

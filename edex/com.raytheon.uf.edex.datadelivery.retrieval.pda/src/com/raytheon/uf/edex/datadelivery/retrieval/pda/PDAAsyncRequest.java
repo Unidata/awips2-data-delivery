@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -28,29 +28,29 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 
 /**
- * 
+ *
  * PDA asynchronous subset Request Builder / Executor. Builds the geographic
  * (Bounding Box) delimited requests for PDA data. Then executes the request to
  * PDA receiving a message waiting for the async response.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 06, 2016 5424        dhladky      created.
- * May 10, 2016 5424        dhladky      Fixes from testing.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------
+ * Apr 06, 2016  5424     dhladky   created.
+ * May 10, 2016  5424     dhladky   Fixes from testing.
+ * Apr 20, 2017  6186     rjpeter   Updated retrievalID to be the PK.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
-
 public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
     private static final IUFStatusHandler statusHandler = UFStatus
@@ -60,7 +60,7 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
     private OgcJaxbManager manager = null;
 
-    private String retrievalID = null;
+    private RetrievalRequestRecordPK retrievalID = null;
 
     /** Constant name **/
     private static final String ASYNC_RESPONSE_HANDLER = "ASYNC_RESPONSE_HANDLER";
@@ -72,12 +72,14 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
     private static String EXCEPTION_REPORT_COMPARE = null;
 
     static {
-        if (getServiceConfig().getConstantValue(ASYNC_RESPONSE_HANDLER) != null) {
-            RESPONSE_HANDLER_ADDRESS = getServiceConfig().getConstantValue(
-                    ASYNC_RESPONSE_HANDLER);
+        if (getServiceConfig()
+                .getConstantValue(ASYNC_RESPONSE_HANDLER) != null) {
+            RESPONSE_HANDLER_ADDRESS = getServiceConfig()
+                    .getConstantValue(ASYNC_RESPONSE_HANDLER);
             EXCEPTION_REPORT_COMPARE = EXCEPTION_REPORT_COMPARE_PREFIX
                     + RESPONSE_HANDLER_ADDRESS;
-            statusHandler.info("Async retrievals will be processed at: "+RESPONSE_HANDLER_ADDRESS);
+            statusHandler.info("Async retrievals will be processed at: "
+                    + RESPONSE_HANDLER_ADDRESS);
         } else {
             throw new IllegalArgumentException(
                     "ASYNC_RESPONSE_HANDLER must be set in the PDAServiceConfig.xml for ASYNC requests to work.");
@@ -86,16 +88,17 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
     /**
      * ASYNC request
-     * 
+     *
      * @param ra
      * @param metaDataID
      * @param retrievalID
      */
     public PDAAsyncRequest(RetrievalAttribute<Time, Coverage> ra,
-            String subName, String metaDataID, String retrievalID) {
+            String subName, String metaDataID,
+            RetrievalRequestRecordPK retrievalId) {
         super(ra, subName, metaDataID);
 
-        setRetrievalID(retrievalID);
+        setRetrievalID(retrievalId);
         // create the request
         StringBuilder query = new StringBuilder(512);
         query.append(header);
@@ -111,12 +114,12 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
     /**
      * Processes the response from PDA, asynchronous.
-     * 
+     *
      * @param response
      * @return
      */
+    @Override
     public String processResponse(String response) {
-
         String report = null;
 
         if (response.contains(EXCEPTION_REPORT_COMPARE)) {
@@ -124,8 +127,8 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
             report = response;
 
         } else {
-            statusHandler.error("PDA asynchronous request has failed. "
-                    + response);
+            statusHandler
+                    .error("PDA asynchronous request has failed. " + response);
         }
 
         return report;
@@ -133,9 +136,10 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
 
     /**
      * Use correct OGC libraries for casting.
-     * 
+     *
      * @throws JAXBException
      */
+    @Override
     public void configureJAXBManager() throws JAXBException {
         if (manager == null) {
             Class<?>[] classes = new Class<?>[] {
@@ -155,25 +159,26 @@ public class PDAAsyncRequest extends PDAAbstractRequestBuilder {
         }
     }
 
-    private String getRetrievalID() {
+    private RetrievalRequestRecordPK getRetrievalID() {
         return retrievalID;
     }
 
-    private void setRetrievalID(String retrievalID) {
+    private void setRetrievalID(RetrievalRequestRecordPK retrievalID) {
         this.retrievalID = retrievalID;
     }
 
     /**
      * Gets the retreivalID and response handler for the retrieval
-     * 
+     *
      * @return
      */
     private String getExtension() {
 
         StringBuilder sb = new StringBuilder(256);
         sb.append("<wcs:Extension>\n");
-        sb.append("<ows:ExtendedCapabilities xmlns:ows=\"http://www.opengis.net/ows\" responseHandler=\""
-                + RESPONSE_HANDLER_ADDRESS + "\">\n");
+        sb.append(
+                "<ows:ExtendedCapabilities xmlns:ows=\"http://www.opengis.net/ows\" responseHandler=\""
+                        + RESPONSE_HANDLER_ADDRESS + "\">\n");
         sb.append("<ows:Identifier codeSpace=\"locator\">" + getRetrievalID()
                 + "</ows:Identifier>\n");
         sb.append("</ows:ExtendedCapabilities>\n");

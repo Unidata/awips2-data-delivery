@@ -22,33 +22,36 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
 
 /**
- * 
+ *
  * DAO for {@link RetrievalRequestRecord} entities.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 30, 2013 1543       djohnson     Add SW history.
- * Feb 07, 2013 1543       djohnson     Use session management code.
- * Feb 13, 2013 1543       djohnson     Exported interface which is now implemented.
- * Feb 22, 2013 1543       djohnson     Made public as YAJSW doesn't like Spring exceptions.
- * May 22, 2014 2808       dhladky      Fixed notification upon SBN delivery
- * Oct 13, 2014 3707       dhladky      Shared subscription delivery requires you to create a new record.
- * 10/16/2014   3454       bphillip     Upgrading to Hibernate 4
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 30, 2013  1543     djohnson  Add SW history.
+ * Feb 07, 2013  1543     djohnson  Use session management code.
+ * Feb 13, 2013  1543     djohnson  Exported interface which is now implemented.
+ * Feb 22, 2013  1543     djohnson  Made public as YAJSW doesn't like Spring
+ *                                  exceptions.
+ * May 22, 2014  2808     dhladky   Fixed notification upon SBN delivery
+ * Oct 13, 2014  3707     dhladky   Shared subscription delivery requires you to
+ *                                  create a new record.
+ * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
+ * May 09, 2017  6186     rjpeter   Added url
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 @Repository
 @Transactional
 // TODO: Split service functionality from DAO functionality
 public class RetrievalDao extends
-        SessionManagedDao<RetrievalRequestRecordPK, RetrievalRequestRecord> implements IRetrievalDao {
+        SessionManagedDao<RetrievalRequestRecordPK, RetrievalRequestRecord>
+        implements IRetrievalDao {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RetrievalDao.class);
@@ -59,9 +62,6 @@ public class RetrievalDao extends
     public RetrievalDao() {
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public RetrievalRequestRecord activateNextRetrievalRequest(Network network)
             throws DataAccessLayerException {
@@ -122,9 +122,8 @@ public class RetrievalDao extends
                                 rval = (RetrievalRequestRecord) sess.get(
                                         RetrievalRequestRecord.class, pk,
                                         LockOptions.UPGRADE);
-                                if (rval == null
-                                        || !State.PENDING.equals(rval
-                                                .getState())) {
+                                if (rval == null || !State.PENDING
+                                        .equals(rval.getState())) {
                                     // another thread grabbed request while
                                     // waiting for upgrade lock, redo sub query,
                                     // null out rval in case it was due to state
@@ -161,26 +160,22 @@ public class RetrievalDao extends
         return rval;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void completeRetrievalRequest(RetrievalRequestRecord rec)
             throws DataAccessLayerException {
         try {
-            // Made create or Update because SBN deliveries will not exist locally
+            // Made create or Update because SBN deliveries will not exist
+            // locally
             createOrUpdate(rec);
         } catch (HibernateException e) {
             throw new DataAccessLayerException(
                     "Failed to update the database while changing the status on ["
                             + rec.getId() + "]" + " to [" + rec.getState()
-                            + "]", e);
+                            + "]",
+                    e);
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean resetRunningRetrievalsToPending() {
         boolean rval = false;
@@ -188,8 +183,7 @@ public class RetrievalDao extends
         try {
             String hql = "update RetrievalRequestRecord rec set rec.state = :pendState where rec.state = :runState";
 
-            Query query = getCurrentSession()
-                    .createQuery(hql);
+            Query query = getCurrentSession().createQuery(hql);
             query.setParameter("pendState", State.PENDING);
             query.setParameter("runState", State.RUNNING);
             query.executeUpdate();
@@ -202,28 +196,25 @@ public class RetrievalDao extends
         return rval;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Map<State, Integer> getSubscriptionStateCounts(String subName)
-            throws DataAccessLayerException {
-        Map<State, Integer> rval = new HashMap<State, Integer>(8);
+    public Map<State, Integer> getSubscriptionStateCounts(String subName,
+            String url) throws DataAccessLayerException {
+        Map<State, Integer> rval = new HashMap<>(8);
 
         try {
             String hql = "select rec.state, count(rec.id.subscriptionName) from RetrievalRequestRecord rec "
-                    + "where rec.id.subscriptionName = :subName group by rec.state";
-            Query query = getCurrentSession()
-                    .createQuery(hql);
+                    + "where rec.id.subscriptionName = :subName and rec.id.url = :url group by rec.state";
+            Query query = getCurrentSession().createQuery(hql);
             query.setString("subName", subName);
-            @SuppressWarnings("unchecked")
+            query.setString("url", url);
             List<Object> result = query.list();
 
-            if (result != null && result.size() > 0) {
+            if (result != null && !result.isEmpty()) {
                 for (Object row : result) {
                     if (row instanceof Object[]) {
                         Object[] cols = (Object[]) row;
-                        rval.put((State) cols[0], ((Number) cols[1]).intValue());
+                        rval.put((State) cols[0],
+                                ((Number) cols[1]).intValue());
                     } else {
                         throw new DataAccessLayerException(
                                 "Unhandled result from database.  Expected ["
@@ -235,74 +226,69 @@ public class RetrievalDao extends
         } catch (Exception e) {
             throw new DataAccessLayerException(
                     "Failed check pending/running retrieval count for subscription ["
-                            + subName + "]", e);
+                            + subName + "]",
+                    e);
         }
 
         return rval;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    @SuppressWarnings("unchecked")
-    public List<RetrievalRequestRecord> getFailedRequests(String subName)
-            throws DataAccessLayerException {
+    public List<RetrievalRequestRecord> getFailedRequests(String subName,
+            String url) throws DataAccessLayerException {
         try {
             Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
             query.add(Restrictions.eq("state", State.FAILED));
             query.add(Restrictions.eq("id.subscriptionName", subName));
+            query.add(Restrictions.eq("id.url", url));
             List<RetrievalRequestRecord> rval = query.list();
             return rval;
         } catch (Exception e) {
             throw new DataAccessLayerException(
                     "Failed check pending/running retrieval count for subscription ["
-                            + subName + "]", e);
+                            + subName + "]",
+                    e);
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public boolean removeSubscription(String subName)
+    public boolean removeSubscription(String subName, String url)
             throws DataAccessLayerException {
         boolean rval = false;
 
         try {
             String hql = "delete from RetrievalRequestRecord rec "
-                    + "where rec.id.subscriptionName = :subName";
-            Query query = getCurrentSession()
-                    .createQuery(hql);
+                    + "where rec.id.subscriptionName = :subName and rec.id.url = :url";
+            Query query = getCurrentSession().createQuery(hql);
             query.setString("subName", subName);
+            query.setString("url", url);
             query.executeUpdate();
             rval = true;
         } catch (Exception e) {
             throw new DataAccessLayerException(
                     "Failed removing retrievals for subscription [" + subName
-                            + "]", e);
+                            + "]",
+                    e);
         }
         return rval;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    @SuppressWarnings("unchecked")
-    public List<RetrievalRequestRecord> getRequests(String subName)
+    public List<RetrievalRequestRecord> getRequests(String subName, String url)
             throws DataAccessLayerException {
         try {
             Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
             query.add(Restrictions.eq("id.subscriptionName", subName));
+            query.add(Restrictions.eq("id.url", url));
             List<RetrievalRequestRecord> rval = query.list();
             return rval;
         } catch (Exception e) {
             throw new DataAccessLayerException(
                     "Failed to return retrieval records for subscription ["
-                            + subName + "]", e);
+                            + subName + "]",
+                    e);
         }
     }
 
@@ -322,9 +308,6 @@ public class RetrievalDao extends
         query.setParameter("network", network);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Class<RetrievalRequestRecord> getEntityClass() {
         return RetrievalRequestRecord.class;

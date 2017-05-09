@@ -67,6 +67,4 @@
     <!-- These are used for ASYNC retrieval requests -->
     <constant name="RETRIEVAL_MODE" value="ASYNC" />
     <constant name="ASYNC_RESPONSE_HANDLER" value="https://${retrieval.pda.response.external.ip}:8082/GetCoverageResponseHandler"/>
-
-        value="([A-Z0-9]+_[A-Z0-9]+-[A-Z0-9]+)-(([A-Z0-9]{3,5}?)(C|F|M1|M2)?)(-(M[34](C\d\d)?))?_([A-Z0-9]+)_s([\d]{14})_e([\d]{14})_c([\d]{14})\.[a-zA-Z0-9]+" />
 </serviceConfig>
