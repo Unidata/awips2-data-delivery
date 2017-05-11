@@ -45,7 +45,6 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterMapping;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterRegexes;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitLookup;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
@@ -84,13 +83,12 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  * Jan 05, 2017  5988     tjensen   Updated for new parameter lookups and
  *                                  regexes
  * Apr 05, 2017  1045     tjensen   Updated for DataSetConfigInfo
+ * May 10, 2017  6135     nabowle   Remove UnitLookup in favor of UnitMapper.
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
-
 public class LookupManager {
 
     /**
@@ -159,7 +157,7 @@ public class LookupManager {
 
     private static final String CONFIG_FILE_LEVEL = "LevelLookup.xml";
 
-    private static final String CONFIG_FILE_UNIT = "UnitLookup.xml";
+    public static final String UNIT_MAPPER_NAMESPACE = "datadelivery";
 
     /**
      * Get an instance of this singleton.
@@ -188,8 +186,6 @@ public class LookupManager {
     private Map<String, DataSetInformation> dataSetInformations = new HashMap<>(
             2);
 
-    private UnitLookup unitLookup = null;
-
     private final LocalizationXmlWriter localizationXmlWriter = ServiceLoaderUtil
             .load(LookupManager.class, LocalizationXmlWriter.class,
                     new LocalizationXmlWriter());
@@ -208,8 +204,7 @@ public class LookupManager {
         if (jaxb == null) {
             jaxb = new JAXBManager(LevelLookup.class, ParameterLookup.class,
                     ParameterRegexes.class, DataSetInformationLookup.class,
-                    DataSetInformation.class, DataSetConfigInfoMap.class,
-                    UnitLookup.class);
+                    DataSetInformation.class, DataSetConfigInfoMap.class);
         }
 
         return jaxb;
@@ -700,59 +695,6 @@ public class LookupManager {
     }
 
     /**
-     * Unit file name
-     *
-     * @return
-     */
-    private static String getUnitFileName() {
-        return CONFIG_FILE_ROOT + CONFIG_FILE_UNIT;
-    }
-
-    /**
-     * Gets the Units
-     *
-     * @return
-     */
-    public UnitLookup getUnits() {
-
-        if (unitLookup == null) {
-            unitLookup = getUnitsFromFile();
-        }
-
-        return unitLookup;
-    }
-
-    /**
-     * Load units
-     *
-     * @return
-     */
-    private UnitLookup getUnitsFromFile() {
-        ILocalizationFile file = null;
-        String fileName = getUnitFileName();
-
-        try {
-            file = getLocalizationFile(fileName);
-        } catch (Exception e) {
-            statusHandler
-                    .error(" Failed to load Unit Lookup table: " + fileName, e);
-        }
-
-        if (file != null) {
-            try {
-                unitLookup = readUnitsXml(file);
-            } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Failed to Read Unit Lookup from file: "
-                                + file.getPath(),
-                        e);
-            }
-        }
-
-        return unitLookup;
-    }
-
-    /**
      * Does a a particular lookup exist?
      *
      * @param modelName
@@ -901,26 +843,6 @@ public class LookupManager {
         }
 
         return regexXml;
-    }
-
-    /**
-     * Read unit lookups
-     *
-     * @param file
-     * @return
-     * @throws Exception
-     */
-    private UnitLookup readUnitsXml(ILocalizationFile file) throws Exception {
-        UnitLookup unitXml = null;
-
-        if (file != null && file.exists()) {
-            try (InputStream is = file.openInputStream()) {
-                unitXml = (UnitLookup) getJaxbManager()
-                        .unmarshalFromInputStream(is);
-            }
-        }
-
-        return unitXml;
     }
 
     public DataSetConfigInfo getDataSetConfigInfo(String dataSetName,

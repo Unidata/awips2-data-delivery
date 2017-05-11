@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,11 +36,11 @@ import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManage
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Constant;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitConfig;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.UnitLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.units.UnitMapper;
+import com.raytheon.uf.common.util.mapping.MultipleMappingException;
 
 import opendap.dap.AttributeTable;
 import opendap.dap.DArray;
@@ -52,11 +52,11 @@ import opendap.dap.PrimitiveVector;
 /**
  * Constants for working with OpenDAP. This class should remain package-private,
  * all access should be limited to classes in the same package.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 20, 2011  218      dhladky   Initial creation
@@ -76,11 +76,11 @@ import opendap.dap.PrimitiveVector;
  * Jan 18, 2013  1513     dhladky   Level Lookup improvements.
  * Oct 24, 2013  2454     dhladky   NOMADS change to ensemble configuration.
  * Nov 09, 2016  5988     tjensen   Update for Friendly naming for NOMADS
- * 
+ * May 10, 2017  6135     nabowle   Replace UnitLookup with UnitMapper.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 public final class OpenDAPParseUtility {
 
@@ -89,7 +89,7 @@ public final class OpenDAPParseUtility {
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
     /** Singleton instance of this class */
-    private static OpenDAPParseUtility instance = null;
+    private static volatile OpenDAPParseUtility instance = null;
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPParseUtility.class);
@@ -107,7 +107,7 @@ public final class OpenDAPParseUtility {
 
     /**
      * call this to get your instance
-     * 
+     *
      * @return
      */
     public static OpenDAPParseUtility getInstance() {
@@ -119,7 +119,7 @@ public final class OpenDAPParseUtility {
 
     /**
      * Get the dataset name and cycle.
-     * 
+     *
      * @param linkKey
      *            the linkKey
      * @param collection
@@ -267,7 +267,7 @@ public final class OpenDAPParseUtility {
 
     /**
      * Remove the Z from the date
-     * 
+     *
      * @param date
      * @return
      */
@@ -278,7 +278,7 @@ public final class OpenDAPParseUtility {
 
     /**
      * parse ensemble model info
-     * 
+     *
      * @param table
      * @return
      * @throws NoSuchAttributeException
@@ -307,7 +307,7 @@ public final class OpenDAPParseUtility {
             int size = Integer.parseInt(trim(
                     table.getAttribute(serviceConfig.getConstantValue("SIZE"))
                             .getValueAt(0)));
-            List<String> members = new ArrayList<String>(size);
+            List<String> members = new ArrayList<>(size);
             if (size > 0) {
                 for (Integer i = 0; i < size; i++) {
                     members.add(i.toString());
@@ -323,12 +323,12 @@ public final class OpenDAPParseUtility {
 
     /**
      * Parses the time steps
-     * 
+     *
      * @param timeStep
      * @return
      */
     public List<String> parseTimeStep(String inStep) {
-        List<String> step = new ArrayList<String>();
+        List<String> step = new ArrayList<>();
 
         Matcher matcher = getTimeStepPattern().matcher(trim(inStep));
 
@@ -346,43 +346,40 @@ public final class OpenDAPParseUtility {
     /**
      * Strip off the annoying brackets on the units Fix any units that are not
      * correct with SI
-     * 
+     *
      * @param description
-     * @return
+     * @return The parsed unit.
+     * @throws MultipleMappingException
+     *             if the parsed unit has been mapped to multiple base units.
      */
-    public String parseUnits(String description) {
+    public String parseUnits(String description)
+            throws MultipleMappingException {
 
         String runit = serviceConfig.getConstantValue("UNKNOWN");
-        UnitLookup ul = LookupManager.getInstance().getUnits();
 
-        if (ul != null) {
-            // some require no parsing
-            UnitConfig uc = ul.getUnitByProviderName(description);
+        // some require no parsing
+        String base = UnitMapper.getInstance().lookupBaseNameOrNull(description,
+                LookupManager.UNIT_MAPPER_NAMESPACE);
+        if (base != null) {
+            runit = base;
+        } else {
+            Matcher m = getUnitPattern().matcher(description);
 
-            if (uc != null) {
-                // adjusts to correct units
-                runit = uc.getName();
-            } else {
-
-                Matcher m = getUnitPattern().matcher(description);
-
-                if (m.find()) {
-                    runit = m.group(2);
-                    uc = ul.getUnitByProviderName(runit);
-                    if (uc != null) {
-                        // adjusts to correct units
-                        runit = uc.getName();
-                    }
+            if (m.find()) {
+                runit = m.group(2);
+                base = UnitMapper.getInstance().lookupBaseNameOrNull(runit,
+                        LookupManager.UNIT_MAPPER_NAMESPACE);
+                if (base != null) {
+                    runit = base;
                 }
             }
         }
-
         return runit;
     }
 
     /**
      * Remove silly quotes
-     * 
+     *
      * @param val
      * @return
      */
@@ -394,7 +391,7 @@ public final class OpenDAPParseUtility {
 
     /**
      * Parse out the levels from the dods
-     * 
+     *
      * @param url
      * @param lev
      * @return
@@ -410,7 +407,7 @@ public final class OpenDAPParseUtility {
             DArray array = (DArray) data.getVariable(lev);
             PrimitiveVector pm = array.getPrimitiveVector();
             double[] values = (double[]) pm.getInternalStorage();
-            levels = new ArrayList<Double>();
+            levels = new ArrayList<>();
             for (double value : values) {
                 levels.add(value);
             }
