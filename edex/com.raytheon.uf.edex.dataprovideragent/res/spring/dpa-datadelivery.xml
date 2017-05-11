@@ -7,56 +7,69 @@
     http://www.springframework.org/schema/util/spring-util.xsd">
 
     <util:constant id="dataDeliveryServerKey"
-        static-field="com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants.DATA_DELIVERY_SERVER" />
+        static-field="com.raytheon.uf.common.datadelivery.request.DataDeliveryConstants.DATA_DELIVERY_SERVER"/>
 
     <util:constant id="ebxmlRegistryServiceKey"
-        static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_REGISTRY_SERVICE" />
+        static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_REGISTRY_SERVICE"/>
 
     <util:constant id="ebxmlLcmServiceKey"
-        static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_LCM_SERVICE" />
+        static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_LCM_SERVICE"/>
 
     <util:constant id="ebxmlQueryServiceKey"
-        static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_QUERY_SERVICE" />
+        static-field="com.raytheon.uf.common.registry.RegistryConstants.EBXML_QUERY_SERVICE"/>
 
     <bean id="RegistryServiceConfig"
-         class="com.raytheon.uf.common.registry.services.RegistryServiceConfiguration" />
+        class="com.raytheon.uf.common.registry.services.RegistryServiceConfiguration"/>
 
     <bean id="remoteRegistryWebServiceClient"
-         class="com.raytheon.uf.edex.registry.ebxml.services.soap.RemoteRegistrySOAPServices">
-         <property name="securityInterceptor" ref="securityOutInterceptor" />
-         <property name="serviceConfig" ref="RegistryServiceConfig" />
-         <property name="securityConfig" ref="securityConfiguration" />
+        class="com.raytheon.uf.edex.registry.ebxml.services.soap.RemoteRegistrySOAPServices">
+        <property name="securityInterceptor" ref="securityOutInterceptor"/>
+        <property name="serviceConfig" ref="RegistryServiceConfig"/>
+        <property name="securityConfig" ref="securityConfiguration"/>
     </bean>
 
     <!-- This bean references the dpa.properties prop file -->
     <bean id="soapRegistryManager"
         class="com.raytheon.uf.edex.registry.ebxml.services.soap.RemoteSOAPRegistryHandler">
-        <constructor-arg ref="remoteRegistryWebServiceClient" />
-        <property name="host" value="${registry.host}" />
-        <property name="port" value="${ebxml.registry.webserver.port}" />
-        <property name="protocol" value="${ebxml.registry.protocol}" />
+        <constructor-arg ref="remoteRegistryWebServiceClient"/>
+        <property name="host" value="${registry.host}"/>
+        <property name="port" value="${ebxml.registry.webserver.port}"/>
+        <property name="protocol" value="${ebxml.registry.protocol}"/>
     </bean>
 
     <bean id="registryEncoderType"
         class="com.raytheon.uf.common.registry.ebxml.encoder.RegistryEncoders$Type"
         factory-method="valueOf">
-        <constructor-arg value="JAXB" />
+        <constructor-arg value="JAXB"/>
     </bean>
 
     <bean id="ebxmlJaxbManager" factory-method="getInstance"
-        class="com.raytheon.uf.common.registry.schemas.ebxml.util.EbxmlJaxbManager" />
+        class="com.raytheon.uf.common.registry.schemas.ebxml.util.EbxmlJaxbManager"/>
 
     <bean id="registryEncoder"
         class="com.raytheon.uf.common.registry.ebxml.encoder.RegistryEncoders"
         factory-method="ofType" depends-on="ebxmlJaxbManager">
-        <constructor-arg ref="registryEncoderType" />
+        <constructor-arg ref="registryEncoderType"/>
     </bean>
 
     <bean id="registryHandler"
         class="com.raytheon.uf.common.registry.ebxml.FactoryRegistryHandler">
-        <property name="lcmFactory" ref="soapRegistryManager" />
-        <property name="queryFactory" ref="soapRegistryManager" />
-        <property name="encoderStrategy" ref="registryEncoder" />
+        <property name="lcmFactory" ref="soapRegistryManager"/>
+        <property name="queryFactory" ref="soapRegistryManager"/>
+        <property name="encoderStrategy" ref="registryEncoder"/>
     </bean>
 
+    <bean id="registryPasswordCallback"
+        class="com.raytheon.uf.edex.registry.ebxml.acp.PasswordCallback">
+        <property name="credentialCache" ref="credentialCache"/>
+    </bean>
+
+    <bean id="credentialCache"
+        class="com.raytheon.uf.edex.registry.ebxml.web.security.CredentialCache">
+        <property name="restServices" ref="registryRestClient"/>
+        <property name="txTemplate" ref="metadataTxTemplate"/>
+        <property name="securityConfig" ref="securityConfiguration"/>
+    </bean>
+    <bean id="registryRestClient"
+        class="com.raytheon.uf.edex.registry.ebxml.services.RegistryRESTServices"/>
 </beans>
