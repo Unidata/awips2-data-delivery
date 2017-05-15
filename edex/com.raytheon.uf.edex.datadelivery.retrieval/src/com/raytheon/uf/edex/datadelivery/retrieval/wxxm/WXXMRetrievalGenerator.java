@@ -1,10 +1,29 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.retrieval.wxxm;
 
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
-import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
@@ -12,31 +31,34 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 
 /**
- * 
+ *
  * WXXM Retrieval Generator.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 25, 2012 955        djohnson     Moved to wxxm specific package.
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 25, 2012  955      djohnson  Moved to wxxm specific package.
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Apr 20, 2017  6186     rjpeter   Update buildRetrieval signature.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
-class WXXMRetrievalGenerator<T extends Time, C extends Coverage> extends RetrievalGenerator<T, C> {
+class WXXMRetrievalGenerator<T extends Time, C extends Coverage>
+        extends RetrievalGenerator<T, C> {
 
     WXXMRetrievalGenerator() {
         super(ServiceType.WXXM);
     }
 
     @Override
-    public List<Retrieval> buildRetrieval(SubscriptionBundle bundle) {
+    public List<Retrieval> buildRetrieval(DataSetMetaData<T, C> dsmd,
+            SubscriptionBundle bundle) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -45,12 +67,6 @@ class WXXMRetrievalGenerator<T extends Time, C extends Coverage> extends Retriev
      */
     @Override
     public RetrievalAdapter<T, C> getServiceRetrievalAdapter() {
-        return new WXXMRetrievalAdapter<T, C>();
+        return new WXXMRetrievalAdapter<>();
     }
-
-    @Override
-    protected Subscription<T, C> removeDuplicates(Subscription<T, C> sub) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
 }

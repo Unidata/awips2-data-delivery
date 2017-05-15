@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,16 +21,21 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
+import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
+import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
@@ -38,13 +43,11 @@ import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.core.EdexException;
+import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
@@ -59,41 +62,47 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
 
 /**
  * Class used to process SubscriptionRetrieval BandwidthAllocations.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 27, 2012 726        jspinks      Initial release.
- * Oct 10, 2012 0726       djohnson     Add generics, constants, defaultPriority.
- * Nov 26, 2012            dhladky      Override default ingest routes based on plugin
- * Jan 30, 2013 1543       djohnson     Should not implement IRetrievalHandler.
- * Feb 05, 2013 1580       mpduff       EventBus refactor.
- * Jun 24, 2013 2106       djohnson     Set actual start time when sending to retrieval rather than overwrite scheduled start.
- * Jul 09, 2013 2106       djohnson     Dependency inject registry handlers.
- * Jul 11, 2013 2106       djohnson     Use SubscriptionPriority enum.
- * Jan 15, 2014 2678       bgonzale     Use Queue for passing RetrievalRequestRecords to the 
- *                                      RetrievalTasks (PerformRetrievalsThenReturnFinder).
- *                                      Added constructor that sets the retrievalQueue to null.
- * Jan 30, 2014 2686       dhladky      refactor of retrieval.
- * Feb 10, 2014 2678       dhladky      Prevent duplicate allocations.
- * Jul 22, 2014 2732       ccody        Add Date Time to SubscriptionRetrievalEvent message
- * Feb 19, 2015 3998       dhladky      Fixed wrong date on notification center retrieval message.
- * May 27, 2015 4531       dhladky      Remove excessive Calendar references.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * Apr 06, 2016 5424       dhladky      Allow for ASYNC processing of retrievals.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 27, 2012  726      jspinks   Initial release.
+ * Oct 10, 2012  726      djohnson  Add generics, constants, defaultPriority.
+ * Nov 26, 2012           dhladky   Override default ingest routes based on
+ *                                  plugin
+ * Jan 30, 2013  1543     djohnson  Should not implement IRetrievalHandler.
+ * Feb 05, 2013  1580     mpduff    EventBus refactor.
+ * Jun 24, 2013  2106     djohnson  Set actual start time when sending to
+ *                                  retrieval rather than overwrite scheduled
+ *                                  start.
+ * Jul 09, 2013  2106     djohnson  Dependency inject registry handlers.
+ * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority enum.
+ * Jan 15, 2014  2678     bgonzale  Use Queue for passing
+ *                                  RetrievalRequestRecords to the
+ *                                  RetrievalTasks
+ *                                  (PerformRetrievalsThenReturnFinder). Added
+ *                                  constructor that sets the retrievalQueue to
+ *                                  null.
+ * Jan 30, 2014  2686     dhladky   refactor of retrieval.
+ * Feb 10, 2014  2678     dhladky   Prevent duplicate allocations.
+ * Jul 22, 2014  2732     ccody     Add Date Time to SubscriptionRetrievalEvent
+ *                                  message
+ * Feb 19, 2015  3998     dhladky   Fixed wrong date on notification center
+ *                                  retrieval message.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Apr 06, 2016  5424     dhladky   Allow for ASYNC processing of retrievals.
+ * Apr 20, 2017  6186     rjpeter   Allow multiple subscriptions to the same
+ *                                  dataSet per allocation.
+ *
  * </pre>
- * 
- * @version 1.0
+ *
  */
-public class SubscriptionRetrievalAgent extends
-        RetrievalAgent<SubscriptionRetrieval> {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(SubscriptionRetrievalAgent.class);
-
+public class SubscriptionRetrievalAgent
+        extends RetrievalAgent<SubscriptionRetrieval> {
     private final int defaultPriority;
 
     private final IBandwidthDao<?, ?> bandwidthDao;
@@ -101,8 +110,9 @@ public class SubscriptionRetrievalAgent extends
     private final IRetrievalDao retrievalDao;
 
     private final ProviderHandler providerHandler;
-    
-    private final AsyncRetrievalBroker broker = AsyncRetrievalBroker.getInstance();
+
+    private final AsyncRetrievalBroker broker = AsyncRetrievalBroker
+            .getInstance();
 
     public SubscriptionRetrievalAgent(Network network, String retrievalRoute,
             String asyncRetrievalUri, final Object notifier,
@@ -120,141 +130,152 @@ public class SubscriptionRetrievalAgent extends
     @Override
     void processAllocations(List<SubscriptionRetrieval> subRetrievals)
             throws EdexException {
+        Map<String, List<SubscriptionRetrieval>> retrievalUrlMap = new HashMap<>();
 
-        SubscriptionBundle bundle = new SubscriptionBundle();
-        ConcurrentHashMap<Subscription<?, ?>, SubscriptionRetrieval> retrievalsMap = new ConcurrentHashMap<Subscription<?, ?>, SubscriptionRetrieval>();
-
-        // Get subs from allocations and search for duplicates
         for (SubscriptionRetrieval subRetrieval : subRetrievals) {
+            String url = subRetrieval.getUrl();
+            List<SubscriptionRetrieval> retrievals = retrievalUrlMap.get(url);
 
-            Subscription<?, ?> sub = null;
-
-            try {
-                sub = bandwidthDao.getSubscriptionRetrievalAttributes(
-                        subRetrieval).getSubscription();
-            } catch (SerializationException e) {
-                throw new EdexException(
-                        "Unable to deserialize the subscription.", e);
+            if (retrievals == null) {
+                retrievals = new LinkedList<>();
+                retrievalUrlMap.put(url, retrievals);
             }
 
             /*
-             * We only allow one subscription retrieval per DSM update. Remove
-             * any duplicate subscription allocations/retrievals, cancel them.
+             * Could have multiple subscriptions to the same dataset for
+             * different parameters
              */
-            if (!retrievalsMap.containsKey(sub)) {
-                retrievalsMap.put(sub, subRetrieval);
-            } else {
-                /*
-                 * Check for most recent startTime, that's the one we want for
-                 * retrieval.
-                 */
-                SubscriptionRetrieval currentRetrieval = retrievalsMap.get(sub);
-                if (subRetrieval.getStartTime().after(
-                        currentRetrieval.getStartTime())) {
-                    // Replace it in the map, set previous to canceled.
-                    currentRetrieval.setStatus(RetrievalStatus.CANCELLED);
-                    bandwidthDao.update(currentRetrieval);
-                    retrievalsMap.replace(sub, subRetrieval);
-                    statusHandler
-                            .info("More recent, setting previous allocation to Cancelled ["
-                                    + currentRetrieval.getIdentifier()
-                                    + "] "
-                                    + sub.getName());
-                } else {
-                    // Not more recent, cancel
-                    subRetrieval.setStatus(RetrievalStatus.CANCELLED);
-                    bandwidthDao.update(subRetrieval);
-                    statusHandler.info("Older, setting to Cancelled ["
-                            + currentRetrieval.getIdentifier() + "] "
-                            + sub.getName());
-                }
-            }
+            retrievals.add(subRetrieval);
         }
 
-        for (Entry<Subscription<?, ?>, SubscriptionRetrieval> entry : retrievalsMap
+        for (Entry<String, List<SubscriptionRetrieval>> entry : retrievalUrlMap
                 .entrySet()) {
-
-            SubscriptionRetrieval retrieval = entry.getValue();
-            Subscription<?, ?> sub = entry.getKey();
-            final String originalSubName = sub.getName();
-
-            Provider provider = getProvider(sub.getProvider());
-            if (provider == null) {
-                statusHandler
-                        .error("provider was null, skipping subscription ["
-                                + originalSubName + "]");
-                return;
+            String url = entry.getKey();
+            DataSetMetaData<?, ?> dsmd = null;
+            try {
+                dsmd = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                        .getById(url);
+            } catch (RegistryHandlerException e) {
+                logger.error("Unable to look up DataSetMetaData[" + url
+                        + "], skipping associated retrievals", e);
+                continue;
             }
-            bundle.setBundleId(sub.getSubscriptionId());
-            bundle.setPriority(retrieval.getPriority());
-            bundle.setProvider(provider);
-            bundle.setConnection(provider.getConnection());
-            bundle.setSubscription(sub);
-            ServiceType type = provider.getServiceType();
 
-            retrieval.setActualStart(TimeUtil.newDate());
-            retrieval.setStatus(RetrievalStatus.RETRIEVAL);
+            List<SubscriptionRetrieval> subRetrievalsForUrl = entry.getValue();
+            for (SubscriptionRetrieval retrieval : subRetrievalsForUrl) {
+                /*
+                 * TODO: Should we check/remove the same sub in list twice? Is
+                 * there a bug in generation of SubscriptionRetrieval objects?
+                 */
+                BandwidthSubscription bwSub = retrieval
+                        .getBandwidthSubscription();
+                final String subName = bwSub.getName();
+                Provider provider = null;
 
-            // update database
-            bandwidthDao.update(retrieval);
-
-            /*
-             * generateRetrieval will pipeline the RetrievalRecord Objects
-             * created to the DB. The PK objects returned are sent to the
-             * RetrievalQueue for processing.
-             */
-            List<RetrievalRequestRecordPK> retrievals = generateRetrieval(
-                    bundle, retrieval.getIdentifier());
-
-            if (!CollectionUtil.isNullOrEmpty(retrievals)) {
-
-                if (getRetrievalMode(type) == RETRIEVAL_MODE.SYNC) {
-                    try {
-                        Object[] payload = retrievals.toArray();
-                        RetrievalGeneratorUtilities.sendToRetrieval(
-                                retrievalRoute, network, payload);
-                    } catch (Exception e) {
-                        statusHandler.handle(Priority.PROBLEM,
-                                "Couldn't send RetrievalRecords to Queue!", e);
+                try {
+                    provider = providerHandler.getByName(bwSub.getProvider());
+                    if (provider == null) {
+                        logger.error(
+                                "No provider for name [" + bwSub.getProvider()
+                                        + "]. Skipping retrieval for subscription ["
+                                        + subName + "]");
                     }
-                    statusHandler.info("Sent " + retrievals.size()
-                            + " retrieval(s) to queue. " + network.toString());
-                } else {
-
-                    for (RetrievalRequestRecordPK pk : retrievals) {
-
-                        AsyncRetrievalResponse ars = broker.getRetrieval(pk.toString());
-                        
-                        if (ars != null) {
-                            try {
-                                RetrievalGeneratorUtilities
-                                        .sendToAsyncRetrieval(
-                                                asyncRetrievalRoute, ars);
-                            } catch (Exception e) {
-                                statusHandler
-                                        .handle(Priority.PROBLEM,
-                                                "Couldn't send RetrievalRecords to Async Queue!",
-                                                e);
-                            }
-                        } else {
-                            statusHandler
-                                    .info("Processed "
-                                            + retrievals.size()
-                                            + " retrieval(s), awaiting provider trigger. "
-                                            + network.toString());
-                        }
-                    }
+                } catch (RegistryHandlerException e) {
+                    logger.error("Error looking up provider ["
+                            + bwSub.getProvider() + "] for subscription ["
+                            + subName + "], skipping retrieval", e);
+                    continue;
                 }
 
-            } else {
-                /**
-                 * Normally this is the job of the SubscriptionNotifyTask, but
-                 * if no retrievals were generated we have to send it manually
+                Subscription<?, ?> sub = null;
+
+                try {
+                    // TODO: Could be adhoc or recurring
+                    sub = bandwidthDao
+                            .getSubscriptionRetrievalAttributes(retrieval)
+                            .getSubscription();
+                    if (sub == null) {
+                        logger.error("Unable to find subscription [" + subName
+                                + "] based on retrieval attributes. Skipping retrieval");
+                        continue;
+                    }
+                } catch (SerializationException e) {
+                    logger.error(
+                            "Unable to deserialize subscription, skipping retrieval for subscription ["
+                                    + subName + "]",
+                            e);
+                    continue;
+                }
+
+                SubscriptionBundle bundle = new SubscriptionBundle(sub,
+                        provider.getConnection(), provider);
+                ServiceType type = provider.getServiceType();
+
+                retrieval.setActualStart(TimeUtil.newDate());
+                retrieval.setStatus(RetrievalStatus.RETRIEVAL);
+
+                // update database
+                bandwidthDao.update(retrieval);
+
+                /*
+                 * generateRetrieval will pipeline the RetrievalRecord Objects
+                 * created to the DB. The PK objects returned are sent to the
+                 * RetrievalQueue for processing.
                  */
-                RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
-                retrievalManagerNotifyEvent.setId(Long.toString(retrieval
-                        .getId()));
-                EventBus.publish(retrievalManagerNotifyEvent);
+                List<RetrievalRequestRecordPK> retrievals = generateRetrieval(
+                        dsmd, bundle, retrieval.getIdentifier());
+
+                if (!CollectionUtil.isNullOrEmpty(retrievals)) {
+
+                    if (getRetrievalMode(type) == RETRIEVAL_MODE.SYNC) {
+                        try {
+                            Object[] payload = retrievals.toArray();
+                            RetrievalGeneratorUtilities.sendToRetrieval(
+                                    retrievalRoute, network, payload);
+                        } catch (Exception e) {
+                            logger.error(
+                                    "Couldn't send RetrievalRecords to Queue!",
+                                    e);
+                        }
+                        logger.info("Sent " + retrievals.size()
+                                + " retrieval(s) to queue. "
+                                + network.toString());
+                    } else {
+
+                        for (RetrievalRequestRecordPK pk : retrievals) {
+
+                            AsyncRetrievalResponse ars = broker
+                                    .getRetrieval(pk.toString());
+
+                            if (ars != null) {
+                                try {
+                                    RetrievalGeneratorUtilities
+                                            .sendToAsyncRetrieval(
+                                                    asyncRetrievalRoute, ars);
+                                } catch (Exception e) {
+                                    logger.error(
+                                            "Couldn't send RetrievalRecords to Async Queue!",
+                                            e);
+                                }
+                            } else {
+                                logger.info("Processed " + retrievals.size()
+                                        + " retrieval(s), awaiting provider trigger. "
+                                        + network.toString());
+                            }
+                        }
+                    }
+
+                } else {
+                    /**
+                     * Normally this is the job of the SubscriptionNotifyTask,
+                     * but if no retrievals were generated we have to send it
+                     * manually
+                     */
+                    RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
+                    retrievalManagerNotifyEvent
+                            .setId(Long.toString(retrieval.getId()));
+                    EventBus.publish(retrievalManagerNotifyEvent);
+                }
             }
         }
     }
@@ -274,26 +295,28 @@ public class SubscriptionRetrievalAgent extends
 
     /**
      * Generate the retrievals for a subscription bundle.
-     * 
+     *
+     * @param dsmd
+     *            the data set meta data
      * @param bundle
      *            the bundle
-     * @param subRetrievalKey
-     *            the subscription retrieval key
      * @return true if retrievals were generated (and waiting to be processed)
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private List<RetrievalRequestRecordPK> generateRetrieval(
-            SubscriptionBundle bundle, Long subRetrievalKey) {
+            DataSetMetaData<?, ?> dsmd, SubscriptionBundle bundle,
+            Long subRetrievalKey) {
 
         // process the bundle into a retrieval
-        RetrievalGenerator rg = ServiceTypeFactory.retrieveServiceFactory(
-                bundle.getProvider()).getRetrievalGenerator();
+        RetrievalGenerator rg = ServiceTypeFactory
+                .retrieveServiceFactory(bundle.getProvider())
+                .getRetrievalGenerator();
 
         final String subscriptionName = bundle.getSubscription().getName();
-        statusHandler.info("Subscription: " + subscriptionName
+        logger.info("Subscription: " + subscriptionName
                 + " Being Processed for Retrieval...");
 
-        List<Retrieval> retrievals = rg.buildRetrieval(bundle);
+        List<Retrieval> retrievals = rg.buildRetrieval(dsmd, bundle);
         List<RetrievalRequestRecord> requestRecords = null;
         List<RetrievalRequestRecordPK> requestRecordPKs = null;
         boolean retrievalsGenerated = !CollectionUtil.isNullOrEmpty(retrievals);
@@ -302,8 +325,7 @@ public class SubscriptionRetrievalAgent extends
         Long requestRetrievalTimeLong = Long
                 .valueOf(System.currentTimeMillis());
         Subscription<?, ?> bundleSub = bundle.getSubscription();
-        com.raytheon.uf.common.datadelivery.registry.Time requestRetrievalTimeT = bundleSub
-                .getTime();
+        Time requestRetrievalTimeT = bundleSub.getTime();
         Date requestRetrievalDate = null;
 
         if (requestRetrievalTimeT != null) {
@@ -324,8 +346,8 @@ public class SubscriptionRetrievalAgent extends
             }
             // set the date of retrieved data
             if (requestRetrievalDate != null) {
-                requestRetrievalTimeLong = Long.valueOf(requestRetrievalDate
-                        .getTime());
+                requestRetrievalTimeLong = Long
+                        .valueOf(requestRetrievalDate.getTime());
             }
         }
 
@@ -333,13 +355,11 @@ public class SubscriptionRetrievalAgent extends
             String owner = bundle.getSubscription().getOwner();
             String provider = bundle.getSubscription().getProvider();
 
-            int priority = (bundle.getPriority() != null) ? bundle
-                    .getPriority().getPriorityValue() : defaultPriority;
+            int priority = (bundle.getPriority() != null)
+                    ? bundle.getPriority().getPriorityValue() : defaultPriority;
             Date insertTime = TimeUtil.newDate();
-            requestRecords = new ArrayList<RetrievalRequestRecord>(
-                    retrievals.size());
-            requestRecordPKs = new ArrayList<RetrievalRequestRecordPK>(
-                    retrievals.size());
+            requestRecords = new ArrayList<>(retrievals.size());
+            requestRecordPKs = new ArrayList<>(retrievals.size());
 
             ITimer timer = TimeUtil.getTimer();
             timer.start();
@@ -351,7 +371,8 @@ public class SubscriptionRetrievalAgent extends
             for (int i = 0; i < numberOfRetrievals; i++) {
                 Retrieval retrieval = retrievals.get(i);
                 RetrievalRequestRecord rec = new RetrievalRequestRecord(
-                        subscriptionName, i, subRetrievalKey);
+                        dsmd.getUrl(), subscriptionName, i, subRetrievalKey);
+
                 /*
                  * Stored ONLY as Retrieval (Thrift) data; not part of the
                  * record proper
@@ -367,13 +388,13 @@ public class SubscriptionRetrievalAgent extends
                 rec.setSubscriptionType(retrieval.getSubscriptionType());
 
                 try {
-                    rec.setRetrieval(SerializationUtil
-                            .transformToThrift(retrieval));
+                    rec.setRetrieval(
+                            SerializationUtil.transformToThrift(retrieval));
                     rec.setState(RetrievalRequestRecord.State.PENDING);
                     requestRecords.add(rec);
                     requestRecordPKs.add(rec.getId());
                 } catch (Exception e) {
-                    statusHandler.error("Subscription: " + subscriptionName
+                    logger.error("Subscription: " + subscriptionName
                             + " Failed to serialize request [" + retrieval
                             + "]", e);
                     rec.setRetrieval(new byte[0]);
@@ -382,9 +403,8 @@ public class SubscriptionRetrievalAgent extends
             }
 
             timer.stop();
-            statusHandler.info("Cumulative time to create ["
-                    + numberOfRetrievals + "] request records ["
-                    + timer.getElapsedTime() + "] ms");
+            logger.info("Cumulative time to create [" + numberOfRetrievals
+                    + "] request records [" + timer.getElapsedTime() + "] ms");
 
             try {
                 timer.reset();
@@ -393,35 +413,18 @@ public class SubscriptionRetrievalAgent extends
                 retrievalDao.persistAll(requestRecords);
 
                 timer.stop();
-                statusHandler.info("Time to persist requests to db ["
+                logger.info("Time to persist requests to db ["
                         + timer.getElapsedTime() + "] ms");
             } catch (Exception e) {
-                statusHandler.handle(Priority.WARN, "Subscription: "
-                        + subscriptionName + " Failed to store to retrievals.",
-                        e);
+                logger.error("Subscription: " + subscriptionName
+                        + " Failed to store to retrievals.", e);
                 requestRecordPKs.clear();
             }
         } else {
-            statusHandler.warn("Subscription: " + subscriptionName
+            logger.warn("Subscription: " + subscriptionName
                     + " Did not generate any retrieval messages");
         }
 
         return requestRecordPKs;
     }
-
-    /**
-     * Get the provider by name
-     * @param providerName
-     * @return
-     */
-    private Provider getProvider(String providerName) {
-        try {
-            return providerHandler.getByName(providerName);
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unable to retrieve provider by name.", e);
-            return null;
-        }
-    }
-
 }

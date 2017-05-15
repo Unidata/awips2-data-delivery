@@ -107,69 +107,71 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 07, 2012            dhladky     Initial creation
- * Sep 25, 2013 1797       dhladky     separated time from gridded time
- * Oct 23, 2013 2385       bphillip    Change schedule method to scheduleAdhoc
- * Oct 30, 2013 2448       dhladky     Moved methods to TimeUtil.
- * Nov 04, 2013 2506       bgonzale    Added removeBandwidthSubscriptions method.
- * Nov 19, 2013 2545       bgonzale    changed getBandwidthGraphData to protected.
- * Dec 04, 2013 2566       bgonzale    added method to retrieve and parse spring files for a mode.
- * Dec 11, 2013 2566       bgonzale    fix spring resource resolution.
- * Dec 17, 2013 2636       bgonzale    Changed logging to differentiate the output.
- * Jan 08, 2014 2615       bgonzale    getMostRecent checks subscription time constraints before scheduling.
- *                                     handlePoint method now schedules most recent.
- * Jan 14, 2014 2692       dhladky     Bad Point scheduling final Empty list.
- * Jan 14, 2014 2459       mpduff      Change to subscription status.
- * Jan 25, 2014 2636       mpduff      Don't do an initial adhoc query for a new subscription.
- * Jan 24, 2013 2709       bgonzale    Before scheduling adhoc, check if in active period window.
- * Jan 29, 2014 2636       mpduff      Scheduling refactor.
- * Jan 30, 2014 2686       dhladky     refactor of retrieval.
- * Feb 06, 2014 2636       bgonzale    fix overwrite of unscheduled subscription list.  fix scheduling
- *                                     of already scheduled BandwidthAllocations.
- * Feb 11, 2014 2771       bgonzale    Added handler for GET_DATADELIVERY_ID request.
- * Feb 10, 2014 2636       mpduff      Changed how retrieval plan is updated over time.
- * Apr 02, 2014 2810       dhladky     Priority sorting of subscriptions.
- * Apr 09, 2014 3012       dhladky     Range the querries for metadata checks to subscriptions.
- * Apr 22, 2014 2992       dhladky     Ability to get list of all registry nodes containing data.
- * May 22, 2014 2808       dhladky     Schedule unscheduled subs when one is de-activated.
- * May 15, 2014 3113       mpduff      Schedule subscriptions for gridded datasets without cycles.
- * Jul 28, 2014 2752       dhladky     Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
- * Aug 29, 2014 3446       bphillip    SubscriptionUtil is now a singleton
- * Sep 14, 2014 2131       dhladky     PDA updates
- * Oct 03, 2014 2749       ccody       Changes to startBandwidthManager
- *                                     to refresh only necessary spring components
- *                                     &#64;see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.startNewBandwidthManager
- *                                     Changes to handleRequest so that after restarting that the EdexBandwidthManager
- *                                     changes and updates itself so that attempts to connect with them
- *                                     do not result in errors and exceptions.
- *                                     &#64;see com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager.resetBandwidthManager
- * Oct 15, 2014 3664       ccody       Add notification event for unscheduled Subscriptions at startup
- * Oct 12, 2014 3707       dhladky     Changed the way gridded subscriptions are triggerd for retrieval.
- * Oct 28, 2014 2748       ccody       Subscription outside of Active period should not throw an exception
- * Nov 03, 2014 2414       dhladky     Refactored bandwidth Manager, better documented methods, fixed race conditions.
- * Nov 19, 2014 3852       dhladky     Fixed un-safe empty allocation state that broke Maintenance Task. More logging.
- * Nov 20, 2014 2749       ccody       Added "propose only" for Set Avail Bandwidth
- * Jan 15, 2014 3884       dhladky     Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
- * Jan 27, 2014 4041       dhladky     Consolidated time checks for Adhoc creations.
- * Feb 19, 2015 3998       dhladky     Streamlined adhoc subscription processing.
- * May 27, 2015 4531       dhladky     Remove excessive Calendar references.
- * Jun 09, 2015 4047       dhladky     Performance improvement on startup, initial startup scheduling async now.
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
- * Sep 12, 2016 5772       tjensen     Allow PDA adhocs for older times
- * Sep 30, 2016 5772       tjensen     Fix Adhocs for older times
- * Apr 05, 2017 1045       tjensen     Update for moving datasets
+ *
+ * Date          Ticket#    Engineer    Description
+ * ------------- ---------- ----------- --------------------------
+ * Feb 07, 2012             dhladky     Initial creation
+ * Sep 25, 2013  1797       dhladky     separated time from gridded time
+ * Oct 23, 2013  2385       bphillip    Change schedule method to scheduleAdhoc
+ * Oct 30, 2013  2448       dhladky     Moved methods to TimeUtil.
+ * Nov 04, 2013  2506       bgonzale    Added removeBandwidthSubscriptions method.
+ * Nov 19, 2013  2545       bgonzale    changed getBandwidthGraphData to protected.
+ * Dec 04, 2013  2566       bgonzale    added method to retrieve and parse spring files for a mode.
+ * Dec 11, 2013  2566       bgonzale    fix spring resource resolution.
+ * Dec 17, 2013  2636       bgonzale    Changed logging to differentiate the output.
+ * Jan 08, 2014  2615       bgonzale    getMostRecent checks subscription time constraints before scheduling.
+ *                                      handlePoint method now schedules most recent.
+ * Jan 14, 2014  2692       dhladky     Bad Point scheduling final Empty list.
+ * Jan 14, 2014  2459       mpduff      Change to subscription status.
+ * Jan 25, 2014  2636       mpduff      Don't do an initial adhoc query for a new subscription.
+ * Jan 24, 2013  2709       bgonzale    Before scheduling adhoc, check if in active period window.
+ * Jan 29, 2014  2636       mpduff      Scheduling refactor.
+ * Jan 30, 2014  2686       dhladky     refactor of retrieval.
+ * Feb 06, 2014  2636       bgonzale    fix overwrite of unscheduled subscription list.  fix scheduling
+ *                                      of already scheduled BandwidthAllocations.
+ * Feb 11, 2014  2771       bgonzale    Added handler for GET_DATADELIVERY_ID request.
+ * Feb 10, 2014  2636       mpduff      Changed how retrieval plan is updated over time.
+ * Apr 02, 2014  2810       dhladky     Priority sorting of subscriptions.
+ * Apr 09, 2014  3012       dhladky     Range the querries for metadata checks to subscriptions.
+ * Apr 22, 2014  2992       dhladky     Ability to get list of all registry nodes containing data.
+ * May 22, 2014  2808       dhladky     Schedule unscheduled subs when one is de-activated.
+ * May 15, 2014  3113       mpduff      Schedule subscriptions for gridded datasets without cycles.
+ * Jul 28, 2014  2752       dhladky     Allow Adhocs for Shared Subscriptions, improved efficency of scheduling.
+ * Aug 29, 2014  3446       bphillip    SubscriptionUtil is now a singleton
+ * Sep 14, 2014  2131       dhladky     PDA updates
+ * Oct 03, 2014  2749       ccody       Changes to startBandwidthManager
+ *                                      to refresh only necessary spring components
+ *                                      &#64;see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.startNewBandwidthManager
+ *                                      Changes to handleRequest so that after restarting that the EdexBandwidthManager
+ *                                      changes and updates itself so that attempts to connect with them
+ *                                      do not result in errors and exceptions.
+ *                                      &#64;see com.raytheon.uf.edex.datadelivery.bandwidth.EdexBandwidthManager.resetBandwidthManager
+ * Oct 15, 2014  3664       ccody       Add notification event for unscheduled Subscriptions at startup
+ * Oct 12, 2014  3707       dhladky     Changed the way gridded subscriptions are triggerd for retrieval.
+ * Oct 28, 2014  2748       ccody       Subscription outside of Active period should not throw an exception
+ * Nov 03, 2014  2414       dhladky     Refactored bandwidth Manager, better documented methods, fixed race conditions.
+ * Nov 19, 2014  3852       dhladky     Fixed un-safe empty allocation state that broke Maintenance Task. More logging.
+ * Nov 20, 2014  2749       ccody       Added "propose only" for Set Avail Bandwidth
+ * Jan 15, 2014  3884       dhladky     Removed shutdown and shutdown internal methods (un-needed) which undermined #2749.
+ * Jan 27, 2014  4041       dhladky     Consolidated time checks for Adhoc creations.
+ * Feb 19, 2015  3998       dhladky     Streamlined adhoc subscription processing.
+ * May 27, 2015  4531       dhladky     Remove excessive Calendar references.
+ * Jun 09, 2015  4047       dhladky     Performance improvement on startup, initial startup scheduling async now.
+ * Mar 16, 2016  3919       tjensen     Cleanup unneeded interfaces
+ * Sep 12, 2016  5772       tjensen     Allow PDA adhocs for older times
+ * Sep 30, 2016  5772       tjensen     Fix Adhocs for older times
+ * Apr 05, 2017  1045       tjensen     Update for moving datasets
+ * Apr 27, 2017  6186       rjpeter     Removed overloaded scheduleAdhoc, renamed to queueRetrieval.
+ *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 public abstract class BandwidthManager<T extends Time, C extends Coverage>
         extends AbstractPrivilegedRequestHandler<BandwidthRequest<T, C>> {
 
-    protected static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(BandwidthManager.class);
+    protected final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(getClass());
 
     /** Used for min time range (point subs) **/
     public static final String MIN_RANGE_TIME = "min";
@@ -280,9 +282,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * /res/spring/harvester-datadelivery.xml
      * /spring/datadelivery-subscription-verification.xml
      * /spring/bandwidth-datadelivery-edex-impl-wfo.xml
-     * /spring/bandwidth-datadelivery-edex-impl.xml
-     * /spring/bandwidth-datadelivery-edex-impl-monolithic.xml
-     * /res/spring/purge-logs.xml
+     * /spring/bandwidth-datadelivery-edex-impl.xml /res/spring/purge-logs.xml
      * /res/spring/ebxml-garbagecollector-edex-impl.xml
      * /res/spring/ebxml-webserver.xml /spring/datadelivery-cron.xml
      * /spring/datadelivery-wfo-cron.xml /spring/retrieval-datadelivery.xml
@@ -316,6 +316,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @param type
      * @return the reference to the bandwidth manager
      */
+    @SuppressWarnings("unchecked")
     private BandwidthManager<T, C> startBandwidthManager(
             final String[] springFiles, String type) {
         ITimer timer = TimeUtil.getTimer();
@@ -1008,9 +1009,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
              * subscription has now be subsumed or altered to accommodate a new
              * super set of subscriptions...
              */
-            if ((retrieval.getStatus().equals(RetrievalStatus.RESCHEDULE)
-                    || retrieval.getStatus().equals(RetrievalStatus.PROCESSING))
-                    && !retrieval.isSubsumed()) {
+            if (retrieval.getStatus().equals(RetrievalStatus.RESCHEDULE)
+                    || retrieval.getStatus()
+                            .equals(RetrievalStatus.PROCESSING)) {
 
                 BandwidthSubscription bandwidthSubscription = retrieval
                         .getBandwidthSubscription();
@@ -1041,7 +1042,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             }
         }
         timer.lap("creating retrievals");
-
         for (SubscriptionRetrieval retrieval : reservations) {
             BandwidthSubscription bandwidthSubscription = retrieval
                     .getBandwidthSubscription();
@@ -1127,31 +1127,21 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
 
     /**
-     * Schedule AdhocSubscription to run as soon as the RetrievalPlan will
-     * allow.
+     * Queue the retrieval of the AdhocSubscription for download.
      *
      * @param subscription
-     * @param b
      * @return
      */
-    public List<BandwidthAllocation> scheduleAdhoc(
+    protected List<BandwidthAllocation> queueRetrieval(
             AdhocSubscription<T, C> subscription) {
-        // Adhocs always schedule for immediately regardless of type
-        return scheduleAdhoc(subscription, BandwidthUtil.now());
-    }
+        /*
+         * TODO: Should remove all SubscriptionRetrieval Generation from here on
+         * and just pass the AdhocSubscription directly to RetrievalManager.
+         */
+        Calendar now = BandwidthUtil.now();
+        List<BandwidthSubscription> subscriptions = new ArrayList<>(1);
 
-    /**
-     * Schedule AdhocSubscription to run at the given time 'now'.
-     *
-     * @param subscription
-     * @param b
-     * @return
-     */
-    public List<BandwidthAllocation> scheduleAdhoc(
-            AdhocSubscription<T, C> subscription, Calendar now) {
-
-        List<BandwidthSubscription> subscriptions = new ArrayList<>();
-        // Store the AdhocSubscription with a base time of now..
+        // Store the AdhocSubscription with a base time of now
         subscriptions.add(bandwidthDao.newBandwidthSubscription(subscription,
                 now.getTime()));
 
@@ -1229,7 +1219,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             AdhocSubscription<T, C> adhoc) {
         statusHandler.info(
                 "Scheduling adhoc subscription [" + adhoc.getName() + "]");
-        return scheduleAdhoc(adhoc);
+        return queueRetrieval(adhoc);
     }
 
     /***

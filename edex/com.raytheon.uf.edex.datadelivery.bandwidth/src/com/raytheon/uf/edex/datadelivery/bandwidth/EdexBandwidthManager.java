@@ -100,7 +100,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * that could interfere with garbage collection/threading concerns.
  *
  * <pre>
- *  SOFTWARE HISTORY
+ * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
@@ -272,7 +272,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * abstract BandwidthManager.handleRequest method processing. Presently,
      * this method must be implemented but empty in all other implementations.
      *
-     * @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.resetBandwidthManager
+     * @see com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager.
+     *      resetBandwidthManager
      */
     @Override
     protected void resetBandwidthManager(Network requestNetwork,
@@ -430,8 +431,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @param subscriptionNetwork
      * @param unscheduledList
      */
-    private static void logSubscriptionListUnscheduled(
-            String subscriptionNetwork,
+    private void logSubscriptionListUnscheduled(String subscriptionNetwork,
             List<BandwidthAllocation> unscheduledList) {
         if (unscheduledList != null) {
             StringBuilder sb = new StringBuilder();
@@ -485,8 +485,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @param id
      * @return
      */
-    protected static <M> M getRegistryObjectById(
-            IRegistryObjectHandler<M> handler, String id) {
+    protected <M> M getRegistryObjectById(IRegistryObjectHandler<M> handler,
+            String id) {
         try {
             return handler.getById(id);
         } catch (RegistryHandlerException e) {
@@ -783,12 +783,11 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @param dataSetMetaData
      *            the metadadata
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void updateDataSetMetaData(DataSetMetaData dataSetMetaData)
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    protected void updateDataSetMetaData(DataSetMetaData dataSetMetaData)
             throws ParseException {
-
         /*
-         * Looking for active subscriptions to the dataset. Creates an ADHOC
+         * Look for active subscriptions to the dataset. Creates an ADHOC
          * subscription replacing the allocations from scheduling and guarantees
          * an active retrieval will be processed.
          */
@@ -815,8 +814,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             }
 
             statusHandler.info(String.format(
-                    "Found [%s] subscriptions subscribed to "
-                            + "this dataset, url [%s].",
+                    "Found [%d] subscriptions subscribed to dataset, url [%s].",
                     subscriptions.size(), dataSetMetaData.getUrl()));
 
             // Create an adhoc for each one, and schedule it
@@ -846,9 +844,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         .info("Updating subscription metadata: " + sub.getName()
                                 + " dataSetMetadata: " + sub.getDataSetName()
                                 + " scheduling subscription for retrieval.");
-
-                scheduleAdhoc(new AdhocSubscription<>(
-                        (RecurringSubscription<T, C>) sub));
+                queueRetrieval(
+                        new AdhocSubscription<>((RecurringSubscription<T, C>) sub));
             }
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
@@ -896,6 +893,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      */
     @Subscribe
     @AllowConcurrentEvents
+    /* TODO: Rewrite to correctly manage retrievals based on data arrival */
     public void updatePointDataSetMetaData(PointDataSetMetaData dataSetMetaData)
             throws ParseException {
 
@@ -1108,7 +1106,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      *            <Network, List<Subscription>> subMap
      */
     @Override
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public List<String> initializeScheduling(
             Map<Network, List<Subscription>> subMap)
             throws SerializationException {

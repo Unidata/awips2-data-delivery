@@ -1,102 +1,71 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.datadelivery.registry;
 
-import java.util.List;
-
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
-import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
-import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * 
+ *
  * A bundle of {@link Subscription}s.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 19, 2012 1166       djohnson    Clean up JAXB representation of registry objects.
- * Mar 29, 2013 1841       djohnson    Remove JAXB annotations.
- * Jul 11, 2013 2106       djohnson    Use SubscriptionPriority.
- * Sept 05, 2014 2131      dhladky     re-did the types.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Mar 29, 2013  1841     djohnson  Remove JAXB annotations.
+ * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority.
+ * Sep 05, 2014  2131     dhladky   re-did the types.
+ * Apr 19, 2017  6186     rjpeter   Removed unused fields.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
-@DynamicSerialize
 public class SubscriptionBundle {
+    private final Subscription<?, ?> subscription;
 
-    public SubscriptionBundle() {
+    private final Connection connection;
 
+    private final Provider provider;
+
+    public SubscriptionBundle(Subscription<?, ?> subscription,
+            Connection connection, Provider provider) {
+        this.subscription = subscription;
+        this.connection = connection;
+        this.provider = provider;
     }
 
-    @DynamicSerializeElement
-    private Subscription subscription;
-
-    /**
-     * If this is an aggregation, these are the subscriptions being full filled
-     * that may need to be subsetted/stored separately from what is returned.
-     */
-    @DynamicSerializeElement
-    private List<Subscription> subscriptionsMet;
-
-    @DynamicSerializeElement
-    private String bundleId;
-
-    @DynamicSerializeElement
-    private SubscriptionPriority priority;
-
-    @DynamicSerializeElement
-    private Connection connection;
-
-    @DynamicSerializeElement
-    private Provider provider;
-
-    public Subscription getSubscription() {
+    public Subscription<?, ?> getSubscription() {
         return subscription;
     }
 
-    public void setSubscription(Subscription subscription) {
-        this.subscription = subscription;
-    }
-
-    public List<Subscription> getSubscriptionsMet() {
-        return subscriptionsMet;
-    }
-
-    public void setSubscriptionsMet(List<Subscription> subscriptionsMet) {
-        this.subscriptionsMet = subscriptionsMet;
-    }
-
-    public String getBundleId() {
-        return bundleId;
-    }
-
-    public void setBundleId(String bundleId) {
-        this.bundleId = bundleId;
-    }
-
     public SubscriptionPriority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(SubscriptionPriority priority) {
-        this.priority = priority;
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
+        return subscription.getPriority();
     }
 
     public Connection getConnection() {
         return connection;
-    }
-
-    public void setProvider(Provider provider) {
-        this.provider = provider;
     }
 
     public Provider getProvider() {
@@ -105,14 +74,10 @@ public class SubscriptionBundle {
 
     /**
      * Get the data type from the bundle.
-     * 
+     *
      * @return the type
      */
     public DataType getDataType() {
-        if (subscription != null) {
-            return subscription.getDataSetType();
-        }
-        return null;
+        return subscription.getDataSetType();
     }
-
 }
