@@ -1,7 +1,9 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
-    http://www.springframework.org/schema/beans/spring-beans.xsd">
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="dataDeliveryRetrievalPluginName" class="java.lang.String">
         <constructor-arg type="java.lang.String" value="dataDeliveryRetrieval" />
@@ -15,5 +17,27 @@
         <constructor-arg
             value="jms-durable:queue:dataDeliveryRetrievalProcess" />
     </bean>
+    
+    <bean id="dataDeliveryDecoder"
+        class="com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist.DataDeliveryDecoder" >
+        <constructor-arg type="java.lang.String" value="jms-generic:topic:notify.msg"/>
+    </bean>
+    
+    <camelContext id="dataDeliveryDecode-camel"
+        xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
+      <endpoint id="dataDeliveryDecodeJmsEndpoint" uri="jms-durable:queue:Ingest.DataDelivery.Decode?concurrentConsumers=${datadelivery-decode.threads}" />
+    
+      <route id="dataDeliveryDecodeProcess">
+        <from ref="dataDeliveryDecodeJmsEndpoint" />
+        <doTry>
+          <bean ref="dataDeliveryDecoder" method="process" />
+        
+          <doCatch>
+            <exception>java.lang.Throwable</exception>
+            <to uri="log:dataDeliveryDecode?level=ERROR" />
+          </doCatch>
+        </doTry>
+      </route>
+    </camelContext>
 
 </beans>

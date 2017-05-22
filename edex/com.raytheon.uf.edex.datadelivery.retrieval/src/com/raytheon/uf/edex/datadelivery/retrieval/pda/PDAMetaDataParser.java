@@ -81,6 +81,8 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * Jan 27, 2017  6089     tjensen   Update to work with pipe delimited metadata
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
  * Mar 31, 2017  6186     rjpeter   Refactored
+ * May 09, 2017  6130     tjensen   Add version data to data sets support
+ *                                  routing to ingest
  *
  * </pre>
  *
@@ -228,6 +230,9 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 for (Entry<String, Parameter> parm : parameters.entrySet()) {
                     storeParameter(parm.getValue());
                 }
+
+                pdaDataSet.setVersionData(
+                        getVersionData(dataSetName, providerName));
 
                 if (isMoving) {
                     try {

@@ -31,7 +31,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
- * DataSetConfigInfoMap XML Object
+ * DataSetVersionInfoMap XML object
  *
  * <pre>
  *
@@ -39,35 +39,47 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 13, 2017 1045       tjensen     Initial creation
- * May 09, 2017 6130       tjensen     Remove unneeded map
+ * May 3, 2017  6130       tjensen     Initial creation
  *
  * </pre>
  *
  * @author tjensen
  */
 
-@XmlRootElement(name = "DataSetConfigInfoMap")
+@XmlRootElement(name = "DataSetVersionInfoMap")
 @XmlAccessorType(XmlAccessType.NONE)
-public class DataSetConfigInfoMap {
+public class DataSetVersionInfoMap {
 
     @XmlElements({
-            @XmlElement(name = "DataSetConfigInfo", type = DataSetConfigInfo.class) })
-    private List<DataSetConfigInfo> dataSetConfigInfoList;
+            @XmlElement(name = "VersionInfo", type = DataSetVersionInfo.class) })
+    private List<DataSetVersionInfo> dsviList;
 
-    public List<DataSetConfigInfo> getDataSetConfigInfoList() {
-        return dataSetConfigInfoList;
-    }
-
-    public void setDataSetConfigInfoList(
-            List<DataSetConfigInfo> dataSetConfigInfoList) {
-        this.dataSetConfigInfoList = dataSetConfigInfoList;
-    }
-
-    public void addDataSets(Collection<DataSetConfigInfo> setsToAdd) {
-        if (this.dataSetConfigInfoList == null) {
-            this.dataSetConfigInfoList = new ArrayList<>();
+    public void addDataSets(Collection<DataSetVersionInfo> infoToAdd) {
+        if (this.dsviList == null) {
+            this.dsviList = new ArrayList<>();
         }
-        this.dataSetConfigInfoList.addAll(setsToAdd);
+        this.dsviList.addAll(infoToAdd);
+    }
+
+    public List<DataSetVersionInfo> getDsviList() {
+        return dsviList;
+    }
+
+    public void setDsviList(List<DataSetVersionInfo> dsviList) {
+        this.dsviList = dsviList;
+    }
+
+    public String validate() {
+        StringBuilder sb = new StringBuilder();
+        for (DataSetVersionInfo dsvi : getDsviList()) {
+            String dsviErrors = dsvi.validate();
+            if (!"".equals(dsviErrors)) {
+                sb.append("Errors with " + dsvi.getId() + ": ");
+                sb.append(dsviErrors);
+                sb.append(System.lineSeparator());
+            }
+        }
+
+        return sb.toString();
     }
 }

@@ -13,20 +13,22 @@ import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.datadelivery.event.notification.NotificationDao;
 
 /**
- * 
+ *
  * Abstract class to provide the send and store capabilities to subclasses.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 3/18/2013    1802       bphillip    Implemented transactional boundaries
- * Oct 28, 2014 2748       ccody       Add notification event for Subscription modifications.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 18, 2013  1802     bphillip  Implemented transactional boundaries
+ * Oct 28, 2014  2748     ccody     Add notification event for Subscription
+ *                                  modifications.
+ * May 22, 2017  6130     tjensen   Add visibility to storeAndSend
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  * @version 1.0
  */
@@ -45,7 +47,7 @@ public abstract class AbstractHandler {
 
     /**
      * Sends the object to 'notifyRoute'.
-     * 
+     *
      * @param obj
      */
     public void send(Object obj, String endpoint) {
@@ -60,8 +62,8 @@ public abstract class AbstractHandler {
                         e);
             }
         } else {
-            statusHandler.error("Unable to serialize null object to "
-                    + endpoint);
+            statusHandler
+                    .error("Unable to serialize null object to " + endpoint);
 
         }
 
@@ -69,10 +71,10 @@ public abstract class AbstractHandler {
 
     /**
      * Stores the record in the notification table.
-     * 
+     *
      * @param record
      */
-    void storeAndSend(NotificationRecord record, String endpoint) {
+    public void storeAndSend(NotificationRecord record, String endpoint) {
         if (record != null) {
             store(record);
             send(record, endpoint);
@@ -81,10 +83,10 @@ public abstract class AbstractHandler {
 
     /**
      * Stores the record in the notification table.
-     * 
+     *
      * @param record
      */
-    void store(NotificationRecord record) {
+    protected void store(NotificationRecord record) {
         if (record != null) {
             try {
                 notificationDao.createOrUpdate(record);

@@ -1,12 +1,15 @@
 package com.raytheon.uf.common.datadelivery.registry;
 
+import java.text.ParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
@@ -47,6 +50,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jun 09, 2014  3113     mpduff    Version 1.1 - Add arrivalTime.
  * Nov 16, 2016  5988     tjensen   Added Parameters to equals comparison
  * Apr 05, 2017  1045     tjensen   Add information to support moving datasets
+ * May 09, 2017  6130     tjensen   Add version data to support routing to
+ *                                  ingest
  *
  * </pre>
  *
@@ -119,6 +124,10 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
     @XmlElement
     @DynamicSerializeElement
     protected boolean moving;
+
+    @XmlElements({ @XmlElement })
+    @DynamicSerializeElement
+    private List<VersionData> versionData;
 
     public Map<String, Parameter> getParameters() {
         return parameters;
@@ -236,6 +245,8 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
                 + ((parameters == null) ? 0 : parameters.hashCode());
         result = prime * result
                 + ((providerName == null) ? 0 : providerName.hashCode());
+        result = prime * result
+                + ((versionData == null) ? 0 : versionData.hashCode());
         return result;
     }
 
@@ -285,6 +296,15 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
         } else if (!providerName.equals(other.providerName)) {
             return false;
         }
+
+        if (versionData == null) {
+            if (other.versionData != null) {
+                return false;
+            }
+        } else if (!versionData.equals(other.versionData)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -309,7 +329,7 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
 
     /**
      * Apply information pulled from config files relevant ot this Data Set
-     * 
+     *
      * @param isMoving
      *            True if this is a moving data set
      * @param parentCov
@@ -327,5 +347,26 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
             setEstimatedSize(estSizeInKB * 1024);
         }
 
+    }
+
+    public List<VersionData> getVersionData() {
+        return versionData;
+    }
+
+    public void setVersionData(List<VersionData> versionData) {
+        this.versionData = versionData;
+    }
+
+    public VersionData getVersionDataByVersion(String version)
+            throws ParseException {
+        VersionData retval = null;
+
+        for (VersionData vd : versionData) {
+            if (vd.checkVersion(version)) {
+                retval = vd;
+                break;
+            }
+        }
+        return retval;
     }
 }

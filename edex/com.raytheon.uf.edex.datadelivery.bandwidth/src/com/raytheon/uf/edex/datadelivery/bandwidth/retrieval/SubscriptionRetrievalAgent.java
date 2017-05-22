@@ -97,6 +97,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Apr 06, 2016  5424     dhladky   Allow for ASYNC processing of retrievals.
  * Apr 20, 2017  6186     rjpeter   Allow multiple subscriptions to the same
  *                                  dataSet per allocation.
+ * May 22, 2017  6130     tjensen   Add DataSetName to RetrievalRequestRecord
  *
  * </pre>
  *
@@ -384,6 +385,7 @@ public class SubscriptionRetrievalAgent
                 rec.setInsertTime(insertTime);
                 rec.setNetwork(retrieval.getNetwork());
                 rec.setProvider(provider);
+                rec.setDataSetName(dsmd.getDataSetName());
                 rec.setPlugin(plugin);
                 rec.setSubscriptionType(retrieval.getSubscriptionType());
 
