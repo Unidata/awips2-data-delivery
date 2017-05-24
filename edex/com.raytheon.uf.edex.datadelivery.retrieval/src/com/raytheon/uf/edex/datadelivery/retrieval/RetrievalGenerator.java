@@ -62,6 +62,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Apr 06, 2016  5424     dhladky   Added Retrieval Mode constant,
  *                                  subRetrievalKey
  * Apr 20, 2017  6186     rjpeter   Updated buildRetrieval signature.
+ * Jun 13, 2017  6204     nabowle   Use copy constructor in processParameter()
  *
  * </pre>
  *
@@ -134,20 +135,7 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
      * @return
      */
     protected Parameter processParameter(Parameter origParm) {
-
-        Parameter param = new Parameter();
-        param.setName(origParm.getName());
-        param.setBaseType(origParm.getBaseType());
-        param.setDataType(origParm.getDataType());
-        param.setDefinition(origParm.getDefinition());
-        param.setFillValue(origParm.getFillValue());
-        param.setLevelType(origParm.getLevelType());
-        param.setMissingValue(origParm.getMissingValue());
-        param.setProviderName(origParm.getProviderName());
-        param.setUnits(origParm.getUnits());
-
-        return param;
-
+        return new Parameter(origParm);
     }
 
     /**

@@ -1,25 +1,24 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -38,47 +37,48 @@ import com.raytheon.uf.common.util.GridUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 
 /**
- * 
+ *
  * Convert RetrievalAttribute to GridRecords.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 19, 2012            bsteffen     Initial javadoc
- * Feb 07, 2013 1543       djohnson     Allow package-level overriding of methods for mocking in tests.
- * May 12, 2013 753        dhladky      Altered to be more flexible with other types
- * May 31, 2013 2038       djohnson     Rename setPdos to allocatePdoArray.
- * Sept 25, 2013 1797      dhladky      separated time from gridded time
- * Apr 22, 2014  3046      dhladky      Got rid of duplicate code.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 19, 2012           bsteffen  Initial javadoc
+ * Feb 07, 2013  1543     djohnson  Allow package-level overriding of methods
+ *                                  for mocking in tests.
+ * May 12, 2013  753      dhladky   Altered to be more flexible with other types
+ * May 31, 2013  2038     djohnson  Rename setPdos to allocatePdoArray.
+ * Sep 25, 2013  1797     dhladky   separated time from gridded time
+ * Apr 22, 2014  3046     dhladky   Got rid of duplicate code.
+ * Jun 13, 2017  6204     nabowle   Cleanup.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
-public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, GriddedTime, GriddedCoverage> {
+public class GridMetadataAdapter
+        extends AbstractMetadataAdapter<Integer, GriddedTime, GriddedCoverage> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(GridMetadataAdapter.class);
-        
+
     public GridMetadataAdapter() {
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void processAttributeXml(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML)
+    public void processAttributeXml(
+            RetrievalAttribute<GriddedTime, GriddedCoverage> attXML)
             throws InstantiationException {
         this.attXML = attXML;
         Level[] levels = getLevels(attXML);
         int size = levels.length;
 
         List<String> ensembles = null;
-        if (attXML.getEnsemble() != null && attXML.getEnsemble().hasSelection()) {
+        if (attXML.getEnsemble() != null
+                && attXML.getEnsemble().hasSelection()) {
             ensembles = attXML.getEnsemble().getSelectedMembers();
             size *= ensembles.size();
         } else {
@@ -86,26 +86,26 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
         }
 
         GriddedTime time = attXML.getTime();
-        
+
         if (time.getSelectedTimeIndices() != null) {
-            if (levels.length > 1
-                    || time.getSelectedTimeIndices().size() > 1) {
+            if (levels.length > 1 || time.getSelectedTimeIndices().size() > 1) {
                 size *= time.getSelectedTimeIndices().size();
             }
         }
 
         allocatePdoArray(size);
-        GridCoverage gridCoverage = attXML.getCoverage().getRequestGridCoverage();
+        GridCoverage gridCoverage = attXML.getCoverage()
+                .getRequestGridCoverage();
 
         if (time.getSelectedTimeIndices() != null) {
             int bin = 0;
             for (String ensemble : ensembles) {
-                for (int i = 0; i < time.getSelectedTimeIndices()
-                        .size(); i++) {
-                    for (int j = 0; j < levels.length; j++) {
-                        pdos[bin++] = populateGridRecord(attXML.getSubName(),
-                                attXML.getParameter(), levels[j], ensemble,
+                for (int i = 0; i < time.getSelectedTimeIndices().size(); i++) {
+                    for (Level level : levels) {
+                        pdos[bin] = populateGridRecord(attXML.getSubName(),
+                                attXML.getParameter(), level, ensemble,
                                 gridCoverage);
+                        bin++;
                     }
                 }
             }
@@ -120,7 +120,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
 
     /**
      * Populate the grid record
-     * 
+     *
      * @param parm
      * @param level
      * @param gridCoverage
@@ -132,9 +132,10 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
         GridRecord rec = null;
 
         try {
-            rec = ResponseProcessingUtilities.getGridRecord(name, parm, level, ensembleId, gridCoverage);
+            rec = ResponseProcessingUtilities.getGridRecord(name, parm, level,
+                    ensembleId, gridCoverage);
         } catch (Exception e) {
-            statusHandler.error("Couldn't create grid record! "+e);
+            statusHandler.error("Couldn't create grid record! ", e);
         }
 
         return rec;
@@ -142,7 +143,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
 
     @VisibleForTesting
     Level[] getLevels(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
-        ArrayList<Level> levels = ResponseProcessingUtilities
+        List<Level> levels = ResponseProcessingUtilities
                 .getOpenDAPGridLevels(attXML.getParameter().getLevels());
         return levels.toArray(new Level[levels.size()]);
     }
@@ -150,7 +151,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
     /**
      * Flips the array in the y direction, needed because AWIPS display is
      * backward from NCEP data
-     * 
+     *
      * @param nx
      * @param ny
      * @param origVals
@@ -183,7 +184,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
 
     /**
      * pre-fill grid and pad when grid from provider is short on values
-     * 
+     *
      * @param nx
      * @param ny
      * @param dnx
@@ -213,7 +214,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
 
     /**
      * pre-fill grid and pad when grid from provider is long on values
-     * 
+     *
      * @param nx
      * @param ny
      * @param dnx
@@ -256,7 +257,7 @@ public class GridMetadataAdapter extends AbstractMetadataAdapter<Integer, Gridde
         }
         return null;
     }
-    
+
     @Override
     public void allocatePdoArray(int size) {
         pdos = new GridRecord[size];

@@ -84,6 +84,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Sep 27, 2014  3121     dhladky   removed un-needed casting.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 09, 2017  6186     rjpeter   Update to handle passed in DataSetMetaData.
+ * Jun 13, 2017  6204     nabowle   Cleanup.
  *
  * </pre>
  *
@@ -322,12 +323,7 @@ class OpenDAPRetrievalGenerator
         return retrieval;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-
     @Override
-
     public RetrievalAdapter<GriddedTime, GriddedCoverage> getServiceRetrievalAdapter() {
         return new OpenDAPRetrievalAdapter();
     }
@@ -368,12 +364,11 @@ class OpenDAPRetrievalGenerator
             Levels parmLevels) {
 
         List<Levels> levels = new ArrayList<>();
-        for (int i = 0; i < levelSequence.size(); i++) {
+        for (Integer currentLevelSequence : levelSequence) {
             Levels level = new Levels();
             level.setLevel(parmLevels.getLevel());
             level.setDz(parmLevels.getDz());
             level.setLevelType(parmLevels.getLevelType());
-            Integer currentLevelSequence = levelSequence.get(i);
             level.setRequestLevelStart(currentLevelSequence);
             level.setRequestLevelEnd(currentLevelSequence);
             level.setName(parmLevels.getName());
@@ -392,11 +387,11 @@ class OpenDAPRetrievalGenerator
      * @param subTime
      * @return
      */
-    private ArrayList<GriddedTime> processTime(List<Integer> timeSequence,
+    private List<GriddedTime> processTime(List<Integer> timeSequence,
             GriddedTime subTime) {
 
-        ArrayList<GriddedTime> times = new ArrayList<>();
-        for (int i = 0; i < timeSequence.size(); i++) {
+        List<GriddedTime> times = new ArrayList<>(timeSequence.size());
+        for (Integer timeSeq : timeSequence) {
             GriddedTime time = new GriddedTime();
             time.setEnd(subTime.getEnd());
             time.setStart(subTime.getStart());
@@ -404,11 +399,11 @@ class OpenDAPRetrievalGenerator
             time.setFormat(subTime.getFormat());
             time.setStep(subTime.getStep());
             time.setStepUnit(subTime.getStepUnit());
-            ArrayList<Integer> indicies = new ArrayList<>(1);
-            indicies.add(timeSequence.get(i));
+            List<Integer> indicies = new ArrayList<>(1);
+            indicies.add(timeSeq);
             time.setSelectedTimeIndices(indicies);
-            time.setRequestStartTimeAsInt(timeSequence.get(i));
-            time.setRequestEndTimeAsInt(timeSequence.get(i));
+            time.setRequestStartTimeAsInt(timeSeq);
+            time.setRequestEndTimeAsInt(timeSeq);
             times.add(time);
         }
 
@@ -443,14 +438,14 @@ class OpenDAPRetrievalGenerator
                     param.getLevels().setRequestLevelEnd(0);
                     param.getLevels().setRequestLevelStart(0);
 
-                    ArrayList<DataTime> times = null;
+                    List<DataTime> times = null;
 
                     for (GriddedTime gtime : processTime(timeSequence, time)) {
                         times = ResponseProcessingUtilities
                                 .getOpenDAPGridDataTimes(gtime);
                     }
 
-                    ArrayList<Level> levels = ResponseProcessingUtilities
+                    List<Level> levels = ResponseProcessingUtilities
                             .getOpenDAPGridLevels(param.getLevels());
 
                     Map<DataTime, List<Level>> dups = getGridDuplicates(
@@ -475,8 +470,8 @@ class OpenDAPRetrievalGenerator
                     for (List<Integer> levelSequence : param.getLevels()
                             .getLevelSequences(sfactor)) {
 
-                        ArrayList<DataTime> times = null;
-                        ArrayList<Level> plevels = null;
+                        List<DataTime> times = null;
+                        List<Level> plevels = null;
 
                         for (GriddedTime gtime : processTime(timeSequence,
                                 time)) {
@@ -530,7 +525,7 @@ class OpenDAPRetrievalGenerator
             }
         }
         // remove entire subscription, it's a duplicate
-        if (time.getSelectedTimeIndices().size() == 0) {
+        if (time.getSelectedTimeIndices().isEmpty()) {
             logger.info("Removing duplicate subscription: " + sub.getName());
             return null;
         }

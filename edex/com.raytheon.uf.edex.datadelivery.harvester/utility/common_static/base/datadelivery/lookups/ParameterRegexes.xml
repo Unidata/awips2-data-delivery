@@ -91,7 +91,7 @@
     <nameRegex order="29.0" id="specHum" AWIPS="SH" pattern="specific humidity"/>
     <nameRegex order="30.0" id="totCldCov" AWIPS="TCC" pattern="total cloud cover"/>
     <nameRegex order="31.0" id="uWind" AWIPS="uW" pattern="u-component of wind"/>
-    <nameRegex order="32.0" id="vWind" AWIPS="uV" pattern="v-component of wind"/>
+    <nameRegex order="32.0" id="vWind" AWIPS="vW" pattern="v-component of wind"/>
     <nameRegex order="33.0" id="vertVeloP" AWIPS="PVV" pattern="vertical velocity \(pressure\)"/>
     <nameRegex order="34.0" id="weasd" AWIPS="WEASD" pattern="water equivalent of accumulated snow depth"/>
     <nameRegex order="35.0" id="vertSpShear" AWIPS="VSS" pattern="vertical speed shear"/>
