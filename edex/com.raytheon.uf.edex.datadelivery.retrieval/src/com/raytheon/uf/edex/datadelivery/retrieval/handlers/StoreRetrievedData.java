@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -50,28 +50,35 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalPersistUtil;
 /**
  * Implementation of {@link IRetrievedDataProcessor} that stores the plugin data
  * objects to the database.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 31, 2013 1543       djohnson     Initial creation
- * Feb 12, 2013 1543       djohnson     Now handles the retrieval responses directly.
- * Feb 15, 2013 1543       djohnson     Retrieve the retrieval attributes from the database.
- * Aug 09, 2013 1822       bgonzale     Added parameters to processRetrievedPluginDataObjects.
- * Aug 06, 2013 1654       bgonzale     Added AdhocDataRetrievalEvent.
- * Oct 01, 2013 2267       bgonzale     Removed request parameter.  Return RetrievalRequestRecord.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 31, 2013  1543     djohnson  Initial creation
+ * Feb 12, 2013  1543     djohnson  Now handles the retrieval responses
+ *                                  directly.
+ * Feb 15, 2013  1543     djohnson  Retrieve the retrieval attributes from the
+ *                                  database.
+ * Aug 09, 2013  1822     bgonzale  Added parameters to
+ *                                  processRetrievedPluginDataObjects.
+ * Aug 06, 2013  1654     bgonzale  Added AdhocDataRetrievalEvent.
+ * Oct 01, 2013  2267     bgonzale  Removed request parameter.  Return
+ *                                  RetrievalRequestRecord.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
+ *                                  processResponse call.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  * @version 1.0
  */
 
-public class StoreRetrievedData implements IRetrievalPluginDataObjectsProcessor {
+public class StoreRetrievedData
+        implements IRetrievalPluginDataObjectsProcessor {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(StoreRetrievedData.class);
@@ -82,7 +89,7 @@ public class StoreRetrievedData implements IRetrievalPluginDataObjectsProcessor 
 
     /**
      * Constructor.
-     * 
+     *
      * @param generalDestinationUri
      *            the destination uri most plugin data will travel through
      */
@@ -128,8 +135,8 @@ public class StoreRetrievedData implements IRetrievalPluginDataObjectsProcessor 
 
         for (RetrievalResponseWrapper pluginDataObjectEntry : retrievalAttributePluginDataObjects) {
             if (!attributesIter.hasNext()) {
-                statusHandler
-                        .warn("Did not find a RetrievalAttribute to match the retrieval response!  Skipping response...");
+                statusHandler.warn(
+                        "Did not find a RetrievalAttribute to match the retrieval response!  Skipping response...");
             }
 
             // Restore the attribute xml prior to processing the response
@@ -138,7 +145,7 @@ public class StoreRetrievedData implements IRetrievalPluginDataObjectsProcessor 
             retrievalResponse.setAttribute(attributesIter.next());
 
             Map<String, PluginDataObject[]> value = serviceRetrievalAdapter
-                    .processResponse(retrievalResponse);
+                    .processResponse(retrievalResponse, requestRecord);
 
             if (value == null || value.isEmpty()) {
                 continue;
@@ -173,9 +180,10 @@ public class StoreRetrievedData implements IRetrievalPluginDataObjectsProcessor 
                 statusHandler.info("Successfully processed: " + records.length
                         + " : " + serviceType + " Plugin : " + pluginName);
                 boolean isAdhoc = retrieval.getSubscriptionType() != null
-                        && retrieval.getSubscriptionType().equals(
-                                SubscriptionType.AD_HOC);
-                DataRetrievalEvent event = isAdhoc ? new AdhocDataRetrievalEvent()
+                        && retrieval.getSubscriptionType()
+                                .equals(SubscriptionType.AD_HOC);
+                DataRetrievalEvent event = isAdhoc
+                        ? new AdhocDataRetrievalEvent()
                         : new DataRetrievalEvent();
                 event.setId(retrieval.getSubscriptionName());
                 event.setOwner(retrieval.getOwner());
@@ -183,7 +191,8 @@ public class StoreRetrievedData implements IRetrievalPluginDataObjectsProcessor 
                 event.setPlugin(pluginName);
                 event.setProvider(attXML.getProvider());
                 event.setNumRecords(records.length);
-                event.setBytes(DataSizeUtils.calculateSize(attXML, serviceType));
+                event.setBytes(
+                        DataSizeUtils.calculateSize(attXML, serviceType));
 
                 EventBus.publish(event);
 

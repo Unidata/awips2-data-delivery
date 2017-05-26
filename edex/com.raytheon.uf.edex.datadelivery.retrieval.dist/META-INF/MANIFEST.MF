@@ -5,3 +5,11 @@ Bundle-SymbolicName: com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist
 Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Import-Package: com.raytheon.uf.common.datadelivery.event,
+ com.raytheon.uf.common.datadelivery.event.notification,
+ com.raytheon.uf.common.dataplugin,
+ com.raytheon.uf.common.serialization,
+ com.raytheon.uf.edex.core,
+ com.raytheon.uf.edex.datadelivery.event.handler,
+ com.raytheon.uf.edex.datadelivery.retrieval,
+ org.slf4j

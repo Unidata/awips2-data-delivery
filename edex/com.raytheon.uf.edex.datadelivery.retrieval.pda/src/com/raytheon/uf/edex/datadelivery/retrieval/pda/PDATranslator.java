@@ -2,49 +2,58 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
+
+import org.apache.commons.io.FileUtils;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.DataSet;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.VersionData;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
-import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse.FILE;
-import com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata.PDAMetaDataAdapter;
+import com.raytheon.uf.common.util.app.AppInfo;
+import com.raytheon.uf.edex.core.EDEXUtil;
+import com.raytheon.uf.edex.datadelivery.retrieval.DecodeInfo;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 
 /**
- * 
+ *
  * Translate PDA (FTP) retrievals into PDOs
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- ------------------------------------------
  * Sep 12, 2014  3121     dhladky   created.
@@ -52,15 +61,16 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * May 03, 2016  5599     tjensen   Pass subscription name into decodeObjects
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
- * 
+ * May 22, 2017  6130     tjensen   Update for Polar products
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
 
-public class PDATranslator extends
-        RetrievalTranslator<Time, Coverage, PluginDataObject> {
+public class PDATranslator
+        extends RetrievalTranslator<Time, Coverage, PluginDataObject> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDATranslator.class);
@@ -89,52 +99,81 @@ public class PDATranslator extends
     }
 
     /**
-     * Map containing fileName and file bytes (compressed) of the file delivered
-     * via retrieval. calls out to MetaDataAdapter, which decodes, then returns
-     * PDOs.
-     * 
-     * @param payload
-     * @return
+     * Stores the file to the configured directory, then sends it off to be
+     * processed by Ingest.
+     *
+     * @param response
+     * @param dataSet
+     * @param subOwner
      */
+    public void storeAndProcess(PDARetrievalResponse response, DataSet dataSet,
+            String subOwner) {
 
-    public PluginDataObject[] asPluginDataObjects(
-            Map<PDARetrievalResponse.FILE, Object> payload) {
-
-        PluginDataObject[] pdos = null;
-        PDAMetaDataAdapter pdaAdapter = (PDAMetaDataAdapter) metadataAdapter;
-        String fileName = null;
+        String storeFileName = null;
         String subName = null;
 
         try {
-            /*
-             * No reason to write it if it already exists! In the case of the
-             * local registry this is un-necessary. Only in the case of SBN
-             * delivery does the file have to be written. This is because it has
-             * been "delivered" from the central registry and doesn't exist
-             * locally.
-             */
+            String responseFileName = response.getFileName();
+            String appVersion = AppInfo.getInstance().getVersion();
+            VersionData vd = dataSet.getVersionDataByVersion(appVersion);
+            if (vd == null) {
+                statusHandler.error("Unable to process file '"
+                        + responseFileName + "': dataset '"
+                        + dataSet.getDataSetName()
+                        + "' not supported in version '" + appVersion + "'");
+                return;
+            }
 
-            fileName = (String) payload.get(FILE.FILE_NAME);
-            if (fileName != null) {
-                File file = new File(fileName);
-                if (!file.exists()) {
+            if (responseFileName != null) {
+                // Write file to data store
+                Path filePath = Paths.get(responseFileName);
+
+                ServiceConfig serviceConfig = HarvesterServiceManager
+                        .getInstance().getServiceConfig(ServiceType.PDA);
+                storeFileName = serviceConfig.getConstantValue("FTPS_DROP_DIR")
+                        + File.separator + dataSet.getProviderName()
+                        + File.separator
+                        + dataSet.getDataSetName().replaceAll(" +", "_")
+                        + File.separator + filePath.getFileName();
+
+                /*
+                 * If we have a file at the location given in the response, then
+                 * the file came from FTPS and we just need to move it to the
+                 * correct directory. If not, these bytes came via the SBN and
+                 * we need to uncompress and write the file.
+                 */
+                File ftpsFile = new File(responseFileName);
+                if (!ftpsFile.exists()) {
                     ResponseProcessingUtilities.writeCompressedFile(
-                            (byte[]) payload.get(FILE.FILE_BYTES), fileName);
+                            response.getFileBytes(), storeFileName);
+                } else {
+                    File storeFile = new File(storeFileName);
+                    FileUtils.moveFile(ftpsFile, storeFile);
                 }
-                subName = (String) payload.get(FILE.SUBSCRIPTION_NAME);
-                statusHandler
-                        .info("Processing PDA retrieval file: " + fileName);
-                pdos = pdaAdapter.decodeObjects(fileName, subName);
+
+                subName = response.getSubName();
+
+                // Populate DecodeInfo for transfer
+                DecodeInfo decodeInfo = new DecodeInfo();
+                decodeInfo.setSubscriptionName(subName);
+                decodeInfo.setSubscriptionOwner(subOwner);
+                decodeInfo.setPathToFile(storeFileName);
+                decodeInfo.setRouteId(vd.getRoute());
+
+                // Send off to Ingest for processing
+                statusHandler.info("Sending PDA retrieval file to Ingest: "
+                        + storeFileName);
+                EDEXUtil.getMessageProducer()
+                        .sendAsync("Ingest.DataDelivery.Decode", decodeInfo);
+
             } else {
-                statusHandler
-                        .warn("Unable to process file: null file name received.");
+                statusHandler.warn(
+                        "Unable to process file: null file name received.");
             }
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to decode PDA file objects!", e);
         }
-
-        return pdos;
     }
 
 }

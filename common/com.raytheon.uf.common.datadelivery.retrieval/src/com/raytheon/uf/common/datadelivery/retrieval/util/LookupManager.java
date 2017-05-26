@@ -20,7 +20,9 @@
 package com.raytheon.uf.common.datadelivery.retrieval.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,6 +41,9 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfoMap;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformationLookup;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetNamePattern;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetVersionInfo;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetVersionInfoMap;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.LevelLookup;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLevelRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
@@ -84,6 +89,7 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  *                                  regexes
  * Apr 05, 2017  1045     tjensen   Updated for DataSetConfigInfo
  * May 10, 2017  6135     nabowle   Remove UnitLookup in favor of UnitMapper.
+ * May 10, 2017  6130     tjensen   Updated for DataSetVersionInfo
  *
  * </pre>
  *
@@ -159,6 +165,8 @@ public class LookupManager {
 
     public static final String UNIT_MAPPER_NAMESPACE = "datadelivery";
 
+    private static final String CONFIG_FILE_DATASETVERSION = "DataSetVersionInfo.xml";
+
     /**
      * Get an instance of this singleton.
      *
@@ -197,6 +205,9 @@ public class LookupManager {
     private final Map<String, Map<String, DataSetConfigInfo>> dataSetConfigInfos = new HashMap<>(
             2);
 
+    private final Map<String, Map<String, DataSetVersionInfo>> dataSetVersionInfos = new HashMap<>(
+            2);
+
     private static JAXBManager jaxb;
 
     private static synchronized JAXBManager getJaxbManager()
@@ -204,7 +215,8 @@ public class LookupManager {
         if (jaxb == null) {
             jaxb = new JAXBManager(LevelLookup.class, ParameterLookup.class,
                     ParameterRegexes.class, DataSetInformationLookup.class,
-                    DataSetInformation.class, DataSetConfigInfoMap.class);
+                    DataSetInformation.class, DataSetConfigInfoMap.class,
+                    DataSetVersionInfoMap.class);
         }
 
         return jaxb;
@@ -245,7 +257,7 @@ public class LookupManager {
         return modelLevels;
     }
 
-    private LevelLookup getLevelsFromFile(String modelName) {
+    private static LevelLookup getLevelsFromFile(String modelName) {
         LevelLookup levelLoookup = null;
         ILocalizationFile file = null;
         String fileName = getLevelFileName(modelName);
@@ -277,7 +289,7 @@ public class LookupManager {
      * @param fileName
      * @return
      */
-    private ILocalizationFile getLocalizationFile(String fileName) {
+    private static ILocalizationFile getLocalizationFile(String fileName) {
         ILocalizationFile lf = null;
         Map<LocalizationLevel, LocalizationFile> files = getLocalizationFiles(
                 fileName);
@@ -291,7 +303,7 @@ public class LookupManager {
         return lf;
     }
 
-    private Map<LocalizationLevel, LocalizationFile> getLocalizationFiles(
+    private static Map<LocalizationLevel, LocalizationFile> getLocalizationFiles(
             String fileName) {
         IPathManager pm = PathManagerFactory.getPathManager();
         Map<LocalizationLevel, LocalizationFile> files = pm
@@ -375,7 +387,7 @@ public class LookupManager {
         return result;
     }
 
-    private void populateParameterRegexes(ParameterRegexes tmpRegex,
+    private static void populateParameterRegexes(ParameterRegexes tmpRegex,
             Map<String, ParameterNameRegex> newParamNameRegexes,
             Map<String, ParameterLevelRegex> newParamLevelRegexes) {
         for (ParameterNameRegex nameRegex : tmpRegex.getNameRegexes()) {
@@ -526,7 +538,7 @@ public class LookupManager {
         return dsi;
     }
 
-    private DataSetInformationLookup getDataSetInformationLookupFromFile() {
+    private static DataSetInformationLookup getDataSetInformationLookupFromFile() {
         DataSetInformationLookup dataSetInformationLookup = null;
         ILocalizationFile file = null;
         String fileName = getDataSetInformationFileName();
@@ -570,7 +582,7 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private DataSetInformationLookup readDataSetInformationXml(
+    private static DataSetInformationLookup readDataSetInformationXml(
             ILocalizationFile file) throws Exception {
         DataSetInformationLookup dsi = null;
 
@@ -591,7 +603,7 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private DataSetConfigInfoMap readDataSetConfigInfoXml(
+    private static DataSetConfigInfoMap readDataSetConfigInfoXml(
             ILocalizationFile file) throws Exception {
         DataSetConfigInfoMap dscim = null;
 
@@ -628,15 +640,14 @@ public class LookupManager {
                         .contains(dsi)) {
                     // no changes
                     return;
-                } else {
-                    // clear the hash and rebuild it with what is set in current
-                    dataSetInformationLookup.getDataSetInformations().clear();
+                }
+                // clear the hash and rebuild it with what is set in current
+                dataSetInformationLookup.getDataSetInformations().clear();
 
-                    for (Entry<String, DataSetInformation> entry : dataSetInformations
-                            .entrySet()) {
-                        dataSetInformationLookup.getDataSetInformations()
-                                .add(entry.getValue());
-                    }
+                for (Entry<String, DataSetInformation> entry : dataSetInformations
+                        .entrySet()) {
+                    dataSetInformationLookup.getDataSetInformations()
+                            .add(entry.getValue());
                 }
             }
 
@@ -657,7 +668,7 @@ public class LookupManager {
      *
      * @return
      */
-    public boolean dataSetInformationLookupExists() {
+    public static boolean dataSetInformationLookupExists() {
         ILocalizationFile file = null;
         String fileName = getDataSetInformationFileName();
         try {
@@ -700,7 +711,7 @@ public class LookupManager {
      * @param modelName
      * @return
      */
-    public boolean levelLookupExists(String modelName) {
+    public static boolean levelLookupExists(String modelName) {
         ILocalizationFile file = null;
         String fileName = getLevelFileName(modelName);
 
@@ -790,7 +801,8 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private LevelLookup readLevelXml(ILocalizationFile file) throws Exception {
+    private static LevelLookup readLevelXml(ILocalizationFile file)
+            throws Exception {
         LevelLookup levelXml = null;
 
         if (file != null && file.exists()) {
@@ -810,7 +822,7 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private ParameterLookup readParameterXml(ILocalizationFile file)
+    private static ParameterLookup readParameterXml(ILocalizationFile file)
             throws Exception {
         ParameterLookup paramXml = null;
 
@@ -831,7 +843,7 @@ public class LookupManager {
      * @return
      * @throws Exception
      */
-    private ParameterRegexes readParameterRegexes(ILocalizationFile file)
+    private static ParameterRegexes readParameterRegexes(ILocalizationFile file)
             throws Exception {
         ParameterRegexes regexXml = null;
 
@@ -898,4 +910,96 @@ public class LookupManager {
                 + CONFIG_FILE_DATASETCONFIG;
     }
 
+    /**
+     * Read Data Set Version Info
+     *
+     * @param file
+     * @return
+     * @throws Exception
+     */
+    private static DataSetVersionInfoMap readDataSetVersionInfoXml(
+            ILocalizationFile file) throws Exception {
+        DataSetVersionInfoMap dscim = null;
+
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                dscim = (DataSetVersionInfoMap) getJaxbManager()
+                        .unmarshalFromInputStream(is);
+            }
+        }
+
+        return dscim;
+    }
+
+    private static String getDataSetVersionInfoFileName(String providerName) {
+        return CONFIG_FILE_ROOT + providerName + "_"
+                + CONFIG_FILE_DATASETVERSION;
+    }
+
+    public DataSetVersionInfo getDataSetVersionInfo(String dataSetName,
+            String providerName) throws IOException {
+        DataSetVersionInfo dsvi = null;
+
+        Map<String, DataSetVersionInfo> providerMap = dataSetVersionInfos
+                .get(providerName);
+        if (providerMap == null || providerMap.isEmpty()) {
+            try {
+                Map<String, DataSetVersionInfo> newDSVI = new HashMap<>(2);
+                DataSetVersionInfoMap tmpSetVersionInfoMap = null;
+                String fileName = getDataSetVersionInfoFileName(providerName);
+                Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
+                        fileName);
+
+                for (LocalizationLevel locLevel : new LocalizationLevel[] {
+                        LocalizationLevel.BASE, LocalizationLevel.SITE }) {
+                    if (locFiles.containsKey(locLevel)) {
+                        tmpSetVersionInfoMap = readDataSetVersionInfoXml(
+                                locFiles.get(locLevel));
+                        String validateErrors = tmpSetVersionInfoMap.validate();
+                        if ("".equals(validateErrors)) {
+                            for (DataSetVersionInfo dataSetVersionInfo : tmpSetVersionInfoMap
+                                    .getDsviList()) {
+
+                                newDSVI.put(dataSetVersionInfo.getId(),
+                                        dataSetVersionInfo);
+                            }
+                        } else {
+                            throw new ParseException(
+                                    "Errors detected in file '" + fileName
+                                            + "' at localization level '"
+                                            + locLevel + "': " + validateErrors,
+                                    0);
+                        }
+                    }
+                }
+                dataSetVersionInfos.put(providerName, newDSVI);
+                providerMap = newDSVI;
+            } catch (Exception e) {
+                throw new IOException(
+                        "Failed to read Data Set Lookup from file.", e);
+
+            }
+        }
+
+        /*
+         * Loop over all version info for the specified provider and see if the
+         * data set name matches the patterns in the map. In the case of
+         * multiple valid matches, the first version info that matches will be
+         * used.
+         */
+        if (providerMap != null) {
+            for (DataSetVersionInfo tmpDsci : providerMap.values()) {
+                DataSetNamePattern dataSetNamePattern = tmpDsci
+                        .getDataSetNamePattern();
+
+                if (dataSetNamePattern != null
+                        && dataSetNamePattern.checkName(dataSetName)) {
+                    dsvi = tmpDsci;
+                    break;
+                }
+            }
+        }
+
+        return dsvi;
+    }
 }

@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -36,6 +38,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataSetName;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.VersionData;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetQuery;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
@@ -46,6 +49,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetBounds;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetVersionInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -88,6 +92,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
  *                                  information
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
  * May 04, 2017  6186     rjpeter   Made logger protected.
+ * May 09, 2017  6130     tjensen   Updated to support routing to ingest
  *
  * </pre>
  *
@@ -431,5 +436,21 @@ public abstract class MetaDataParser<O extends Object>
             estSize = dsci.getSizeEstimate();
         }
         return estSize;
+    }
+
+    protected static List<VersionData> getVersionData(String dsName,
+            String provider) throws IOException {
+        List<VersionData> myVersionData = null;
+        DataSetVersionInfo dsvi = LookupManager.getInstance()
+                .getDataSetVersionInfo(dsName, provider);
+        if (dsvi != null) {
+            myVersionData = dsvi.getVersionDataList();
+        }
+
+        if (myVersionData == null) {
+            myVersionData = Collections.emptyList();
+        }
+
+        return myVersionData;
     }
 }

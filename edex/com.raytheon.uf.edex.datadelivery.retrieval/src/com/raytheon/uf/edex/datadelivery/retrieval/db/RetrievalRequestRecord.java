@@ -56,6 +56,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *                                  length.
  * Jan 30, 2014  2686     dhladky   refactor of retrieval.
  * May 11, 2015  6186     rjpeter   Updated constructor.
+ * May 22, 2017  6130     tjensen   Add DataSetName
  *
  * </pre>
  *
@@ -105,6 +106,10 @@ public class RetrievalRequestRecord implements
     @Column(nullable = false)
     @DynamicSerializeElement
     private String provider;
+
+    @Column(nullable = false)
+    @DynamicSerializeElement
+    private String dataSetName;
 
     @Column(nullable = false)
     @DynamicSerializeElement
@@ -221,6 +226,14 @@ public class RetrievalRequestRecord implements
 
     public String getProvider() {
         return provider;
+    }
+
+    public String getDataSetName() {
+        return dataSetName;
+    }
+
+    public void setDataSetName(String dataSetName) {
+        this.dataSetName = dataSetName;
     }
 
     /**

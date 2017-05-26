@@ -71,6 +71,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * May 17, 2016  5662     tjensen   Cleanup duplicate parameters in failed
  *                                  message
  * May 09, 2017  6186     rjpeter   Added url
+ * May 22, 2017  6130     tjensen   Fix error handling
  *
  * </pre>
  *
@@ -448,7 +449,6 @@ public class SubscriptionNotifyTask implements Runnable {
                                 sb.append(param + ", ");
                             }
                             sb.delete(sb.length() - 2, sb.length());
-                            event.setFailureMessage(sb.toString());
                         } catch (SerializationException e) {
                             sb.append(
                                     "Failed parameters: Unable to determine the parameters that failed due to serialization errors.");
@@ -456,6 +456,8 @@ public class SubscriptionNotifyTask implements Runnable {
                                     "Error occurred unmarshalling retrieval object for determining failed parameters.",
                                     e);
                         }
+                        event.setFailureMessage(sb.toString());
+
                     }
                     if (numComplete == null) {
                         event.setNumComplete(0);
