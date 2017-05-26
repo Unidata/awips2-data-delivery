@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.plugin.madis.ogc;
 
 import java.util.Arrays;
@@ -21,29 +40,30 @@ import com.raytheon.uf.edex.wfs.reg.PluginWfsSource;
 import com.raytheon.uf.edex.wfs.request.QualifiedName;
 
 /**
- * 
+ *
  * Madis WFS Source
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 04/01/2013   1746       dhladky      Initial creation
- * 05/30/2013   753        dhladky      updated
- * 12/11/2013   2625       mpduff       query by insertTime rather than obsTime.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Apr 01, 2013  1746     dhladky   Initial creation
+ * May 30, 2013  753      dhladky   updated
+ * Dec 11, 2013  2625     mpduff    query by insertTime rather than obsTime.
+ * May 22, 2017  6186     rjpeter   Allow query by insertTime or refTime.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
-
 public class MadisWfsSource extends PluginWfsSource {
 
     private static final String schemaloc = "META-INF/schema/madis.xsd";
 
     private final WfsFeatureType feature;
 
-    private static String schemaXml = null;
+    private static volatile String schemaXml = null;
 
     private static final String spatialKey = "location.location";
 
@@ -57,9 +77,16 @@ public class MadisWfsSource extends PluginWfsSource {
     private static final Map<String, String> fieldMap;
 
     static {
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         map.put("obsLocation.location", spatialKey);
-        map.put("timeObs", "insertTime");
+        map.put("insertTime", "insertTime");
+
+        if (Boolean.getBoolean("madis.allowRefTime")) {
+            map.put("timeObs", "dataTime.refTime");
+        } else {
+            map.put("timeObs", "insertTime");
+        }
+
         map.put("obsLocation.stationId", "location.stationId");
         map.put("obsLocation.elevation", "location.elevation");
         fieldMap = Collections.unmodifiableMap(map);
@@ -69,8 +96,8 @@ public class MadisWfsSource extends PluginWfsSource {
             SingleLayerCollector<?, SimpleLayer<?>, PluginDataObject> collector) {
         super(props, KEY_NAME, Arrays.asList(translator),
                 new MadisFeatureFactory(), collector);
-        feature = new WfsFeatureType(new QualifiedName(MADIS_NS, key, key),
-                key, defaultCRS, fullBbox);
+        feature = new WfsFeatureType(new QualifiedName(MADIS_NS, key, key), key,
+                defaultCRS, fullBbox);
     }
 
     @Override
@@ -90,8 +117,13 @@ public class MadisWfsSource extends PluginWfsSource {
         String rval;
         try {
             if (schemaXml == null) {
-                ClassLoader loader = MadisWfsSource.class.getClassLoader();
-                schemaXml = getResource(loader, schemaloc);
+                synchronized (MadisWfsSource.class) {
+                    if (schemaXml == null) {
+                        ClassLoader loader = MadisWfsSource.class
+                                .getClassLoader();
+                        schemaXml = getResource(loader, schemaloc);
+                    }
+                }
             }
             rval = schemaXml;
         } catch (Exception e) {
@@ -116,13 +148,6 @@ public class MadisWfsSource extends PluginWfsSource {
         return new Class<?>[] { Madis.class, MadisObjectFactory.class };
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.wfs.reg.WfsSource#getFeatureVerticalField(com.raytheon
-     * .uf.edex.wfs.request.QualifiedName)
-     */
     @Override
     public String getFeatureVerticalField(QualifiedName feature) {
         // surface obs don't have vertical fields

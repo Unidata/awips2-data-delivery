@@ -125,11 +125,5 @@
             <bean ref="madisSeparator" method="fileCleaner" />
         </route>
 
-        <route id="madisRegistryRoute">
-            <!-- send metadata to registry every minute -->
-            <from uri="quartz://madis/layers?cron=0+*+*+*+*+?" />
-            <bean ref="madisRegistryAddon" method="buildLayerUpdate" />
-        </route>
-
     </camelContext>
 </beans>
