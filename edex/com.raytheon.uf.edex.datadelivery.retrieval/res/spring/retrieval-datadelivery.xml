@@ -31,28 +31,6 @@
             type="java.lang.Class" />
     </bean>
 
-<!-- these aren't used yet 
-    <bean factory-bean="serviceFactoryRegistry" factory-method="register">
-        <constructor-arg value="WCS" />
-        <constructor-arg
-            value="com.raytheon.uf.edex.datadelivery.retrieval.wcs.WcsServiceFactory"
-            type="java.lang.Class" />
-    </bean>
-
-    <bean factory-bean="serviceFactoryRegistry" factory-method="register">
-        <constructor-arg value="WMS" />
-        <constructor-arg
-            value="com.raytheon.uf.edex.datadelivery.retrieval.wms.WmsServiceFactory"
-            type="java.lang.Class" />
-    </bean>
-
-    <bean factory-bean="serviceFactoryRegistry" factory-method="register">
-        <constructor-arg value="WXXM" />
-        <constructor-arg
-            value="com.raytheon.uf.edex.datadelivery.retrieval.wxxm.WxxmServiceFactory"
-            type="java.lang.Class" />
-    </bean>
--->
     <!-- End service factories -->
 
     <bean id="subNotifyTask"
