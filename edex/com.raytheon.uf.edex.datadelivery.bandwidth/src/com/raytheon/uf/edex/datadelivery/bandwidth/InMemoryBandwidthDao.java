@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,14 +34,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionStatusSummary;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.dataplugin.persist.IPersistableDataObject;
 import com.raytheon.uf.common.util.ReflectionUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
@@ -52,11 +50,11 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 /**
  * Provides a {@link IBandwidthDao} implementation in memory. Intentionally
  * package-private.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Oct 24, 2012  1286     djohnson  Initial creation
@@ -77,11 +75,11 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  *                                  by network and Bandwidth Bucked Id values
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
- * 
+ * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         implements IBandwidthDao<T, C> {
@@ -94,11 +92,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
 
     private final ConcurrentLinkedQueue<BandwidthSubscription> bandwidthSubscriptions = new ConcurrentLinkedQueue<>();
 
-    private final ConcurrentLinkedQueue<BandwidthDataSetUpdate> bandwidthDataSetUpdates = new ConcurrentLinkedQueue<>();
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(
             Long subscriptionId) {
@@ -115,9 +108,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return allocations;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network) {
         List<BandwidthAllocation> allocations = new ArrayList<>();
@@ -131,9 +121,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return allocations;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network,
             List<Long> bandwidthBucketIdList) {
@@ -155,9 +142,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return allocations;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocationsInState(
             RetrievalStatus state) {
@@ -172,49 +156,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return allocations;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(
-            String providerName, String dataSetName) {
-        List<BandwidthDataSetUpdate> results = new ArrayList<>();
-
-        for (BandwidthDataSetUpdate current : bandwidthDataSetUpdates) {
-            if (providerName.equals(current.getProviderName())
-                    && dataSetName.equals(current.getDataSetName())) {
-                results.add(current.copy());
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(
-            String providerName, String dataSetName, Date baseReferenceTime) {
-        List<BandwidthDataSetUpdate> results = getBandwidthDataSetUpdate(
-                providerName, dataSetName);
-
-        for (Iterator<BandwidthDataSetUpdate> iter = results.iterator(); iter
-                .hasNext();) {
-            BandwidthDataSetUpdate current = iter.next();
-            if (current.getDataSetBaseTime().getTime() == baseReferenceTime
-                    .getTime()) {
-                continue;
-            }
-
-            iter.remove();
-        }
-        return results;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getDeferred(Network network,
             Date endTime) {
@@ -232,9 +173,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return allocations;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthSubscription getBandwidthSubscription(long identifier) {
         for (BandwidthSubscription dao : bandwidthSubscriptions) {
@@ -245,9 +183,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthSubscription getBandwidthSubscription(String registryId,
             Date baseReferenceTime) {
@@ -262,18 +197,12 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscription(
             Subscription<T, C> subscription) {
         return getBandwidthSubscriptionByRegistryId(subscription.getId());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptionByRegistryId(
             String registryId) {
@@ -287,9 +216,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return results;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SubscriptionRetrieval getSubscriptionRetrieval(long identifier) {
         for (BandwidthAllocation current : bandwidthAllocations) {
@@ -301,9 +227,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName, Date baseReferenceTime) {
@@ -327,9 +250,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return results;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName) {
@@ -350,9 +270,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return results;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptions() {
         List<BandwidthSubscription> results = Lists.newArrayList();
@@ -362,9 +279,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return results;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptions(
             String provider, String dataSetName, Date baseReferenceTime) {
@@ -383,24 +297,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return bandwidthSubscriptions;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public BandwidthDataSetUpdate newBandwidthDataSetUpdate(
-            DataSetMetaData<T, C> dataSetMetaData) {
-        BandwidthDataSetUpdate entity = BandwidthUtil
-                .newDataSetMetaDataDao(dataSetMetaData);
-        entity.setIdentifier(getNextId());
-
-        bandwidthDataSetUpdates.add(entity);
-
-        return entity;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthSubscription newBandwidthSubscription(
             Subscription<T, C> subscription, Date baseReferenceTime) {
@@ -413,9 +309,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return entity;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> querySubscriptionRetrievals(
             long subscriptionId) {
@@ -434,42 +327,27 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return results;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> querySubscriptionRetrievals(
             BandwidthSubscription dao) {
         return querySubscriptionRetrievals(dao.getId());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void remove(BandwidthSubscription subscriptionDao) {
         removeFromCollection(bandwidthSubscriptions, subscriptionDao);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(BandwidthAllocation bandwidthAllocation) {
         replaceOldOrAddToCollection(bandwidthAllocations, bandwidthAllocation);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(BandwidthSubscription subscriptionDao) {
         replaceOldOrAddToCollection(bandwidthSubscriptions, subscriptionDao);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void storeBandwidthSubscriptions(
             Collection<BandwidthSubscription> newSubscriptions) {
@@ -485,9 +363,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return idSequence.getAndIncrement();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(List<SubscriptionRetrieval> retrievals) {
         for (SubscriptionRetrieval retrieval : retrievals) {
@@ -495,25 +370,16 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void createOrUpdate(BandwidthAllocation allocation) {
         replaceOldOrAddToCollection(bandwidthAllocations, allocation);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void update(BandwidthSubscription dao) {
         replaceOldOrAddToCollection(bandwidthSubscriptions, dao);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void update(BandwidthAllocation allocation) {
         replaceOldOrAddToCollection(bandwidthAllocations, allocation);
@@ -548,9 +414,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName, RetrievalStatus status) {
@@ -584,9 +447,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return treeSet;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName, RetrievalStatus status,
@@ -629,9 +489,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return treeSet;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals() {
         List<SubscriptionRetrieval> results = new ArrayList<>();
@@ -644,9 +501,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return results;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocationsForNetworkAndBucketStartTime(
             Network network, long bucketStartTime) {
@@ -663,34 +517,22 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return allocations;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(SubscriptionRetrievalAttributes<T, C> attributes) {
         // Does nothing
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void storeSubscriptionRetrievalAttributes(
             List<SubscriptionRetrievalAttributes<T, C>> retrievalAttributes) {
         // Does nothing
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void update(SubscriptionRetrievalAttributes<T, C> attributes) {
         // Does nothing
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SubscriptionRetrievalAttributes<T, C> getSubscriptionRetrievalAttributes(
             SubscriptionRetrieval retrieval) {

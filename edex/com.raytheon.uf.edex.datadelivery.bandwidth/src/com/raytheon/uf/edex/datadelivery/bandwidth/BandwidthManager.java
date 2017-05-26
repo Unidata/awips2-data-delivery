@@ -83,7 +83,6 @@ import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
@@ -161,7 +160,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Sep 12, 2016  5772       tjensen     Allow PDA adhocs for older times
  * Sep 30, 2016  5772       tjensen     Fix Adhocs for older times
  * Apr 05, 2017  1045       tjensen     Update for moving datasets
- * Apr 27, 2017  6186       rjpeter     Removed overloaded scheduleAdhoc, renamed to queueRetrieval.
+ * Apr 27, 2017  6186       rjpeter     Removed overloaded scheduleAdhoc, updated queueRetrieval, removed BandwidthDataSetUpdate.
  *
  * </pre>
  *
@@ -316,7 +315,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @param type
      * @return the reference to the bandwidth manager
      */
-    @SuppressWarnings("unchecked")
     private BandwidthManager<T, C> startBandwidthManager(
             final String[] springFiles, String type) {
         ITimer timer = TimeUtil.getTimer();
@@ -607,6 +605,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
         if (plan != null) {
 
+            @SuppressWarnings("rawtypes")
             List<DataSetMetaData> dsmdList = null;
 
             try {
@@ -980,6 +979,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            A List of SubscriptionDaos that have the same base time and
      *            dataset.
      */
+    @SuppressWarnings("unchecked")
     private List<BandwidthAllocation> aggregate(
             BandwidthSubscriptionContainer bandwidthSubscriptions) {
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
@@ -1042,24 +1042,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             }
         }
         timer.lap("creating retrievals");
-        for (SubscriptionRetrieval retrieval : reservations) {
-            BandwidthSubscription bandwidthSubscription = retrieval
-                    .getBandwidthSubscription();
-            if (bandwidthSubscription.isCheckForDataSetUpdate()) {
-                // Check to see if the data subscribed to is available..
-                // if so, mark the status of the BandwidthReservation as
-                // READY.
-                List<BandwidthDataSetUpdate> z = bandwidthDao
-                        .getBandwidthDataSetUpdate(
-                                bandwidthSubscription.getProvider(),
-                                bandwidthSubscription.getDataSetName(),
-                                bandwidthSubscription.getBaseReferenceTime());
-                if (!z.isEmpty()) {
-                    retrieval.setStatus(RetrievalStatus.READY);
-                }
-            }
-        }
-        timer.lap("checking if ready");
 
         bandwidthDao.store(reservations);
         timer.lap("storing retrievals");
@@ -1611,6 +1593,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 .binarySearch(possibleValues, new Comparable<M>() {
                     @Override
                     public int compareTo(M valueToCheck) {
+                        @SuppressWarnings("rawtypes")
                         Subscription clone = strategy
                                 .setValue(subscription.copy(), valueToCheck);
 
@@ -1707,6 +1690,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @Returns a list of the names of the subscriptions that were not
      *          scheduled.
      */
+    @SuppressWarnings("rawtypes")
     public abstract List<String> initializeScheduling(
             Map<Network, List<Subscription>> subMap)
             throws SerializationException;

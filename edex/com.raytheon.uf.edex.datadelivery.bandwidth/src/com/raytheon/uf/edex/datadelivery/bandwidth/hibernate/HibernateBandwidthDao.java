@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,12 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionStatusSummary;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
@@ -48,11 +46,11 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
 /**
  * {@link IBandwidthDao} implementation that interacts with Hibernate.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Oct 23, 2012  1286     djohnson  Extracted from BandwidthContextFactory.
@@ -73,11 +71,11 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  *                                  by network and Bandwidth Bucked Id values
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
- * 
+ * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 @Transactional
 @Service
@@ -90,8 +88,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
 
     private IBandwidthSubscriptionDao bandwidthSubscriptionDao;
 
-    private IBandwidthDataSetUpdateDao bandwidthDataSetUpdateDao;
-
     private ISubscriptionRetrievalAttributesDao<T, C> subscriptionRetrievalAttributesDao;
 
     /**
@@ -100,26 +96,17 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
     public HibernateBandwidthDao() {
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(
             Long subscriptionId) {
         return bandwidthAllocationDao.getBySubscriptionId(subscriptionId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network) {
         return bandwidthAllocationDao.getByNetwork(network);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network,
             List<Long> bandwidthBucketIdList) {
@@ -127,38 +114,12 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 network, bandwidthBucketIdList);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocationsInState(
             RetrievalStatus state) {
         return bandwidthAllocationDao.getByState(state);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(
-            String providerName, String dataSetName) {
-        return bandwidthDataSetUpdateDao.getByProviderDataSet(providerName,
-                dataSetName);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<BandwidthDataSetUpdate> getBandwidthDataSetUpdate(
-            String providerName, String dataSetName, Date baseReferenceTime) {
-        return bandwidthDataSetUpdateDao.getByProviderDataSetReferenceTime(
-                providerName, dataSetName, baseReferenceTime);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getDeferred(Network network,
             Date endTime) {
@@ -168,24 +129,18 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
     /**
      * Used by DbInitializer implementation to get the Dialect of the
      * SessionFactory configured for bandwidth management.
-     * 
+     *
      * @return The Dialect.
      */
     public Dialect getDialect() {
         return subscriptionRetrievalDao.getDialect();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthSubscription getBandwidthSubscription(long identifier) {
         return bandwidthSubscriptionDao.getById(identifier);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthSubscription getBandwidthSubscription(String registryId,
             Date baseReferenceTime) {
@@ -193,35 +148,23 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 baseReferenceTime);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscription(
             Subscription<T, C> subscription) {
         return bandwidthSubscriptionDao.getBySubscription(subscription);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptionByRegistryId(
             String registryId) {
         return bandwidthSubscriptionDao.getByRegistryId(registryId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SubscriptionRetrieval getSubscriptionRetrieval(long identifier) {
         return subscriptionRetrievalDao.getById(identifier);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName, Date baseReferenceTime) {
@@ -229,9 +172,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 provider, dataSetName, baseReferenceTime);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName) {
@@ -239,9 +179,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 dataSetName);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName, RetrievalStatus status) {
@@ -249,9 +186,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 dataSetName, status);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(
             String provider, String dataSetName, RetrievalStatus status,
@@ -261,17 +195,11 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                         status, earliestDate, latestDate);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptions() {
         return bandwidthSubscriptionDao.getAll();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthSubscription> getBandwidthSubscriptions(
             String provider, String dataSetName, Date baseReferenceTime) {
@@ -279,23 +207,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 provider, dataSetName, baseReferenceTime);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public BandwidthDataSetUpdate newBandwidthDataSetUpdate(
-            DataSetMetaData<T, C> dataSetMetaData) {
-
-        BandwidthDataSetUpdate entity = BandwidthUtil
-                .newDataSetMetaDataDao(dataSetMetaData);
-        bandwidthDataSetUpdateDao.create(entity);
-
-        return entity;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthSubscription newBandwidthSubscription(
             Subscription<T, C> subscription, Date baseReferenceTime) {
@@ -308,27 +219,18 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
         return entity;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> querySubscriptionRetrievals(
             long subscriptionId) {
         return subscriptionRetrievalDao.getBySubscriptionId(subscriptionId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> querySubscriptionRetrievals(
             BandwidthSubscription subscriptionDao) {
         return querySubscriptionRetrievals(subscriptionDao.getId());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void remove(BandwidthSubscription subscriptionDao) {
         List<SubscriptionRetrieval> bandwidthReservations = subscriptionRetrievalDao
@@ -342,9 +244,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
         bandwidthSubscriptionDao.delete(subscriptionDao);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(List<SubscriptionRetrieval> retrievals) {
         for (SubscriptionRetrieval retrieval : retrievals) {
@@ -352,50 +251,32 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(BandwidthSubscription subscriptionDao) {
         bandwidthSubscriptionDao.create(subscriptionDao);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void storeBandwidthSubscriptions(
             Collection<BandwidthSubscription> newSubscriptions) {
         bandwidthSubscriptionDao.persistAll(newSubscriptions);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(BandwidthAllocation bandwidthAllocation) {
         bandwidthAllocationDao.create(bandwidthAllocation);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void createOrUpdate(BandwidthAllocation allocation) {
         bandwidthAllocationDao.createOrUpdate(allocation);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void update(BandwidthAllocation allocation) {
         bandwidthAllocationDao.update(allocation);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void update(BandwidthSubscription dao) {
         bandwidthSubscriptionDao.update(dao);
@@ -403,7 +284,7 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
 
     /**
      * Internal utility method to execute sql transactionally.
-     * 
+     *
      * @param work
      *            The unit of work to do.
      */
@@ -460,22 +341,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
     }
 
     /**
-     * @return the bandwidthDataSetUpdateDao
-     */
-    public IBandwidthDataSetUpdateDao getBandwidthDataSetUpdateDao() {
-        return bandwidthDataSetUpdateDao;
-    }
-
-    /**
-     * @param bandwidthDataSetUpdateDao
-     *            the bandwidthDataSetUpdateDao to set
-     */
-    public void setBandwidthDataSetUpdateDao(
-            IBandwidthDataSetUpdateDao bandwidthDataSetUpdateDao) {
-        this.bandwidthDataSetUpdateDao = bandwidthDataSetUpdateDao;
-    }
-
-    /**
      * @return the subscriptionRetrievalAttributesDao
      */
     public ISubscriptionRetrievalAttributesDao<T, C> getSubscriptionRetrievalAttributesDao() {
@@ -491,17 +356,11 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
         this.subscriptionRetrievalAttributesDao = subscriptionRetrievalAttributesDao;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<SubscriptionRetrieval> getSubscriptionRetrievals() {
         return subscriptionRetrievalDao.getAll();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocationsForNetworkAndBucketStartTime(
             Network network, long bucketStartTime) {
@@ -509,17 +368,11 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 bucketStartTime);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void store(SubscriptionRetrievalAttributes<T, C> attributes) {
         subscriptionRetrievalAttributesDao.create(attributes);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void storeSubscriptionRetrievalAttributes(
             List<SubscriptionRetrievalAttributes<T, C>> retrievalAttributes) {
@@ -531,9 +384,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
         subscriptionRetrievalAttributesDao.update(attributes);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SubscriptionRetrievalAttributes<T, C> getSubscriptionRetrievalAttributes(
             SubscriptionRetrieval retrieval) {
@@ -541,9 +391,6 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
                 .getBySubscriptionRetrieval(retrieval);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SubscriptionStatusSummary getSubscriptionStatusSummary(
             Subscription<T, C> sub) {
