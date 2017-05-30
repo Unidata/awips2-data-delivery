@@ -22,27 +22,31 @@ import com.raytheon.uf.common.util.IDeepCopyable;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
 /**
- * 
+ *
  * Data access object for subscriptions.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 16, 2012 0726       djohnson     Added SW history, added length to subscription.
- * Nov 09, 2012 1286       djohnson     Add convenience methods for retrieving the subscription.
- * Jun 13, 2013 2095       djohnson     Add flag for whether or not data set update should be looked for on aggregating.
- * Jun 24, 2013 2106       djohnson     Add copy constructor.
- * Jul 11, 2013 2106       djohnson     Use SubscriptionPriority enum, remove the Subscription.
- * Oct 30, 2013  2448      dhladky      Moved methods to TimeUtil.
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 16, 2012  726      djohnson  Added SW history, added length to
+ *                                  subscription.
+ * Nov 09, 2012  1286     djohnson  Add convenience methods for retrieving the
+ *                                  subscription.
+ * Jun 13, 2013  2095     djohnson  Add flag for whether or not data set update
+ *                                  should be looked for on aggregating.
+ * Jun 24, 2013  2106     djohnson  Add copy constructor.
+ * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority enum, remove the
+ *                                  Subscription.
+ * Oct 30, 2013  2448     dhladky   Moved methods to TimeUtil.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 @Entity
 @Table(name = "bandwidth_subscription")
@@ -101,10 +105,6 @@ public class BandwidthSubscription extends PersistableDataObject<Long>
     @Column(nullable = false)
     private String registryId;
 
-    @DynamicSerializeElement
-    @Column(nullable = false)
-    private boolean checkForDataSetUpdate;
-
     public void setRegistryId(String registryId) {
         this.registryId = registryId;
     }
@@ -118,7 +118,6 @@ public class BandwidthSubscription extends PersistableDataObject<Long>
      */
     public BandwidthSubscription(BandwidthSubscription bandwidthSubscription) {
         this.baseReferenceTime = bandwidthSubscription.getBaseReferenceTime();
-        this.checkForDataSetUpdate = bandwidthSubscription.checkForDataSetUpdate;
         this.cycle = bandwidthSubscription.cycle;
         this.dataSetName = bandwidthSubscription.dataSetName;
         this.estimatedSize = bandwidthSubscription.estimatedSize;
@@ -277,21 +276,6 @@ public class BandwidthSubscription extends PersistableDataObject<Long>
 
     public String getRegistryId() {
         return registryId;
-    }
-
-    /**
-     * @return the checkForDataSetUpdate
-     */
-    public boolean isCheckForDataSetUpdate() {
-        return checkForDataSetUpdate;
-    }
-
-    /**
-     * @param checkForDataSetUpdate
-     *            the checkForDataSetUpdate to set
-     */
-    public void setCheckForDataSetUpdate(boolean checkForDataSetUpdate) {
-        this.checkForDataSetUpdate = checkForDataSetUpdate;
     }
 
     /**

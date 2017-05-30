@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
-import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -20,7 +19,6 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.JarUtil;
 import com.raytheon.uf.edex.core.modes.EDEXModesUtil;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthDataSetUpdate;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 
 /**
@@ -58,6 +56,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  *                                  standard the rest.
  * Feb 16, 2017  5899     rjpeter   Removed excessive logging.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
+ * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
  *
  * </pre>
  *
@@ -181,29 +180,6 @@ public class BandwidthUtil {
                 .get(Calendar.HOUR_OF_DAY));
         dao.setPriority(subscription.getPriority());
         dao.setRegistryId(subscription.getId());
-        dao.setCheckForDataSetUpdate(
-                subscription.getDataSetType() != DataType.POINT);
-        return dao;
-    }
-
-    /**
-     * Create a new {@link BandwidthDataSetUpdate} Object based on the
-     * {@link DataSetMetaData} Object provided.
-     *
-     * @param dataSetMetaData
-     *            the metadata
-     * @return the dao
-     */
-    public static BandwidthDataSetUpdate newDataSetMetaDataDao(
-            DataSetMetaData<?, ?> dataSetMetaData) {
-        BandwidthDataSetUpdate dao = new BandwidthDataSetUpdate();
-        // Set the fields we need to have..
-        dao.setDataSetName(dataSetMetaData.getDataSetName());
-        dao.setProviderName(dataSetMetaData.getProviderName());
-        dao.setUpdateTime(BandwidthUtil.now().getTime());
-        dao.setDataSetBaseTime(dataSetMetaData.getDate());
-        dao.setUrl(dataSetMetaData.getUrl());
-
         return dao;
     }
 
