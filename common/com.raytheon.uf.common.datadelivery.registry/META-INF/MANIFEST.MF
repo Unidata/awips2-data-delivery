@@ -5,9 +5,9 @@ Bundle-SymbolicName: com.raytheon.uf.common.datadelivery.registry
 Bundle-Version: 1.16.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Import-Package: javax.persistence,
- org.slf4j
-Require-Bundle: com.raytheon.uf.common.registry.schemas.ebxml;bundle-version="1.0.0",
+Require-Bundle: javax.persistence,
+ org.slf4j;bundle-version="1.7.21",
+ com.raytheon.uf.common.registry.schemas.ebxml;bundle-version="1.0.0",
  com.raytheon.uf.common.status;bundle-version="1.12.1174",
  com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
  com.raytheon.uf.common.serialization.comm;bundle-version="1.12.1174",

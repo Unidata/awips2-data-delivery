@@ -30,7 +30,8 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.retrieval;bundle-version="1.
  net.opengis_v2;bundle-version="1.0.0",
  com.raytheon.uf.edex.netcdf;bundle-version="1.16.1",
  org.slf4j;bundle-version="1.7.21",
- com.raytheon.uf.common.datadelivery.event
+ com.raytheon.uf.common.datadelivery.event,
+ com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist
 Import-Package: com.raytheon.uf.common.util
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval.pda,
  com.raytheon.uf.edex.datadelivery.retrieval.pda.metadata

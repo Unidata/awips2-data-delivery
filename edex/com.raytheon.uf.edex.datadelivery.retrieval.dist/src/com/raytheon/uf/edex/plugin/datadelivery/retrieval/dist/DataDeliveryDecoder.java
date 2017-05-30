@@ -29,7 +29,6 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.datadelivery.event.handler.NotificationHandler;
-import com.raytheon.uf.edex.datadelivery.retrieval.DecodeInfo;
 
 /**
  *

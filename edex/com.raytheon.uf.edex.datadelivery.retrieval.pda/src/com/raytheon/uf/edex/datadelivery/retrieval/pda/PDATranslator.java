@@ -42,9 +42,9 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.util.app.AppInfo;
 import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.datadelivery.retrieval.DecodeInfo;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
+import com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist.DecodeInfo;
 
 /**
  *
