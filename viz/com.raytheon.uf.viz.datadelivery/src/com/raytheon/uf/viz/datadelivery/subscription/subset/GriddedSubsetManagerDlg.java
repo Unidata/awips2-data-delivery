@@ -706,7 +706,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             sub.setTime(newTime);
         }
 
-        sub.setUrl(this.metaData.getUrl());
+        sub.setUrl(getSubscriptionUrl());
 
         List<String> fcstHours = newTime.getFcstHours();
 

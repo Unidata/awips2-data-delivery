@@ -1097,11 +1097,12 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                             exchanger.add(sum);
 
                             // Also schedule an immediate adhoc for the latest
-                            storeAdhocFromRecurring(currentUser);
+                            String queryStatus = storeAdhocFromRecurring(
+                                    currentUser);
 
                             return new Status(Status.OK,
                                     CreateSubscriptionDlg.class.getName(),
-                                    result.getMessage());
+                                    result.getMessage() + " " + queryStatus);
                         }
                         return new Status(Status.ERROR,
                                 CreateSubscriptionDlg.class.getName(),
@@ -1269,10 +1270,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         return true;
     }
 
-    private void storeAdhocFromRecurring(String currentUser) {
+    private String storeAdhocFromRecurring(String currentUser) {
         AdhocSubscription adhoc = new AdhocSubscription(
                 (RecurringSubscription) subscription);
         DataSetMetaData dataSetMetaData = null;
+        String status = "";
 
         try {
             if (dataSet.isMoving()) {
@@ -1321,14 +1323,22 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                                 "create", getShell()));
 
                 if (result.hasMessageToDisplay()) {
-                    DataDeliveryUtils.showMessage(getShell(), SWT.OK,
-                            "Query Scheduled", result.getMessage());
+                    status = result.getMessage();
+
+                    /*
+                     * Log the results, but don't need a dialog notice since
+                     * there already is a dialog confirming the creation of the
+                     * recurring subscription
+                     */
+                    statusHandler
+                            .info("Query Scheduled: " + result.getMessage());
                 }
             } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Error requesting adhoc data.", e);
             }
         }
+        return status;
     }
 
     private boolean checkApprovalPermisssions(IUser user) {
