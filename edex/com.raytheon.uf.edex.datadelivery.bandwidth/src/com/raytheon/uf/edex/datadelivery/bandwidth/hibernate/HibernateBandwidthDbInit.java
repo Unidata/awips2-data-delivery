@@ -114,7 +114,7 @@ public class HibernateBandwidthDbInit extends DbInit
             public void execute(Connection connection) throws SQLException {
                 try (Statement stmt = connection.createStatement()) {
                     stmt.execute(
-                            "truncate bandwidth_bucket, bandwidth_subscription_retrieval_attributes, bandwidth_datasetupdate, bandwidth_allocation, bandwidth_subscription, datadeliveryregistrybandwidth");
+                            "truncate bandwidth_bucket, bandwidth_subscription_retrieval_attributes, bandwidth_allocation, bandwidth_subscription, datadeliveryregistrybandwidth");
                     connection.commit();
                 }
             }
