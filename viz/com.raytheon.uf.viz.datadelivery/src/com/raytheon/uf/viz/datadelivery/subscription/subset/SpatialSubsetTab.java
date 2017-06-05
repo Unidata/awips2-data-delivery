@@ -185,7 +185,9 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
         parentComp.addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent arg0) {
-                boldFont.dispose();
+                if (boldFont != null) {
+                    boldFont.dispose();
+                }
             }
         });
 
