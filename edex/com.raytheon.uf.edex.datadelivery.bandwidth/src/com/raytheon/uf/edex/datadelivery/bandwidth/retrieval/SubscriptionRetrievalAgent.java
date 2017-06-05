@@ -156,6 +156,11 @@ public class SubscriptionRetrievalAgent
             try {
                 dsmd = DataDeliveryHandlers.getDataSetMetaDataHandler()
                         .getById(url);
+                if (dsmd == null) {
+                    logger.error("No DataSetMetaData found for url [" + url
+                            + "]. Skipping retrieval");
+                    continue;
+                }
             } catch (RegistryHandlerException e) {
                 logger.error("Unable to look up DataSetMetaData[" + url
                         + "], skipping associated retrievals", e);

@@ -791,6 +791,9 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
          * subscription replacing the allocations from scheduling and guarantees
          * an active retrieval will be processed.
          */
+        String dataSetName = dataSetMetaData.getDataSetName();
+        String url = dataSetMetaData.getUrl();
+
         try {
             List<? extends Subscription> subscriptions = null;
 
@@ -810,12 +813,14 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             }
 
             if (CollectionUtil.isNullOrEmpty(subscriptions)) {
+                statusHandler.debug("No subscriptions found for dataset ["
+                        + dataSetName + "], url [" + url + "]");
                 return;
             }
 
             statusHandler.info(String.format(
-                    "Found [%d] subscriptions subscribed to dataset, url [%s].",
-                    subscriptions.size(), dataSetMetaData.getUrl()));
+                    "Found [%d] subscriptions subscribed to dataset [%s], url [%s].",
+                    subscriptions.size(), dataSetName, url));
 
             // Create an adhoc for each one, and schedule it
             for (Subscription<T, C> subscription : subscriptions) {
@@ -824,13 +829,14 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                             .satisfiesSubscription(subscription);
                     if (skipReason != null) {
                         statusHandler.info("Skipping subscription ["
-                                + subscription.getName() + "] for ["
-                                + dataSetMetaData.getUrl() + "]:" + skipReason);
+                                + subscription.getName() + "] for dataSet["
+                                + dataSetName + "] url [" + url + "]:"
+                                + skipReason);
                         continue;
                     }
                 } catch (Exception e) {
-                    statusHandler.error("Error checking if dataset metadata ["
-                            + dataSetMetaData.getUrl()
+                    statusHandler.error("Error checking if dataset ["
+                            + dataSetName + "] url [" + url
                             + "] satisfies subscription ["
                             + subscription.getName()
                             + "], skipping subscription", e);
@@ -840,16 +846,17 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 Subscription<T, C> sub = BandwidthUtil
                         .updateSubscriptionWithDataSetMetaData(subscription,
                                 dataSetMetaData);
-                statusHandler
-                        .info("Updating subscription metadata: " + sub.getName()
-                                + " dataSetMetadata: " + sub.getDataSetName()
-                                + " scheduling subscription for retrieval.");
-                queueRetrieval(
-                        new AdhocSubscription<>((RecurringSubscription<T, C>) sub));
+                statusHandler.info("Updating subscription metadata: "
+                        + sub.getName() + " dataSet: " + dataSetName
+                        + " scheduling subscription for retrieval.");
+                queueRetrieval(new AdhocSubscription<>(
+                        (RecurringSubscription<T, C>) sub));
             }
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
-                    "Failed to lookup subscriptions.", e);
+                    "Failed to lookup subscriptions for dataSet [" + dataSetName
+                            + "] url [" + url + "]",
+                    e);
         }
     }
 
@@ -981,6 +988,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         subTime.setTimes(time.getTimes());
                         subscriptionRetrievalAttributes
                                 .setSubscription(subscription);
+                        retrieval.setUrl(dataSetMetaData.getUrl());
 
                         bandwidthDao.update(subscriptionRetrievalAttributes);
 

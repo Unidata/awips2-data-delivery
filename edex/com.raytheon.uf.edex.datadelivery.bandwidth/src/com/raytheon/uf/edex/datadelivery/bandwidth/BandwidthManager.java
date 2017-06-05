@@ -1155,6 +1155,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             Calendar endTime = TimeUtil.newCalendar(now);
             endTime.add(Calendar.MINUTE, retrieval.getSubscriptionLatency());
             retrieval.setEndTime(endTime.getTime());
+            retrieval.setUrl(subscription.getUrl());
             // Store the SubscriptionRetrieval - retrievalManager expects
             // the BandwidthAllocations to already be stored.
             bandwidthDao.store(retrieval);
@@ -1186,6 +1187,11 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
                 retrieval.setStatus(RetrievalStatus.READY);
                 bandwidthDaoUtil.update(retrieval);
+            } else {
+                statusHandler.warn("SubscriptionRetrieval [" + retrieval.getId()
+                        + "] is not in scheduled state ["
+                        + retrieval.getStatus()
+                        + "], data will not be retrieved");
             }
         }
 
