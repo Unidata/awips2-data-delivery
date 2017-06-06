@@ -37,6 +37,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.rate.TokenBucket;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
@@ -72,11 +73,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  *                                  state changes
  * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * Sep 01, 2016  5762     tjensen   Added improved logging
+ * Jun 07, 2017  6222     tgurney   Add token bucket for rate limiting
  * 
  * </pre>
  * 
  * @author djohnson
- * @version 1.0
  */
 
 public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
@@ -86,6 +87,8 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
 
     private final IRetrievalDao retrievalDao;
 
+    private TokenBucket tokenBucket;
+
     protected static Map<String, DataDeliverySystemStatusDefinition> systemNameToStateMap = Collections
             .synchronizedMap(new HashMap<String, DataDeliverySystemStatusDefinition>());
 
@@ -94,8 +97,10 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
      * 
      * @param network
      */
-    public PerformRetrievalsThenReturnFinder(IRetrievalDao retrievalDao) {
+    public PerformRetrievalsThenReturnFinder(IRetrievalDao retrievalDao,
+            TokenBucket tokenBucket) {
         this.retrievalDao = retrievalDao;
+        this.tokenBucket = tokenBucket;
     }
 
     /**
@@ -174,6 +179,8 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
             RetrievalAdapter pra = ServiceTypeFactory
                     .retrieveServiceRetrievalAdapter(serviceType);
             pra.setProviderRetrievalXML(retrieval);
+            pra.setPriority(requestRecord.getPriority());
+            pra.setTokenBucket(tokenBucket);
 
             // Perform the actual retrievals and transforms to plugin data
             // objects
@@ -241,7 +248,7 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
         DataDeliverySystemStatusDefinition existingState = this.systemNameToStateMap
                 .get(providerName);
         if ((existingState == null)
-                || (existingState.equals(newSystemStatusState) == false)) {
+                || (!existingState.equals(newSystemStatusState))) {
             this.systemNameToStateMap.put(providerName, newSystemStatusState);
             DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();
             event.setName(providerName);

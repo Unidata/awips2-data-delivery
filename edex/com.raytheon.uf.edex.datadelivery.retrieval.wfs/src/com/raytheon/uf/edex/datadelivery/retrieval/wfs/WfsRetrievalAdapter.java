@@ -57,11 +57,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * Jun 18, 2013  2120     dhladky   Removed provider and fixed time processing.
  * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
  *                                  processResponse
+ * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
@@ -127,7 +127,7 @@ public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
             // This is used as the "Realm" in HTTPS connections
             String providerName = request.getAttribute().getProvider();
             xmlMessage = WFSConnectionUtil.wfsConnect(request.getRequest(),
-                    conn, providerName);
+                    conn, providerName, getTokenBucket(), getPriority());
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
             EventBus.publish(new RetrievalEvent(e.getMessage()));

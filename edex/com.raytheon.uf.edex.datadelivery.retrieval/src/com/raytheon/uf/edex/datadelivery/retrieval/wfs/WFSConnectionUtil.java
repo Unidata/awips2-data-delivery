@@ -1,5 +1,8 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.wfs;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -30,15 +33,20 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 
+import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.comm.HttpAuthHandler;
 import com.raytheon.uf.common.comm.HttpClient;
-import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
+import com.raytheon.uf.common.comm.HttpClient.IStreamHandler;
 import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
+import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 
 /**
@@ -66,11 +74,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Jan 26, 2015 3952       njensen     gzip handled by default
  * May 10, 2015 4435       dhladky     Added keyStore retrieval to interface.
  * Dec 07, 2015 4834       njensen     getCredentials() now takes a URI
+ * Jun 06, 2017 6222       tgurney     Use token bucket to rate-limit requests
  * 
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  */
 
 public class WFSConnectionUtil {
@@ -83,7 +91,7 @@ public class WFSConnectionUtil {
     /**
      * connections indexed by URI host:port keys
      */
-    private static final Map<String, Connection> uriConnections = new ConcurrentHashMap<String, Connection>();
+    private static final Map<String, Connection> uriConnections = new ConcurrentHashMap<>();
 
     private static final HttpAuthHandler credentialHandler = new HttpAuthHandler() {
 
@@ -104,8 +112,8 @@ public class WFSConnectionUtil {
 
         @Override
         public void credentialsFailed() {
-            statusHandler
-                    .error("Failed to authenticate with supplied username and password");
+            statusHandler.error(
+                    "Failed to authenticate with supplied username and password");
         }
 
         @Override
@@ -152,6 +160,61 @@ public class WFSConnectionUtil {
         return httpClient;
     }
 
+    private static class RateLimitingStreamHandler implements IStreamHandler {
+
+        public String response = "";
+
+        private TokenBucket tokenBucket;
+
+        private int priority;
+
+        public RateLimitingStreamHandler(TokenBucket tokenBucket,
+                int priority) {
+            this.tokenBucket = tokenBucket;
+            this.priority = priority;
+        }
+
+        @Override
+        public void handleStream(InputStream is) throws CommunicationException {
+            if (tokenBucket != null) {
+                is = new RateLimitingInputStream(is, tokenBucket,
+                        1.0 / priority);
+            }
+
+            try (PooledByteArrayOutputStream baos = ByteArrayOutputStreamPool
+                    .getInstance().getStream()) {
+                byte[] underlyingArray = baos.getUnderlyingArray();
+                int read = 0;
+                int index = 0;
+                do {
+                    try {
+                        read = is.read(underlyingArray, index,
+                                underlyingArray.length - index);
+                    } catch (IOException e) {
+                        throw new CommunicationException(
+                                "Error reading byte response", e);
+                    }
+
+                    if (read > 0) {
+                        index += read;
+                        if (index == underlyingArray.length) {
+                            baos.setCapacity(underlyingArray.length << 1);
+                            underlyingArray = baos.getUnderlyingArray();
+                        }
+                    }
+                } while (read > 0);
+
+                baos.setCount(index);
+                byte[] byteResult = new byte[index];
+                System.arraycopy(underlyingArray, 0, byteResult, 0, index);
+                response = new String(byteResult);
+            } catch (IOException e) {
+                // ignore error on stream close
+            }
+        }
+
+    }
+
     /**
      * Connect to the provided URL and return the xml response.
      * 
@@ -164,7 +227,8 @@ public class WFSConnectionUtil {
      * @return xml response
      */
     public static String wfsConnect(String request, Connection providerConn,
-            String providerName) {
+            String providerName, TokenBucket tokenBucket,
+            int priority) {
 
         String xmlResponse = null;
         HttpClient http = null;
@@ -191,10 +255,12 @@ public class WFSConnectionUtil {
                 http.setupCredentials(uri.getHost(), uri.getPort(), userName,
                         password);
             }
-
-            post.setEntity(new StringEntity(request, ContentType.TEXT_XML));
-            HttpClientResponse response = http.executeRequest(post);
-            xmlResponse = new String(response.data);
+            post.setEntity(new StringEntity(
+                    request, ContentType.TEXT_XML));
+            RateLimitingStreamHandler handler = new RateLimitingStreamHandler(
+                    tokenBucket, priority);
+            http.executeRequest(post, handler);
+            xmlResponse = new String(handler.response);
 
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,

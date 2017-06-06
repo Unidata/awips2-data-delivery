@@ -27,6 +27,7 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.util.rate.TokenBucket;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
@@ -45,17 +46,21 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * Jan 07, 2011           dhladky   Initial creation
  * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
  *                                  processResponse
+ * Jun 05, 2017  6222     tgurney   Add rate-limiting fields
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 public abstract class RetrievalAdapter<T extends Time, C extends Coverage>
         implements IRetrievalAdapter<T, C> {
 
     protected Retrieval prxml;
+
+    private TokenBucket tokenBucket;
+
+    private int priority;
 
     @Override
     public abstract IRetrievalRequestBuilder<T, C> createRequestMessage(
@@ -88,6 +93,29 @@ public abstract class RetrievalAdapter<T extends Time, C extends Coverage>
     @Override
     public Retrieval getProviderRetrievalXMl() {
         return prxml;
+    }
+
+    @Override
+    public TokenBucket getTokenBucket() {
+        if (Boolean.getBoolean("datadelivery.disableRateLimiter")) {
+            return null;
+        }
+        return tokenBucket;
+    }
+
+    @Override
+    public void setTokenBucket(TokenBucket tokenBucket) {
+        this.tokenBucket = tokenBucket;
+    }
+
+    @Override
+    public int getPriority() {
+        return priority;
+    }
+
+    @Override
+    public void setPriority(int priority) {
+        this.priority = priority;
     }
 
     public static class TranslationException extends Exception {

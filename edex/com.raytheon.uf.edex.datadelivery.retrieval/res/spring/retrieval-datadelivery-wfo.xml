@@ -6,6 +6,18 @@
     http://www.springframework.org/schema/util
     http://www.springframework.org/schema/util/spring-util.xsd">
 
+    <bean id="tokenBucket" class="com.raytheon.uf.common.util.rate.TokenBucket">
+        <!-- tokens (bytes) per interval. the real value is set at runtime -->
+        <constructor-arg value="39321" />
+        <!-- interval in ms. not modifiable at runtime -->
+        <constructor-arg value="50" />
+    </bean>
+
+    <bean id="tokenBucketUpdater" class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.TokenBucketUpdater">
+        <constructor-arg ref="tokenBucket" />
+        <constructor-arg value="OPSNET" />
+    </bean>
+
      <!-- A RetrievalTask takes three constructor arguments:
         1) How to find retrievals, in this case perform the actual retrieval and return it
         2) What to do with found retrievals, in this case process it and send a notification event 
@@ -18,6 +30,7 @@
             <bean
                 class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.PerformRetrievalsThenReturnFinder">
                 <constructor-arg ref="retrievalDao" />
+                <constructor-arg ref="tokenBucket" />
             </bean>
         </constructor-arg>
         <constructor-arg>

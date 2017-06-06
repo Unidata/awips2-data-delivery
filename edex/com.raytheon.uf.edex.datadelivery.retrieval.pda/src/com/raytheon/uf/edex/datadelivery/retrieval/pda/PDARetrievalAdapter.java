@@ -61,11 +61,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
  * Sep 30, 2016  5762     tjensen   Improve Error Handling
  * May 22, 2017  6130     tjensen   Update to support polar products from PDA
+ * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
 
@@ -98,7 +98,8 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                 // Have to re-write the URL for the connection to the FTPS root
                 localFilePath = PDAConnectionUtil.ftpsConnect(
                         this.getProviderRetrievalXMl().getConnection(),
-                        providerName, request.getRequest());
+                        providerName, request.getRequest(), getTokenBucket(),
+                        getPriority());
 
                 if (localFilePath != null) {
                     statusHandler.handle(Priority.INFO,
