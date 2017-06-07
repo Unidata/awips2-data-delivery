@@ -32,7 +32,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -104,7 +103,7 @@ public class PDAMetaDataUtil {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ConcurrentMap<String, AtomicLong> updateTimeMap = new ConcurrentHashMap<>(
+    private final ConcurrentMap<String, Long> updateTimeMap = new ConcurrentHashMap<>(
             8);
 
     private final Map<String, Object> lockMap = new HashMap<>(8);
@@ -488,10 +487,21 @@ public class PDAMetaDataUtil {
 
         for (LocalizationFile lf : locFiles) {
             String key = lf.toString();
-            long fileTime = lf.getTimeStamp().getTime();
-            long lastTime = updateTimeMap.get(key).longValue();
-            if (fileTime != lastTime) {
-                logger.info(key + " has been modified.");
+            String msg = null;
+            Long lastTime = updateTimeMap.get(key);
+
+            if (lastTime == null) {
+                msg = key + " has not been loaded";
+            } else {
+                long fileTime = lf.getTimeStamp().getTime();
+
+                if (fileTime != lastTime.longValue()) {
+                    msg = key + " has been modified.";
+                }
+            }
+
+            if (msg != null) {
+                logger.info(msg);
                 update = true;
                 break;
             }
@@ -501,8 +511,8 @@ public class PDAMetaDataUtil {
     }
 
     private <K> K loadFile(JAXBManager jaxb, LocalizationFile file,
-            Class<K> clazz) throws IOException, LocalizationException,
-                    SerializationException {
+            Class<K> clazz)
+            throws IOException, LocalizationException, SerializationException {
         K rval = null;
         if (file != null && file.exists()) {
             try (InputStream is = file.openInputStream()) {
@@ -514,7 +524,7 @@ public class PDAMetaDataUtil {
 
     private void updateTimes(Collection<LocalizationFile> locFiles) {
         for (LocalizationFile lf : locFiles) {
-            updateTimeMap.get(lf.toString()).set(lf.getTimeStamp().getTime());
+            updateTimeMap.put(lf.toString(), lf.getTimeStamp().getTime());
         }
     }
 }
