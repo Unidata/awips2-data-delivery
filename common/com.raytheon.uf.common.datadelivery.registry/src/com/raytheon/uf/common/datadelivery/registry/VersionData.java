@@ -177,9 +177,6 @@ public class VersionData {
             sb.append("Invalid start version of '" + getStart() + "'. ");
         }
         Version myEndVersion = getEndVersion();
-        if (myEndVersion == null) {
-            sb.append("Invalid end version of '" + getEnd() + "'. ");
-        }
         if (myStartVersion != null && myEndVersion != null
                 && myStartVersion.compareTo(myEndVersion) > 0) {
             sb.append("Start version '" + getStart()

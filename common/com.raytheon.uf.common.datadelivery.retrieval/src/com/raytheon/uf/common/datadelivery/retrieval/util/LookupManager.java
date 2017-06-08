@@ -863,7 +863,7 @@ public class LookupManager {
 
         Map<String, DataSetConfigInfo> providerMap = dataSetConfigInfos
                 .get(providerName);
-        if (providerMap == null || providerMap.isEmpty()) {
+        if (providerMap == null) {
             try {
                 Map<String, DataSetConfigInfo> newDSCI = new HashMap<>(2);
                 DataSetConfigInfoMap tmpSetConfigInfoMap = null;
@@ -876,10 +876,17 @@ public class LookupManager {
                     if (locFiles.containsKey(locLevel)) {
                         tmpSetConfigInfoMap = readDataSetConfigInfoXml(
                                 locFiles.get(locLevel));
-                        for (DataSetConfigInfo dataSetConfigInfo : tmpSetConfigInfoMap
-                                .getDataSetConfigInfoList()) {
-                            newDSCI.put(dataSetConfigInfo.getDataSetNameRegex(),
-                                    dataSetConfigInfo);
+                        if (tmpSetConfigInfoMap != null
+                                && tmpSetConfigInfoMap
+                                        .getDataSetConfigInfoList() != null
+                                && !tmpSetConfigInfoMap
+                                        .getDataSetConfigInfoList().isEmpty()) {
+                            for (DataSetConfigInfo dataSetConfigInfo : tmpSetConfigInfoMap
+                                    .getDataSetConfigInfoList()) {
+                                newDSCI.put(
+                                        dataSetConfigInfo.getDataSetNameRegex(),
+                                        dataSetConfigInfo);
+                            }
                         }
                     }
                 }
