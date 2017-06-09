@@ -163,6 +163,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Mar 15, 2016   5482     randerso    Fix GUI sizing issues
  * Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces.
  * Nov 08, 2016   5976     bsteffen    Use VizApp for GUI execution.
+ * Jun 09, 2017    746     bsteffen    Handle group conflicts with duration and period.
  *
  * </pre>
  * 
@@ -252,7 +253,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     /** The dataset object */
     private final DataSet dataSet;
 
-
     /**
      * Constructor.
      * 
@@ -269,8 +269,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             DataSet dataSet) {
         // Make blocking so parent shell stays busy until the dialog closes.
         super(parent, SWT.DIALOG_TRIM | SWT.MIN,
-                CAVE.INDEPENDENT_SHELL
-                | CAVE.PERSPECTIVE_INDEPENDENT);
+                CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT);
         this.create = create;
         this.dataSet = dataSet;
 
@@ -318,8 +317,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
         if (this.subscription.getDataSetType() == DataType.GRID) {
             // cycle times
-            cycleTimes = Sets.newTreeSet(((OpenDapGriddedDataSet) dataSet)
-                    .getCycles());
+            cycleTimes = Sets
+                    .newTreeSet(((OpenDapGriddedDataSet) dataSet).getCycles());
             latencyRule = ruleManager.getLatency(subscription, cycleTimes);
             priorityRule = ruleManager.getPriority(subscription, cycleTimes);
             isReadOnlyLatency = false;
@@ -394,8 +393,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         subName.setText("Name: ");
 
         // If in Edit mode do not allow Subscription Name to be changed
-        subNameTxt = new Text(subInfoGroup, SWT.BORDER
-                | (create ? SWT.None : SWT.READ_ONLY));
+        subNameTxt = new Text(subInfoGroup,
+                SWT.BORDER | (create ? SWT.None : SWT.READ_ONLY));
         if (!create) {
             subNameTxt.setBackground(subInfoGroup.getBackground());
         }
@@ -470,8 +469,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 + StringUtil.NEWLINE + "Permission: "
                 + createSharedSubPermission;
         try {
-            if (DataDeliveryServices
-                    .getPermissionsService()
+            if (DataDeliveryServices.getPermissionsService()
                     .checkPermissions(user, msg, createSharedSubPermission,
                             createSubPermission)
                     .hasPermission(createSharedSubPermission)) {
@@ -495,8 +493,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 });
             }
         } catch (AuthException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
+            statusHandler.handle(Priority.PROBLEM, e1.getLocalizedMessage(),
+                    e1);
         }
         btn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -520,11 +518,12 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         selectedSiteLbl = new Label(group, SWT.BORDER);
         selectedSiteLbl.setFont(font);
         selectedSiteLbl.setText("");
-        selectedSiteLbl.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
-                false));
+        selectedSiteLbl
+                .setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
         if (!create) {
-            if (subscription != null && subscription.getOfficeIDs().size() > 0) {
+            if (subscription != null
+                    && subscription.getOfficeIDs().size() > 0) {
                 String[] siteArr = subscription.getOfficeIDs().toArray(
                         new String[subscription.getOfficeIDs().size()]);
                 processSites(siteArr);
@@ -1071,9 +1070,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             // Set group name and area
             subscription.setGroupName(this.groupSelectComp.getGroupName());
             if (groupDefinition.isArealDataSet()) {
-                subscription.getCoverage().setEnvelope(
-                        groupDefinition.getEnvelope());
+                subscription.getCoverage()
+                        .setEnvelope(groupDefinition.getEnvelope());
             }
+        } else {
+            subscription.setGroupName(GroupDefinition.NO_GROUP);
         }
 
         if (this.durComp.isIndefiniteChk()) {
@@ -1231,11 +1232,10 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                                                 close();
                                             } else {
                                                 setStatus(Status.CANCEL);
-                                                DataDeliveryUtils
-                                                        .showText(
-                                                                getShell(),
-                                                                "Unable to Create Subscription",
-                                                                status.getMessage());
+                                                DataDeliveryUtils.showText(
+                                                        getShell(),
+                                                        "Unable to Create Subscription",
+                                                        status.getMessage());
                                             }
                                         }
                                     }
@@ -1293,8 +1293,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             if (autoApprove) {
                 try {
                     final SubscriptionServiceResult response = subscriptionService
-                            .update(username,
-                                    subscription,
+                            .update(username, subscription,
                                     new CancelForceApplyAndIncreaseLatencyDisplayText(
                                             "update", getShell()));
 
@@ -1321,8 +1320,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
                     if (cachedSiteSubscription != null) {
                         String responseMessage = response.getMessage();
-                        if (responseMessage != null
-                                && responseMessage.indexOf(" has been updated") > 0) {
+                        if (responseMessage != null && responseMessage
+                                .indexOf(" has been updated") > 0) {
                         }
                     }
                 } catch (RegistryHandlerException e) {
@@ -1333,8 +1332,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 // Update Pending Subscription
                 InitialPendingSubscription pendingSub = subscription
                         .initialPending(currentUser);
-                pendingSub.setChangeReason(this.changeReasonTxt.getText()
-                        .trim());
+                pendingSub
+                        .setChangeReason(this.changeReasonTxt.getText().trim());
 
                 // Create the registry ids
                 setSubscriptionId(pendingSub);
@@ -1382,8 +1381,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         } else if (subscription.getDataSetType() == DataType.PDA) {
             maxLatency = DataDeliveryUtils.getMaxLatency(subscription);
         }
-        latencyValid = DataDeliveryGUIUtils.latencyValidChk(
-                priorityComp.getLatencyValue(), maxLatency);
+        latencyValid = DataDeliveryGUIUtils
+                .latencyValidChk(priorityComp.getLatencyValue(), maxLatency);
         if (!latencyValid) {
             displayErrorPopup("Invalid Latency",
                     "Invalid latency value entered.\n\n"
@@ -1402,8 +1401,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 return false;
             }
 
-            if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(
-                    subscriptionName.trim()).find()) {
+            if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN
+                    .matcher(subscriptionName.trim()).find()) {
                 displayErrorPopup(DataDeliveryGUIUtils.INVALID_CHARS_TITLE,
                         DataDeliveryGUIUtils.INVALID_CHARS_MESSAGE);
 
@@ -1421,10 +1420,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     return false;
                 }
             } catch (RegistryHandlerException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to check for an existing subscription by name.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to check for an existing subscription by name.",
+                        e);
             }
         }
 
@@ -1433,8 +1431,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         // if group selected check if properties match saved group
-        if (!GroupDefinition.NO_GROUP.equals(this.groupSelectComp
-                .getGroupName()) && valid) {
+        if (!GroupDefinition.NO_GROUP
+                .equals(this.groupSelectComp.getGroupName()) && valid) {
             groupDefinition = GroupDefinitionManager
                     .getGroup(this.groupSelectComp.getGroupName());
 
@@ -1456,7 +1454,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
             if (durStart != null && durEnd != null && formDurStart != null
                     && formDurEnd != null) {
-                if (durStart.equals(formDurStart) && durEnd.equals(formDurEnd)) {
+                if (durStart.equals(formDurStart)
+                        && durEnd.equals(formDurEnd)) {
                     groupDurValid = true;
                 }
             } else if (durStart == null && durEnd == null
@@ -1473,21 +1472,21 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             String formActiveStart = this.activePeriodComp.getActiveStartText();
             String formActiveEnd = this.activePeriodComp.getActiveEndText();
 
-            if (!formActiveStart.isEmpty() && !formActiveStart.isEmpty()) {
-                activeStartStr = DataDeliveryGUIUtils.getActiveFormat().format(
-                        activeStart);
-                activeEndStr = DataDeliveryGUIUtils.getActiveFormat().format(
-                        activeEnd);
+            if (activeStart != null && activeEnd != null) {
+                activeStartStr = DataDeliveryGUIUtils.getActiveFormat()
+                        .format(activeStart);
+                activeEndStr = DataDeliveryGUIUtils.getActiveFormat()
+                        .format(activeEnd);
             }
 
             if (activeStartStr != null && activeEndStr != null
-                    && !formActiveStart.isEmpty() && !formActiveEnd.isEmpty()) {
+                    && formActiveStart != null && formActiveEnd != null) {
                 if (activeStartStr.equals(formActiveStart)
                         && activeEndStr.equals(formActiveEnd)) {
                     groupActiveValid = true;
                 }
             } else if (activeStartStr == null && activeEndStr == null
-                    && formActiveStart.isEmpty() && formActiveEnd.isEmpty()) {
+                    && formActiveStart == null && formActiveEnd == null) {
                 groupActiveValid = true;
             }
 
@@ -1497,11 +1496,33 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         if (!groupDurValid || !groupActiveValid) {
-            displayErrorPopup(
-                    "Invalid Group Values",
-                    "Values do not match selected group values.\n\n"
-                            + "The group name will not be saved with the subscription.");
-            valid = true;
+            StringBuilder message = new StringBuilder();
+            message.append("The Subscription ");
+            if (!groupDurValid) {
+                message.append("Duration ");
+                if (!groupActiveValid) {
+                    message.append("and Active Period do ");
+                } else {
+                    message.append("does ");
+                }
+            } else {
+                message.append("Active Period does ");
+            }
+            message.append("not match the Group values. ");
+            message.append(
+                    "To apply these changes the subscription must be removed from the group.");
+            message.append("\n\n");
+            message.append("Should this subscription be removed from the "
+                    + groupDefinition.getGroupName() + " group?");
+
+            int yesOrNo = DataDeliveryUtils.showYesNoMessage(getShell(),
+                    "Invalid Group Values", message.toString());
+            if (yesOrNo == SWT.YES) {
+                groupSelectComp.setGroupName(null);
+                groupDefinition = null;
+            } else {
+                valid = false;
+            }
         }
 
         // If valid is not set to true for any of the composites return
@@ -1835,7 +1856,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      * 
      * @param subscription
      */
-    private void deleteSubscription(String username, Subscription subscription) {
+    private void deleteSubscription(String username,
+            Subscription subscription) {
 
         try {
             resetSubscriptionDataSetLatency(subscription);
@@ -1843,8 +1865,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     .get(SubscriptionHandler.class);
             handler.delete(username, subscription);
         } catch (RegistryHandlerException e) {
-            statusHandler.error(
-                    "Unable to delete duplicate (Site) Subscription "
+            statusHandler
+                    .error("Unable to delete duplicate (Site) Subscription "
                             + subscription.getName(), e);
         }
 
