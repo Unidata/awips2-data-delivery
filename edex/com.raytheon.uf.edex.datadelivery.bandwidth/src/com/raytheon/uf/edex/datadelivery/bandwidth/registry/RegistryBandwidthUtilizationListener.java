@@ -32,15 +32,15 @@ import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
 import com.raytheon.uf.common.datadelivery.registry.Network;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
+import com.raytheon.uf.edex.datadelivery.retrieval.handlers.IBandwidthChangedCallback;
 import com.raytheon.uf.edex.registry.ebxml.web.RegistryWebServer;
 import com.raytheon.uf.edex.registry.ebxml.web.security.NetworkTrafficSelectChannelConnector;
 
@@ -57,17 +57,17 @@ import com.raytheon.uf.edex.registry.ebxml.web.security.NetworkTrafficSelectChan
  * Nov 06, 2013 1736       dhladky     Initial creation
  * 6/5/2014     1712       bphillip    Changed registry Jetty server class
  * Dec 01, 2015 5152       nabowle     Use custom NetworkTrafficSelectChannelConnector.
+ * Jun 12, 2017 6222       tgurney     Add bandwidthChangedCallback
  * 
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  */
 
 public class RegistryBandwidthUtilizationListener implements NetworkTrafficListener {
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(RegistryBandwidthUtilizationListener.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(RegistryBandwidthUtilizationListener.class);
 
     /* Is this registry federated or not */
     private boolean isFederated = false;
@@ -79,7 +79,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
     private Long lastRun;
 
     /** network for data traffic  */
-    private Network network = Network.OPSNET;;
+    private Network network = Network.OPSNET;
 
     /** size of bucket in minutes */
     private int bucketSize = 0;
@@ -93,12 +93,17 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
      * @param isFederated
      * @param BandwidthMap
      */
-    public RegistryBandwidthUtilizationListener(RegistryWebServer server, Boolean isFederated, BandwidthMap map, IBandwidthBucketDao bucketDao) {
+    public RegistryBandwidthUtilizationListener(RegistryWebServer server,
+            Boolean isFederated, BandwidthMap map,
+            IBandwidthBucketDao bucketDao,
+            IBandwidthChangedCallback bandwidthChangedCallback) {
 
         // We only care about OPSNET in this listener
         this.setFederated(isFederated);
         this.lastRun = TimeUtil.currentTimeMillis();
         BandwidthRoute route = map.getRoute(network);
+        bandwidthChangedCallback.bandwidthChanged(route.getDefaultBandwidth(),
+                network);
         this.bucketSize = route.getBucketSizeMinutes();
         this.bucketDao = bucketDao;
         String cron = getCronString(route.getBucketSizeMinutes());
@@ -108,7 +113,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
             if (connector instanceof NetworkTrafficSelectChannelConnector) {
                 NetworkTrafficSelectChannelConnector nconnector = ((NetworkTrafficSelectChannelConnector)connector);
                 nconnector.addNetworkTrafficListener(this);
-                statusHandler.debug(nconnector.toString()+ " on Network: "+network);
+                logger.debug(nconnector.toString() + " on Network: " + network);
             }
         }
     }
@@ -116,9 +121,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
 
     @Override
     public void opened(Socket socket) {
-        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler.debug("Socket Open!");
-        }
+        logger.debug("Socket Open!");
     }
 
     @Override
@@ -147,9 +150,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
 
     @Override
     public void closed(Socket socket) {
-        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler.debug("Socket Closed!");
-        }
+        logger.debug("Socket Closed!");
     }
 
     /**
@@ -216,7 +217,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
             try {
                 jobDetail = schedular.getJobDetail(name, "BandwidthUtilization");
             } catch (SchedulerException se) {
-                statusHandler.info("Job doesn't exist!");
+                logger.info("Job doesn't exist!", se);
             }
 
             if (jobDetail != null) {
@@ -227,7 +228,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
                 if (!cron.equals(cronEx)) {
                     trigger.setCronExpression(cron);
                     schedular.rescheduleJob(name, "BandwidthUtilization", trigger);
-                    statusHandler.info("Rescheduling Job: " + name);
+                    logger.info("Rescheduling Job: " + name);
                 }
             } else {
                 jobDetail = new JobDetail(name, "BandwidthUtilization", BandwidthUtilizationProcessor.class);
@@ -241,7 +242,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
                 CronTrigger trigger = new CronTrigger(name, "BandwidthUtilization");
                 trigger.setCronExpression(cron);
                 schedular.scheduleJob(jobDetail, trigger);
-                statusHandler.info("Scheduling Job: " + name);
+                logger.info("Scheduling Job: " + name);
             }
 
             if (!schedular.isStarted()) {
@@ -249,7 +250,7 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
             }
 
         } catch (Exception e) {
-            statusHandler.error("Unable to schedule job: " + name + " error: "
+            logger.error("Unable to schedule job: " + name + " error: "
                     + e);
         }
     }

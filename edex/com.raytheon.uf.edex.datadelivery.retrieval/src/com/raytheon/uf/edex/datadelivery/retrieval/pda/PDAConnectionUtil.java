@@ -49,6 +49,8 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
+import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.common.util.stream.RateLimitingOutputStream;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 import com.raytheon.uf.edex.security.SecurityConfiguration;
 
@@ -74,6 +76,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
  * Sep 30, 2016  5762     tjensen   Improve Error Handling
  * Nov 17, 2016  6002     tjensen   Added FTP connection timeouts
+ * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  * 
  * </pre>
  * 
@@ -94,25 +97,11 @@ public class PDAConnectionUtil {
     private static ServiceConfig serviceConfig;
 
     private static SecurityConfiguration sc;
-
-    /* Private Constructor */
-    private PDAConnectionUtil() {
+    static {
         serviceConfig = HarvesterServiceManager.getInstance()
                 .getServiceConfig(ServiceType.PDA);
         sc = getSecurityConfiguration();
     }
-
-    /**
-     * Get an instance of this singleton.
-     * 
-     * @return Instance of this class
-     */
-    public static PDAConnectionUtil getInstance() {
-        return instance;
-    }
-
-    /** Singleton instance of this class */
-    private static PDAConnectionUtil instance = new PDAConnectionUtil();
 
     /***
      * Connect using FTPS and grab file
@@ -121,10 +110,29 @@ public class PDAConnectionUtil {
      * @param providerConn
      * @param providerName
      * @param remoteFileName
+     * @param tokenBucket
      * @return
      */
     public static String ftpsConnect(Connection providerConn,
             String providerName, String remoteFilename) {
+        return ftpsConnect(providerConn, providerName, remoteFilename, null,
+                (int) TokenBucket.DEFAULT_WEIGHT);
+    }
+
+    /***
+     * Connect using FTPS and grab file
+     * 
+     * @param protocol
+     * @param providerConn
+     * @param providerName
+     * @param remoteFileName
+     * @param tokenBucket
+     * @param priority
+     * @return
+     */
+    public static String ftpsConnect(Connection providerConn,
+            String providerName, String remoteFilename, TokenBucket tokenBucket,
+            int priority) {
 
         String password = null;
         String userName = null;
@@ -170,7 +178,8 @@ public class PDAConnectionUtil {
                 FTPSClient ftp = createFtpClient();
                 ftpsRetrieveFile(ftp, userName, password, rootUrl, port,
                         remotePathAndFile[1], remotePathAndFile[0],
-                        localFileName, doBinaryTransfer, usePassiveMode);
+                        localFileName, doBinaryTransfer, usePassiveMode,
+                        tokenBucket, priority);
             } else {
                 logger.error(
                         "No local Connection file available! " + providerName);
@@ -190,11 +199,17 @@ public class PDAConnectionUtil {
     private static void ftpsRetrieveFile(FTPSClient ftp, String userName,
             String password, String rootUrl, int port, String remoteFilename,
             String remoteFilePath, String localFilename,
-            boolean doBinaryTransfer, boolean usePassiveMode)
-                    throws Exception, IOException {
+            boolean doBinaryTransfer, boolean usePassiveMode,
+            TokenBucket tokenBucket, int priority)
+            throws Exception, IOException {
 
         int reply = 0;
-        try (OutputStream output = new FileOutputStream(localFilename)) {
+        try (OutputStream fos = new FileOutputStream(localFilename)) {
+            OutputStream os = fos;
+            if (tokenBucket != null) {
+                os = new RateLimitingOutputStream(fos, tokenBucket,
+                        1.0 / priority);
+            }
             ftp.connect(rootUrl, port);
             /*
              * After connection attempt, you should check the reply code to
@@ -263,7 +278,7 @@ public class PDAConnectionUtil {
             // Download the file
             logger.info("Downloading file " + remoteFilename + " to "
                     + localFilename);
-            ftp.retrieveFile(remoteFilename, output);
+            ftp.retrieveFile(remoteFilename, os);
             reply = ftp.getReplyCode();
             if (!FTPReply.isPositiveCompletion(reply)) {
                 throw new IOException("Retrieval was unsuccessful for "
@@ -292,7 +307,7 @@ public class PDAConnectionUtil {
     private static void printDirListing(FTPSClient ftp) throws IOException {
         if (logger.isDebugEnabled()) {
             String[] listNames = ftp.listNames();
-            StringBuffer buf = new StringBuffer();
+            StringBuilder buf = new StringBuilder();
             for (String file : listNames) {
                 buf.append(file + "\n");
             }
@@ -433,30 +448,16 @@ public class PDAConnectionUtil {
      * @return
      */
     private static SecurityConfiguration getSecurityConfiguration() {
-        if (sc == null) {
-            try {
-                sc = new SecurityConfiguration();
-            } catch (IOException ioe) {
-                logger.error("Couldn't access the security configuration!",
-                        ioe);
+        synchronized (PDAConnectionUtil.class) {
+            if (sc == null) {
+                try {
+                    sc = new SecurityConfiguration();
+                } catch (IOException ioe) {
+                    logger.error("Couldn't access the security configuration!",
+                            ioe);
+                }
             }
         }
-
         return sc;
     }
-
-    /**
-     * Used for internal testing
-     * 
-     * @param args
-     */
-    public static void main(String args[]) {
-        String[] results = separateRemoteFileDirectoryAndFileName(args[0]);
-        String rootUrl = removeProtocolsAndFilesFromRootUrl(args[1]);
-        System.out.println("Path: " + results[0]);
-        System.out.println("Filename: " + results[1]);
-        System.out.println("Root URL: " + rootUrl);
-
-    }
-
 }

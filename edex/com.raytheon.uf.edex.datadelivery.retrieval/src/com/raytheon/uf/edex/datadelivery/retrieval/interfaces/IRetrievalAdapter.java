@@ -27,6 +27,7 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.util.rate.TokenBucket;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 
 /**
@@ -38,14 +39,12 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 07, 2011            dhladky     Initial creation
- * May 22, 2017 6130       tjensen     Add RetrievalRequestRecord to processResponse
+ * May 22, 2017  6130      tjensen     Add RetrievalRequestRecord to processResponse
+ * Jun 05, 2017  6222      tgurney     Add token bucket and priority
  *
  * </pre>
  *
- * /
- *
  * @author dhladky
- * @version 1.0
  */
 
 public interface IRetrievalAdapter<T extends Time, C extends Coverage> {
@@ -63,5 +62,13 @@ public interface IRetrievalAdapter<T extends Time, C extends Coverage> {
     public void setProviderRetrievalXML(Retrieval prxml);
 
     public Retrieval getProviderRetrievalXMl();
+
+    public void setTokenBucket(TokenBucket tokenBucket);
+
+    public TokenBucket getTokenBucket();
+
+    public void setPriority(int priority);
+
+    public int getPriority();
 
 }

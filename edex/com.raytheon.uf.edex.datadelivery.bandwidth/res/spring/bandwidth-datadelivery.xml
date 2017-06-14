@@ -49,6 +49,7 @@
         <constructor-arg ref="registryIdUtil" />
         <property name="aggregator" ref="aggregator" />
         <property name="initializer" ref="bandwidthInitializer" />
+        <property name="bandwidthChangedCallback" ref="tokenBucketUpdater" />
     </bean>
 
     <bean id="subscriptionLatencyCalculator"
@@ -99,6 +100,7 @@
         <constructor-arg ref="ebxmlFederationEnabled" />
         <constructor-arg ref="BandwidthMap" />
         <constructor-arg ref="bandwidthBucketDao" />
+        <constructor-arg ref="tokenBucketUpdater" />
     </bean>
 
     <bean id="subscriptionLatencyCheck"

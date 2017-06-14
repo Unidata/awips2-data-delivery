@@ -96,6 +96,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalPlan;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
+import com.raytheon.uf.edex.datadelivery.retrieval.handlers.IBandwidthChangedCallback;
 import com.raytheon.uf.edex.registry.ebxml.exception.EbxmlRegistryException;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
@@ -161,7 +162,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Sep 30, 2016  5772       tjensen     Fix Adhocs for older times
  * Apr 05, 2017  1045       tjensen     Update for moving datasets
  * Apr 27, 2017  6186       rjpeter     Removed overloaded scheduleAdhoc, updated queueRetrieval, removed BandwidthDataSetUpdate.
- *
+ * Jun 08, 2017  6222       tgurney     Add bandwidthChangedCallback
  * </pre>
  *
  * @author dhladky
@@ -220,6 +221,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * Map of application contexts used for starting bandwidth manager instances
      */
     private final ConcurrentHashMap<String[], ClassPathXmlApplicationContext> appContextMap = new ConcurrentHashMap<>();
+
+    private IBandwidthChangedCallback bandwidthChangedCallback;
 
     public BandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao<T, C> bandwidthDao, RetrievalManager retrievalManager,
@@ -1383,6 +1386,10 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         RetrievalPlan c = retrievalManager.getPlan(requestNetwork);
         if (c != null) {
             c.setDefaultBandwidth(bandwidth);
+            if (bandwidthChangedCallback != null) {
+                bandwidthChangedCallback.bandwidthChanged(bandwidth,
+                        requestNetwork);
+            }
             return true;
         }
         return false;
@@ -1700,4 +1707,13 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     public abstract List<String> initializeScheduling(
             Map<Network, List<Subscription>> subMap)
             throws SerializationException;
+
+    public void setBandwidthChangedCallback(
+            IBandwidthChangedCallback bandwidthChangedCallback) {
+        this.bandwidthChangedCallback = bandwidthChangedCallback;
+    }
+
+    public IBandwidthChangedCallback getBandwidthChangedCallback() {
+        return bandwidthChangedCallback;
+    }
 }

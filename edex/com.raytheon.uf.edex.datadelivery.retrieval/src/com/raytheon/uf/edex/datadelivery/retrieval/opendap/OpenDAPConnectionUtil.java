@@ -20,8 +20,12 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 
+import com.raytheon.opendap.InputStreamWrapper;
 import com.raytheon.uf.common.comm.ProxyConfiguration;
+import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
 
 /**
  * Utilities for datadelivery connections.
@@ -39,16 +43,13 @@ import com.raytheon.uf.common.comm.ProxyConfiguration;
  * Nov 12, 2013  *         dhladky      Fixed copy paste error
  * 6/18/2014    1712        bphillip    Updated Proxy configuration
  * Apr 14, 2015 4400       dhladky      Upgraded to DAP2 with backward compatibility.
+ * Jun 06, 2017 6222       tgurney      Use token bucket to rate-limit requests
  * </pre>
  * 
  * @author djohnson
- * @version 1.0
  */
 
 public class OpenDAPConnectionUtil {
-
-    static OpenDAPConnectionUtil instance = new OpenDAPConnectionUtil();
-        
     /**
      * Retrieve a DConnect instance.
      * 
@@ -80,12 +81,33 @@ public class OpenDAPConnectionUtil {
      */
     public static opendap.dap.DConnect getDConnectDAP2(String urlString)
             throws FileNotFoundException {
+        return getDConnectDAP2(urlString, null,
+                (int) TokenBucket.DEFAULT_WEIGHT);
+    }
 
+    /**
+     * Retrieve a DConnect instance.
+     * 
+     * @param urlString
+     * @return DConnect instance
+     * @throws FileNotFoundException
+     *             rethrown from DConnect
+     */
+    public static opendap.dap.DConnect getDConnectDAP2(String urlString,
+            TokenBucket tokenBucket, int priority)
+            throws FileNotFoundException {
+        InputStreamWrapper streamWrapper = null;
+        if (tokenBucket != null) {
+            streamWrapper = (InputStream wrappedStream) -> {
+                return new RateLimitingInputStream(wrappedStream, tokenBucket,
+                        1.0 / priority);
+            };
+        }
         // new DAP2-serialized version
         if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
             return new opendap.dap.DConnect(urlString,
                     ProxyConfiguration.getHttpProxyHost(),
-                    ProxyConfiguration.getHttpProxyPortString());
+                    ProxyConfiguration.getHttpProxyPortString(), streamWrapper);
         } else {
             return new opendap.dap.DConnect(urlString);
         }

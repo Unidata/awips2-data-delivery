@@ -64,11 +64,11 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
  * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
  *                                  to block
+ * Jun 12, 2017  6222     tgurney   Set minimum bandwidth to 1 kB/s
  * 
  * </pre>
  * 
  * @author mpduff
- * @version 1.0
  */
 
 public class BandwidthComposite extends Composite implements IApplyCancelAction {
@@ -146,8 +146,8 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
         availBandwith.setText("OPSNET Bandwidth (kB/s):");
 
         final Spinner availBandwidthSpinner = new Spinner(outerComp, SWT.BORDER);
-        availBandwidthSpinner.setMinimum(0);
-        availBandwidthSpinner.setMaximum(10000);
+        availBandwidthSpinner.setMinimum(1);
+        availBandwidthSpinner.setMaximum(300_000);
         availBandwidthSpinner.setToolTipText("Select bandwidth in Kilobytes");
         this.availBandwidthSpinner = availBandwidthSpinner;
 
@@ -207,7 +207,7 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
             }
         }
 
-        if (applyChanges == true) {
+        if (applyChanges) {
             performAsyncAvailableBandwidthChanges(bandwidth);
         }
 
@@ -257,7 +257,7 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
             @Override
             public void done(IJobChangeEvent event) {
 
-                if (event.getResult().isOK() == false) {
+                if (!event.getResult().isOK()) {
                     saveSuccessful = false;
                 }
 
@@ -265,10 +265,10 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                     @Override
                     public void run() {
                         try {
-                            if (saveSuccessful == true) {
+                            if (saveSuccessful) {
                                 Shell currentShell = null;
                                 if (parentShell != null
-                                        && parentShell.isDisposed() == false) {
+                                        && !parentShell.isDisposed()) {
 
                                     currentShell = parentShell;
                                     currentShell.forceFocus();
@@ -290,7 +290,7 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                                                         + ".  Please check the server for details.");
                                 Shell currentShell = null;
                                 if (parentShell != null
-                                        && parentShell.isDisposed() == false) {
+                                        && !parentShell.isDisposed()) {
                                     currentShell = parentShell;
                                     currentShell.forceFocus();
                                     currentShell.forceActive();
@@ -304,7 +304,7 @@ public class BandwidthComposite extends Composite implements IApplyCancelAction 
                             }
                         } finally {
                             if (parentShell != null
-                                    && parentShell.isDisposed() == false) {
+                                    && !parentShell.isDisposed()) {
                                 DataDeliveryGUIUtils
                                         .markNotBusyInUIThread(parentShell);
                             }
