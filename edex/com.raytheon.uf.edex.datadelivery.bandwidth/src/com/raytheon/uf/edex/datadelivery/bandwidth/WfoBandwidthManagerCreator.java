@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,7 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
-import com.raytheon.uf.common.datadelivery.bandwidth.IProposeScheduleResponse;
+import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -51,11 +51,11 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
  * {@link IEdexBandwidthManagerCreator} for a WFO bandwidth manager.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 20, 2013  1543     djohnson  Initial creation
@@ -85,9 +85,10 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Aug 09, 2016  5771     rjpeter   Update constructor
  * Jan 05, 2017  746      bsteffen  Handle multiple concurrent threads in
  *                                  getBandwidthGraphData()
- * 
+ * Jun 20, 2017  6299     tgurney   Remove IProposeScheduleResponse
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  */
 public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
@@ -103,7 +104,8 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
     protected static final String LOCAL_REGISTRY = "LOCAL_REGISTRY";
 
     /** The threaded requester for graph data **/
-    protected static ExecutorService graphDataExecutor;
+    protected static final ExecutorService graphDataExecutor = Executors
+            .newFixedThreadPool(2);
 
     /**
      * WFO {@link BandwidthManager} implementation.
@@ -122,7 +124,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
 
         /**
          * Constructor.
-         * 
+         *
          * @param dbInit
          * @param bandwidthDao
          * @param retrievalManager
@@ -134,12 +136,9 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
          * @param subscriptionNotificationService
          * @param findSubscriptionsStrategy
          */
-        public WfoBandwidthManager(
-                IBandwidthDbInit dbInit,
-                IBandwidthDao bandwidthDao,
-                RetrievalManager retrievalManager,
-                BandwidthDaoUtil bandwidthDaoUtil,
-                RegistryIdUtil idUtil,
+        public WfoBandwidthManager(IBandwidthDbInit dbInit,
+                IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
+                BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil,
                 DataSetMetaDataHandler dataSetMetaDataHandler,
                 SubscriptionHandler subscriptionHandler,
                 SendToServerSubscriptionNotificationService subscriptionNotificationService,
@@ -147,8 +146,6 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
             super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
                     idUtil, dataSetMetaDataHandler, subscriptionHandler,
                     subscriptionNotificationService, findSubscriptionsStrategy);
-
-            graphDataExecutor = Executors.newFixedThreadPool(2);
         }
 
         @Override
@@ -160,10 +157,10 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
          * {@inheritDoc}
          */
         @Override
-        protected IProposeScheduleResponse proposeScheduleSbnSubscription(
+        protected ProposeScheduleResponse proposeScheduleSbnSubscription(
                 List<Subscription<T, C>> subscriptions) throws Exception {
 
-            final IProposeScheduleResponse proposeResponse = ncfBandwidthService
+            final ProposeScheduleResponse proposeResponse = ncfBandwidthService
                     .proposeSchedule(subscriptions);
 
             // If the NCF bandwidth manager says they fit without
@@ -196,7 +193,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
 
         /**
          * Requests the local registry's bandwidth graph data.
-         * 
+         *
          * @return
          */
         protected BandwidthGraphData getLocalBandwidthGraphData() {
@@ -205,7 +202,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
 
         /**
          * Thread out the requests for graph data
-         * 
+         *
          * @return
          */
         protected BandwidthGraphData requestGraphData() {
@@ -235,8 +232,7 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
                     }
                 }
             } catch (InterruptedException e) {
-                statusHandler.error(
-                        "Process thread had been interupted!", e);
+                statusHandler.error("Process thread had been interupted!", e);
             }
             return data;
         }
@@ -246,27 +242,24 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
      * {@inheritDoc}
      */
     @Override
-    public BandwidthManager<T, C> getBandwidthManager(
-            IBandwidthDbInit dbInit,
-            IBandwidthDao bandwidthDao,
-            RetrievalManager retrievalManager,
-            BandwidthDaoUtil bandwidthDaoUtil,
-            RegistryIdUtil idUtil,
+    public BandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
+            IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
+            BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil,
             DataSetMetaDataHandler dataSetMetaDataHandler,
             SubscriptionHandler subscriptionHandler,
             SendToServerSubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
-        return new WfoBandwidthManager<T, C>(dbInit, bandwidthDao,
-                retrievalManager, bandwidthDaoUtil, idUtil,
-                dataSetMetaDataHandler, subscriptionHandler,
-                subscriptionNotificationService, findSubscriptionsStrategy);
+        return new WfoBandwidthManager<>(dbInit, bandwidthDao, retrievalManager,
+                bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
+                subscriptionHandler, subscriptionNotificationService,
+                findSubscriptionsStrategy);
     }
 
     /**
      * Class to thread the retrieval of GraphData
-     * 
+     *
      * @author dhladky
-     * 
+     *
      */
     static class GraphDataRequestor implements Callable<BandwidthGraphData> {
 

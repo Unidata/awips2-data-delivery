@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -41,11 +41,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Service for interacting with the bandwidth manager.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 22, 2012 1286       djohnson     Initial creation
@@ -61,9 +61,10 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Nov 20, 2014 2749       ccody        Added "propose only" for  Set Avail Bandwidth
  * Jun 09, 2015 4047       dhladky      cleanup.
  * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * 
+ * Jun 20, 2017 6299       tgurney      Remove IProposeScheduleResponse
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  * @version 1.0
  */
@@ -75,7 +76,7 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
 
     /**
      * Constructor.
-     * 
+     *
      * @param serviceKey
      */
     protected BandwidthService(String serviceKey) {
@@ -84,13 +85,13 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
 
     /**
      * Retrieve the available bandwidth for a {@link Network}.
-     * 
+     *
      * @param network
      *            the network
      * @return the bandwidth, in kilobytes (KB)
      */
     public final int getBandwidthForNetworkInKilobytes(Network network) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.GET_BANDWIDTH);
         request.setNetwork(network);
 
@@ -99,14 +100,15 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to set available bandwidth for network [" + network
-                            + "]", e);
+                            + "]",
+                    e);
             return 0;
         }
     }
 
     /**
      * Proposes changing the available bandwidth for a {@link Network}.
-     * 
+     *
      * @param network
      *            the network
      * @param bandwidth
@@ -117,7 +119,7 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     @SuppressWarnings("unchecked")
     public Set<String> proposeBandwidthForNetworkInKilobytes(Network network,
             int bandwidth) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.PROPOSE_SET_BANDWIDTH);
         request.setNetwork(network);
         request.setBandwidth(bandwidth);
@@ -127,7 +129,8 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to set available bandwidth for network [" + network
-                            + "]", e);
+                            + "]",
+                    e);
             return null;
         }
     }
@@ -135,7 +138,7 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     /**
      * Propose ONLY making changes. Do NOT make any scheduling changes for the
      * available bandwidth for a {@link Network}.
-     * 
+     *
      * @param network
      *            the network
      * @param bandwidth
@@ -146,7 +149,7 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
     @SuppressWarnings("unchecked")
     public Set<String> proposeOnlyBandwidthForNetworkInKilobytes(
             Network network, int bandwidth) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.PROPOSE_ONLY_SET_BANDWIDTH);
         request.setNetwork(network);
         request.setBandwidth(bandwidth);
@@ -156,14 +159,15 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to Propose to set available bandwidth for network ["
-                            + network + "]", e);
+                            + network + "]",
+                    e);
             return null;
         }
     }
 
     /**
      * Set the available bandwidth for a {@link Network}.
-     * 
+     *
      * @param network
      *            the network
      * @param bandwidth
@@ -172,7 +176,7 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
      */
     public final boolean setBandwidthForNetworkInKilobytes(Network network,
             int bandwidth) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.FORCE_SET_BANDWIDTH);
         request.setNetwork(network);
         request.setBandwidth(bandwidth);
@@ -182,14 +186,15 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to set available bandwidth for network [" + network
-                            + "]", e);
+                            + "]",
+                    e);
             return false;
         }
     }
 
     /**
      * Schedules a subscription for bandwidth management.
-     * 
+     *
      * @param subscriptions
      *            the subscription
      * @return the set of subscription names that have had some cycles
@@ -201,14 +206,14 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
 
     /**
      * Schedules a list of subscriptions for bandwidth management.
-     * 
+     *
      * @param subscriptions
      *            the subscription
      * @return the set of subscription names that have had some cycles
      *         unscheduled
      */
     public Set<String> schedule(List<Subscription<T, C>> subscriptions) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.SCHEDULE_SUBSCRIPTION);
         request.setSubscriptions(subscriptions);
 
@@ -217,50 +222,46 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
             Set<String> retVal = sendRequest(request, Set.class);
             return retVal;
         } catch (Exception e) {
-            LogUtil.logIterable(
-                    statusHandler,
-                    Priority.PROBLEM,
+            LogUtil.logIterable(statusHandler, Priority.PROBLEM,
                     "Unable to schedule the following subscriptions for bandwidth management:",
-                    subscriptions);
+                    subscriptions, e);
             return Collections.emptySet();
         }
     }
 
     /**
      * Proposes scheduling a subscription for bandwidth management
-     * 
+     *
      * @param subscription
      *            the subscription
      * @return the response object
      */
-    public IProposeScheduleResponse proposeSchedule(
+    public ProposeScheduleResponse proposeSchedule(
             Subscription<T, C> subscription) {
         return proposeSchedule(Arrays.asList(subscription));
     }
 
     /**
      * Proposes scheduling the subscriptions with bandwidth management.
-     * 
+     *
      * @param subscriptions
      *            the subscriptions
      * @return the response object
      */
-    public IProposeScheduleResponse proposeSchedule(
+    public ProposeScheduleResponse proposeSchedule(
             List<Subscription<T, C>> subscriptions) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.PROPOSE_SCHEDULE_SUBSCRIPTION);
         request.setSubscriptions(subscriptions);
 
         try {
-            return sendRequest(request, IProposeScheduleResponse.class);
+            return sendRequest(request, ProposeScheduleResponse.class);
         } catch (Exception e) {
-            LogUtil.logIterable(
-                    statusHandler,
-                    Priority.PROBLEM,
+            LogUtil.logIterable(statusHandler, Priority.PROBLEM,
                     "Returning null response object, unable to propose scheduling"
                             + "the following subscriptions for bandwidth management:",
                     subscriptions, e);
-            return IProposeScheduleResponse.NULL_OBJECT;
+            return new ProposeScheduleResponse();
         }
     }
 
@@ -270,7 +271,7 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
      * e.g. a change was scheduled however the store of the actual object fails.
      */
     public void reinitialize() {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.REINITIALIZE);
 
         try {
@@ -283,33 +284,32 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
 
     /**
      * Retrieve the estimated completion time for an adhoc subscription.
-     * 
+     *
      * @param sub
      *            the subscription
      * @return the estimated completion time as a date
      */
     public Date getEstimatedCompletionTime(AdhocSubscription<T, C> sub) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
-        request.setSubscriptions(Arrays.<Subscription<T, C>> asList(sub));
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
+        request.setSubscriptions(Arrays.<Subscription<T, C>>asList(sub));
         request.setRequestType(RequestType.GET_ESTIMATED_COMPLETION);
         try {
             return sendRequest(request, Date.class);
         } catch (Exception e) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Unable to retrieve the estimated completion time, returning the current time.",
-                            e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to retrieve the estimated completion time, returning the current time.",
+                    e);
             return new Date();
         }
     }
 
     /**
      * Retrieve bandwidth graph data.
-     * 
+     *
      * @return bandwidth graph data
      */
     public BandwidthGraphData getBandwidthGraphData() {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
         request.setRequestType(RequestType.GET_BANDWIDTH_GRAPH_DATA);
         try {
             return sendRequest(request, BandwidthGraphData.class);
@@ -322,25 +322,24 @@ public abstract class BandwidthService<T extends Time, C extends Coverage>
 
     /**
      * Get the Subscription status summary.
-     * 
+     *
      * @param subscription
      *            The subscription
-     * 
+     *
      * @return The summary
      */
     public SubscriptionStatusSummary getSubscriptionStatusSummary(
             Subscription<T, C> subscription) {
-        BandwidthRequest<T, C> request = new BandwidthRequest<T, C>();
-        request.setSubscriptions(Arrays
-                .<Subscription<T, C>> asList(subscription));
+        BandwidthRequest<T, C> request = new BandwidthRequest<>();
+        request.setSubscriptions(
+                Arrays.<Subscription<T, C>>asList(subscription));
         request.setRequestType(RequestType.GET_SUBSCRIPTION_STATUS);
         try {
             return sendRequest(request, SubscriptionStatusSummary.class);
         } catch (Exception e) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Unable to retrieve the estimated completion time, returning the current time.",
-                            e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to retrieve the estimated completion time, returning the current time.",
+                    e);
             return new SubscriptionStatusSummary();
         }
     }

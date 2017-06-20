@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,26 +24,26 @@ import java.util.Set;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import com.raytheon.uf.common.datadelivery.bandwidth.IProposeScheduleResponse;
+import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.IForceApplyPromptDisplayText;
 
 /**
  * Configuration for a force apply prompt.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 22, 2013 1650       djohnson     Initial creation
- * 
+ * Jun 20, 2017 6299       tgurney      Remove IProposeScheduleResponse
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 public class ForceApplyPromptConfiguration {
@@ -66,7 +66,7 @@ public class ForceApplyPromptConfiguration {
 
     /**
      * Constructor used when there is a single subscription failing to schedule.
-     * 
+     *
      * @param title
      * @param message
      * @param requiredLatency
@@ -94,7 +94,7 @@ public class ForceApplyPromptConfiguration {
     /**
      * Constructor used when there are multiple subscriptions failing to
      * schedule.
-     * 
+     *
      * @param title
      * @param message
      * @param displayTextStrategy
@@ -102,45 +102,45 @@ public class ForceApplyPromptConfiguration {
     public ForceApplyPromptConfiguration(String title, String message,
             IForceApplyPromptDisplayText displayTextStrategy,
             Set<String> wouldBeUnscheduledSubscriptions) {
-        this(title, message, IProposeScheduleResponse.VALUE_NOT_SET,
-                IProposeScheduleResponse.VALUE_NOT_SET,
-                IProposeScheduleResponse.VALUE_NOT_SET, displayTextStrategy,
+        this(title, message, ProposeScheduleResponse.VALUE_NOT_SET,
+                ProposeScheduleResponse.VALUE_NOT_SET,
+                ProposeScheduleResponse.VALUE_NOT_SET, displayTextStrategy,
                 null, wouldBeUnscheduledSubscriptions);
     }
 
     /**
      * Returns true if the configuration would unschedule subscriptions other
      * than the one being modified/created.
-     * 
+     *
      * @return true or false
      */
     public boolean hasUnscheduledSubscriptions() {
         return subscription == null
                 || wouldBeUnscheduledSubscriptions.size() > 1
-                || !wouldBeUnscheduledSubscriptions.contains(subscription
-                        .getName());
+                || !wouldBeUnscheduledSubscriptions
+                        .contains(subscription.getName());
     }
 
     /**
      * Returns true if the configuration contains bandwidth manager details.
-     * 
+     *
      * @return true or false
      */
     public boolean hasBandwidthDetails() {
-        return requiredLatency != IProposeScheduleResponse.VALUE_NOT_SET;
+        return requiredLatency != ProposeScheduleResponse.VALUE_NOT_SET;
     }
 
     /**
      * Return true if the subscription attempting to be scheduled is the only
      * subscription that wouldn't be able to schedule.
-     * 
+     *
      * @return true or false
      */
     public boolean isNotAbleToScheduleOnlyTheSubscription() {
         return subscription != null
                 && wouldBeUnscheduledSubscriptions.size() == 1
-                && wouldBeUnscheduledSubscriptions.contains(subscription
-                        .getName());
+                && wouldBeUnscheduledSubscriptions
+                        .contains(subscription.getName());
     }
 
     /**
@@ -195,8 +195,8 @@ public class ForceApplyPromptConfiguration {
         sb.append("subscription: ")
                 .append(subscription == null ? "null" : subscription.getName())
                 .append(StringUtil.NEWLINE);
-        sb.append("wouldBeUnscheduledSubscriptions: ").append(
-                wouldBeUnscheduledSubscriptions);
+        sb.append("wouldBeUnscheduledSubscriptions: ")
+                .append(wouldBeUnscheduledSubscriptions);
 
         return sb.toString();
     }

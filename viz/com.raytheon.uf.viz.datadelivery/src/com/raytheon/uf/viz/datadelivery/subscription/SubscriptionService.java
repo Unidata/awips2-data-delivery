@@ -41,7 +41,7 @@ import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.req.IPermissionsService;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
-import com.raytheon.uf.common.datadelivery.bandwidth.IProposeScheduleResponse;
+import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
@@ -120,6 +120,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Feb 21, 2017  746      bsteffen  Do not deactivate after increasing latency.
  * Apr 10, 2017  6074     mapeters  Activate after increasing latency.
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
+ * Jun 20, 2017  6299     tgurney   Remove IProposeScheduleResponse
  *
  * </pre>
  *
@@ -229,11 +230,7 @@ public class SubscriptionService {
      * Enumeration of force apply responses.
      */
     public static enum ForceApplyPromptResponse {
-        CANCEL,
-        INCREASE_LATENCY,
-        EDIT_SUBSCRIPTIONS,
-        FORCE_APPLY_DEACTIVATED,
-        FORCE_APPLY_UNSCHEDULED;
+        CANCEL, INCREASE_LATENCY, EDIT_SUBSCRIPTIONS, FORCE_APPLY_DEACTIVATED, FORCE_APPLY_UNSCHEDULED;
     }
 
     /**
@@ -530,7 +527,7 @@ public class SubscriptionService {
             throws RegistryHandlerException {
 
         final List<Subscription> subscriptions = Arrays
-                .<Subscription> asList(sub);
+                .<Subscription>asList(sub);
         final String successMessage = "The query was successfully stored.";
         final ServiceInteraction action = new ServiceInteraction() {
             @Override
@@ -732,7 +729,7 @@ public class SubscriptionService {
             IForceApplyPromptDisplayText displayTextStrategy)
             throws RegistryHandlerException {
 
-        IProposeScheduleResponse proposeScheduleresponse = bandwidthService
+        ProposeScheduleResponse proposeScheduleresponse = bandwidthService
                 .proposeSchedule(subscriptions);
         Set<String> unscheduledSubscriptions = proposeScheduleresponse
                 .getUnscheduledSubscriptions();
@@ -764,18 +761,18 @@ public class SubscriptionService {
     private static ForceApplyPromptConfiguration getWouldCauseUnscheduledSubscriptionsPortion(
             Set<String> unscheduledSubscriptions,
             List<Subscription> subscriptions,
-            IProposeScheduleResponse proposeScheduleResponse,
+            ProposeScheduleResponse proposeScheduleResponse,
             IForceApplyPromptDisplayText displayTextStrategy) {
         StringBuilder msg = new StringBuilder();
 
         // Handle the case where it's just the subscription we're changing
         // itself that would not schedule
         final boolean singleSubscription = subscriptions.size() == 1;
-        if ((singleSubscription && unscheduledSubscriptions.size() == 1)
-                && (subscriptions.get(0).getName()
-                        .equals(unscheduledSubscriptions.iterator().next()))) {
+        if (singleSubscription && unscheduledSubscriptions.size() == 1
+                && subscriptions.get(0).getName()
+                        .equals(unscheduledSubscriptions.iterator().next())) {
             final Subscription subscription = subscriptions.get(0);
-            msg.append((subscription instanceof AdhocSubscription) ? "The query"
+            msg.append(subscription instanceof AdhocSubscription ? "The query"
                     : "Subscription " + subscription.getName())
                     .append(" would not fully schedule with the bandwidth management system if this action were performed.");
         } else {
@@ -919,7 +916,7 @@ public class SubscriptionService {
         StringBuilder sb = new StringBuilder(successMessage);
         getUnscheduledSubscriptionsPortion(sb, unscheduled);
 
-        if ((unscheduled != null) && !unscheduled.isEmpty()) {
+        if (unscheduled != null && !unscheduled.isEmpty()) {
 
             Map<String, Subscription> allSubscriptionMap = new HashMap<>();
             String name = null;

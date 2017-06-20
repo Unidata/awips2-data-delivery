@@ -44,7 +44,6 @@ import com.raytheon.uf.common.auth.exception.AuthorizationException;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest.RequestType;
-import com.raytheon.uf.common.datadelivery.bandwidth.IProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
@@ -163,6 +162,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 05, 2017  1045       tjensen     Update for moving datasets
  * Apr 27, 2017  6186       rjpeter     Removed overloaded scheduleAdhoc, updated queueRetrieval, removed BandwidthDataSetUpdate.
  * Jun 08, 2017  6222       tgurney     Add bandwidthChangedCallback
+ * Jun 20, 2017  6299       tgurney     Remove IProposeScheduleResponse
  * </pre>
  *
  * @author dhladky
@@ -384,8 +384,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         switch (requestType) {
         case GET_ESTIMATED_COMPLETION:
             Subscription<T, C> adhocAsSub = null;
-            if (subscriptions.size() != 1 || (!((adhocAsSub = subscriptions
-                    .get(0)) instanceof AdhocSubscription))) {
+            if (subscriptions.size() != 1 || !((adhocAsSub = subscriptions
+                    .get(0)) instanceof AdhocSubscription)) {
                 throw new IllegalArgumentException(
                         "Must supply one, and only one, adhoc subscription to get the estimated completion time.");
             }
@@ -402,7 +402,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             // SBN subscriptions must go through the NCF
             if (!subscriptions.isEmpty()
                     && Network.SBN.equals(subscriptions.get(0).getRoute())) {
-                final IProposeScheduleResponse proposeResponse = proposeScheduleSbnSubscription(
+                final ProposeScheduleResponse proposeResponse = proposeScheduleSbnSubscription(
                         subscriptions);
                 response = proposeResponse;
             } else {
@@ -486,8 +486,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             break;
         case GET_SUBSCRIPTION_STATUS:
             Subscription<T, C> sub = null;
-            if (subscriptions.size() != 1 || (!((sub = subscriptions
-                    .get(0)) instanceof Subscription))) {
+            if (subscriptions.size() != 1 || !((sub = subscriptions
+                    .get(0)) instanceof Subscription)) {
                 throw new IllegalArgumentException(
                         "Must supply one, and only one, subscription to get the status summary.");
             }
@@ -695,8 +695,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                  * increased and remove any retrieval times before the last
                  * scheduled time (max)
                  */
-                long extraTime = max.getTime()
-                        + (TimeUtil.MILLIS_PER_MINUTE * 2);
+                long extraTime = max.getTime() + TimeUtil.MILLIS_PER_MINUTE * 2;
                 max = new Date(extraTime);
                 Iterator<Date> iter = retrievalTimes.iterator();
                 while (iter.hasNext()) {
@@ -865,7 +864,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @throws Exception
      *             on error
      */
-    protected abstract IProposeScheduleResponse proposeScheduleSbnSubscription(
+    protected abstract ProposeScheduleResponse proposeScheduleSbnSubscription(
             List<Subscription<T, C>> subscriptions) throws Exception;
 
     /**
@@ -1067,8 +1066,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         bandwidthDao.storeSubscriptionRetrievalAttributes(attributes);
         timer.lap("storing retrieval attributes");
 
-        List<BandwidthAllocation> unscheduled = (reservations.isEmpty())
-                ? Collections.<BandwidthAllocation> emptyList()
+        List<BandwidthAllocation> unscheduled = reservations.isEmpty()
+                ? Collections.<BandwidthAllocation>emptyList()
                 : retrievalManager.schedule(reservations);
         timer.lap("scheduling retrievals");
 
@@ -1432,7 +1431,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     private String showRetrievalPlan(Network network) {
         RetrievalPlan a = retrievalManager.getPlan(network);
-        return (a != null) ? a.showPlan() : "";
+        return a != null ? a.showPlan() : "";
     }
 
     /**
@@ -1621,8 +1620,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                                     strategy.getNextRestrictiveValue(
                                             valueToCheck));
 
-                            return (isSchedulableWithoutConflict(clone)) ? 1
-                                    : 0;
+                            return isSchedulableWithoutConflict(clone) ? 1 : 0;
                         }
                         // This would still be unscheduled
                         return -1;
