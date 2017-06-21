@@ -46,7 +46,9 @@ import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.MetaDataPattern;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataExtractor;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParseException;
@@ -112,6 +114,8 @@ public abstract class PDAMetaDataExtractor
         this.metadataId = metadataId;
         this.title = title;
         this.boundingBox = boundingBox;
+        serviceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.PDA);
     }
 
     /**

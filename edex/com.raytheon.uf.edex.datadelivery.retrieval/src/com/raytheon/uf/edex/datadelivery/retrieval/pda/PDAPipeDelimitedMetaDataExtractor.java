@@ -85,8 +85,6 @@ public class PDAPipeDelimitedMetaDataExtractor extends PDAMetaDataExtractor {
 
     private static final String SHORT_NAME_FORMAT = "SHORT_NAME_FORMAT";
 
-    private MetaDataPattern metaDataPattern;
-
     private String polygonPoints;
 
     public PDAPipeDelimitedMetaDataExtractor(String metadataId, String title,

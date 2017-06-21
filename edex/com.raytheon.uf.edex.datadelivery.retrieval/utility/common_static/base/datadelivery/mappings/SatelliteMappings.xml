@@ -26,10 +26,10 @@
 <pdaDescriptionMapSet>
     <pdaDescriptionMap>
         <key>G16</key>
-        <description>GOES 16</description>
+        <description>GOES-16</description>
     </pdaDescriptionMap>
     <pdaDescriptionMap>
         <key>G17</key>
-        <description>GOES 17</description>
+        <description>GOES-17</description>
     </pdaDescriptionMap>
 </pdaDescriptionMapSet>
