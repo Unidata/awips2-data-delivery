@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -20,9 +18,13 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
  * further licensing information.
  **/
 
+package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
+
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.raytheon.opendap.InputStreamWrapper;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
@@ -31,7 +33,12 @@ import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
+import com.raytheon.uf.common.util.SizeUtil;
+import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.common.util.stream.CountingInputStream;
+import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalEvent;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
@@ -60,11 +67,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  *                                  compatibility.
  * Mar 23, 2017  5988     tjensen   Improved logging
  * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to processResponse
+ * Jun 22, 2017  6222     tgurney   Use token bucket to rate-limit requests
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 class OpenDAPRetrievalAdapter
@@ -75,6 +82,45 @@ class OpenDAPRetrievalAdapter
 
     /** convert if older XDODS version **/
     private final boolean isDods = DodsUtils.isOlderXDODSVersion();
+
+    /**
+     * Wraps an input stream with counting and (optionally) rate limiting
+     * streams.
+     */
+    private static class CountingInputStreamWrapper
+            implements InputStreamWrapper {
+
+        private TokenBucket tokenBucket;
+
+        private double priority = TokenBucket.DEFAULT_WEIGHT;
+
+        private CountingInputStream countingStream;
+
+        public CountingInputStreamWrapper(TokenBucket tokenBucket,
+                double priority) {
+            this.tokenBucket = tokenBucket;
+            this.priority = priority;
+        }
+
+        @Override
+        public InputStream wrapStream(InputStream wrappedStream) {
+            if (tokenBucket != null) {
+                wrappedStream = new RateLimitingInputStream(wrappedStream,
+                        tokenBucket, 1.0 / priority);
+            }
+            countingStream = new CountingInputStream(wrappedStream);
+            return countingStream;
+        }
+
+        public long getTimeTakenMillis() {
+            return countingStream.getLastReadTimeMillis()
+                    - countingStream.getFirstReadTimeMillis();
+        }
+
+        public long getBytesRead() {
+            return countingStream.getBytesRead();
+        }
+    }
 
     @Override
     public OpenDAPRequestBuilder createRequestMessage(
@@ -98,16 +144,21 @@ class OpenDAPRetrievalAdapter
                         .getDConnectDODS(request.getRequest());
                 data = connect.getData(null);
             } else {
+                CountingInputStreamWrapper streamWrapper = new CountingInputStreamWrapper(
+                        getTokenBucket(), getPriority());
                 opendap.dap.DConnect connect = OpenDAPConnectionUtil
-                        .getDConnectDAP2(request.getRequest());
+                        .getDConnectDAP2(request.getRequest(), streamWrapper);
                 data = connect.getData(null);
+                statusHandler.info("Downloaded "
+                        + SizeUtil.prettyByteSize(streamWrapper.getBytesRead())
+                        + " in " + TimeUtil.prettyDuration(
+                                streamWrapper.getTimeTakenMillis()));
             }
         } catch (Exception e) {
             statusHandler.handle(Priority.ERROR, "Request: "
                     + request.getRequest() + " could not be fullfilled!", e);
             EventBus.publish(new RetrievalEvent(e.getMessage()));
         }
-
         RetrievalResponse<GriddedTime, GriddedCoverage> pr = new OpenDapRetrievalResponse(
                 request.getAttribute());
         pr.setPayLoad(data);
@@ -160,10 +211,6 @@ class OpenDAPRetrievalAdapter
         return map;
     }
 
-    /**
-     * @param attribute
-     * @return
-     */
     OpenDAPTranslator getOpenDapTranslator(
             RetrievalAttribute<GriddedTime, GriddedCoverage> attribute)
             throws InstantiationException {

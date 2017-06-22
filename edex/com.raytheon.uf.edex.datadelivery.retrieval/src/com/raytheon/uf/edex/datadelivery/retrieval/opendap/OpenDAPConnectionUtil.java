@@ -1,39 +1,36 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 
 import com.raytheon.opendap.InputStreamWrapper;
 import com.raytheon.uf.common.comm.ProxyConfiguration;
-import com.raytheon.uf.common.util.rate.TokenBucket;
-import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
 
 /**
  * Utilities for datadelivery connections.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 28, 2012 819        djohnson     Initial creation
@@ -44,15 +41,16 @@ import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
  * 6/18/2014    1712        bphillip    Updated Proxy configuration
  * Apr 14, 2015 4400       dhladky      Upgraded to DAP2 with backward compatibility.
  * Jun 06, 2017 6222       tgurney      Use token bucket to rate-limit requests
+ * Jun 22, 2017 6222       tgurney      Receive stream wrapper from caller
  * </pre>
- * 
+ *
  * @author djohnson
  */
 
 public class OpenDAPConnectionUtil {
     /**
      * Retrieve a DConnect instance.
-     * 
+     *
      * @param urlString
      * @return DConnect instance
      * @throws FileNotFoundException
@@ -73,7 +71,7 @@ public class OpenDAPConnectionUtil {
 
     /**
      * Retrieve a DConnect instance.
-     * 
+     *
      * @param urlString
      * @return DConnect instance
      * @throws FileNotFoundException
@@ -81,28 +79,19 @@ public class OpenDAPConnectionUtil {
      */
     public static opendap.dap.DConnect getDConnectDAP2(String urlString)
             throws FileNotFoundException {
-        return getDConnectDAP2(urlString, null,
-                (int) TokenBucket.DEFAULT_WEIGHT);
+        return getDConnectDAP2(urlString, null);
     }
 
     /**
      * Retrieve a DConnect instance.
-     * 
+     *
      * @param urlString
      * @return DConnect instance
      * @throws FileNotFoundException
      *             rethrown from DConnect
      */
     public static opendap.dap.DConnect getDConnectDAP2(String urlString,
-            TokenBucket tokenBucket, int priority)
-            throws FileNotFoundException {
-        InputStreamWrapper streamWrapper = null;
-        if (tokenBucket != null) {
-            streamWrapper = (InputStream wrappedStream) -> {
-                return new RateLimitingInputStream(wrappedStream, tokenBucket,
-                        1.0 / priority);
-            };
-        }
+            InputStreamWrapper streamWrapper) throws FileNotFoundException {
         // new DAP2-serialized version
         if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
             return new opendap.dap.DConnect(urlString,

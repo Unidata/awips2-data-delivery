@@ -6,19 +6,19 @@ import java.io.InputStream;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -43,19 +43,22 @@ import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
+import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.common.util.stream.CountingInputStream;
 import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 
 /**
  * WFS Connection.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 12, 2013 753        dhladky     created.
@@ -75,9 +78,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * May 10, 2015 4435       dhladky     Added keyStore retrieval to interface.
  * Dec 07, 2015 4834       njensen     getCredentials() now takes a URI
  * Jun 06, 2017 6222       tgurney     Use token bucket to rate-limit requests
- * 
+ * Jun 22, 2017 6222       tgurney     Log download time and number of bytes
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  */
 
@@ -168,6 +172,10 @@ public class WFSConnectionUtil {
 
         private int priority;
 
+        private long timeTakenMillis = 0;
+
+        private long bytesReceived = 0;
+
         public RateLimitingStreamHandler(TokenBucket tokenBucket,
                 int priority) {
             this.tokenBucket = tokenBucket;
@@ -176,11 +184,13 @@ public class WFSConnectionUtil {
 
         @Override
         public void handleStream(InputStream is) throws CommunicationException {
+            CountingInputStream cis = null;
             if (tokenBucket != null) {
-                is = new RateLimitingInputStream(is, tokenBucket,
-                        1.0 / priority);
+                cis = new CountingInputStream(new RateLimitingInputStream(is,
+                        tokenBucket, 1.0 / priority));
+            } else {
+                cis = new CountingInputStream(is);
             }
-
             try (PooledByteArrayOutputStream baos = ByteArrayOutputStreamPool
                     .getInstance().getStream()) {
                 byte[] underlyingArray = baos.getUnderlyingArray();
@@ -188,7 +198,7 @@ public class WFSConnectionUtil {
                 int index = 0;
                 do {
                     try {
-                        read = is.read(underlyingArray, index,
+                        read = cis.read(underlyingArray, index,
                                 underlyingArray.length - index);
                     } catch (IOException e) {
                         throw new CommunicationException(
@@ -208,6 +218,9 @@ public class WFSConnectionUtil {
                 byte[] byteResult = new byte[index];
                 System.arraycopy(underlyingArray, 0, byteResult, 0, index);
                 response = new String(byteResult);
+                bytesReceived = cis.getBytesRead();
+                timeTakenMillis = cis.getLastReadTimeMillis()
+                        - cis.getFirstReadTimeMillis();
             } catch (IOException e) {
                 // ignore error on stream close
             }
@@ -217,7 +230,7 @@ public class WFSConnectionUtil {
 
     /**
      * Connect to the provided URL and return the xml response.
-     * 
+     *
      * @param request
      *            The request
      * @param providerConn
@@ -227,8 +240,7 @@ public class WFSConnectionUtil {
      * @return xml response
      */
     public static String wfsConnect(String request, Connection providerConn,
-            String providerName, TokenBucket tokenBucket,
-            int priority) {
+            String providerName, TokenBucket tokenBucket, int priority) {
 
         String xmlResponse = null;
         HttpClient http = null;
@@ -255,13 +267,14 @@ public class WFSConnectionUtil {
                 http.setupCredentials(uri.getHost(), uri.getPort(), userName,
                         password);
             }
-            post.setEntity(new StringEntity(
-                    request, ContentType.TEXT_XML));
+            post.setEntity(new StringEntity(request, ContentType.TEXT_XML));
             RateLimitingStreamHandler handler = new RateLimitingStreamHandler(
                     tokenBucket, priority);
             http.executeRequest(post, handler);
             xmlResponse = new String(handler.response);
-
+            statusHandler.info("Downloaded "
+                    + SizeUtil.prettyByteSize(handler.bytesReceived) + " in "
+                    + TimeUtil.prettyDuration(handler.timeTakenMillis));
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Couldn't connect to WFS server: " + rootUrl, e);
@@ -295,7 +308,7 @@ public class WFSConnectionUtil {
     /**
      * Removes un-needed unique Identifier from PointDataSetMetaData derived
      * URL's
-     * 
+     *
      * @param rootUrl
      * @return
      */

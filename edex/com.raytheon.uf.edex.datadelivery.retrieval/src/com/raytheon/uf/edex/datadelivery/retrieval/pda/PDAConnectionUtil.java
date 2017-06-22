@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -36,6 +37,7 @@ import java.util.regex.Pattern;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClientConfig;
 import org.apache.commons.net.ftp.FTPConnectionClosedException;
@@ -49,18 +51,21 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderCredentials;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
+import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.common.util.rate.TokenBucket;
-import com.raytheon.uf.common.util.stream.RateLimitingOutputStream;
+import com.raytheon.uf.common.util.stream.CountingInputStream;
+import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
 import com.raytheon.uf.edex.security.SecurityConfiguration;
 
 /**
  * Utility for FTPS connection
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jun 12, 2014  3012     dhladky   initial release
@@ -77,11 +82,11 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Sep 30, 2016  5762     tjensen   Improve Error Handling
  * Nov 17, 2016  6002     tjensen   Added FTP connection timeouts
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
- * 
+ * Jun 22, 2017  6222     tgurney   Log time taken and size of downloads
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 
 public class PDAConnectionUtil {
@@ -105,7 +110,7 @@ public class PDAConnectionUtil {
 
     /***
      * Connect using FTPS and grab file
-     * 
+     *
      * @param protocol
      * @param providerConn
      * @param providerName
@@ -121,7 +126,7 @@ public class PDAConnectionUtil {
 
     /***
      * Connect using FTPS and grab file
-     * 
+     *
      * @param protocol
      * @param providerConn
      * @param providerName
@@ -205,11 +210,6 @@ public class PDAConnectionUtil {
 
         int reply = 0;
         try (OutputStream fos = new FileOutputStream(localFilename)) {
-            OutputStream os = fos;
-            if (tokenBucket != null) {
-                os = new RateLimitingOutputStream(fos, tokenBucket,
-                        1.0 / priority);
-            }
             ftp.connect(rootUrl, port);
             /*
              * After connection attempt, you should check the reply code to
@@ -253,7 +253,7 @@ public class PDAConnectionUtil {
             }
 
             // If we don't have a path, skip changing directory.
-            if (!("".equals(remoteFilePath)) && remoteFilePath != null) {
+            if (!"".equals(remoteFilePath) && remoteFilePath != null) {
                 // If debugging, print the directory information
                 printDirListing(ftp);
 
@@ -278,13 +278,26 @@ public class PDAConnectionUtil {
             // Download the file
             logger.info("Downloading file " + remoteFilename + " to "
                     + localFilename);
-            ftp.retrieveFile(remoteFilename, os);
+            CountingInputStream cis = null;
+            try (InputStream is = ftp.retrieveFileStream(remoteFilename)) {
+                if (tokenBucket != null) {
+                    cis = new CountingInputStream(new RateLimitingInputStream(
+                            is, tokenBucket, 1.0 / priority));
+                } else {
+                    cis = new CountingInputStream(is);
+                }
+                IOUtils.copy(cis, fos);
+            }
+
             reply = ftp.getReplyCode();
             if (!FTPReply.isPositiveCompletion(reply)) {
                 throw new IOException("Retrieval was unsuccessful for "
                         + remoteFilename + " Reply: " + ftp.getReplyString());
             }
-
+            logger.info("Successfully retrieved " + remoteFilename + " ("
+                    + SizeUtil.prettyByteSize(cis.getBytesRead()) + ") in "
+                    + TimeUtil.prettyDuration(cis.getLastReadTimeMillis()
+                            - cis.getFirstReadTimeMillis()));
             ftp.logout();
         } catch (FTPConnectionClosedException e) {
             logger.error("Server closed connection.");
@@ -396,7 +409,7 @@ public class PDAConnectionUtil {
     /**
      * Separate the remoteFileDirectory and filename from the remote path. If
      * only a filename is given, remote path will be an empty string
-     * 
+     *
      * @param remoteFilePath
      * @return
      */
@@ -429,7 +442,7 @@ public class PDAConnectionUtil {
 
     /**
      * Cleave off any protocol related stuff on the front of the URL
-     * 
+     *
      * @param rootUrl
      * @return
      */
@@ -444,7 +457,7 @@ public class PDAConnectionUtil {
 
     /**
      * Get the active security configuration
-     * 
+     *
      * @return
      */
     private static SecurityConfiguration getSecurityConfiguration() {
