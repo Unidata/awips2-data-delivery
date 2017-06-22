@@ -133,13 +133,14 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Mar 16, 2016   3919     tjensen     Cleanup unneeded interfaces
  *  Jan 10, 2017   746      bsteffen    Do not ignore frequent updates.
  *  May 03, 2017   6248     nabowle     Fix spelling of threshold.
+ *  Jun 21, 2017   6300     nabowle     Update imageMgr's current time when updating images.
  *
  * </pre>
  *
  * @author lvenable
  */
-public class BandwidthCanvasComp extends Composite implements IDialogClosed,
-        INotificationObserver {
+public class BandwidthCanvasComp extends Composite
+        implements IDialogClosed, INotificationObserver {
 
     /** UFStatus handler. */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -1091,8 +1092,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         verticalSlider = new Slider(vSliderComp, SWT.VERTICAL);
         verticalSlider.setLayoutData(gd);
         verticalSlider.setMinimum(0);
-        verticalSlider.setMaximum(imageHeight - canvasHeight
-                + verticalSlider.getThumb());
+        verticalSlider.setMaximum(
+                imageHeight - canvasHeight + verticalSlider.getThumb());
         verticalSlider.setSelection(imageHeight - canvasHeight);
         verticalSlider.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -1122,8 +1123,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
         horizontalSlider.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
         horizontalSlider.setLayoutData(gd);
         horizontalSlider.setMinimum(0);
-        horizontalSlider.setMaximum(imageWidth - canvasWidth
-                + horizontalSlider.getThumb());
+        horizontalSlider.setMaximum(
+                imageWidth - canvasWidth + horizontalSlider.getThumb());
         horizontalSlider.setSelection(0);
         horizontalSlider.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -1354,8 +1355,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      *            Mouse Event
      */
     private void handleUtilizationHeaderMouseEvent(MouseEvent me) {
-        imageMgr.performAction(CanvasImages.UTILIZATION_HEADER, new Point(me.x,
-                me.y));
+        imageMgr.performAction(CanvasImages.UTILIZATION_HEADER,
+                new Point(me.x, me.y));
         redrawImage(CanvasImages.UTILIZATION_HEADER);
         redrawImage(CanvasImages.UTILIZATION_GRAPH);
     }
@@ -1368,8 +1369,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      */
     private void handleScrollWheel(MouseEvent me) {
         if (this.verticalSlider.isEnabled()) {
-            this.verticalSlider.setSelection(verticalSlider.getSelection()
-                    - me.count * 2);
+            this.verticalSlider
+                    .setSelection(verticalSlider.getSelection() - me.count * 2);
             handleVerticalScaleChange();
         }
     }
@@ -1552,12 +1553,9 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                     viewList, this);
             viewer.open();
         } else {
-            DataDeliveryUtils
-                    .showMessage(
-                            this.getShell(),
-                            SWT.ICON_INFORMATION,
-                            "No Selections",
-                            "No subscriptions selected.\n\nTo select a subscription click the checkbox next to the subscription name");
+            DataDeliveryUtils.showMessage(this.getShell(), SWT.ICON_INFORMATION,
+                    "No Selections",
+                    "No subscriptions selected.\n\nTo select a subscription click the checkbox next to the subscription name");
         }
     }
 
@@ -1650,6 +1648,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      * Update the canvases.
      */
     public void updateCanvases() {
+        this.imageMgr.setCurrentTimeMillis(TimeUtil.currentTimeMillis());
         if (cornerPointOffset.x < 0 - graphCanvasSettings.getImageWidth()
                 + graphCanvasSettings.getCanvasWidth()) {
             cornerPointOffset.x = 0 - graphCanvasSettings.getImageWidth()
@@ -1670,8 +1669,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             cornerPointOffset.y = 0;
         }
 
-        cornerPointOffset.y = (graphCanvasSettings.getImageHeight() - graphCanvasSettings
-                .getCanvasHeight()) * -1;
+        cornerPointOffset.y = (graphCanvasSettings.getImageHeight()
+                - graphCanvasSettings.getCanvasHeight()) * -1;
 
         verticalSlider.setSelection(cornerPointOffset.y * -1);
         horizontalSlider.setSelection(cornerPointOffset.x * -1);
@@ -1703,9 +1702,9 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                     BandwidthGraphData tempData = graphDataUtil.getGraphData();
                     setGraphData(tempData);
                 } catch (Exception ex) {
-                    statusHandler
-                            .error("Exception caught retrieving Bandwidth Utilization Graph Data ",
-                                    ex);
+                    statusHandler.error(
+                            "Exception caught retrieving Bandwidth Utilization Graph Data ",
+                            ex);
                 }
                 updateCanvasSettings();
                 updateCanvases();
@@ -1764,6 +1763,7 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
      * Update the canvas settings.
      */
     private void updateCanvasSettings() {
+        this.imageMgr.setCurrentTimeMillis(TimeUtil.currentTimeMillis());
         if (this.getBounds().x != 0) {
             int compHeight = this.getBounds().height;
             int compWidth = this.getBounds().width;
@@ -1788,8 +1788,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
 
             settings.updateCanvas(graphCanvasWidth, xHeaderHeight, graphSize.x,
                     graphSize.y);
-            ((GridData) xHeaderCanvas.getLayoutData()).widthHint = graphCanvasWidth;
-            ((GridData) xHeaderCanvas.getLayoutData()).heightHint = xHeaderHeight;
+            ((GridData) xHeaderCanvas
+                    .getLayoutData()).widthHint = graphCanvasWidth;
+            ((GridData) xHeaderCanvas
+                    .getLayoutData()).heightHint = xHeaderHeight;
             xHeaderCanvas.setSize(graphCanvasWidth, xHeaderHeight);
 
             // X Label Canvas
@@ -1798,7 +1800,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             settings.updateCanvas(graphCanvasWidth, xLabelHeight, graphSize.x,
                     graphSize.y);
 
-            ((GridData) xLabelCanvas.getLayoutData()).widthHint = graphCanvasWidth;
+            ((GridData) xLabelCanvas
+                    .getLayoutData()).widthHint = graphCanvasWidth;
             ((GridData) xLabelCanvas.getLayoutData()).heightHint = xLabelHeight;
             xLabelCanvas.setSize(graphCanvasWidth, graphCanvasHeight);
 
@@ -1810,7 +1813,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                     graphSize.y);
 
             ((GridData) yHeaderCanvas.getLayoutData()).widthHint = 35;
-            ((GridData) yHeaderCanvas.getLayoutData()).heightHint = graphCanvasHeight;
+            ((GridData) yHeaderCanvas
+                    .getLayoutData()).heightHint = graphCanvasHeight;
             yHeaderCanvas.setSize(graphCanvasWidth, graphCanvasHeight);
 
             imageMgr.setCanvasSetting(CanvasImages.Y_HEADER, settings);
@@ -1821,7 +1825,8 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
                     graphSize.y);
 
             ((GridData) yLabelCanvas.getLayoutData()).widthHint = Y_LABEL_WIDTH;
-            ((GridData) yLabelCanvas.getLayoutData()).heightHint = graphCanvasHeight;
+            ((GridData) yLabelCanvas
+                    .getLayoutData()).heightHint = graphCanvasHeight;
             yLabelCanvas.setSize(Y_LABEL_WIDTH, xHeaderHeight);
 
             imageMgr.setCanvasSetting(CanvasImages.Y_LABEL, settings);
@@ -1833,8 +1838,10 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             graphCanvasSettings.setDrawWidth(graphSize.x);
             graphCanvasSettings.setDrawHeight(graphSize.y);
 
-            ((GridData) graphCanvas.getLayoutData()).widthHint = graphCanvasWidth;
-            ((GridData) graphCanvas.getLayoutData()).heightHint = graphCanvasHeight;
+            ((GridData) graphCanvas
+                    .getLayoutData()).widthHint = graphCanvasWidth;
+            ((GridData) graphCanvas
+                    .getLayoutData()).heightHint = graphCanvasHeight;
             graphCanvas.setSize(graphCanvasWidth, graphCanvasHeight);
 
             imageMgr.setCanvasSetting(CanvasImages.GRAPH, settings);
@@ -1850,19 +1857,24 @@ public class BandwidthCanvasComp extends Composite implements IDialogClosed,
             settings.updateCanvas(graphCanvasWidth, UTILIZATION_HEADER_HEIGHT,
                     graphCanvasWidth, UTILIZATION_HEADER_HEIGHT);
 
-            ((GridData) utilizationHeaderCanvas.getLayoutData()).widthHint = graphCanvasWidth;
-            ((GridData) utilizationHeaderCanvas.getLayoutData()).heightHint = UTILIZATION_HEADER_HEIGHT;
-            utilizationHeaderCanvas
-                    .setSize(graphCanvasWidth, graphCanvasHeight);
-            imageMgr.setCanvasSetting(CanvasImages.UTILIZATION_HEADER, settings);
+            ((GridData) utilizationHeaderCanvas
+                    .getLayoutData()).widthHint = graphCanvasWidth;
+            ((GridData) utilizationHeaderCanvas
+                    .getLayoutData()).heightHint = UTILIZATION_HEADER_HEIGHT;
+            utilizationHeaderCanvas.setSize(graphCanvasWidth,
+                    graphCanvasHeight);
+            imageMgr.setCanvasSetting(CanvasImages.UTILIZATION_HEADER,
+                    settings);
 
             // Utilization Graph
             settings = this.getCanvasSettings(CanvasImages.UTILIZATION_GRAPH);
             settings.updateCanvas(graphCanvasWidth, UTILIZATION_GRAPH_HEIGHT,
                     graphSize.x, UTILIZATION_GRAPH_HEIGHT);
 
-            ((GridData) utilizationGraphCanvas.getLayoutData()).widthHint = graphCanvasWidth;
-            ((GridData) utilizationGraphCanvas.getLayoutData()).heightHint = UTILIZATION_GRAPH_HEIGHT;
+            ((GridData) utilizationGraphCanvas
+                    .getLayoutData()).widthHint = graphCanvasWidth;
+            ((GridData) utilizationGraphCanvas
+                    .getLayoutData()).heightHint = UTILIZATION_GRAPH_HEIGHT;
             utilizationGraphCanvas.setSize(graphCanvasWidth,
                     UTILIZATION_GRAPH_HEIGHT);
             imageMgr.setCanvasSetting(CanvasImages.UTILIZATION_GRAPH, settings);
