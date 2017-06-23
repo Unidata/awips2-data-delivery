@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,6 +38,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalEvent;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
@@ -50,11 +51,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 /**
  * Performs the actual retrieval, and then returns the plugin data objects for
  * processing.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 01, 2013  1543     djohnson  Initial creation
@@ -74,9 +75,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
  * Sep 01, 2016  5762     tjensen   Added improved logging
  * Jun 07, 2017  6222     tgurney   Add token bucket for rate limiting
- * 
+ * Jun 23, 2017  6322     tgurney   Retry on failed retrieval
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  */
 
@@ -90,11 +92,12 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
     private TokenBucket tokenBucket;
 
     protected static Map<String, DataDeliverySystemStatusDefinition> systemNameToStateMap = Collections
-            .synchronizedMap(new HashMap<String, DataDeliverySystemStatusDefinition>());
+            .synchronizedMap(
+                    new HashMap<String, DataDeliverySystemStatusDefinition>());
 
     /**
      * Constructor.
-     * 
+     *
      * @param network
      */
     public PerformRetrievalsThenReturnFinder(IRetrievalDao retrievalDao,
@@ -123,8 +126,8 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
                 return null;
             }
 
-            statusHandler.info("Found this RetrievalRequestRecordPK: "
-                    + id.toString());
+            statusHandler.info(
+                    "Found this RetrievalRequestRecordPK: " + id.toString());
             RetrievalRequestRecord request = retrievalDao.getById(id);
 
             if (request == null) {
@@ -140,14 +143,13 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
             try {
                 retVal = process(request);
                 timer.stop();
-                statusHandler.info("Retrieval Processing for ["
-                        + request.getId() + "] took " + timer.getElapsedTime()
-                        + " ms");
+                statusHandler
+                        .info("Retrieval Processing for [" + request.getId()
+                                + "] took " + timer.getElapsedTime() + " ms");
 
             } catch (Exception e) {
-                statusHandler.error(
-                        "Retrieval Processing failed: [" + request.getId()
-                                + "]", e);
+                statusHandler.error("Retrieval Processing failed: ["
+                        + request.getId() + "]", e);
             }
 
         } catch (Exception e) {
@@ -196,7 +198,40 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
                             .info("Translated provider attribute Request XML: "
                                     + request.getRequest());
 
-                    IRetrievalResponse response = pra.performRequest(request);
+                    IRetrievalResponse response = null;
+                    int tries = 0;
+                    int maxTries = Integer.getInteger("retrieval.retry.count")
+                            + 1;
+                    long retryIntervalMs = Long
+                            .getLong("retrieval.retry.millis");
+
+                    while (tries < maxTries) {
+                        try {
+                            response = pra.performRequest(request);
+                            if (response != null
+                                    && response.getPayLoad() != null) {
+                                // success
+                                break;
+                            }
+                        } catch (Exception e) {
+                            EventBus.publish(
+                                    new RetrievalEvent(e.getMessage()));
+                            statusHandler.handle(Priority.ERROR,
+                                    "Error while processing retrieval request "
+                                            + request.getRequest() + "(tries = "
+                                            + (tries + 1) + ", subscription="
+                                            + retrieval.getSubscriptionName()
+                                            + ", provider="
+                                            + requestRecord.getProvider() + ")",
+                                    e);
+                        }
+                        tries += 1;
+                        try {
+                            Thread.sleep(retryIntervalMs);
+                        } catch (InterruptedException e2) {
+                            break;
+                        }
+                    }
 
                     if (response != null) {
                         setCompletionStateFromResponse(requestRecord, response);
@@ -204,9 +239,9 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
                         retrievalAttributePluginDataObjects
                                 .add(new RetrievalResponseWrapper(response));
                     } else {
-                        throw new IllegalStateException("No PDO's to store: "
-                                + serviceType + " original: "
-                                + attXML.toString());
+                        throw new IllegalStateException(
+                                "No PDO's to store: " + serviceType
+                                        + " original: " + attXML.toString());
                     }
                 } else {
                     // null response
@@ -247,8 +282,8 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
 
         DataDeliverySystemStatusDefinition existingState = this.systemNameToStateMap
                 .get(providerName);
-        if ((existingState == null)
-                || (!existingState.equals(newSystemStatusState))) {
+        if (existingState == null
+                || !existingState.equals(newSystemStatusState)) {
             this.systemNameToStateMap.put(providerName, newSystemStatusState);
             DataDeliverySystemStatusEvent event = new DataDeliverySystemStatusEvent();
             event.setName(providerName);
@@ -263,7 +298,7 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
     /**
      * Sets the {@link RetrievalRequestRecord} status based on the
      * {@link IRetrievalResponse}.
-     * 
+     *
      * @param requestRecord
      *            the request record
      * @param response
@@ -272,8 +307,8 @@ public class PerformRetrievalsThenReturnFinder implements IRetrievalsFinder {
     @VisibleForTesting
     static void setCompletionStateFromResponse(
             RetrievalRequestRecord requestRecord, IRetrievalResponse response) {
-        final State completionState = response.getPayLoad() == null ? State.FAILED
-                : State.COMPLETED;
+        final State completionState = response.getPayLoad() == null
+                ? State.FAILED : State.COMPLETED;
         requestRecord.setState(completionState);
         if (completionState == RetrievalRequestRecord.State.FAILED) {
             statusHandler.warn("Retrieval failed: "

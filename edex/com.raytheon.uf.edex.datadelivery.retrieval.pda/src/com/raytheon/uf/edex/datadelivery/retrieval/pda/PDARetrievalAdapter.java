@@ -62,6 +62,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Sep 30, 2016  5762     tjensen   Improve Error Handling
  * May 22, 2017  6130     tjensen   Update to support polar products from PDA
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
+ * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
  *
  * </pre>
  *
@@ -86,13 +87,12 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
 
     @Override
     public RetrievalResponse<Time, Coverage> performRequest(
-            IRetrievalRequestBuilder<Time, Coverage> request) {
+            IRetrievalRequestBuilder<Time, Coverage> request) throws Exception {
 
         String localFilePath = null;
         String fileName = null;
 
         if (request.getRequest() != null) {
-
             try {
                 String providerName = request.getAttribute().getProvider();
                 // Have to re-write the URL for the connection to the FTPS root
@@ -107,10 +107,8 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                                     + localFilePath);
                     fileName = localFilePath;
                 }
-
             } catch (Exception e) {
-                statusHandler.handle(Priority.ERROR, "FTPS error occurred!", e);
-                EventBus.publish(new RetrievalEvent(e.getMessage()));
+                throw new Exception("FTPS error occurred", e);
             }
         } else {
             statusHandler.handle(Priority.ERROR,
@@ -129,25 +127,21 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         PDARetrievalResponse pr = new PDARetrievalResponse(
                 request.getAttribute());
 
-        if (fileName != null) {
+        if (fileName == null) {
+            throw new Exception(
+                    "Filename for object pulled from PDA server is null!");
+        }
+        try {
             // convert to byte[] and compress for friendly keeping
-            try {
-                pr.setFileBytes((ResponseProcessingUtilities
-                        .getCompressedFile(fileName)));
-                pr.setFileName(fileName);
-                if (request instanceof PDARequestBuilder) {
-                    PDARequestBuilder pdaRequest = (PDARequestBuilder) request;
-                    pr.setSubName(pdaRequest.getSubName());
-                }
-
-            } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Problem setting payload object for PDA!", e);
+            pr.setFileBytes(
+                    ResponseProcessingUtilities.getCompressedFile(fileName));
+            pr.setFileName(fileName);
+            if (request instanceof PDARequestBuilder) {
+                PDARequestBuilder pdaRequest = (PDARequestBuilder) request;
+                pr.setSubName(pdaRequest.getSubName());
             }
-        } else {
-            statusHandler.handle(Priority.PROBLEM,
-                    "FileName for object pulled from PDA server is null!");
-            pr = null;
+        } catch (Exception e) {
+            throw new Exception("Problem setting payload object for PDA", e);
         }
 
         return pr;

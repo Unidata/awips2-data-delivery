@@ -29,17 +29,14 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.common.util.rate.TokenBucket;
 import com.raytheon.uf.common.util.stream.CountingInputStream;
 import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
-import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalEvent;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
@@ -68,6 +65,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * Mar 23, 2017  5988     tjensen   Improved logging
  * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to processResponse
  * Jun 22, 2017  6222     tgurney   Use token bucket to rate-limit requests
+ * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
  *
  * </pre>
  *
@@ -134,30 +132,24 @@ class OpenDAPRetrievalAdapter
 
     @Override
     public RetrievalResponse<GriddedTime, GriddedCoverage> performRequest(
-            IRetrievalRequestBuilder<GriddedTime, GriddedCoverage> request) {
+            IRetrievalRequestBuilder<GriddedTime, GriddedCoverage> request)
+            throws Exception {
 
         Object data = null;
-
-        try {
-            if (isDods) {
-                dods.dap.DConnect connect = OpenDAPConnectionUtil
-                        .getDConnectDODS(request.getRequest());
-                data = connect.getData(null);
-            } else {
-                CountingInputStreamWrapper streamWrapper = new CountingInputStreamWrapper(
-                        getTokenBucket(), getPriority());
-                opendap.dap.DConnect connect = OpenDAPConnectionUtil
-                        .getDConnectDAP2(request.getRequest(), streamWrapper);
-                data = connect.getData(null);
-                statusHandler.info("Downloaded "
-                        + SizeUtil.prettyByteSize(streamWrapper.getBytesRead())
-                        + " in " + TimeUtil.prettyDuration(
-                                streamWrapper.getTimeTakenMillis()));
-            }
-        } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR, "Request: "
-                    + request.getRequest() + " could not be fullfilled!", e);
-            EventBus.publish(new RetrievalEvent(e.getMessage()));
+        if (isDods) {
+            dods.dap.DConnect connect = OpenDAPConnectionUtil
+                    .getDConnectDODS(request.getRequest());
+            data = connect.getData(null);
+        } else {
+            CountingInputStreamWrapper streamWrapper = new CountingInputStreamWrapper(
+                    getTokenBucket(), getPriority());
+            opendap.dap.DConnect connect = OpenDAPConnectionUtil
+                    .getDConnectDAP2(request.getRequest(), streamWrapper);
+            data = connect.getData(null);
+            statusHandler.info("Downloaded "
+                    + SizeUtil.prettyByteSize(streamWrapper.getBytesRead())
+                    + " in " + TimeUtil.prettyDuration(
+                            streamWrapper.getTimeTakenMillis()));
         }
         RetrievalResponse<GriddedTime, GriddedCoverage> pr = new OpenDapRetrievalResponse(
                 request.getAttribute());

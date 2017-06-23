@@ -47,6 +47,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
  *                                  processResponse
  * Jun 05, 2017  6222     tgurney   Add rate-limiting fields
+ * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
  *
  * </pre>
  *
@@ -68,7 +69,7 @@ public abstract class RetrievalAdapter<T extends Time, C extends Coverage>
 
     @Override
     public abstract RetrievalResponse<T, C> performRequest(
-            IRetrievalRequestBuilder<T, C> request);
+            IRetrievalRequestBuilder<T, C> request) throws Exception;
 
     @Override
     public abstract Map<String, PluginDataObject[]> processResponse(

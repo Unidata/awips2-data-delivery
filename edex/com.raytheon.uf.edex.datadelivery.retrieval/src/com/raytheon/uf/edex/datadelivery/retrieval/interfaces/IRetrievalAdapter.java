@@ -41,6 +41,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * Jan 07, 2011            dhladky     Initial creation
  * May 22, 2017  6130      tjensen     Add RetrievalRequestRecord to processResponse
  * Jun 05, 2017  6222      tgurney     Add token bucket and priority
+ * Jun 23, 2017  6322      tgurney     performRequest() throws Exception
  *
  * </pre>
  *
@@ -53,7 +54,7 @@ public interface IRetrievalAdapter<T extends Time, C extends Coverage> {
             RetrievalAttribute<T, C> prxml);
 
     public com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse<T, C> performRequest(
-            IRetrievalRequestBuilder<T, C> requestBuilder);
+            IRetrievalRequestBuilder<T, C> requestBuilder) throws Exception;
 
     public Map<String, PluginDataObject[]> processResponse(
             IRetrievalResponse<T, C> response,

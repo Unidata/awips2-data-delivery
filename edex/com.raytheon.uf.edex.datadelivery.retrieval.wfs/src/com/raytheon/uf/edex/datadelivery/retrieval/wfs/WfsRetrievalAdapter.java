@@ -28,12 +28,7 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.event.EventBus;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.CollectionUtil;
-import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalEvent;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
@@ -58,6 +53,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
  *                                  processResponse
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
+ * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
  *
  * </pre>
  *
@@ -66,11 +62,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 
 public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(WfsRetrievalAdapter.class);
-
     WfsRetrievalAdapter() {
-
     }
 
     @Override
@@ -119,24 +111,17 @@ public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
 
     @Override
     public RetrievalResponse<PointTime, Coverage> performRequest(
-            IRetrievalRequestBuilder<PointTime, Coverage> request) {
-
+            IRetrievalRequestBuilder<PointTime, Coverage> request)
+            throws Exception {
         String xmlMessage = null;
-        try {
-            Connection conn = this.getProviderRetrievalXMl().getConnection();
-            // This is used as the "Realm" in HTTPS connections
-            String providerName = request.getAttribute().getProvider();
-            xmlMessage = WFSConnectionUtil.wfsConnect(request.getRequest(),
-                    conn, providerName, getTokenBucket(), getPriority());
-        } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR, e.getLocalizedMessage(), e);
-            EventBus.publish(new RetrievalEvent(e.getMessage()));
-        }
-
+        Connection conn = this.getProviderRetrievalXMl().getConnection();
+        // This is used as the "Realm" in HTTPS connections
+        String providerName = request.getAttribute().getProvider();
+        xmlMessage = WFSConnectionUtil.wfsConnect(request.getRequest(), conn,
+                providerName, getTokenBucket(), getPriority());
         RetrievalResponse<PointTime, Coverage> pr = new WFSRetrievalResponse(
                 request.getAttribute());
         pr.setPayLoad(xmlMessage);
-
         return pr;
     }
 

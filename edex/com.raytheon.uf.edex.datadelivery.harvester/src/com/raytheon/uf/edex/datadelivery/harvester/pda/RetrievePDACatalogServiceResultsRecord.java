@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,22 +33,22 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAConnectionUtil;
 
 /**
  * Retrieve PDA Catalog Service Results Record
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jun 13, 2014  3120     dhladky   Initial creation
  * Sep 14, 2015  4881     dhladky   Updates to PDA processing/ better debugging.
  * Jul 11, 2016  5752     tjensen   Fix saving off file for comparison
  * Mar 09, 2017  6089     tjensen   Strip Primary/Backup from file paths
- * 
+ * Jun 23, 2017  6322     tgurney   getRecordFile throws Exception
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 
 public class RetrievePDACatalogServiceResultsRecord {
@@ -65,10 +65,10 @@ public class RetrievePDACatalogServiceResultsRecord {
 
     /**
      * Read in the config file
-     * 
+     *
      * @param configFile
      *            the configuration file
-     * 
+     *
      * @return
      */
     private HarvesterConfig getHarvesterConfig() {
@@ -88,11 +88,12 @@ public class RetrievePDACatalogServiceResultsRecord {
     /**
      * Spring enabled queue endpoint, called from spring Download the
      * getRecordsResponseResult XML to local disk
-     * 
+     *
      * @param recordFilePath
      * @return
+     * @throws Exception
      */
-    public byte[] getRecordFile(byte[] inBytes) {
+    public byte[] getRecordFile(byte[] inBytes) throws Exception {
 
         PDACatalogServiceResponseWrapper psrwOut = null;
         byte[] outBytes = null;

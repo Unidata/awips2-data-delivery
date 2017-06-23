@@ -40,7 +40,6 @@ import javax.net.ssl.TrustManagerFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClientConfig;
-import org.apache.commons.net.ftp.FTPConnectionClosedException;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.commons.net.ftp.FTPSClient;
 import org.slf4j.Logger;
@@ -83,6 +82,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Nov 17, 2016  6002     tjensen   Added FTP connection timeouts
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  * Jun 22, 2017  6222     tgurney   Log time taken and size of downloads
+ * Jun 23, 2017  6322     tgurney   ftpsConnect throws Exception
  *
  * </pre>
  *
@@ -119,7 +119,7 @@ public class PDAConnectionUtil {
      * @return
      */
     public static String ftpsConnect(Connection providerConn,
-            String providerName, String remoteFilename) {
+            String providerName, String remoteFilename) throws Exception {
         return ftpsConnect(providerConn, providerName, remoteFilename, null,
                 (int) TokenBucket.DEFAULT_WEIGHT);
     }
@@ -134,70 +134,63 @@ public class PDAConnectionUtil {
      * @param tokenBucket
      * @param priority
      * @return
+     * @throws Exception
      */
     public static String ftpsConnect(Connection providerConn,
             String providerName, String remoteFilename, TokenBucket tokenBucket,
-            int priority) {
-
-        String password = null;
-        String userName = null;
-        String rootUrl = null;
-        String localFileDirectory = null;
+            int priority) throws Exception {
         String localFileName = null;
-
+        ProviderCredentials creds = null;
         try {
-            ProviderCredentials creds = ProviderCredentialsUtil
-                    .retrieveCredentials(providerName);
-            Connection localConnection = creds.getConnection();
-
-            if (localConnection != null
-                    && localConnection.getProviderKey() != null) {
-
-                logger.info("Attempting credentialed request: " + providerName);
-                /*
-                 * Local Connection object contains the username, password and
-                 * encryption method for password storage and decrypt.
-                 */
-                userName = localConnection.getUnencryptedUsername();
-                password = localConnection.getUnencryptedPassword();
-
-                String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(
-                        remoteFilename);
-                // Do this after you separate!
-                rootUrl = serviceConfig.getConstantValue("FTPS_REQUEST_URL");
-                rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
-
-                logger.info("rootUrl: " + rootUrl);
-                localFileDirectory = serviceConfig
-                        .getConstantValue("FTPS_DROP_DIR");
-                localFileName = localFileDirectory + File.separator
-                        + remotePathAndFile[1];
-                logger.info("Local File Name: " + localFileName);
-                int port = new Integer(serviceConfig.getConstantValue("PORT"))
-                        .intValue();
-                boolean doBinaryTransfer = Boolean.parseBoolean(
-                        serviceConfig.getConstantValue("BINARY_TRANSFER"));
-                boolean usePassiveMode = Boolean.parseBoolean(
-                        serviceConfig.getConstantValue("PASSIVE_MODE"));
-
-                FTPSClient ftp = createFtpClient();
-                ftpsRetrieveFile(ftp, userName, password, rootUrl, port,
-                        remotePathAndFile[1], remotePathAndFile[0],
-                        localFileName, doBinaryTransfer, usePassiveMode,
-                        tokenBucket, priority);
-            } else {
-                logger.error(
-                        "No local Connection file available! " + providerName);
-                throw new IllegalArgumentException(
-                        "No username and password for FTPS server available! "
-                                + rootUrl + " provider: " + providerName);
-            }
+            creds = ProviderCredentialsUtil.retrieveCredentials(providerName);
         } catch (Exception e) {
-            logger.error("Error retrieving file from FTPS server: " + rootUrl,
-                    e);
-            localFileName = null;
+            throw new Exception("Failed to retrieve credentials for provider "
+                    + providerName, e);
+        }
+        Connection localConnection = creds.getConnection();
+
+        if (localConnection == null
+                || localConnection.getProviderKey() == null) {
+            throw new IllegalArgumentException(
+                    "No local connection file available! provider: "
+                            + providerName);
         }
 
+        logger.info("Attempting credentialed request: " + providerName);
+        /*
+         * Local Connection object contains the username, password and
+         * encryption method for password storage and decrypt.
+         */
+        String userName = localConnection.getUnencryptedUsername();
+        String password = localConnection.getUnencryptedPassword();
+
+        String[] remotePathAndFile = separateRemoteFileDirectoryAndFileName(
+                remoteFilename);
+        // Do this after you separate!
+        String rootUrl = serviceConfig.getConstantValue("FTPS_REQUEST_URL");
+        rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
+
+        logger.info("rootUrl: " + rootUrl);
+        String localFileDirectory = serviceConfig
+                .getConstantValue("FTPS_DROP_DIR");
+        localFileName = localFileDirectory + File.separator
+                + remotePathAndFile[1];
+        logger.info("Local File Name: " + localFileName);
+        int port = new Integer(serviceConfig.getConstantValue("PORT"))
+                .intValue();
+        boolean doBinaryTransfer = Boolean.parseBoolean(
+                serviceConfig.getConstantValue("BINARY_TRANSFER"));
+        boolean usePassiveMode = Boolean
+                .parseBoolean(serviceConfig.getConstantValue("PASSIVE_MODE"));
+        try {
+            FTPSClient ftp = createFtpClient();
+            ftpsRetrieveFile(ftp, userName, password, rootUrl, port,
+                    remotePathAndFile[1], remotePathAndFile[0], localFileName,
+                    doBinaryTransfer, usePassiveMode, tokenBucket, priority);
+        } catch (Exception e) {
+            throw new Exception("Error retrieving file " + remoteFilename
+                    + " from FTPS server " + rootUrl, e);
+        }
         return localFileName;
     }
 
@@ -206,7 +199,7 @@ public class PDAConnectionUtil {
             String remoteFilePath, String localFilename,
             boolean doBinaryTransfer, boolean usePassiveMode,
             TokenBucket tokenBucket, int priority)
-            throws Exception, IOException {
+            throws FileNotFoundException, IOException {
 
         int reply = 0;
         try (OutputStream fos = new FileOutputStream(localFilename)) {
@@ -299,12 +292,6 @@ public class PDAConnectionUtil {
                     + TimeUtil.prettyDuration(cis.getLastReadTimeMillis()
                             - cis.getFirstReadTimeMillis()));
             ftp.logout();
-        } catch (FTPConnectionClosedException e) {
-            logger.error("Server closed connection.");
-            throw e;
-        } catch (IOException e) {
-            logger.error("Failed to receive file via FTPS.");
-            throw e;
         } finally {
             // If still connected, disconnect.
             if (ftp.isConnected()) {

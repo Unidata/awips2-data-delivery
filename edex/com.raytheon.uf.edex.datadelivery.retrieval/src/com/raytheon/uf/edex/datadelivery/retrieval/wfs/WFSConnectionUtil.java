@@ -79,6 +79,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  * Dec 07, 2015 4834       njensen     getCredentials() now takes a URI
  * Jun 06, 2017 6222       tgurney     Use token bucket to rate-limit requests
  * Jun 22, 2017 6222       tgurney     Log download time and number of bytes
+ * Jun 23, 2017 6322       tgurney     wfsConnect throws Exception
  *
  * </pre>
  *
@@ -238,49 +239,40 @@ public class WFSConnectionUtil {
      * @param providerName
      *            The data provider's name
      * @return xml response
+     * @throws Exception
      */
     public static String wfsConnect(String request, Connection providerConn,
-            String providerName, TokenBucket tokenBucket, int priority) {
+            String providerName, TokenBucket tokenBucket, int priority)
+            throws Exception {
 
-        String xmlResponse = null;
-        HttpClient http = null;
-        String rootUrl = null;
+        String rootUrl = getCleanUrl(providerConn.getUrl());
+        HttpClient http = getHttpClient();
+        URI uri = new URI(rootUrl);
+        HttpPost post = new HttpPost(uri);
+        // check for the need to do a username password auth check
+        Connection localConnection = getLocalConnection(uri, providerName);
 
-        try {
+        if (localConnection != null
+                && localConnection.getProviderKey() != null) {
+            statusHandler.handle(Priority.INFO,
+                    "Attempting credentialed request: " + providerName);
+            // Local Connection object contains the username, password and
+            // encryption method for password storage and decrypt.
+            String userName = localConnection.getUnencryptedUsername();
+            String password = localConnection.getUnencryptedPassword();
 
-            rootUrl = getCleanUrl(providerConn.getUrl());
-            http = getHttpClient();
-            URI uri = new URI(rootUrl);
-            HttpPost post = new HttpPost(uri);
-            // check for the need to do a username password auth check
-            Connection localConnection = getLocalConnection(uri, providerName);
-
-            if (localConnection != null
-                    && localConnection.getProviderKey() != null) {
-                statusHandler.handle(Priority.INFO,
-                        "Attempting credentialed request: " + providerName);
-                // Local Connection object contains the username, password and
-                // encryption method for password storage and decrypt.
-                String userName = localConnection.getUnencryptedUsername();
-                String password = localConnection.getUnencryptedPassword();
-
-                http.setupCredentials(uri.getHost(), uri.getPort(), userName,
-                        password);
-            }
-            post.setEntity(new StringEntity(request, ContentType.TEXT_XML));
-            RateLimitingStreamHandler handler = new RateLimitingStreamHandler(
-                    tokenBucket, priority);
-            http.executeRequest(post, handler);
-            xmlResponse = new String(handler.response);
-            statusHandler.info("Downloaded "
-                    + SizeUtil.prettyByteSize(handler.bytesReceived) + " in "
-                    + TimeUtil.prettyDuration(handler.timeTakenMillis));
-        } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Couldn't connect to WFS server: " + rootUrl, e);
+            http.setupCredentials(uri.getHost(), uri.getPort(), userName,
+                    password);
         }
 
-        return xmlResponse;
+        post.setEntity(new StringEntity(request, ContentType.TEXT_XML));
+        RateLimitingStreamHandler handler = new RateLimitingStreamHandler(
+                tokenBucket, priority);
+        http.executeRequest(post, handler);
+        statusHandler.info("Downloaded "
+                + SizeUtil.prettyByteSize(handler.bytesReceived) + " in "
+                + TimeUtil.prettyDuration(handler.timeTakenMillis));
+        return new String(handler.response);
     }
 
     /**
