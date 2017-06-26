@@ -108,7 +108,7 @@ public class SubsetAction extends AbstractHandler {
                     selectionDlg = new ListSelectionDlg(shell, choices, true,
                             ListSelectionDlg.ReturnArray.ARRAY_STRING_ITEMS,
                             "Select");
-                    selectionDlg.setCloseCallback(new ICloseCallback() {
+                    selectionDlg.addCloseCallback(new ICloseCallback() {
                         @Override
                         public void dialogClosed(Object returnValue) {
                             // The the return value is null then return since

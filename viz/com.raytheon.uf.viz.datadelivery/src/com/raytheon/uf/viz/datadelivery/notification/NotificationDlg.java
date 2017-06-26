@@ -734,7 +734,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
                     .getInstance();
             loadDlg = new LoadSaveConfigDlg(shell, DialogType.OPEN,
                     CONFIG_PATH, DEFAULT_CONFIG, true);
-            loadDlg.setCloseCallback(new ICloseCallback() {
+            loadDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {
@@ -816,7 +816,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         if (saveAsDlg == null || saveAsDlg.isDisposed()) {
             saveAsDlg = new LoadSaveConfigDlg(shell, DialogType.SAVE_AS,
                     CONFIG_PATH, DEFAULT_CONFIG);
-            saveAsDlg.setCloseCallback(new ICloseCallback() {
+            saveAsDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {
@@ -842,7 +842,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         if (deleteDlg == null || deleteDlg.isDisposed()) {
             deleteDlg = new LoadSaveConfigDlg(shell, DialogType.DELETE,
                     CONFIG_PATH, true);
-            deleteDlg.setCloseCallback(new ICloseCallback() {
+            deleteDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {

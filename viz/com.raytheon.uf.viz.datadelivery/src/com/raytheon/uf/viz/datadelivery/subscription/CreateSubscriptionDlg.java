@@ -505,7 +505,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 String currentSite = DataDeliveryUtils.getDataDeliveryId();
                 SiteSelectionDlg dlg = new SiteSelectionDlg(shell, currentSite,
                         sharedSites);
-                dlg.setCloseCallback(new ICloseCallback() {
+                dlg.addCloseCallback(new ICloseCallback() {
                     @Override
                     public void dialogClosed(Object returnValue) {
                         if (returnValue instanceof String[]) {

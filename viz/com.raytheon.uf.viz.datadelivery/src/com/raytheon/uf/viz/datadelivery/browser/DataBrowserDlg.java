@@ -710,7 +710,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                     try {
                         dlg = SubsetManagerDlg.fromDataSet(shell, data);
                         smDialogs.put(data, dlg);
-                        dlg.setCloseCallback(new ICloseCallback() {
+                        dlg.addCloseCallback(new ICloseCallback() {
 
                             @Override
                             public void dialogClosed(Object returnValue) {
@@ -967,7 +967,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         if ((loadSaveDlg == null) || loadSaveDlg.isDisposed()) {
             loadSaveDlg = new LoadSaveConfigDlg(shell, type, CONFIG_PATH,
                     DEFAULT_CONFIG, true);
-            loadSaveDlg.setCloseCallback(new ICloseCallback() {
+            loadSaveDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {

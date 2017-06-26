@@ -287,7 +287,7 @@ public class BandwidthUtilizationDlg extends CaveSWTDialog {
                                 .get(GraphSection.LOWER), colors
                                 .get(GraphSection.MIDDLE), colors
                                 .get(GraphSection.UPPER));
-                dlg.setCloseCallback(new ICloseCallback() {
+                dlg.addCloseCallback(new ICloseCallback() {
                     @Override
                     public void dialogClosed(Object returnValue) {
                         if (returnValue instanceof int[]) {

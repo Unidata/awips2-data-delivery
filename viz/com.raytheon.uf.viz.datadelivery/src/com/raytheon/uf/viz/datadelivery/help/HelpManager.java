@@ -128,7 +128,7 @@ public class HelpManager {
                 xml = (DataDeliveryHelpXML) unmarshaller.unmarshal(locFile
                         .getFile());
                 DataDeliveryHelpDlg helpDlg = new DataDeliveryHelpDlg(shell, xml);
-                helpDlg.setCloseCallback(new ICloseCallback() {
+                helpDlg.addCloseCallback(new ICloseCallback() {
                     @Override
                     public void dialogClosed(Object returnValue) {
                         helpMap.remove(helpFile);

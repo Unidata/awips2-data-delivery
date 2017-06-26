@@ -696,7 +696,7 @@ public class DataDeliveryUtils {
     public static void showCallbackMessageBox(Shell shell, int style, String messageTitle,
             String messageText, ICloseCallback callback) {
         SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle, messageText, style);
-        messageDialog.setCloseCallback(callback);
+        messageDialog.addCloseCallback(callback);
         messageDialog.open();
     }
 
