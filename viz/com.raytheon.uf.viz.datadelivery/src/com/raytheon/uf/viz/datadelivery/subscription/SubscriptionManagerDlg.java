@@ -837,7 +837,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
             loadDlg = new LoadSaveConfigDlg(shell, DialogType.OPEN,
                     configMan.getLocalizationPath(),
                     configMan.getDefaultXMLConfigFileName(), true);
-            loadDlg.setCloseCallback(new ICloseCallback() {
+            loadDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {
@@ -889,7 +889,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
             saveAsDlg = new LoadSaveConfigDlg(shell, DialogType.SAVE_AS,
                     configMan.getLocalizationPath(),
                     configMan.getDefaultXMLConfigFileName());
-            saveAsDlg.setCloseCallback(new ICloseCallback() {
+            saveAsDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {
@@ -912,7 +912,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         if (deleteDlg == null || deleteDlg.isDisposed()) {
             deleteDlg = new LoadSaveConfigDlg(shell, DialogType.DELETE,
                     configMan.getLocalizationPath(), true);
-            deleteDlg.setCloseCallback(new ICloseCallback() {
+            deleteDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {
@@ -960,7 +960,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         };
 
         FileNameDlg fnd = new FileNameDlg(getShell(), sub.getName());
-        fnd.setCloseCallback(callback);
+        fnd.addCloseCallback(callback);
 
         fnd.open();
     }
@@ -1257,7 +1257,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
 
                 messageDialog = new SWTMessageBox(shell, title,
                         message.toString(), SWT.OK);
-                messageDialog.setCloseCallback(new ICloseCallback() {
+                messageDialog.addCloseCallback(new ICloseCallback() {
 
                     @Override
                     public void dialogClosed(Object returnValue) {
