@@ -127,10 +127,12 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Nov 19, 2014  3852     dhladky   Resurrected the unscheduled state.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
- * Jan 09, 2017  746       bsteffen     Unique wording for FORCE_APPLY_DEACTIVATED option
- * Feb 21, 2017  746       bsteffen     Set request envelope when area changes.
+ * Jan 09, 2017  746      bsteffen  Unique wording for FORCE_APPLY_DEACTIVATED option
+ * Feb 21, 2017  746      bsteffen  Set request envelope when area changes.
  * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ * Jun 27, 2017  746      bsteffen  Ensure subscription messages make it to the user.
  *
+ * 
  * </pre>
  *
  * @author jpiatt
@@ -465,9 +467,8 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         try {
 
             @SuppressWarnings("rawtypes")
-            List<Subscription> pendingSubscriptionList = new ArrayList<>(
-                    Sets.union(groupSubscriptions,
-                            removeFromGroupSubscriptions));
+            List<Subscription> pendingSubscriptionList = new ArrayList<>(Sets
+                    .union(groupSubscriptions, removeFromGroupSubscriptions));
             final SubscriptionServiceResult result = DataDeliveryServices
                     .getSubscriptionService().updateWithPendingCheck(
                             currentUser, pendingSubscriptionList, this);
@@ -483,8 +484,9 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
             }
 
             if (result.hasMessageToDisplay()) {
-                DataDeliveryUtils.showMessage(getShell(), SWT.ICON_INFORMATION,
-                        "Edit Group", result.getMessage());
+                DataDeliveryUtils.showMessageNonCallback(getShell(),
+                        SWT.ICON_INFORMATION, "Edit Group",
+                        result.getMessage());
             }
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
