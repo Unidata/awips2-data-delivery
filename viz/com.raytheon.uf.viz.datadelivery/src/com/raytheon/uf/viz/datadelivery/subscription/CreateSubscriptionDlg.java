@@ -1060,8 +1060,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         // Populate the subscription with the dialog inputs
         populateSubscriptionFromInputs();
 
-        } else {
-            subscription.setGroupName(GroupDefinition.NO_GROUP);
         IUser user = UserController.getUserObject();
 
         PendingSubscriptionHandler handler = DataDeliveryHandlers
@@ -1377,6 +1375,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 subscription.getCoverage()
                         .setEnvelope(groupDefinition.getEnvelope());
             }
+        } else {
+            subscription.setGroupName(GroupDefinition.NO_GROUP);
         }
 
         if (this.durComp.isIndefiniteChk()) {
