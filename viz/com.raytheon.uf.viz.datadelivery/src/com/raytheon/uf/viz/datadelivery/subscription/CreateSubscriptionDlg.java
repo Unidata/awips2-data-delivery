@@ -184,6 +184,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Nov 08, 2016  5976     bsteffen  Use VizApp for GUI execution.
  * Apr 25, 2017  1045     tjensen   Create Adhoc subscriptions for latest when
  *                                  creating a recurring subscription
+ * Jun 09, 2017  746      bsteffen  Handle group conflicts with duration and period.
  *
  * </pre>
  *
@@ -1059,6 +1060,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         // Populate the subscription with the dialog inputs
         populateSubscriptionFromInputs();
 
+        } else {
+            subscription.setGroupName(GroupDefinition.NO_GROUP);
         IUser user = UserController.getUserObject();
 
         PendingSubscriptionHandler handler = DataDeliveryHandlers
@@ -1234,7 +1237,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     if (cachedSiteSubscription != null) {
                         String responseMessage = response.getMessage();
                         if (responseMessage != null && responseMessage
-                                .indexOf(" has been updated") >= 0) {
+                                .indexOf(" has been updated") > 0) {
                         }
                     }
                 } catch (RegistryHandlerException e) {
@@ -1557,7 +1560,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             String formActiveStart = this.activePeriodComp.getActiveStartText();
             String formActiveEnd = this.activePeriodComp.getActiveEndText();
 
-            if (!formActiveStart.isEmpty() && !formActiveStart.isEmpty()) {
+            if (activeStart != null && activeEnd != null) {
                 activeStartStr = DataDeliveryGUIUtils.getActiveFormat()
                         .format(activeStart);
                 activeEndStr = DataDeliveryGUIUtils.getActiveFormat()
@@ -1565,13 +1568,13 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             }
 
             if (activeStartStr != null && activeEndStr != null
-                    && !formActiveStart.isEmpty() && !formActiveEnd.isEmpty()) {
+                    && formActiveStart != null && formActiveEnd != null) {
                 if (activeStartStr.equals(formActiveStart)
                         && activeEndStr.equals(formActiveEnd)) {
                     groupActiveValid = true;
                 }
             } else if (activeStartStr == null && activeEndStr == null
-                    && formActiveStart.isEmpty() && formActiveEnd.isEmpty()) {
+                    && formActiveStart == null && formActiveEnd == null) {
                 groupActiveValid = true;
             }
 
@@ -1581,10 +1584,33 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         if (!groupDurValid || !groupActiveValid) {
-            displayErrorPopup("Invalid Group Values",
-                    "Values do not match selected group values.\n\n"
-                            + "The group name will not be saved with the subscription.");
-            valid = true;
+            StringBuilder message = new StringBuilder();
+            message.append("The Subscription ");
+            if (!groupDurValid) {
+                message.append("Duration ");
+                if (!groupActiveValid) {
+                    message.append("and Active Period do ");
+                } else {
+                    message.append("does ");
+                }
+            } else {
+                message.append("Active Period does ");
+            }
+            message.append("not match the Group values. ");
+            message.append(
+                    "To apply these changes the subscription must be removed from the group.");
+            message.append("\n\n");
+            message.append("Should this subscription be removed from the "
+                    + groupDefinition.getGroupName() + " group?");
+
+            int yesOrNo = DataDeliveryUtils.showYesNoMessage(getShell(),
+                    "Invalid Group Values", message.toString());
+            if (yesOrNo == SWT.YES) {
+                groupSelectComp.setGroupName(null);
+                groupDefinition = null;
+            } else {
+                valid = false;
+            }
         }
 
         // If valid is not set to true for any of the composites return

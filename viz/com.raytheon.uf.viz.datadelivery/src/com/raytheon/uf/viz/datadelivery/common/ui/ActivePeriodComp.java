@@ -61,6 +61,7 @@ import com.raytheon.viz.ui.dialogs.CalendarDialog;
  * Jan 15, 2016  5259      randerso    Changed to use viz.ui AwipsCalendar
  * Mar 01, 2016  3989      tgurney     Rename AwipsCalendar to CalendarDialog
  * Mar 15, 2016  5482      randerso    Fix GUI sizing issues
+ * Jun 09, 2017   746      bsteffen    Return null Strings for dates when always active.
  * 
  * </pre>
  * 
@@ -284,8 +285,8 @@ public class ActivePeriodComp extends Composite {
             date = cal.getTime();
         }
 
-        CalendarDialog ac = new CalendarDialog(getShell(), date, (showHour ? 1
-                : 0));
+        CalendarDialog ac = new CalendarDialog(getShell(), date,
+                (showHour ? 1 : 0));
         Object obj = ac.open();
 
         if ((obj != null) && (obj instanceof Date)) {
@@ -311,8 +312,11 @@ public class ActivePeriodComp extends Composite {
      * @return active period start
      */
     public String getActiveStartText() {
-
-        return activeStartText.getText().trim();
+        if (activeStartText.isEnabled()) {
+            return activeStartText.getText().trim();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -321,7 +325,11 @@ public class ActivePeriodComp extends Composite {
      * @return active period end
      */
     public String getActiveEndText() {
-        return activeEndText.getText().trim();
+        if (activeEndText.isEnabled()) {
+            return activeEndText.getText().trim();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -348,8 +356,8 @@ public class ActivePeriodComp extends Composite {
      * @param activeStartDate
      */
     public void setStartDate(Date activeStartDate) {
-        activeStartText.setText(DataDeliveryGUIUtils.getActiveFormat().format(
-                activeStartDate));
+        activeStartText.setText(
+                DataDeliveryGUIUtils.getActiveFormat().format(activeStartDate));
         activeStartText.setEnabled(true);
         activeStartDateBtn.setEnabled(true);
         this.activeStartDate = activeStartDate;
@@ -361,8 +369,8 @@ public class ActivePeriodComp extends Composite {
      * @param activeEndDate
      */
     public void setEndDate(Date activeEndDate) {
-        activeEndText.setText(DataDeliveryGUIUtils.getActiveFormat().format(
-                activeEndDate));
+        activeEndText.setText(
+                DataDeliveryGUIUtils.getActiveFormat().format(activeEndDate));
         activeEndText.setEnabled(true);
         activeEndDateBtn.setEnabled(true);
         this.activeEndDate = activeEndDate;
