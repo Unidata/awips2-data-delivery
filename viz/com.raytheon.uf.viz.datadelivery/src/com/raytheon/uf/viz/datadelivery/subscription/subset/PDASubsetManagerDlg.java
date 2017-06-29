@@ -72,7 +72,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------------------------
+ * ------------- -------- --------- -------------------------------------------
  * Aug 14, 2014  3121     dhladky   Initial creation.
  * Apr 25, 2016  5424     dhladky   Updated datasize calculation.
  * Apr 27, 2016  5366     tjensen   Updates for time selection changes
@@ -80,6 +80,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Aug 17, 2016  5772     rjpeter   Fix time handling.
  * Oct 03, 2016  5772     tjensen   Set URL for PDA adhoc queries
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
+ * Jun 29, 2017  6130     tjensen   Set coverage before getting specific time.
  *
  * </pre>
  *
@@ -320,16 +321,17 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         sub.setDataSetType(dataSet.getDataSetType());
         sub.setDataSetName(dataSet.getDataSetName());
 
+        // Coverage must be set before getting specific time
+        Coverage cov = new Coverage();
+        cov.setEnvelope(dataSet.getCoverage().getEnvelope());
+        setCoverage(sub, cov);
+
         Time newTime = new Time();
         newTime = setupDataSpecificTime(newTime, sub);
         if (newTime == null) {
             return null;
         }
         sub.setTime(newTime);
-
-        Coverage cov = new Coverage();
-        cov.setEnvelope(dataSet.getCoverage().getEnvelope());
-        setCoverage(sub, cov);
 
         sub.setUrl(getSubscriptionUrl());
 

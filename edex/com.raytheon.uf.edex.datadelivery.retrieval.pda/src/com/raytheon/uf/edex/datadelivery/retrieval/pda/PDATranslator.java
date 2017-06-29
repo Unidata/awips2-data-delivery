@@ -36,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManage
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -130,7 +131,9 @@ public class PDATranslator
 
                 ServiceConfig serviceConfig = HarvesterServiceManager
                         .getInstance().getServiceConfig(ServiceType.PDA);
-                storeFileName = serviceConfig.getConstantValue("FTPS_DROP_DIR")
+                storeFileName = System.getProperty("DATA_ARCHIVE_ROOT")
+                        + File.separator
+                        + serviceConfig.getConstantValue("FTPS_DROP_DIR")
                         + File.separator + dataSet.getProviderName()
                         + File.separator
                         + dataSet.getDataSetName().replaceAll(" +", "_")
@@ -148,6 +151,10 @@ public class PDATranslator
                             response.getFileBytes(), storeFileName);
                 } else {
                     File storeFile = new File(storeFileName);
+                    // If file already exist at the destination, remove it first
+                    if (storeFile.exists()) {
+                        FileUtils.deleteQuietly(storeFile);
+                    }
                     FileUtils.moveFile(ftpsFile, storeFile);
                 }
 
@@ -159,20 +166,26 @@ public class PDATranslator
                 decodeInfo.setSubscriptionOwner(subOwner);
                 decodeInfo.setPathToFile(storeFileName);
                 decodeInfo.setRouteId(vd.getRoute());
+                decodeInfo.setDataType("PDA");
+                decodeInfo.setEnqueTime(System.currentTimeMillis());
 
                 // Send off to Ingest for processing
                 statusHandler.info("Sending PDA retrieval file to Ingest: "
                         + storeFileName);
-                EDEXUtil.getMessageProducer()
-                        .sendAsync("Ingest.DataDelivery.Decode", decodeInfo);
+                EDEXUtil.getMessageProducer().sendAsyncUri(
+                        "jms-durable:queue:Ingest.DataDelivery.Decode",
+                        SerializationUtil.transformToThrift(decodeInfo));
 
             } else {
-                statusHandler.warn(
+                statusHandler.error(
                         "Unable to process file: null file name received.");
             }
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
-                    "Unable to decode PDA file objects!", e);
+                    "Unable to decode PDA file objects for DataSet '"
+                            + dataSet.getDataSetName() + "' for subscription '"
+                            + response.getSubName() + "'!",
+                    e);
         }
     }
 

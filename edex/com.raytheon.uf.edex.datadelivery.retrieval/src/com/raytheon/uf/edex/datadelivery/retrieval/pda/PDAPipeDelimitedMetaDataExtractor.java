@@ -59,6 +59,7 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------------------------------
  * Mar 31, 2017  6186     rjpeter   Extracted from PDAFileMetaDataExtractor.
+ * Jun 29, 2017  6130     tjensen   Remove res from validateParamData call
  *
  * </pre>
  *
@@ -168,7 +169,7 @@ public class PDAPipeDelimitedMetaDataExtractor extends PDAMetaDataExtractor {
         String param = metadataUtil.getParamFromShortName(providerShortName);
         String res = metadataUtil.getResFromShortName(providerShortName);
 
-        validateParamData(param, res, sat, startTime, endTime);
+        validateParamData(param, sat, startTime, endTime);
         Map<String, String> paramMap = new HashMap<>(4, 1);
         paramMap.put(METADATA_ID, id);
         paramMap.put(PARAM_NAME, param);

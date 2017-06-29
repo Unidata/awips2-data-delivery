@@ -20,15 +20,17 @@
 package com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist;
 
 import java.util.Calendar;
+import java.util.Map;
 
+import org.apache.camel.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
-import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
-import com.raytheon.uf.edex.datadelivery.event.handler.NotificationHandler;
 
 /**
  *
@@ -50,48 +52,57 @@ public class DataDeliveryDecoder {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private String notificationEndpoint;
+    private String notificationRoute;
 
     public DataDeliveryDecoder() {
 
     }
 
-    public DataDeliveryDecoder(String endpoint) {
-        notificationEndpoint = endpoint;
+    public DataDeliveryDecoder(String route) {
+        notificationRoute = route;
     }
 
-    public void process(DecodeInfo info) {
+    public void process(byte[] infoBytes, @Headers Map<String, Object> header)
+            throws SerializationException {
+        DecodeInfo info = SerializationUtil
+                .transformFromThrift(DecodeInfo.class, infoBytes);
         String pathToFile = info.getPathToFile();
         logger.info("Processing " + pathToFile + " for subscription "
                 + info.getSubscriptionName() + "...");
         String routeId = info.getRouteId();
         try {
-            // Send data to correct route to be decoded
-            PluginDataObject[] pdos = (PluginDataObject[]) EDEXUtil
-                    .getMessageProducer().sendSync(routeId, pathToFile);
+            // populate header info for logging purposes
+            header.put("dataType", info.getDataType());
+            header.put("ingestFileName", pathToFile);
+            header.put("enqueueTime", info.getEnqueTime());
 
-            int priority = 3;
-            StringBuilder sb = new StringBuilder();
+            // Send data to correct route to be decoded
+            int numPdos = (int) EDEXUtil.getMessageProducer().sendSync(routeId,
+                    pathToFile);
 
             // If no pdos returned, decoding failed. Else success.
-            if (pdos != null && pdos.length > 0) {
-                sb.append("Successfully retrieved and stored data for ");
-            } else {
+            if (numPdos <= 0) {
+                StringBuilder sb = new StringBuilder();
+
                 sb.append("Failed data retrieval for ");
-                priority = 1;
+                int priority = 1;
+                sb.append(info.getSubscriptionName());
+
+                // Send results to notifications
+                NotificationRecord record = new NotificationRecord();
+                record.setDate(Calendar.getInstance());
+                record.setPriority(priority);
+                record.setCategory(info.getSubscriptionName());
+                record.setUsername(info.getSubscriptionOwner());
+                record.setMessage(sb.toString());
+
+                EDEXUtil.getMessageProducer().sendSync(notificationRoute,
+                        record);
+            } else {
+                logger.info("Successfully retrieved and stored data for "
+                        + info.getSubscriptionName());
             }
-            sb.append(info.getSubscriptionName());
 
-            // Send results to notifications
-            NotificationRecord record = new NotificationRecord();
-            record.setDate(Calendar.getInstance());
-            record.setPriority(priority);
-            record.setCategory(info.getSubscriptionName());
-            record.setUsername(info.getSubscriptionOwner());
-            record.setMessage(sb.toString());
-
-            NotificationHandler noteHandler = new NotificationHandler();
-            noteHandler.storeAndSend(record, notificationEndpoint);
         } catch (EdexException e) {
             logger.error("Failed to route file [" + pathToFile
                     + "] into to decoder '" + routeId + "'", e);
@@ -99,11 +110,11 @@ public class DataDeliveryDecoder {
 
     }
 
-    public String getNotificationEndpoint() {
-        return notificationEndpoint;
+    public String getNotificationRoute() {
+        return notificationRoute;
     }
 
-    public void setNotificationEndpoint(String notificationEndpoint) {
-        this.notificationEndpoint = notificationEndpoint;
+    public void setNotificationRoute(String notificationRoute) {
+        this.notificationRoute = notificationRoute;
     }
 }

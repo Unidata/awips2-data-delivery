@@ -63,6 +63,7 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * Sep 01, 2016  5752     tjensen   Exclude data older than retention period
  * Jan 27, 2017  6089     tjensen   Update to work with pipe delimited metadata
  * Mar 31, 2017  6186     rjpeter   Refactored.
+ * Jun 29, 2017  6130     tjensen   Remove res from validateParamData call
  *
  * </pre>
  *
@@ -126,7 +127,7 @@ public class PDAFileMetaDataExtractor extends PDAMetaDataExtractor {
         String startTime = title.replaceAll(regex, sTimeFormat);
         String endTime = title.replaceAll(regex, eTimeFormat);
 
-        validateParamData(param, res, sat, startTime, endTime);
+        validateParamData(param, sat, startTime, endTime);
 
         Map<String, String> paramMap = new HashMap<>(4, 1);
         paramMap.put(PARAM_NAME, param);

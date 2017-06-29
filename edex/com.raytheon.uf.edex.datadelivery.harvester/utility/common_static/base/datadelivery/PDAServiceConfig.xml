@@ -16,7 +16,7 @@
     <constant name="CONN_TYPE" value="FTPS" />
     <constant name="PORT" value="21" />
     <!--  Directory camel drops FTP files into for ingest delivery. -->
-    <constant name="FTPS_DROP_DIR" value="/data_store/data_delivery" />
+    <constant name="FTPS_DROP_DIR" value="data_delivery" />
     <constant name="MISSING_VALUE" value="-999999" />
     <constant name="FILL_VALUE" value="-888888" />
     <constant name="DEFAULT_MULTIPLIER" value="0.5" />

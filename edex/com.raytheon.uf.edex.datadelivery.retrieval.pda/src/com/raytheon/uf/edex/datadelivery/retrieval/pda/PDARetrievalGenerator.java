@@ -36,8 +36,10 @@ import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
@@ -63,6 +65,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Sep 01, 2016  5762     tjensen   Improved logging
  * Oct 06, 2016  5772     tjensen   Fix Adhocs for older times
  * Mar 31, 2017  6186     rjpeter   Update to handle passed in DataSetMetaData.
+ * Jun 29, 2017  6130     tjensen   Add support for local PDA testing
  *
  * </pre>
  *
@@ -193,15 +196,23 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
          * TODO: Shouldn't this execute the request on a retrieval thread
          * instead of on the generator thread
          */
-        if (this.getRetrievalMode() == RETRIEVAL_MODE.SYNC) {
-            request = new PDASyncRequest(ra, sub.getName(), metaDataKey);
+        String retVal;
+        ServiceConfig serviceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.PDA);
+        if (Boolean.parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
+            retVal = pdadsmd.getUrl();
         } else {
-            request = new PDAAsyncRequest(ra, sub.getName(), metaDataKey,
-                    retrievalId);
-        }
+            if (this.getRetrievalMode() == RETRIEVAL_MODE.SYNC) {
 
-        // Make the request then process the response.
-        String retVal = request.performRequest();
+                request = new PDASyncRequest(ra, sub.getName(), metaDataKey);
+            } else {
+                request = new PDAAsyncRequest(ra, sub.getName(), metaDataKey,
+                        retrievalId);
+            }
+
+            // Make the request then process the response.
+            retVal = request.performRequest();
+        }
 
         return retVal;
     }

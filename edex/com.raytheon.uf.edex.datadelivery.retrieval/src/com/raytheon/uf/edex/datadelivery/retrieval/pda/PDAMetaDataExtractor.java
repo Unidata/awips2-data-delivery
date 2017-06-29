@@ -65,10 +65,12 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Jul 08, 2014  3120     dhladky   Initial creation
  * Sep 11, 2015  4881     dhladky   Improved debug tracking.
  * Mar 31, 2017  6186     rjpeter   Refactored
+ * Jun 29, 2017  6130     tjensen   Remove validation of resolution. Not
+ *                                  applicable to all PDA products.
  *
  * </pre>
  *
@@ -110,6 +112,8 @@ public abstract class PDAMetaDataExtractor
     public PDAMetaDataExtractor(MetaDataPattern metaDataPattern,
             String metadataId, String title, BoundingBoxType boundingBox) {
         super(new Connection());
+        serviceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.PDA);
         this.metaDataPattern = metaDataPattern;
         this.metadataId = metadataId;
         this.title = title;
@@ -138,37 +142,27 @@ public abstract class PDAMetaDataExtractor
         // No implementation in PDA extractor
     }
 
-    protected void validateParamData(String param, String res, String sat,
-            String startTime, String endTime) throws MetaDataParseException {
+    protected void validateParamData(String param, String sat, String startTime,
+            String endTime) throws MetaDataParseException {
         if (param == null || "".equals(param)) {
             throw new MetaDataParseException("No parameter information found");
-        } else {
-            logger.info("param: " + param);
         }
-
-        if (res == null || "".equals(res)) {
-            throw new MetaDataParseException("No resolution information found");
-        } else {
-            logger.info("resolution: " + res);
-        }
+        logger.info("param: " + param);
 
         if (sat == null || "".equals(sat)) {
             throw new MetaDataParseException("No satellite information found");
-        } else {
-            logger.info("satellite: " + sat);
         }
+        logger.info("satellite: " + sat);
 
         if (startTime == null || "".equals(startTime)) {
             throw new MetaDataParseException("No start time information found");
-        } else {
-            logger.info("start time: " + startTime);
         }
+        logger.info("start time: " + startTime);
 
         if (endTime == null || "".equals(endTime)) {
             throw new MetaDataParseException("No end time information found");
-        } else {
-            logger.info("end time: " + endTime);
         }
+        logger.info("end time: " + endTime);
 
         // validate that startTime/endTime match the excepted date format
         time = new Time();

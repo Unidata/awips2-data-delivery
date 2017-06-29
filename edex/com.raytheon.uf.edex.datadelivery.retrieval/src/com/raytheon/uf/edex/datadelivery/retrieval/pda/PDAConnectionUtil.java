@@ -83,6 +83,8 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  * Jun 22, 2017  6222     tgurney   Log time taken and size of downloads
  * Jun 23, 2017  6322     tgurney   ftpsConnect throws Exception
+ * Jun 29, 2017  6130     tjensen   Add visibility to
+ *                                  separateRemoteFileDirectoryAndFileName()
  *
  * </pre>
  *
@@ -400,7 +402,7 @@ public class PDAConnectionUtil {
      * @param remoteFilePath
      * @return
      */
-    private static String[] separateRemoteFileDirectoryAndFileName(
+    public static String[] separateRemoteFileDirectoryAndFileName(
             String remoteFilePath) {
 
         String[] returnValues = new String[2];

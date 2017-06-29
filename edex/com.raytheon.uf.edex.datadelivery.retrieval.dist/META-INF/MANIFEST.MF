@@ -13,3 +13,4 @@ Require-Bundle: com.raytheon.uf.common.datadelivery.event,
  com.raytheon.uf.common.serialization,
  org.slf4j;bundle-version="1.7.21"
 Export-Package: com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist
+Import-Package: org.apache.camel

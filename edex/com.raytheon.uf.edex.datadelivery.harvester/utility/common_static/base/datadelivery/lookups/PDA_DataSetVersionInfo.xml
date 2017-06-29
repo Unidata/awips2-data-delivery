@@ -32,15 +32,58 @@
          <route>goesrIngestDecode</route>
       </versionData>
    </VersionInfo>
-<!-- Placeholder for actual AMSR2 routing information
-   <VersionInfo id='amsr2'>
+   <VersionInfo id='ActiveFires'>
       <dataSetNamePattern>
-         <include>.*AMSR2.*</include>
+         <include>VIIRS-AF.*</include>
       </dataSetNamePattern>
       
       <versionData start="18.1.1">
-         <route>AMSR2</route>
+         <route>geodataIngestDecode</route>
       </versionData>
    </VersionInfo>
--->
+   <VersionInfo id='VIIRS-ADP'>
+      <dataSetNamePattern>
+         <include>VIIRS-ADP.*</include>
+      </dataSetNamePattern>
+      
+      <versionData start="18.1.1">
+         <route>geodataIngestDecode</route>
+      </versionData>
+   </VersionInfo>
+   <VersionInfo id='VIIRS-AOD'>
+      <dataSetNamePattern>
+         <include>VIIRS-AOD.*</include>
+      </dataSetNamePattern>
+      
+      <versionData start="18.1.1">
+         <route>geodataIngestDecode</route>
+      </versionData>
+   </VersionInfo>
+   <VersionInfo id='NPR-MIRS-IMG'>
+      <dataSetNamePattern>
+         <include>NPR-MIRS-IMG.*</include>
+      </dataSetNamePattern>
+      
+      <versionData start="18.1.1">
+         <route>pointsetNetcdfDecode</route>
+      </versionData>
+   </VersionInfo>
+   <VersionInfo id='AMSR2-OCEAN'>
+      <dataSetNamePattern>
+         <include>AMSR2-OCEAN.*</include>
+      </dataSetNamePattern>
+      
+      <versionData start="18.1.1">
+         <route>pointsetNetcdfDecode</route>
+      </versionData>
+   </VersionInfo>
+   <VersionInfo id='AMSR2-MBT'>
+      <dataSetNamePattern>
+         <include>AMSR2-MBT.*</include>
+      </dataSetNamePattern>
+      
+      <versionData start="18.1.1">
+         <route>pointsetNetcdfDecode</route>
+      </versionData>
+   </VersionInfo>
 </DataSetVersionInfoMap>

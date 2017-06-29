@@ -1,5 +1,7 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
+import java.io.File;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -25,9 +27,12 @@ import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -51,7 +56,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ------------------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Jun 13, 2014  3120     dhladky   Initial creation
  * Sep 04, 2014  3121     dhladky   Sharpened the retrieval mechanism.
  * Sep 26, 2014  3127     dhladky   Adding geographic subsetting.
@@ -63,6 +68,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * May 22, 2017  6130     tjensen   Update to support polar products from PDA
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
+ * Jun 29, 2017  6130     tjensen   Add support for local testing
  *
  * </pre>
  *
@@ -95,17 +101,33 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
         if (request.getRequest() != null) {
             try {
                 String providerName = request.getAttribute().getProvider();
-                // Have to re-write the URL for the connection to the FTPS root
-                localFilePath = PDAConnectionUtil.ftpsConnect(
-                        this.getProviderRetrievalXMl().getConnection(),
-                        providerName, request.getRequest(), getTokenBucket(),
-                        getPriority());
+                ServiceConfig serviceConfig = HarvesterServiceManager
+                        .getInstance().getServiceConfig(ServiceType.PDA);
+                if (Boolean
+                        .parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
+                    // Find file in Local Test dir
+                    String[] remotePathAndFile = PDAConnectionUtil
+                            .separateRemoteFileDirectoryAndFileName(
+                                    request.getRequest());
+                    fileName = System.getProperty("LOCAL_DATA_DIR")
+                            + File.separator + remotePathAndFile[1];
 
-                if (localFilePath != null) {
-                    statusHandler.handle(Priority.INFO,
-                            "Received file from PDA, stored to location: "
-                                    + localFilePath);
-                    fileName = localFilePath;
+                } else {
+                    /*
+                     * Have to re-write the URL for the connection to the FTPS
+                     * root
+                     */
+                    localFilePath = PDAConnectionUtil.ftpsConnect(
+                            this.getProviderRetrievalXMl().getConnection(),
+                            providerName, request.getRequest(),
+                            getTokenBucket(), getPriority());
+
+                    if (localFilePath != null) {
+                        statusHandler.handle(Priority.INFO,
+                                "Received file from PDA, stored to location: "
+                                        + localFilePath);
+                        fileName = localFilePath;
+                    }
                 }
             } catch (Exception e) {
                 throw new Exception("FTPS error occurred", e);

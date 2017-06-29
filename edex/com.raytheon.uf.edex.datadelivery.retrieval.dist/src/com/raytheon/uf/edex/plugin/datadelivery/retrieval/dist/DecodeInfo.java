@@ -64,6 +64,14 @@ public class DecodeInfo {
     @DynamicSerializeElement
     private String subscriptionOwner;
 
+    @XmlAttribute(name = "dataType")
+    @DynamicSerializeElement
+    private String dataType;
+
+    @XmlAttribute(name = "enqueTime")
+    @DynamicSerializeElement
+    private long enqueTime;
+
     public String getRouteId() {
         return routeId;
     }
@@ -94,6 +102,22 @@ public class DecodeInfo {
 
     public void setSubscriptionOwner(String subscriptionOwner) {
         this.subscriptionOwner = subscriptionOwner;
+    }
+
+    public String getDataType() {
+        return dataType;
+    }
+
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
+    }
+
+    public long getEnqueTime() {
+        return enqueTime;
+    }
+
+    public void setEnqueTime(long enqueTime) {
+        this.enqueTime = enqueTime;
     }
 
 }

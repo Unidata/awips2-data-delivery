@@ -34,4 +34,34 @@
          <lrLon>-50.0</lrLon>
       </parentBounds>
    </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS-AF.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>12595</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS-ADP.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>20480</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS-AOD.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>160768</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>NPR-MIRS-IMG.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>6656</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>AMSR2-OCEAN.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>131072</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>AMSR2-MBT.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>286720</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
 </DataSetConfigInfoMap>

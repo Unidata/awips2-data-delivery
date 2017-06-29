@@ -74,7 +74,7 @@ public abstract class AbstractHandler {
      *
      * @param record
      */
-    public void storeAndSend(NotificationRecord record, String endpoint) {
+    protected void storeAndSend(NotificationRecord record, String endpoint) {
         if (record != null) {
             store(record);
             send(record, endpoint);

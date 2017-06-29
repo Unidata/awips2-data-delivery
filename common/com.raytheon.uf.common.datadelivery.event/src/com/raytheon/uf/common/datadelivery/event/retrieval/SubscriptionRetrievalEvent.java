@@ -31,13 +31,13 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Subscription Retrieval Event
- * 
+ *
  * Needs
- * 
+ *
  * <pre>
- * 
- * SOFTWARE HISTORY 
- * 
+ *
+ * SOFTWARE HISTORY
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Aug 21, 2012           jsanchez  Made object serializable.
@@ -46,15 +46,16 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jul 22, 2014  2732     ccody     Add Date Time to SubscriptionRetrievalEvent
  *                                  message
  * May 17, 2016  5662     tjensen   Separated Data Time from rest of message
- * 
+ * Jun 29, 2017  6130     tjensen   Stop notifications on successful retrieval
+ *
  * </pre>
- * 
+ *
  * @author jsanchez
  * @version 1.0
  */
 @DynamicSerialize
-public class SubscriptionRetrievalEvent extends RetrievalEvent implements
-        INotifiableEvent {
+public class SubscriptionRetrievalEvent extends RetrievalEvent
+        implements INotifiableEvent {
     public enum Status {
         SUCCESS, PARTIAL_SUCCESS, FAILED
     }
@@ -99,21 +100,20 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
         String subname = getId();
 
         int priority = 3;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         String retrievalRequestTimeString = null;
         if (retrievalRequestTime != null) {
-            retrievalRequestTimeString = subscriptionDateFormat.get().format(
-                    retrievalRequestTime);
+            retrievalRequestTimeString = subscriptionDateFormat.get()
+                    .format(retrievalRequestTime);
         }
-
+        NotificationRecord record = null;
         switch (getStatus()) {
         case SUCCESS:
-            sb.append("Successfully retrieved and stored data for ");
-            sb.append(subname);
-            if (retrievalRequestTime != null) {
-                sb.append("; Data Time: " + retrievalRequestTimeString);
-            }
-            break;
+            /*
+             * If success, do not send notification. Returning null will cause
+             * the NofiticationHandler's storeAndSend method to no-op.
+             */
+            return record;
         case PARTIAL_SUCCESS:
             priority = 1;
             sb.append("Partial-success retrieving data for ");
@@ -134,7 +134,7 @@ public class SubscriptionRetrievalEvent extends RetrievalEvent implements
             break;
         }
 
-        NotificationRecord record = new NotificationRecord();
+        record = new NotificationRecord();
         record.setDate(getDate());
         record.setCategory(subname);
         record.setUsername(getOwner());

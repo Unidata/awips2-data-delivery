@@ -20,17 +20,42 @@
     
     <bean id="dataDeliveryDecoder"
         class="com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist.DataDeliveryDecoder" >
-        <constructor-arg type="java.lang.String" value="jms-generic:topic:notify.msg"/>
+        <constructor-arg type="java.lang.String" value="dataDeliveryDecodeNotify"/>
+    </bean>
+    
+    <bean id="notificationDao"
+        class="com.raytheon.uf.edex.datadelivery.event.notification.NotificationDao">
+        <property name="sessionFactory" ref="metadataSessionFactory" />
+    </bean>
+    
+    <bean id="notificationHandler"
+        class="com.raytheon.uf.edex.datadelivery.event.handler.NotificationHandler">
+        <constructor-arg type="java.lang.String"
+            value="jms-generic:topic:notify.msg"/>
+        <property name="notificationDao" ref="notificationDao" />
     </bean>
     
     <camelContext id="dataDeliveryDecode-camel"
         xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
       <endpoint id="dataDeliveryDecodeJmsEndpoint" uri="jms-durable:queue:Ingest.DataDelivery.Decode?concurrentConsumers=${datadelivery-decode.threads}" />
+      <endpoint id="dataDeliveryDecodeDirectEndpoint" uri="direct-vm:dd-decode" />
     
       <route id="dataDeliveryDecodeProcess">
         <from ref="dataDeliveryDecodeJmsEndpoint" />
         <doTry>
           <bean ref="dataDeliveryDecoder" method="process" />
+        
+          <doCatch>
+            <exception>java.lang.Throwable</exception>
+            <to uri="log:dataDeliveryDecode?level=ERROR" />
+          </doCatch>
+        </doTry>
+      </route>
+      
+      <route id="dataDeliveryDecodeNotify">
+        <from ref="dataDeliveryDecodeDirectEndpoint" />
+        <doTry>
+          <bean ref="notificationHandler" method="storeAndSend" />
         
           <doCatch>
             <exception>java.lang.Throwable</exception>

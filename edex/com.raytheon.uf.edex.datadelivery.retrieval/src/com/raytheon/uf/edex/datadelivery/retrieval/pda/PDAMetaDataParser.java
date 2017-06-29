@@ -186,7 +186,10 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
             String awipsSat = metadataUtil.getSatName(providerSat);
             String dataSetName = createDataSetName(awipsParam, awipsRes,
                     awipsSat);
-            String collectionName = awipsSat + " " + awipsRes;
+            String collectionName = awipsSat;
+            if (!"".equals(awipsRes)) {
+                collectionName += " " + awipsRes;
+            }
 
             // check if there is a override to the metadataId
             if (providerMetadataId != null) {
@@ -267,8 +270,10 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                             collectionName, time.getStart().getTime()));
                     pdadsmd.setTime(time);
                     pdadsmd.setDataSetName(dataSetName);
-                    pdadsmd.setDataSetDescription(StringUtil.join(Arrays.asList(
-                            metadataId, awipsSat, awipsRes, awipsParam), ' '));
+                    String description = StringUtil.join(Arrays.asList(
+                            metadataId, awipsSat, awipsRes, awipsParam), ' ');
+                    description = description.replaceAll("\\s+", " ").trim();
+                    pdadsmd.setDataSetDescription(description);
                     pdadsmd.setDate(idate);
                     pdadsmd.setProviderName(provider.getName());
 
@@ -304,11 +309,16 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
      * @param sat
      * @return
      */
-    protected String createDataSetName(String parameter, String res,
+    protected static String createDataSetName(String parameter, String res,
             String sat) {
-        String dataSetName = parameter + " " + res + " " + sat;
+        StringBuilder sb = new StringBuilder();
+        sb.append(parameter);
+        if (!"".equals(res)) {
+            sb.append(" " + res);
+        }
+        sb.append(" " + sat);
 
-        return dataSetName;
+        return sb.toString();
     }
 
     /**
