@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,11 +26,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.TimeZone;
 import java.util.TreeSet;
-import java.util.concurrent.Executors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.raytheon.uf.common.comm.ProxyConfiguration;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
@@ -38,9 +37,6 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
-import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ProviderCollectionLinkStore;
 
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.crawler.CrawlController;
@@ -51,29 +47,33 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 /**
  * Crawl for MetaData
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 20, 2011    218      dhladky     Initial creation
- * Jun 28, 2012    819      djohnson    Retrieve proxy information, 
+ * Jun 28, 2012    819      djohnson    Retrieve proxy information,
  *                                      use {@link FileLock}, add logging.
  * Jul 17, 2012    749      djohnson    Break out the use of files to communicate as a strategy.
  * Aug 06, 2012   1022      djohnson    Use ExecutorCommunicationStrategyDecorator.
  * Aug 28, 2012   1022      djohnson    Delete the crawler4j database after each run.
  * Aug 30, 2012   1123      djohnson    Use ThreadFactory that will comply with thread-based logging.
- * Sep 11, 2012   1154      djohnson    Change to create crawl configuration objects, 
+ * Sep 11, 2012   1154      djohnson    Change to create crawl configuration objects,
  *                                      then use them to perform configured crawls that can span days.
  * Oct 2, 2012    1038      dhladky     redesigned
  * 6/18/2014    1712        bphillip    Updated Proxy configuration
+ * Jul 12, 2017   6178      tgurney     Updates for database-based link storage
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 public class MainSequenceCrawler extends Crawler {
+
+    private static final TimeZone GMT_TIME_ZONE = TimeZone.getTimeZone("GMT");
+
+    private final CrawlerLinkDao crawlerLinkDao = new CrawlerLinkDao();
 
     /**
      * The configuration object for a crawl instance to be performed.
@@ -166,89 +166,30 @@ public class MainSequenceCrawler extends Crawler {
         }
     }
 
-    /**
-     * Launches it
-     * 
-     * @param args
-     * @throws Exception
-     */
-    public static void main(final String[] args) throws Exception {
-
-        if (args == null || args.length != 2) {
-            statusHandler.info("Invalid parameter in crawler main. Exiting.");
-            return;
-        }
-
-        statusHandler.debug("ARG[0] in crawler: " + args[0]);
-        statusHandler.debug("ARG[1] in crawler: " + args[1]);
-
-        // We will do this if the lock can be acquired
-        final File configFile = new File(args[1]);
-        final File configFileLockDir = new File(args[0]);
+    public static void run(String configFilePath) throws Exception {
+        final File configFile = new File(configFilePath);
         final HarvesterConfig config = readConfig(configFile);
         final String providerName = config.getProvider().getName();
 
-        Runnable runWithinLock = new Runnable() {
-            @Override
-            public void run() {
-
-                statusHandler.info("~~~~~~~~~~~~~~~~~" + providerName
-                        + " Main Sequence Crawler~~~~~~~~~~~~~~~~~~~");
-                MainSequenceCrawler crawl = new MainSequenceCrawler(config);
-                crawl.setAgent((CrawlAgent) config.getAgent());
-                crawl.setProviderName(providerName);
-                crawl.crawl();
-            }
+        Runnable runWithinLock = () -> {
+            statusHandler.info("~~~~~~~~~~~~~~~~~" + providerName
+                    + " Main Sequence Crawler~~~~~~~~~~~~~~~~~~~");
+            MainSequenceCrawler crawl = new MainSequenceCrawler(config);
+            crawl.setAgent((CrawlAgent) config.getAgent());
+            crawl.setProviderName(providerName);
+            crawl.crawl();
         };
 
-        runIfLockCanBeAcquired(runWithinLock, configFileLockDir, providerName
-                + "-main");
+        runIfLockCanBeAcquired(runWithinLock, providerName + "-main");
     }
 
-    /**
-     * Construct a {@link MainSequenceCrawler} that will be initialized from the
-     * specified configuration file.
-     * 
-     * @param configFile
-     *            the configuration file
-     */
     public MainSequenceCrawler(HarvesterConfig config) {
-        this(
-                config,
-                new MainSequenceCommunicationStrategyDecorator(
-                        (CommunicationStrategy) EDEXUtil
-                                .getESBComponent(COMMUNICATION_STRATEGY_BEAN_NAME),
-                        Executors.newSingleThreadExecutor(THREAD_FACTORY)));
-    }
-
-    /**
-     * Test-only constructor, hence package private.
-     * 
-     * @param config
-     *            the configuration object
-     * @param mainSequenceCommunicationStrategyDecorator
-     *            the communication strategy
-     */
-    public MainSequenceCrawler(
-            HarvesterConfig config,
-            MainSequenceCommunicationStrategyDecorator mainSequenceCommunicationStrategyDecorator) {
-        super(config, mainSequenceCommunicationStrategyDecorator);
-
-        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
-                statusHandler.debug(String.format(
-                        "proxy host:[%s]  proxy port: [%s]",
-                        ProxyConfiguration.getHttpProxyHost(),
-                        ProxyConfiguration.getHttpProxyPortString()));
-            } else {
-                statusHandler.debug("No proxy information configured.");
-            }
-        }
+        super(config);
     }
 
     /**
      * DO the actual crawling of the site
-     * 
+     *
      * @param hconfig
      * @return
      */
@@ -267,7 +208,6 @@ public class MainSequenceCrawler extends Crawler {
             autoTrigger = true;
         }
 
-        communicationStrategy.shutdown();
         cleanupDatabase();
 
         if (autoTrigger) {
@@ -279,13 +219,13 @@ public class MainSequenceCrawler extends Crawler {
 
     /**
      * Creates the list of model crawl configurations that will be performed.
-     * 
+     *
      * @return the list of {@link ModelCrawlConfiguration}s
      */
     @VisibleForTesting
     public List<ModelCrawlConfiguration> createModelCrawlConfigurations() {
         // The collection of configuration objects
-        List<ModelCrawlConfiguration> modelConfigurations = new ArrayList<ModelCrawlConfiguration>();
+        List<ModelCrawlConfiguration> modelConfigurations = new ArrayList<>();
 
         final CrawlAgent agent = (CrawlAgent) hconfig.getAgent();
         final Provider provider = hconfig.getProvider();
@@ -298,7 +238,7 @@ public class MainSequenceCrawler extends Crawler {
             for (Collection coll : collections) {
                 // only process one's that are set to not be ignored
                 if (!coll.isIgnore()) {
-                    List<Date> datesToCrawl = new ArrayList<Date>();
+                    List<Date> datesToCrawl = new ArrayList<>();
                     Date date = TimeUtil.newImmutableDate();
                     long postedFileDelayMilliseconds = provider
                             .getPostedFileDelay().getMillis();
@@ -307,8 +247,8 @@ public class MainSequenceCrawler extends Crawler {
                         // Check whether the posted file delay would place us in
                         // a
                         // new date
-                        Date delayedDate = new ImmutableDate(date.getTime()
-                                - postedFileDelayMilliseconds);
+                        Date delayedDate = new ImmutableDate(
+                                date.getTime() - postedFileDelayMilliseconds);
 
                         boolean isNewerDate = TimeUtil.isNewerDay(delayedDate,
                                 date, GMT_TIME_ZONE);
@@ -335,7 +275,7 @@ public class MainSequenceCrawler extends Crawler {
                     }
 
                     // sort/dup elim by format string
-                    SortedSet<String> urlDates = new TreeSet<String>();
+                    SortedSet<String> urlDates = new TreeSet<>();
                     for (Date dateToCrawl : datesToCrawl) {
                         if (dateToCrawl.equals(nonDateCollection)) {
                             urlDates.add("");
@@ -361,7 +301,7 @@ public class MainSequenceCrawler extends Crawler {
 
     /**
      * Gets the frontier
-     * 
+     *
      * @return
      */
     @Override
@@ -382,7 +322,7 @@ public class MainSequenceCrawler extends Crawler {
     /**
      * Performs the actual crawls based on the collection of
      * {@link ModelCrawlConfiguration} objects.
-     * 
+     *
      * @param configurations
      *            the configuration objects
      */
@@ -401,23 +341,19 @@ public class MainSequenceCrawler extends Crawler {
 
             config.setPolitenessDelay(politenessDelay);
 
-            statusHandler
-                    .info(String
-                            .format("Starting crawl [%s/%s], provider [%s], collection [%s], model [%s], date [%s], politeness delay [%s]",
-                                    (i + 1), totalCount, providerName,
-                                    modelName,
-                                    modelConfiguration.getModelSubName(),
-                                    dateFrag, politenessDelay));
+            statusHandler.info(String.format(
+                    "Starting crawl [%s/%s], provider [%s], collection [%s], model [%s], date [%s], politeness delay [%s]",
+                    i + 1, totalCount, providerName, modelName,
+                    modelConfiguration.getModelSubName(), dateFrag,
+                    politenessDelay));
 
-            final LinkStore links = new LinkStore(dateFrag,
-                    modelConfiguration.getDate());
-
+            List<CrawlerLink> links = new ArrayList<>();
             String searchUrl = modelConfiguration.getSearchUrl();
 
             // The crawler library objects. These must be created anew for each
             // loop, otherwise results are ignored.
             PageFetcher pageFetcher = new CrawlMonitorPageFetcher(providerName,
-                    config, communicationStrategy);
+                    config);
             RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
             robotstxtConfig.setEnabled(agent.isUseRobots());
             RobotstxtServer robotstxtServer = new RobotstxtServer(
@@ -442,24 +378,19 @@ public class MainSequenceCrawler extends Crawler {
              */
             crawlcontroller.addSeed(searchUrl);
 
-            ArrayList<WebCrawler> webCrawlers = new ArrayList<WebCrawler>(1);
-            webCrawlers.add(new MainSequenceHarvester(modelConfiguration
-                    .getModelSubName(), searchUrl, modelConfiguration
-                    .getSearchKey(), links, agent.getIgnore()));
+            ArrayList<WebCrawler> webCrawlers = new ArrayList<>(1);
+            CrawlerLink linkTemplate = new CrawlerLink();
+            linkTemplate.setProviderName(providerName);
+            linkTemplate.setCollectionName(modelName);
+            linkTemplate.setSubName(modelConfiguration.getModelSubName());
+            webCrawlers.add(new MainSequenceHarvester(searchUrl,
+                    modelConfiguration.getSearchKey(), links, agent.getIgnore(),
+                    linkTemplate));
 
             // start the crawling, blocks thread till finished
             crawlcontroller.start(webCrawlers, webCrawlers.size());
             crawlcontroller.Shutdown();
-
-            sendLinks(links, providerName, modelName);
+            crawlerLinkDao.createLinks(links);
         }
     }
-
-    private void sendLinks(final LinkStore linkStore, final String provider,
-            final String collection) {
-        ProviderCollectionLinkStore providerCollectionLinkStore = new ProviderCollectionLinkStore(
-                provider, collection, linkStore);
-        communicationStrategy.sendLinkStore(providerCollectionLinkStore);
-    }
-
 }

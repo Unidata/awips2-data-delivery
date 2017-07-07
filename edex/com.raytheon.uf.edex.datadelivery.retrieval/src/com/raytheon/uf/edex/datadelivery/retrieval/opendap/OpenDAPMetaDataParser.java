@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 
 import org.opengis.referencing.FactoryException;
@@ -63,7 +62,6 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.GridUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
-import com.raytheon.uf.edex.datadelivery.retrieval.metadata.LinkStore;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.MetaDataParser;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDAPMetaDataExtractor.DAP_TYPE;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -123,6 +121,7 @@ import opendap.dap.NoSuchAttributeException;
  * Mar 08, 2017  6089        tjensen   Drop date format from parseMetadata calls
  * Apr 05, 2017  1045        tjensen   Update for moving datasets
  * May 04, 2017  6186        rjpeter   Utilize logger.
+ * Jul 12, 2017  6178        tgurney   Updates for database-based link storage
  *
  * </pre>
  *
@@ -130,7 +129,7 @@ import opendap.dap.NoSuchAttributeException;
  * @param <O>
  */
 
-class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
+class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
     OpenDAPMetaDataParser() {
         serviceConfig = HarvesterServiceManager.getInstance()
@@ -216,8 +215,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
      * @throws NoSuchAttributeException
      */
     private Map<String, Parameter> getParameters(DAS das,
-            GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd, Link link,
-            Collection collection, String dataDateFormat)
+            GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd,
+            String subName, Collection collection, String dataDateFormat)
             throws NoSuchAttributeException {
 
         final String collectionName = dataSet.getCollectionName();
@@ -499,7 +498,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
             }
         }
 
-        String nameAndDescription = link.getName() + "_Coverage_"
+        String nameAndDescription = subName + "_Coverage_"
                 + gridCoverage.getNx() + "_X_" + gridCoverage.getNy() + "_Y_"
                 + gridCoverage.getProjectionType();
         gridCoverage.setName(nameAndDescription);
@@ -656,18 +655,16 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
     @Override
     public List<DataSetMetaData<?, ?>> parseMetaData(Provider provider,
-            LinkStore store, Collection collection, String dataDateFormat)
+            List<Link> links, Collection collection, String dataDateFormat)
             throws NoSuchAttributeException {
 
         final Map<OpenDapGriddedDataSet, List<DataSetMetaData<?, ?>>> metaDatas = new HashMap<>();
 
-        Set<String> linkKeys = new TreeSet<>(store.getLinkKeys());
-
-        if (CollectionUtil.isNullOrEmpty(linkKeys)) {
+        if (CollectionUtil.isNullOrEmpty(links)) {
             return null;
         }
 
-        for (String linkKey : linkKeys) {
+        for (Link link : links) {
             OpenDapGriddedDataSet dataSet = new OpenDapGriddedDataSet();
             dataSet.setCollectionName(collection.getName());
             String providerName = provider.getName();
@@ -675,12 +672,10 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
 
             final GriddedDataSetMetaData gdsmd = new OpenDapGriddedDataSetMetaData();
 
-            Link link = store.getLink(linkKey);
-
             List<String> vals = null;
             try {
                 vals = OpenDAPParseUtility.getInstance()
-                        .getDataSetNameAndCycle(linkKey, collection);
+                        .getDataSetNameAndCycle(link.getSubName(), collection);
             } catch (Exception e1) {
                 throw new IllegalStateException(
                         "Failed to get cycle and dataset name set...", e1);
@@ -700,13 +695,13 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
                 }
             }
 
-            DAS das = link.getLinks().get(DAP_TYPE.DAS.getDapType());
+            DAS das = link.getMetadata().get(DAP_TYPE.DAS.getDapType());
             // set url first, used for level lookups
             gdsmd.setUrl(link.getUrl().replace(
                     serviceConfig.getConstantValue("META_DATA_SUFFIX"),
                     serviceConfig.getConstantValue("BLANK")));
-            dataSet.setParameters(getParameters(das, dataSet, gdsmd, link,
-                    collection, dataDateFormat));
+            dataSet.setParameters(getParameters(das, dataSet, gdsmd,
+                    link.getSubName(), collection, dataDateFormat));
             for (Entry<String, Parameter> parm : dataSet.getParameters()
                     .entrySet()) {
                 storeParameter(parm.getValue());
@@ -843,7 +838,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<LinkStore> {
     }
 
     @Override
-    public void parseMetaData(Provider provider, LinkStore object,
+    public void parseMetaData(Provider provider, List<Link> object,
             boolean isFile) throws Exception {
         throw new UnsupportedOperationException(
                 "Not implemented for this type");

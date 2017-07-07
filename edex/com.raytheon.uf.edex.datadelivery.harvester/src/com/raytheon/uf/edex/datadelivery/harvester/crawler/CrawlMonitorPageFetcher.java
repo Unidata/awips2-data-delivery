@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -40,11 +40,11 @@ import edu.uci.ics.crawler4j.url.WebURL;
  * Monitors the crawler4j package for read timed out errors, and sends
  * exceptions to the {@link MainSequenceHarvester} if they occur. Exception
  * messages are throttled to no more than one per hour per provider.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 17, 2012  740      djohnson  Initial creation
@@ -53,11 +53,11 @@ import edu.uci.ics.crawler4j.url.WebURL;
  * Sep 11, 2012  1154     djohnson  Provider name is passed in as a constructor
  *                                  parameter.
  * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
- * 
+ * Jul 14, 2017  6178     tgurney   Remove communication strategy
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 public class CrawlMonitorPageFetcher extends PageFetcher {
 
@@ -68,11 +68,11 @@ public class CrawlMonitorPageFetcher extends PageFetcher {
     public static final String UNABLE_TO_COMMUNICATE_WITH_A_PROVIDER = "Unable to communicate with a provider: ";
 
     @VisibleForTesting
-    public static final Map<String, Long> lastNotificationTimes = new ConcurrentHashMap<>();
+    protected static final Map<String, Long> lastNotificationTimes = new ConcurrentHashMap<>();
 
     /**
      * Get the exception message.
-     * 
+     *
      * @param providerName
      *            the provider name
      * @return the exception message
@@ -82,24 +82,20 @@ public class CrawlMonitorPageFetcher extends PageFetcher {
         return UNABLE_TO_COMMUNICATE_WITH_A_PROVIDER + providerName;
     }
 
-    private final CommunicationStrategy communicationStrategy;
-
     private final String providerName;
 
     /**
      * Constructor.
-     * 
+     *
      * @param providerName
      *            the provider name
-     * 
+     *
      * @param config
      *            the configuration
      */
-    public CrawlMonitorPageFetcher(String providerName, CrawlConfig config,
-            CommunicationStrategy communicationStrategy) {
+    public CrawlMonitorPageFetcher(String providerName, CrawlConfig config) {
         super(config);
         this.providerName = providerName;
-        this.communicationStrategy = communicationStrategy;
     }
 
     @VisibleForTesting
@@ -126,16 +122,5 @@ public class CrawlMonitorPageFetcher extends PageFetcher {
         checkForFatalTransportError(webUrl, result);
 
         return result;
-    }
-
-    /**
-     * Returns the communication strategy that should be used to send
-     * exceptions.
-     * 
-     * @return the communicationStrategy
-     */
-    @VisibleForTesting
-    CommunicationStrategy getCommunicationStrategy() {
-        return communicationStrategy;
     }
 }
