@@ -29,8 +29,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlEnumValue;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
@@ -49,6 +47,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 07 Nov, 2013  2361     njensen   Remove ISerializableObject
  * 06 Apr, 2016  5424     dhladky   Added retrieval modes sync and async
  * Mar 31, 2017  6186     rjpeter   Support incremental override
+ * Jul 10, 2017  6130     tjensen   Remove Retrieval Mode
  *
  * </pre>
  *
@@ -58,14 +57,6 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class ServiceConfig {
-
-    /**
-     * RETRIEVAL_MODE
-     */
-    @XmlEnum
-    public enum RETRIEVAL_MODE {
-        @XmlEnumValue("SYNC") SYNC, @XmlEnumValue("ASYNC") ASYNC
-    }
 
     private static final String ALTERNATE_NAMING_SCHEMA = "ALTERNATE_NAMING_SCHEMA";
 

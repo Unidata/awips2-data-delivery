@@ -64,7 +64,5 @@
     <!-- JKS based keystore and trust modules for DD -->
     <constant name="KEYSTORE_FILE" value="/awips2/edex/conf/security/keystore.jks" />
     <constant name="TRUSTSTORE_FILE" value="/awips2/edex/conf/security/truststore.jks" />
-    <!-- These are used for ASYNC retrieval requests -->
-    <constant name="RETRIEVAL_MODE" value="ASYNC" />
     <constant name="ASYNC_RESPONSE_HANDLER" value="https://${retrieval.pda.response.external.ip}:8082/GetCoverageResponseHandler"/>
 </serviceConfig>

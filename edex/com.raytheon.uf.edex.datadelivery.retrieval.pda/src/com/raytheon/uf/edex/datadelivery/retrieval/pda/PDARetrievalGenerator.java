@@ -36,11 +36,8 @@ import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
@@ -55,7 +52,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Jun 13, 2014  3120     dhladky   Initial creation
  * Sep 14, 2104  3121     dhladky   Sharpened Retrieval generation.
  * Sep 26, 2014  3127     dhladky   Adding geographic subsetting.
@@ -65,7 +62,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Sep 01, 2016  5762     tjensen   Improved logging
  * Oct 06, 2016  5772     tjensen   Fix Adhocs for older times
  * Mar 31, 2017  6186     rjpeter   Update to handle passed in DataSetMetaData.
- * Jun 29, 2017  6130     tjensen   Add support for local PDA testing
+ * Jun 29, 2017  6130     tjensen   Add support for local PDA testing and
+ *                                  override getRetrievalMode
  *
  * </pre>
  *
@@ -197,23 +195,28 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
          * instead of on the generator thread
          */
         String retVal;
-        ServiceConfig serviceConfig = HarvesterServiceManager.getInstance()
-                .getServiceConfig(ServiceType.PDA);
         if (Boolean.parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
             retVal = pdadsmd.getUrl();
         } else {
-            if (this.getRetrievalMode() == RETRIEVAL_MODE.SYNC) {
-
-                request = new PDASyncRequest(ra, sub.getName(), metaDataKey);
-            } else {
-                request = new PDAAsyncRequest(ra, sub.getName(), metaDataKey,
-                        retrievalId);
-            }
+            request = new PDAAsyncRequest(ra, sub.getName(), metaDataKey,
+                    retrievalId);
 
             // Make the request then process the response.
             retVal = request.performRequest();
         }
 
         return retVal;
+    }
+
+    @Override
+    public RETRIEVAL_MODE getRetrievalMode() {
+        // Default to ASYNC mode for PDA.
+        RETRIEVAL_MODE mode = RETRIEVAL_MODE.ASYNC;
+
+        // If doing local testing, use SYNC mode
+        if (Boolean.parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
+            mode = RETRIEVAL_MODE.SYNC;
+        }
+        return mode;
     }
 }

@@ -37,7 +37,6 @@ import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManage
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 
@@ -63,6 +62,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  *                                  subRetrievalKey
  * Apr 20, 2017  6186     rjpeter   Updated buildRetrieval signature.
  * Jun 13, 2017  6204     nabowle   Use copy constructor in processParameter()
+ * Jul 10, 2017  6130     tjensen   Update getRetrievalMode to not look at
+ *                                  ServiceConfig
  *
  * </pre>
  *
@@ -70,8 +71,22 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  */
 public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
 
-    /** retrieval mode constant from config **/
-    public static final String RETRIEVAL_MODE_CONSTANT = "RETRIEVAL_MODE";
+    /**
+     * RETRIEVAL_MODE
+     */
+    public enum RETRIEVAL_MODE {
+        SYNC("SYNC"), ASYNC("ASYNC");
+
+        private final String mode;
+
+        private RETRIEVAL_MODE(String mode) {
+            this.mode = mode;
+        }
+
+        public String getMode() {
+            return mode;
+        }
+    }
 
     private final ServiceType serviceType;
 
@@ -154,23 +169,13 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
     }
 
     /**
-     * Returns the Retrieval Mode for the retrievals generated here. This can be
-     * configured specific to each provider. Defaults to SYNC
+     * Returns the Retrieval Mode for the retrievals generated here. Can be
+     * overridden in other implementations. Defaults to SYNC.
      *
      * @return RETRIEVAL_MODE
      */
-    protected RETRIEVAL_MODE getRetrievalMode() {
+    public RETRIEVAL_MODE getRetrievalMode() {
 
-        RETRIEVAL_MODE mode = RETRIEVAL_MODE.SYNC;
-
-        ServiceConfig sc = getServiceConfig();
-
-        if (sc.getConstantValue(RETRIEVAL_MODE_CONSTANT) != null) {
-            String mode_constant = sc.getConstantValue(RETRIEVAL_MODE_CONSTANT);
-            mode = RETRIEVAL_MODE.valueOf(mode_constant);
-        }
-
-        return mode;
+        return RETRIEVAL_MODE.SYNC;
     }
-
 }

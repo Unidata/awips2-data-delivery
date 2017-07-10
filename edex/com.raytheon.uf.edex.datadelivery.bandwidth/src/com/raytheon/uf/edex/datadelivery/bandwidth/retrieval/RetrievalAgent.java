@@ -29,11 +29,9 @@ import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 
 /**
  *
@@ -54,6 +52,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
  * Feb 10, 2014  2678     dhladky   Prevent duplicate allocations.
  * Apr 06, 2016  5424     dhladky   Allow for ASYNC processing of retrievals.
  * May 11, 2017  6186     rjpeter   Added TODO and logger.
+ * Jul 10, 2017  6130     tjensen   Remove Retrieval Mode
  *
  * </pre>
  *
@@ -215,32 +214,6 @@ public abstract class RetrievalAgent<ALLOCATION_TYPE extends BandwidthAllocation
      */
     public Network getNetwork() {
         return network;
-    }
-
-    /**
-     * Returns the Retrieval Mode for the retrievals generated here. This can be
-     * configured specific to each provider. Defaults to SYNC
-     *
-     * @param SeriviceType
-     * @return RETRIEVAL_MODE
-     */
-    protected RETRIEVAL_MODE getRetrievalMode(ServiceType type) {
-
-        // default to synchronous processing
-        RETRIEVAL_MODE mode = RETRIEVAL_MODE.SYNC;
-
-        ServiceConfig sc = getServiceConfig(type);
-
-        if (sc != null) {
-            if (sc.getConstantValue(
-                    RetrievalGenerator.RETRIEVAL_MODE_CONSTANT) != null) {
-                String mode_constant = sc.getConstantValue(
-                        RetrievalGenerator.RETRIEVAL_MODE_CONSTANT);
-                mode = RETRIEVAL_MODE.valueOf(mode_constant);
-            }
-        }
-
-        return mode;
     }
 
     /**

@@ -38,7 +38,6 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig.RETRIEVAL_MODE;
 import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.SerializationException;
@@ -51,6 +50,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
+import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator.RETRIEVAL_MODE;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
@@ -223,17 +223,21 @@ public class SubscriptionRetrievalAgent
                 // update database
                 bandwidthDao.update(retrieval);
 
+                // process the bundle into a retrieval
+                RetrievalGenerator rg = ServiceTypeFactory
+                        .retrieveServiceFactory(bundle.getProvider())
+                        .getRetrievalGenerator();
                 /*
                  * generateRetrieval will pipeline the RetrievalRecord Objects
                  * created to the DB. The PK objects returned are sent to the
                  * RetrievalQueue for processing.
                  */
                 List<RetrievalRequestRecordPK> retrievals = generateRetrieval(
-                        dsmd, bundle, retrieval.getIdentifier());
+                        rg, dsmd, bundle, retrieval.getIdentifier());
 
                 if (!CollectionUtil.isNullOrEmpty(retrievals)) {
 
-                    if (getRetrievalMode(type) == RETRIEVAL_MODE.SYNC) {
+                    if (rg.getRetrievalMode() == RETRIEVAL_MODE.SYNC) {
                         try {
                             Object[] payload = retrievals.toArray();
                             RetrievalGeneratorUtilities.sendToRetrieval(
@@ -302,6 +306,8 @@ public class SubscriptionRetrievalAgent
     /**
      * Generate the retrievals for a subscription bundle.
      *
+     * @param rg
+     *
      * @param dsmd
      *            the data set meta data
      * @param bundle
@@ -310,13 +316,8 @@ public class SubscriptionRetrievalAgent
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private List<RetrievalRequestRecordPK> generateRetrieval(
-            DataSetMetaData<?, ?> dsmd, SubscriptionBundle bundle,
-            Long subRetrievalKey) {
-
-        // process the bundle into a retrieval
-        RetrievalGenerator rg = ServiceTypeFactory
-                .retrieveServiceFactory(bundle.getProvider())
-                .getRetrievalGenerator();
+            RetrievalGenerator rg, DataSetMetaData<?, ?> dsmd,
+            SubscriptionBundle bundle, Long subRetrievalKey) {
 
         final String subscriptionName = bundle.getSubscription().getName();
         logger.info("Subscription: " + subscriptionName
