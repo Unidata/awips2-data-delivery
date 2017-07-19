@@ -7,7 +7,7 @@
         class="com.raytheon.uf.edex.datadelivery.service.services.DataDeliveryPrivilegedRequestHandler" />
     <bean factory-bean="handlerRegistry" factory-method="register">
         <constructor-arg
-            value="com.raytheon.uf.common.plugin.nwsauth.NwsAuthRequest" />
+            value="com.raytheon.uf.common.datadelivery.request.DataDeliveryAuthRequest" />
         <constructor-arg ref="datadeliveryAuthorization" />
     </bean>
 
