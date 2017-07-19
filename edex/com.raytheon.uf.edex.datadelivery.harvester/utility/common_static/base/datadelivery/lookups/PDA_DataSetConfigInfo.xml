@@ -50,6 +50,36 @@
       <sizeEstimatePerParamInKB>160768</sizeEstimatePerParamInKB>
    </DataSetConfigInfo>
    <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS-Aeros.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>860</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS-SusMat.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>3482</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS-IST.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>3330</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS-SIC.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>2355</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS_WINDS_NH.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>6144</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>VIIRS_WINDS_SH.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>7168</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
       <dataSetNameRegex>NPR-MIRS-IMG.*</dataSetNameRegex>
       <moving>true</moving>
       <sizeEstimatePerParamInKB>6656</sizeEstimatePerParamInKB>

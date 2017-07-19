@@ -27,7 +27,6 @@
       <dataSetNamePattern>
          <include>.*GOES.*</include>
       </dataSetNamePattern>
-      
       <versionData start="18.1.1">
          <route>goesrIngestDecode</route>
       </versionData>
@@ -36,7 +35,6 @@
       <dataSetNamePattern>
          <include>VIIRS-AF.*</include>
       </dataSetNamePattern>
-      
       <versionData start="18.1.1">
          <route>geodataIngestDecode</route>
       </versionData>
@@ -45,7 +43,6 @@
       <dataSetNamePattern>
          <include>VIIRS-ADP.*</include>
       </dataSetNamePattern>
-      
       <versionData start="18.1.1">
          <route>geodataIngestDecode</route>
       </versionData>
@@ -54,7 +51,14 @@
       <dataSetNamePattern>
          <include>VIIRS-AOD.*</include>
       </dataSetNamePattern>
-      
+      <versionData start="18.1.1">
+         <route>geodataIngestDecode</route>
+      </versionData>
+   </VersionInfo>
+   <VersionInfo id='VIIRS_WINDS'>
+      <dataSetNamePattern>
+         <include>VIIRS_WINDS.*</include>
+      </dataSetNamePattern>
       <versionData start="18.1.1">
          <route>geodataIngestDecode</route>
       </versionData>
@@ -63,7 +67,6 @@
       <dataSetNamePattern>
          <include>NPR-MIRS-IMG.*</include>
       </dataSetNamePattern>
-      
       <versionData start="18.1.1">
          <route>pointsetNetcdfDecode</route>
       </versionData>
@@ -72,7 +75,6 @@
       <dataSetNamePattern>
          <include>AMSR2-OCEAN.*</include>
       </dataSetNamePattern>
-      
       <versionData start="18.1.1">
          <route>pointsetNetcdfDecode</route>
       </versionData>
@@ -81,7 +83,6 @@
       <dataSetNamePattern>
          <include>AMSR2-MBT.*</include>
       </dataSetNamePattern>
-      
       <versionData start="18.1.1">
          <route>pointsetNetcdfDecode</route>
       </versionData>

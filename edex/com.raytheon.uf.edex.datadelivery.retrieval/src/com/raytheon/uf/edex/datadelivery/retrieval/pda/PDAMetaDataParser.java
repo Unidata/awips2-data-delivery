@@ -415,9 +415,8 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
         Map<String, Parameter> params = new HashMap<>(1);
 
         Parameter parm = new Parameter();
-        parm = new Parameter();
         parm.setName(awipsName);
-        parm.setProviderName(provider);
+        parm.setProviderName(providerName);
         parm.setDefinition(provider + "-" + collectionName + "-" + awipsName);
         parm.setBaseType(serviceConfig.getConstantValue("BASE_TYPE"));
 

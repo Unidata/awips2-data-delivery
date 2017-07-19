@@ -28,11 +28,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Parameter object
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 17, 2011  218      dhladky   Initial creation
@@ -45,9 +45,10 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *                                  objects.
  * Dec 08, 2013  2584     dhladky   Version update
  * Mar 23, 2017  5988     tjensen   Added AWIPS name
- * 
+ * Jul 19, 2017  6130     tjensen   Fix copy of Parameter with no levels
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
@@ -120,7 +121,7 @@ public class Parameter implements Serializable {
 
     /**
      * Copy constructor
-     * 
+     *
      * @param copy
      */
     public Parameter(Parameter copy) {
@@ -136,13 +137,14 @@ public class Parameter implements Serializable {
 
         // deep copy
         if (copy.levelType != null) {
-            this.levelType = new ArrayList<DataLevelType>(
-                    copy.levelType.size());
+            this.levelType = new ArrayList<>(copy.levelType.size());
             for (DataLevelType dlt : copy.levelType) {
                 this.levelType.add(new DataLevelType(dlt));
             }
         }
-        this.levels = new Levels(copy.levels);
+        if (copy.levels != null) {
+            this.levels = new Levels(copy.levels);
+        }
     }
 
     public String getName() {
@@ -219,7 +221,7 @@ public class Parameter implements Serializable {
 
     public void addLevelType(DataLevelType type) {
         if (levelType == null) {
-            levelType = new ArrayList<DataLevelType>();
+            levelType = new ArrayList<>();
         }
 
         levelType.add(type);
@@ -227,7 +229,7 @@ public class Parameter implements Serializable {
 
     /**
      * get the level by type
-     * 
+     *
      * @param type
      * @return
      */
@@ -243,7 +245,7 @@ public class Parameter implements Serializable {
 
     /**
      * get the level by id
-     * 
+     *
      * @param type
      * @return
      */
@@ -259,7 +261,7 @@ public class Parameter implements Serializable {
 
     /**
      * get the level by description
-     * 
+     *
      * @param type
      * @return
      */
@@ -296,7 +298,13 @@ public class Parameter implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Parameter) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (this.getClass() == obj.getClass()) {
             Parameter other = (Parameter) obj;
 
             EqualsBuilder eqBuilder = new EqualsBuilder();

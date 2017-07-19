@@ -162,7 +162,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             retrieval.getConnection().setUrl(wcsDataURL);
             return Arrays.asList(retrieval);
         } catch (Exception e) {
-            logger.error("PDA Retrieval building has failed." + e);
+            logger.error("PDA Retrieval building has failed.", e);
         }
 
         return Collections.emptyList();
