@@ -1,18 +1,13 @@
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.util.Date;
-import java.util.TimeZone;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.raytheon.edex.util.Util;
 import com.raytheon.uf.common.comm.ProxyConfiguration;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
@@ -29,61 +24,39 @@ import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 
 /**
  * Crawler super class
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 4, 2012   1038      dhladky     Initial creation
  * Oct 28, 2013  2361       dhladky     Fixed up JAXBManager.
  * 6/18/2014    1712        bphillip    Updated Proxy configuration
- * 
+ * Jul 14, 2017  6178      tgurney     Remove communication strategy
+ * Jul 19, 2017  6178      tgurney     Remove file locking mechanism
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 
 public abstract class Crawler {
-
-    protected static final String COMMUNICATION_STRATEGY_BEAN_NAME = "crawlerCommunicationStrategy";
 
     protected String providerName;
 
     protected CrawlAgent agent;
 
-    // TimeZone is not thread safe, but since we aren't modifying it and the JVM
-    // better not either, then it's ok to be a constant
-    protected static final TimeZone GMT_TIME_ZONE = TimeZone.getTimeZone("GMT");
-
-    protected static final char FORWARD_SLASH = '/';
-
-    protected static final Pattern FORWARD_SLASH_PATTERN = Pattern
-            .compile(Character.toString(FORWARD_SLASH));
-
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(Crawler.class);
 
-    protected final CommunicationStrategy communicationStrategy;
-
     protected final HarvesterConfig hconfig;
 
-    protected static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread thread = Executors.defaultThreadFactory().newThread(r);
-            // Uses the calling thread's name as a prefix on the spawned
-            // thread's name
-            thread.setName(Thread.currentThread().getName() + "["
-                    + thread.getName() + "]");
-            return thread;
-        }
-    };
+    private static final Map<String, Lock> lockMap = new HashMap<>();
 
     /**
      * Get the model configuration.
-     * 
+     *
      * @param pmodelName
      *            the primary? model name
      * @param providerUrl
@@ -100,8 +73,8 @@ public abstract class Crawler {
         String searchUrl = getUrl(providerUrl + collection.getSeedUrl(),
                 collection.getUrlKey());
 
-        if (!dateFrag.equals("")) {
-            searchUrl = searchUrl + dateFrag + FORWARD_SLASH;
+        if (!"".equals(dateFrag)) {
+            searchUrl = searchUrl + dateFrag + '/';
         }
 
         return new ModelCrawlConfiguration(providerName, collection.getName(),
@@ -112,23 +85,22 @@ public abstract class Crawler {
     /**
      * Returns the URL to use concatenating the portions with the url separator
      * character.
-     * 
+     *
      * @param portions
      *            the portions of the url
-     * 
+     *
      * @return the url to use
      */
     protected static String getUrl(String... portions) {
-        return com.raytheon.uf.common.util.StringUtil.join(portions,
-                FORWARD_SLASH);
+        return com.raytheon.uf.common.util.StringUtil.join(portions, '/');
     }
 
     /**
      * Read in the config file
-     * 
+     *
      * @param configFile
      *            the configuration file
-     * 
+     *
      * @return
      */
     protected static HarvesterConfig readConfig(File configFile) {
@@ -149,61 +121,38 @@ public abstract class Crawler {
      * @param runWithinLock
      */
     protected static void runIfLockCanBeAcquired(final Runnable runWithinLock,
-            File lockFileDir, String crawlType) {
-        FileChannel channel = null;
-        FileOutputStream fos = null;
-        // if lock file directories don't exist, create
-        if (!lockFileDir.exists()) {
-            lockFileDir.mkdirs();
+            String crawlType) {
+        Lock theLock = null;
+        synchronized (lockMap) {
+            theLock = lockMap.get(crawlType);
+            if (theLock == null) {
+                theLock = new ReentrantLock();
+                lockMap.put(crawlType, theLock);
+            }
         }
-
-        File lockFile = new File(lockFileDir, crawlType + "-crawl.lock");
-
-        try {
-            // if lock file doesn't exist, create it
-            if (!lockFile.exists()) {
-                lockFile.createNewFile();
+        if (theLock.tryLock()) {
+            try {
+                runWithinLock.run();
+            } catch (Exception e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Crawler [" + crawlType + "] failed", e);
+            } finally {
+                theLock.unlock();
             }
-
-            channel = new FileOutputStream(lockFile).getChannel();
-
-            // Try acquiring the lock without blocking. This method returns
-            // null or throws an exception if the file is already locked.
-            FileLock lock = channel.tryLock();
-
-            if (lock == null) {
-                // Someone else has the lock
-                statusHandler
-                        .error("Unable to acquire lock, another instance must be running! "
-                                + crawlType);
-                System.exit(0);
-            }
-
-            // If we reach this point, we can run the task
-            statusHandler.debug(crawlType + " Acquired file lock.");
-            runWithinLock.run();
-            lock.release();
-            statusHandler.debug(crawlType + " Released file lock.");
-        } catch (OverlappingFileLockException ovle) {
+        } else {
             statusHandler
-                    .warn("Unable to acquire lock, another instance must be running! Perhaps you should lengthen the time between scans");
-        } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
-        } finally {
-            Util.close(channel);
-            Util.close(fos);
+                    .error("Unable to acquire lock, another instance must be running! "
+                            + crawlType);
         }
     }
 
     /**
      * Super class construct
-     * 
+     *
      * @param hconfig
      * @param communicationStrategy
      */
-    public Crawler(HarvesterConfig hconfig,
-            CommunicationStrategy communicationStrategy) {
-        this.communicationStrategy = communicationStrategy;
+    public Crawler(HarvesterConfig hconfig) {
         this.hconfig = hconfig;
     }
 
@@ -226,14 +175,16 @@ public abstract class Crawler {
             try {
                 env.removeDatabase(null, "DocIDs");
             } catch (Exception e) {
-                statusHandler.warn("No Database existing to be removed. "
-                        + getCrawlerFrontier());
+                statusHandler.handle(Priority.WARN,
+                        "No Database existing to be removed. "
+                                + getCrawlerFrontier(),
+                        e);
             }
         } catch (Throwable t) {
-            statusHandler
-                    .error("Unable to remove the existing crawler database!  "
+            statusHandler.error(
+                    "Unable to remove the existing crawler database!  "
                             + "This will cause DataSet information to be missed.",
-                            t);
+                    t);
         }
     }
 
@@ -249,13 +200,13 @@ public abstract class Crawler {
     /**
      * Creates and returns the {@link CrawlConfig} to be used for crawling the
      * remote server.
-     * 
+     *
      * @return the {@link CrawlConfig}
      */
     /**
      * Creates and returns the {@link CrawlConfig} to be used for crawling the
      * remote server.
-     * 
+     *
      * @return the {@link CrawlConfig}
      */
     protected CrawlConfig getCrawlConfig() {
@@ -264,7 +215,8 @@ public abstract class Crawler {
         CrawlAgent agent = (CrawlAgent) hconfig.getAgent();
         hconfig.getProvider().getName();
 
-        config.setCrawlStorageFolder(agent.getCrawlDir() + getCrawlerFrontier());
+        config.setCrawlStorageFolder(
+                agent.getCrawlDir() + getCrawlerFrontier());
 
         /*
          * You can set the maximum crawl depth here. The default value is -1 for

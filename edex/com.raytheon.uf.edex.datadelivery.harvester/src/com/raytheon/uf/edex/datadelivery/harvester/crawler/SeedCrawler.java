@@ -2,19 +2,29 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Executors;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.comm.ProxyConfiguration;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
+import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
 import com.raytheon.uf.common.datadelivery.harvester.ProtoCollection;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.core.EDEXUtil;
+import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.datadelivery.harvester.crawler.MainSequenceCrawler.ModelCrawlConfiguration;
 
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
@@ -25,91 +35,54 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 /**
- * Crawl for MetaData
- * 
+ * Crawl for new models / datasets
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 4, 2012  1038       dhladky     Initial creation
  * 6/18/2014    1712        bphillip    Updated Proxy configuration
- * 
+ * Jul 14, 2017 6178       tgurney     Clean up unneeded code
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 public class SeedCrawler extends Crawler {
 
-    /**
-     * Launches it
-     * 
-     * @param args
-     * @throws Exception
-     */
-    public static void main(final String[] args) throws Exception {
+    protected static final String CONFIG_FILE_PREFIX = StringUtil.join(
+            new String[] { "datadelivery", "harvester" }, File.separatorChar);
 
-        if (args == null || args.length != 2) {
-            statusHandler.info("Invalid parameter in crawler main. Exiting.");
-            return;
-        }
+    protected static final String CONFIG_FILE_SUFFIX = "harvester.xml";
 
-        statusHandler.debug("ARG[0] in crawler: " + args[0]);
-        statusHandler.debug("ARG[1] in crawler: " + args[1]);
-
-        // We will do this if the lock can be acquired
-        final File configFile = new File(args[1]);
-        final File configFileLockDir = new File(args[0]);
+    public static void run(final String configFilePath) throws Exception {
+        final File configFile = new File(configFilePath);
         final HarvesterConfig config = readConfig(configFile);
         final String providerName = config.getProvider().getName();
 
-        Runnable runWithinLock = new Runnable() {
-            @Override
-            public void run() {
-
-                statusHandler.info("~~~~~~~~~~~~~~~~" + providerName
-                        + " Seed Search Crawler~~~~~~~~~~~~~~~~~~");
-
-                SeedCrawler crawl = new SeedCrawler(config);
-                crawl.setAgent((CrawlAgent) config.getAgent());
-                crawl.setProviderName(providerName);
-                crawl.crawl();
-            }
+        Runnable runWithinLock = () -> {
+            statusHandler.info("~~~~~~~~~~~~~~~~" + providerName
+                    + " Seed Search Crawler~~~~~~~~~~~~~~~~~~");
+            SeedCrawler crawl = new SeedCrawler(config);
+            crawl.setAgent((CrawlAgent) config.getAgent());
+            crawl.setProviderName(providerName);
+            crawl.crawl();
         };
 
-        runIfLockCanBeAcquired(runWithinLock, configFileLockDir,
-                providerName + "-seed");
+        runIfLockCanBeAcquired(runWithinLock, providerName + "-seed");
     }
 
     /**
      * Construct a {@link SeedCrawler} that will be initialized from the
      * specified configuration file.
-     * 
+     *
      * @param configFile
      *            the configuration file
      */
     public SeedCrawler(HarvesterConfig config) {
-        this(config,
-                new SeedCommunicationStrategyDecorator(
-                        (CommunicationStrategy) EDEXUtil.getESBComponent(
-                                COMMUNICATION_STRATEGY_BEAN_NAME),
-                Executors.newSingleThreadExecutor(THREAD_FACTORY)));
-    }
-
-    /**
-     * Test-only constructor, hence package private.
-     * 
-     * @param config
-     *            the configuration object
-     * @param communicationStrategy
-     *            the communication strategy
-     */
-    SeedCrawler(HarvesterConfig config,
-            CommunicationStrategy communicationStrategy) {
-
-        super(config, communicationStrategy);
-
+        super(config);
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
             if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
                 statusHandler.debug(
@@ -124,15 +97,13 @@ public class SeedCrawler extends Crawler {
 
     /**
      * DO the actual crawling of the site
-     * 
+     *
      * @param hconfig
      * @return
      */
     @Override
     public void crawl() {
-
         performSeedCrawl();
-        communicationStrategy.shutdown();
         cleanupDatabase();
     }
 
@@ -151,10 +122,120 @@ public class SeedCrawler extends Crawler {
         return getAgent().getMaxSeedPages();
     }
 
+    private void processCollections(HarvesterConfig hconfig,
+            Map<String, ProtoCollection> collections, Provider provider,
+            CrawlAgent agent) {
+
+        ArrayList<Collection> newCollections = new ArrayList<>();
+        // start processing the proto collections into real collections
+        for (Entry<String, ProtoCollection> entry : collections.entrySet()) {
+            ProtoCollection pc = entry.getValue();
+            try {
+                // make first date, find greatest depth dates
+                Collection coll = new Collection(pc.getCollectionName(),
+                        pc.getSeedUrl(), pc.getDateFormatString());
+                coll.setLastDate(pc.getLastDateFormatted());
+                coll.setFirstDate(pc.getFirstDateFormatted());
+                // TODO: figure a default data type and projection
+                // strategy other than just the first one.
+                coll.setDataType(
+                        provider.getProviderType().get(0).getDataType());
+                coll.setProjection(provider.getProjection().get(0).getType());
+                coll.setPeriodicity(pc.getPeriodicity());
+                coll.setUrlKey(pc.getUrlKey());
+                // if we ingestNew this will be true
+                if (agent.isIngestNew()) {
+                    coll.setIgnore(false);
+                }
+                newCollections.add(coll);
+                statusHandler.info(
+                        "adding new Collection: " + pc.getCollectionName());
+                // announce
+            } catch (Exception e) {
+                statusHandler.error("Error parsing proto-collection '"
+                        + pc.getCollectionName() + "' from "
+                        + provider.getName(), e);
+            }
+        }
+
+        statusHandler.info("Processing complete: " + newCollections.size()
+                + " new collections, " + collections.size()
+                + " total collections found");
+
+        Date currentDate = new Date(TimeUtil.currentTimeMillis());
+        // walk dates forward for all collections if necessary
+        if (agent.getCollection() != null) {
+            for (Collection collection : agent.getCollection()) {
+                collection.updateTime(currentDate);
+            }
+        }
+
+        if (!newCollections.isEmpty()) {
+
+            if (agent.getCollection() != null) {
+                ArrayList<Collection> replace = new ArrayList<>();
+                // compare and process against existing collections
+                for (Collection newCollection : newCollections) {
+                    for (Collection collection : agent.getCollection()) {
+                        if (newCollection.getName()
+                                .equals(collection.getName())) {
+                            // preserve parameter lookups
+                            if (collection.getParameterLookup() != null) {
+                                newCollection.setParameterLookup(
+                                        collection.getParameterLookup());
+                            }
+                            // preserve level lookups
+                            if (collection.getLevelLookup() != null) {
+                                newCollection.setLevelLookup(
+                                        collection.getLevelLookup());
+                            }
+                            // other ancillary things
+                            newCollection.setIgnore(collection.isIgnore());
+                            newCollection
+                                    .setProjection(collection.getProjection());
+                            newCollection.setDataType(collection.getDataType());
+                            replace.add(collection);
+                        }
+                    }
+                }
+                // remove all of the replaced collections
+                agent.getCollection().removeAll(replace);
+                // add all new collections + replacements
+                agent.getCollection().addAll(newCollections);
+            } else {
+                agent.setCollection(newCollections);
+            }
+        }
+
+        // save the updated file
+        saveNewConfig(hconfig, provider.getName());
+
+    }
+
+    private void saveNewConfig(HarvesterConfig hconfig, String provider) {
+        IPathManager pm = PathManagerFactory.getPathManager();
+        LocalizationContext lc = pm.getContext(LocalizationType.COMMON_STATIC,
+                LocalizationLevel.SITE);
+        String fileName = CONFIG_FILE_PREFIX + IPathManager.SEPARATOR + provider
+                + "-" + CONFIG_FILE_SUFFIX;
+        LocalizationFile lf = pm.getLocalizationFile(lc, fileName);
+        File file = lf.getFile();
+
+        try {
+            HarvesterConfigurationManager.setHarvesterFile(hconfig, file);
+            lf.save();
+        } catch (Exception e) {
+            statusHandler.error(
+                    "Unable to recreate the " + provider
+                            + "-harvester.xml configuration! Save of new collections failed",
+                    e);
+        }
+    }
+
     /**
      * Performs the actual crawls based on the collection of
      * {@link ModelCrawlConfiguration} objects.
-     * 
+     *
      * @param configurations
      *            the configuration objects
      */
@@ -177,7 +258,7 @@ public class SeedCrawler extends Crawler {
         // The crawler library objects. These must be created anew for each
         // loop, otherwise results are ignored.
         PageFetcher pageFetcher = new CrawlMonitorPageFetcher(
-                provider.getName(), config, communicationStrategy);
+                provider.getName(), config);
         RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
         robotstxtConfig.setEnabled(agent.isUseRobots());
         RobotstxtServer robotstxtServer = new RobotstxtServer(robotstxtConfig,
@@ -203,7 +284,7 @@ public class SeedCrawler extends Crawler {
 
         // if collections already exist for provider, we'll add those seed URL's
         // as ignores
-        List<String> knownCollections = new ArrayList<String>();
+        List<String> knownCollections = new ArrayList<>();
         if (agent.getCollection() != null) {
             for (Collection coll : agent.getCollection()) {
                 // compare to see if it is missing updates and such
@@ -214,9 +295,9 @@ public class SeedCrawler extends Crawler {
         }
 
         // SeedLinkStore seedLinks = new SeedLinkStore();
-        HashMap<String, ProtoCollection> collections = new HashMap<String, ProtoCollection>();
+        HashMap<String, ProtoCollection> collections = new HashMap<>();
 
-        ArrayList<WebCrawler> webCrawlers = new ArrayList<WebCrawler>(1);
+        ArrayList<WebCrawler> webCrawlers = new ArrayList<>(1);
         webCrawlers.add(new SeedHarvester(searchUrl, agent.getSearchKey(),
                 collections, knownCollections, agent.getIgnore()));
 
@@ -226,8 +307,7 @@ public class SeedCrawler extends Crawler {
         crawlcontroller.Shutdown();
         statusHandler.info("Finished crawl...");
 
-        communicationStrategy.processCollections(hconfig, collections, provider,
-                agent);
+        processCollections(hconfig, collections, provider, agent);
 
     }
 
