@@ -188,7 +188,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             RetrievalAttribute<Time, Coverage> ra,
             RetrievalRequestRecordPK retrievalId) throws Exception {
         String metaDataKey = pdadsmd.getMetaDataID();
-        PDAAbstractRequestBuilder request = null;
+        PDARequestBuilder request = null;
 
         /*
          * TODO: Shouldn't this execute the request on a retrieval thread
@@ -198,7 +198,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
         if (Boolean.parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
             retVal = pdadsmd.getUrl();
         } else {
-            request = new PDAAsyncRequest(ra, sub.getName(), metaDataKey,
+            request = new PDARequestBuilder(ra, sub.getName(), metaDataKey,
                     retrievalId);
 
             // Make the request then process the response.
