@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,22 +36,24 @@ import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 
 /**
  * Handles request from the {@link GroupDefinitionService}.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 18, 2013 1441       djohnson     Initial creation
- * Nov 12, 2013 2506       bgonzale     Refactored out notification service.
- * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 18, 2013  1441     djohnson  Initial creation
+ * Nov 12, 2013  2506     bgonzale  Refactored out notification service.
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Jul 18, 2017  6286     randerso  Changed to use new Roles/Permissions
+ *                                  framework
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 public class GroupDefinitionServiceHandler extends
@@ -59,7 +61,7 @@ public class GroupDefinitionServiceHandler extends
 
     /**
      * Constructor.
-     * 
+     *
      * @param notificationService
      *            the subscription notification service
      */
@@ -84,9 +86,9 @@ public class GroupDefinitionServiceHandler extends
     /**
      * Handles the delete of a group. First it updates any subscriptions in the
      * group to not have a group, and then deletes the actual group.
-     * 
+     *
      * @param user
-     * 
+     *
      * @param groupDefinition
      * @return
      * @throws RegistryHandlerException
@@ -96,8 +98,8 @@ public class GroupDefinitionServiceHandler extends
 
         SubscriptionHandler handler = DataDeliveryHandlers
                 .getSubscriptionHandler();
-        List<Subscription> subsForGroup = handler.getByGroupName(group
-                .getGroupName());
+        List<Subscription> subsForGroup = handler
+                .getByGroupName(group.getGroupName());
         if (!CollectionUtil.isNullOrEmpty(subsForGroup)) {
             for (Subscription sub : subsForGroup) {
                 sub.setGroupName(GroupDefinition.NO_GROUP);
@@ -112,7 +114,7 @@ public class GroupDefinitionServiceHandler extends
      * {@inheritDoc}
      */
     @Override
-    public AuthorizationResponse authorized(IUser user,
+    public AuthorizationResponse authorized(
             GroupDefinitionServiceRequest request)
             throws AuthorizationException {
         return new AuthorizationResponse(true);

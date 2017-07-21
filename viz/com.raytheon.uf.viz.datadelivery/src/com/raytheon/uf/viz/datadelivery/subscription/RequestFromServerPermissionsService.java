@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,53 +27,55 @@ import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.request.DataDeliveryAuthRequest;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.service.BasePrivilegedDataDeliveryService;
-import com.raytheon.uf.common.plugin.nwsauth.NwsAuthRequest;
 import com.raytheon.uf.viz.core.exception.VizException;
 
 /**
  * {@link IPermissionsService} implementation that requests permissions from the
  * server.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 04, 2013 1441       djohnson     Initial creation
- * Jan 21, 2013 1441       djohnson     Use RequestRouter.
- * Feb 26, 2013 1643       djohnson     Extends base class.
- * Mar 29, 2013 1841       djohnson     Subscription is now UserSubscription.
- * May 21, 2013 2020       mpduff       Rename UserSubscription to SiteSubscription.
- * Jul 26, 2031   2232     mpduff       Refactored Data Delivery permissions, removed DataDeliveryAuthRequest.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 04, 2013  1441     djohnson  Initial creation
+ * Jan 21, 2013  1441     djohnson  Use RequestRouter.
+ * Feb 26, 2013  1643     djohnson  Extends base class.
+ * Mar 29, 2013  1841     djohnson  Subscription is now UserSubscription.
+ * May 21, 2013  2020     mpduff    Rename UserSubscription to SiteSubscription.
+ * Jul 26, 2013  2236     mpduff    Refactored Data Delivery permissions,
+ *                                  removed DataDeliveryAuthRequest.
+ * Jul 18, 2017  6286     randerso  Changed to use new Roles/Permissions
+ *                                  framework
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
-public class RequestFromServerPermissionsService extends
-        BasePrivilegedDataDeliveryService<NwsAuthRequest> implements
-        IPermissionsService {
+public class RequestFromServerPermissionsService
+        extends BasePrivilegedDataDeliveryService<DataDeliveryAuthRequest>
+        implements IPermissionsService {
 
     /**
-     * Adapts the {@link NwsAuthRequestAdapter} to match the
+     * Adapts the {@link DataDeliveryRequestAdapter} to match the
      * {@link IAuthorizedPermissionResponse} interface.
      */
-    private class NwsAuthRequestAdapter implements
-            IAuthorizedPermissionResponse {
+    private class DataDeliveryRequestAdapter
+            implements IAuthorizedPermissionResponse {
 
-        private final NwsAuthRequest response;
+        private final DataDeliveryAuthRequest response;
 
         /**
          * The response to adapt.
-         * 
+         *
          * @param response
          */
-        private NwsAuthRequestAdapter(NwsAuthRequest response) {
+        private DataDeliveryRequestAdapter(DataDeliveryAuthRequest response) {
             this.response = response;
         }
 
@@ -95,7 +97,7 @@ public class RequestFromServerPermissionsService extends
     }
 
     /**
-     * 
+     *
      * @param user
      * @param notAuthorizedMessage
      * @param subscription
@@ -139,9 +141,8 @@ public class RequestFromServerPermissionsService extends
             return new IAuthorizedPermissionResponse() {
                 @Override
                 public boolean isAuthorized() {
-                    return r.isAuthorized()
-                            && user.uniqueId().toString()
-                                    .equals(subscription.getOwner());
+                    return r.isAuthorized() && user.uniqueId().toString()
+                            .equals(subscription.getOwner());
                 }
 
                 @Override
@@ -183,14 +184,15 @@ public class RequestFromServerPermissionsService extends
             String notAuthorizedMessage, String... permissions)
             throws AuthException {
 
-        NwsAuthRequest request = new NwsAuthRequest();
+        DataDeliveryAuthRequest request = new DataDeliveryAuthRequest();
         request.setUser(user);
         request.addRequestedPermissions(permissions);
         request.setNotAuthorizedMessage(notAuthorizedMessage);
 
         try {
-            NwsAuthRequest r = sendRequest(request, NwsAuthRequest.class);
-            return new NwsAuthRequestAdapter(r);
+            DataDeliveryAuthRequest r = sendRequest(request,
+                    DataDeliveryAuthRequest.class);
+            return new DataDeliveryRequestAdapter(r);
         } catch (RemoteException e) {
             throw new AuthException(e);
         }

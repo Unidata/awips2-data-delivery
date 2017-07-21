@@ -1,56 +1,90 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.datadelivery.request;
 
+import com.raytheon.uf.common.auth.util.PermissionUtils;
+
 /**
  * Consolidate string system role usage into an enum.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 03, 2012  1241      djohnson     Initial creation.
- * May 20, 2013  1040      mpduff       Added Shared Subscription permissions.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 03, 2012  1241     djohnson  Initial creation.
+ * May 20, 2013  1040     mpduff    Added Shared Subscription permissions.
+ * Jul 18, 2017  6286     randerso  Organized enum for clarity. Removed unused
+ *                                  values.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 public enum DataDeliveryPermission {
-    SUBSCRIPTION_APPROVE_USER("subscription.approve.user"), SUBSCRIPTION_APPROVE_SITE(
-            "subscription.approve.site"), SUBSCRIPTION_APPROVE_VIEW(
-            "subscription.approve.view"), SUBSCRIPTION_DATASET_BROWSER(
-            "subscription.dataset.browser"), NOTIFICATION_VIEW(
-            "notification.view"), SUBSCRIPTION_VIEW("subscription.view"), SUBSCRIPTION_EDIT(
-            "subscription.edit"), SYSTEM_MANAGEMENT_VIEW(
-            "systemmanagement.view"), SUBSCRIPTION_CREATE("subscription.create"), SUBSCRIPTION_ACTIVATE(
-            "subscription.activate"), SUBSCRIPTION_DELETE("subscription.delete"), SYSTEM_MANAGEMENT_CREATE(
-            "systemmanagement.create"), SHARED_SUBSCRIPTION_CREATE(
-            "shared.subscription.create"), SHARED_SUBSCRIPTION_DELETE(
-            "shared.subscription.delete"), SHARED_SUBSCRIPTION_EDIT(
-            "shared.subscription.edit"), SHARED_SUBSCRIPTION_ACTIVATE(
-            "shared.subscription.activate");
+    NOTIFICATION_VIEW(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "notification", "view")),
+
+    SUBSCRIPTION_ACTIVATE(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "activate")),
+    SUBSCRIPTION_CREATE(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "create")),
+    SUBSCRIPTION_DELETE(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "delete")),
+    SUBSCRIPTION_EDIT(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "edit")),
+    SUBSCRIPTION_VIEW(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "view")),
+
+    SUBSCRIPTION_APPROVE_SITE(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "approve", "site")),
+    SUBSCRIPTION_APPROVE_USER(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "approve", "user")),
+    SUBSCRIPTION_APPROVE_VIEW(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "approve", "view")),
+
+    SUBSCRIPTION_DATASET_BROWSER(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "subscription", "dataset", "browser")),
+
+    SHARED_SUBSCRIPTION_CREATE(
+            PermissionUtils.buildPermissionString("datadelivery", "shared",
+                    "subscription", "create")),
+
+    SYSTEM_MANAGEMENT_VIEW(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "systemmanagement", "view")),
+    SYSTEM_MANAGEMENT_CREATE(
+            PermissionUtils.buildPermissionString("datadelivery",
+                    "systemmanagement", "create"));
 
     private String stringValue;
 
@@ -65,7 +99,7 @@ public enum DataDeliveryPermission {
 
     /**
      * Retrieve the {@link DataDeliveryPermission} enum from its string value.
-     * 
+     *
      * @param string
      *            the string
      * @return the permission
@@ -82,7 +116,7 @@ public enum DataDeliveryPermission {
             }
         }
 
-        throw new IllegalArgumentException("No enum with toString() value of ["
-                + string + "].");
+        throw new IllegalArgumentException(
+                "No enum with toString() value of [" + string + "].");
     }
 }

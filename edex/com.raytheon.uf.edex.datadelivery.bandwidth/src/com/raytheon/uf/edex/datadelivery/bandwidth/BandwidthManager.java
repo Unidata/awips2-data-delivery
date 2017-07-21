@@ -41,7 +41,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
-import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest.RequestType;
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
@@ -163,6 +162,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 27, 2017  6186       rjpeter     Removed overloaded scheduleAdhoc, updated queueRetrieval, removed BandwidthDataSetUpdate.
  * Jun 08, 2017  6222       tgurney     Add bandwidthChangedCallback
  * Jun 20, 2017  6299       tgurney     Remove IProposeScheduleResponse
+ * Jul 18, 2017  6286       randerso    Changed to use new Roles/Permissions framework
  * </pre>
  *
  * @author dhladky
@@ -1067,7 +1067,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         timer.lap("storing retrieval attributes");
 
         List<BandwidthAllocation> unscheduled = reservations.isEmpty()
-                ? Collections.<BandwidthAllocation>emptyList()
+                ? Collections.<BandwidthAllocation> emptyList()
                 : retrievalManager.schedule(reservations);
         timer.lap("scheduling retrievals");
 
@@ -1460,8 +1460,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * {@inheritDoc}
      */
     @Override
-    public AuthorizationResponse authorized(IUser user,
-            BandwidthRequest<T, C> request) throws AuthorizationException {
+    public AuthorizationResponse authorized(BandwidthRequest<T, C> request)
+            throws AuthorizationException {
         return new AuthorizationResponse(true);
     }
 

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,26 +33,29 @@ import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 /**
  * Handles deleting subscriptions or pending subscriptions, also any association
  * ties within an atomic transaction.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 27, 2012 1187       djohnson     Initial creation
- * Nov 05, 2012 1306       djohnson     Remove dynamic serialize field level adapters.
- * Nov 15, 2012 1286       djohnson     Prevent NPE if user is null.
- * 3/18/2013    1802       bphillip     Modified to use proper transaction boundaries
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 27, 2012  1187     djohnson  Initial creation
+ * Nov 05, 2012  1306     djohnson  Remove dynamic serialize field level
+ *                                  adapters.
+ * Nov 15, 2012  1286     djohnson  Prevent NPE if user is null.
+ * Mar 18, 2013  1802     bphillip  Modified to use proper transaction
+ *                                  boundaries
+ * Jul 18, 2017  6286     randerso  Changed to use new Roles/Permissions
+ *                                  framework
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
-public class SubscriptionDeleteHandler extends
-        AbstractPrivilegedRequestHandler<SubscriptionDeleteRequest> {
+public class SubscriptionDeleteHandler
+        extends AbstractPrivilegedRequestHandler<SubscriptionDeleteRequest> {
 
     /**
      * {@inheritDoc}
@@ -68,8 +71,8 @@ public class SubscriptionDeleteHandler extends
         IBaseSubscriptionHandler handler = (IBaseSubscriptionHandler) RegistryObjectHandlers
                 .get(handlerClass);
         final IUser user = request.getUser();
-        final String username = (user == null) ? null : user.uniqueId()
-                .toString();
+        final String username = (user == null) ? null
+                : user.uniqueId().toString();
 
         handler.deleteByIds(username, request.getSubscriptionIds());
         return null;
@@ -79,8 +82,8 @@ public class SubscriptionDeleteHandler extends
      * {@inheritDoc}
      */
     @Override
-    public AuthorizationResponse authorized(IUser user,
-            SubscriptionDeleteRequest request) throws AuthorizationException {
+    public AuthorizationResponse authorized(SubscriptionDeleteRequest request)
+            throws AuthorizationException {
         return new AuthorizationResponse(true);
     }
 
