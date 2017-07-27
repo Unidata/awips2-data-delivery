@@ -5,6 +5,7 @@
     http://camel.apache.org/schema/spring
     http://camel.apache.org/schema/spring/camel-spring.xsd">
 
+    <!-- Doesn't use SessionManagedDao interface for table creation -->
     <bean id="ddRetrievalDatabaseProperties" class="com.raytheon.uf.edex.database.DatabasePluginProperties">
         <property name="pluginFQN" value="com.raytheon.uf.edex.datadelivery.retrieval" />
         <property name="database" value="metadata" />
@@ -47,6 +48,7 @@
         class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.RetrievalHandler">
         <constructor-arg ref="scheduledExecutorService" />
         <constructor-arg ref="retrievalDao" />
+        <constructor-arg ref="subNotifyTask" />
         <!-- How often to execute the subscription notify tasks -->
         <constructor-arg>
             <bean class="com.raytheon.uf.common.time.domain.Durations"
@@ -54,36 +56,20 @@
                 <constructor-arg value="${subnotify.task.frequency}" />
             </bean>
         </constructor-arg>
-        <constructor-arg ref="subNotifyTask" />
-        <constructor-arg ref="retrievalTaskFactoryMap" />
+        <constructor-arg value="${retrieval-process.threads}"/>
+        <constructor-arg ref="retrievalTask" />
     </bean>
 
     <!--  async retrievals run through this processor. -->
     <bean id="asyncRetrievalProcessor" class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.AsyncRetrievalProcessor">
-        <constructor-arg type="java.lang.String" value="notifyRetrieval" />
         <constructor-arg ref="retrievalDao" />
     </bean>
 
     <camelContext id="dataDeliveryNotify-camel" xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
 
-        <endpoint id="notifyRetrievalQueue" uri="jms-durable:queue:notifyRetrieval?concurrentConsumers=${retrieval-process.threads}" />
-
        <!-- Asynchronous retrieval queue -->
         <endpoint id="asyncRetrievalQueue" uri="jms-durable:queue:asyncRetrievalQueue?concurrentConsumers=1" />
 
-       <!-- SendToRetrievals method from RetrievalGeneratorUtilities links to this queue -->
-        <route id="notifyRetrieval">
-            <from ref="notifyRetrievalQueue" />
-            <doTry>
-                <pipeline>
-                    <bean ref="retrievalHandler" method="notify" />
-                </pipeline>
-                <doCatch>
-                    <exception>java.lang.Throwable</exception>
-                    <to uri="log:notifyRetrieval?level=ERROR" />
-                </doCatch>
-            </doTry>
-        </route>
         <!-- event bus messages -->
         <route id="dataDeliveryNotify">
             <from uri="direct-vm:dataDeliveryNotify" />

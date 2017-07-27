@@ -39,7 +39,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * <pre>
  *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jan 17, 2011  191      dhladky   Initial creation
@@ -56,7 +56,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Mar 04, 2016  5388     dhladky   Changed AESEncryptor constructor
  * Dec 21. 2016    5684     tgurney     Fix URL variable replacement
  * Feb 03, 2017  6089     tjensen   Updated to support generic system properties
- * 
+ *
  * </pre>
  *
  * @author dhladky
@@ -65,9 +65,6 @@ import com.raytheon.uf.common.status.UFStatus;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class Connection implements Serializable {
-    protected static final String externalAddress = System
-            .getProperty("harvester.external.address");
-
     private static final long serialVersionUID = 8223819912383198409L;
 
     private static final IUFStatusHandler statusHandler = UFStatus

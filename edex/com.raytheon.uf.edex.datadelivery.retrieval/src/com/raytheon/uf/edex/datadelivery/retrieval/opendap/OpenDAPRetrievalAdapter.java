@@ -27,7 +27,7 @@ import java.util.Map;
 import com.raytheon.opendap.InputStreamWrapper;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -38,7 +38,6 @@ import com.raytheon.uf.common.util.rate.TokenBucket;
 import com.raytheon.uf.common.util.stream.CountingInputStream;
 import com.raytheon.uf.common.util.stream.RateLimitingInputStream;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
@@ -59,13 +58,15 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  * Feb 12, 2013  1543     djohnson  The payload can just be an arbitrary object,
  *                                  implementations can define an array if
  *                                  required.
- * Sept 19, 201  2388     dhladky   Logging for failed requests.
+ * Sep 19, 0201  2388     dhladky   Logging for failed requests.
  * Apr 12, 2015  4400     dhladky   Upgraded to DAP2 and preserved backward
  *                                  compatibility.
  * Mar 23, 2017  5988     tjensen   Improved logging
- * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to processResponse
+ * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
+ *                                  processResponse
  * Jun 22, 2017  6222     tgurney   Use token bucket to rate-limit requests
  * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
+ * Jul 27, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -122,16 +123,13 @@ class OpenDAPRetrievalAdapter
 
     @Override
     public OpenDAPRequestBuilder createRequestMessage(
-            RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
-
-        OpenDAPRequestBuilder reqBuilder = new OpenDAPRequestBuilder(this,
-                attXML);
-
-        return reqBuilder;
+            Retrieval<GriddedTime, GriddedCoverage> retrieval) {
+        return new OpenDAPRequestBuilder(retrieval);
     }
 
     @Override
-    public RetrievalResponse<GriddedTime, GriddedCoverage> performRequest(
+    public RetrievalResponse performRequest(
+            Retrieval<GriddedTime, GriddedCoverage> retrieval,
             IRetrievalRequestBuilder<GriddedTime, GriddedCoverage> request)
             throws Exception {
 
@@ -150,45 +148,35 @@ class OpenDAPRetrievalAdapter
                     + SizeUtil.prettyByteSize(streamWrapper.getBytesRead())
                     + " in " + TimeUtil.prettyDuration(
                             streamWrapper.getTimeTakenMillis()));
+            generateRetrievalEvent(retrieval, streamWrapper.getBytesRead());
         }
-        RetrievalResponse<GriddedTime, GriddedCoverage> pr = new OpenDapRetrievalResponse(
-                request.getAttribute());
-        pr.setPayLoad(data);
 
-        return pr;
+        OpenDapRetrievalResponse rval = null;
+
+        if (data != null) {
+            rval = new OpenDapRetrievalResponse();
+            rval.setPayLoad(data);
+        }
+
+        return rval;
     }
 
     @Override
     public Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse<GriddedTime, GriddedCoverage> response,
-            RetrievalRequestRecord requestRecord) throws TranslationException {
+            Retrieval<GriddedTime, GriddedCoverage> retrieval,
+            IRetrievalResponse response) throws TranslationException {
         Map<String, PluginDataObject[]> map = new HashMap<>();
 
         OpenDAPTranslator translator;
         try {
-            translator = getOpenDapTranslator(response.getAttribute());
+            translator = getOpenDapTranslator(retrieval);
         } catch (InstantiationException e) {
             throw new TranslationException(
                     "Unable to instantiate a required class!", e);
         }
 
-        Object payload = null;
-        try {
-            if (response.getPayLoad() != null) {
-
-                payload = response.getPayLoad();
-
-                if (payload instanceof dods.dap.DataDDS) {
-                    payload = dods.dap.DataDDS.class
-                            .cast(response.getPayLoad());
-                } else if (payload instanceof opendap.dap.DataDDS) {
-                    payload = opendap.dap.DataDDS.class
-                            .cast(response.getPayLoad());
-                }
-            }
-        } catch (ClassCastException e) {
-            throw new TranslationException(e);
-        }
+        OpenDapRetrievalResponse odResponse = (OpenDapRetrievalResponse) response;
+        Object payload = odResponse.getPayLoad();
 
         if (payload != null) {
             PluginDataObject[] pdos = translator.asPluginDataObjects(payload);
@@ -204,8 +192,8 @@ class OpenDAPRetrievalAdapter
     }
 
     OpenDAPTranslator getOpenDapTranslator(
-            RetrievalAttribute<GriddedTime, GriddedCoverage> attribute)
+            Retrieval<GriddedTime, GriddedCoverage> retrieval)
             throws InstantiationException {
-        return new OpenDAPTranslator(attribute);
+        return new OpenDAPTranslator(retrieval);
     }
 }

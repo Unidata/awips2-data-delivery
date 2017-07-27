@@ -34,7 +34,6 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilities;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
@@ -50,16 +49,17 @@ import net.opengis.ows.v_2_0.ReferenceGroupType;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 16, 2016 5424       dhladky     Initial creation
- * Apr 21, 2016 5424       dhladky     Fixes from initial testing.
- * May 06, 2016 5424       dhladky     Added work around for PDA timing issue.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------
+ * Mar 16, 2016  5424     dhladky   Initial creation
+ * Apr 21, 2016  5424     dhladky   Fixes from initial testing.
+ * May 06, 2016  5424     dhladky   Added work around for PDA timing issue.
+ * Jul 27, 2017  6186     rjpeter   Updated id parsing
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 @WebService(name = "GetCoverageResponseHandler", targetNamespace = "http://www.opengis.net/wcs/2.0")
@@ -158,11 +158,9 @@ public class GetCoverageResponseHandler
         }
 
         // send to retrieval
-        if (retrievalID != null && fileLink != null) {
-            RetrievalRequestRecordPK pk = new RetrievalRequestRecordPK(
-                    retrievalID);
+        if (retrievalID != null) {
             AsyncRetrievalResponse ars = new AsyncRetrievalResponse();
-            ars.setRequestId(pk);
+            ars.setRequestId(retrievalID);
             ars.setFileName(fileLink);
 
             if (ars != null) {
@@ -178,7 +176,8 @@ public class GetCoverageResponseHandler
 
         } else {
             statusHandler
-                    .warn("Did not recieve a valid retrievalID or fileLink");
+                    .warn("Did not recieve a valid retrievalID from PDA. Response ["
+                            + manifestType + "]");
         }
     }
 

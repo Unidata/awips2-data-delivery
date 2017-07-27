@@ -37,7 +37,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
  * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority.
  * Sep 05, 2014  2131     dhladky   re-did the types.
  * Apr 19, 2017  6186     rjpeter   Removed unused fields.
- *
+ * Jul 27, 2017  6186     rjpeter   Removed Connection
  * </pre>
  *
  * @author djohnson
@@ -45,14 +45,11 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
 public class SubscriptionBundle {
     private final Subscription<?, ?> subscription;
 
-    private final Connection connection;
-
     private final Provider provider;
 
     public SubscriptionBundle(Subscription<?, ?> subscription,
-            Connection connection, Provider provider) {
+            Provider provider) {
         this.subscription = subscription;
-        this.connection = connection;
         this.provider = provider;
     }
 
@@ -62,10 +59,6 @@ public class SubscriptionBundle {
 
     public SubscriptionPriority getPriority() {
         return subscription.getPriority();
-    }
-
-    public Connection getConnection() {
-        return connection;
     }
 
     public Provider getProvider() {

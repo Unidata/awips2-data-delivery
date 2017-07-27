@@ -22,10 +22,10 @@ package com.raytheon.uf.edex.datadelivery.retrieval.db;
 import java.util.List;
 import java.util.Map;
 
-import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.ISessionManagedDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
+import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionNotifyTask;
 
 /**
  * DAO interface for retrievals.
@@ -43,8 +43,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.Sta
  *
  * @author djohnson
  */
-public interface IRetrievalDao extends
-        ISessionManagedDao<RetrievalRequestRecordPK, RetrievalRequestRecord> {
+public interface IRetrievalDao
+        extends ISessionManagedDao<Integer, RetrievalRequestRecord> {
 
     /**
      * Returns the next PENDING retrieval request, puts it into a RUNNING state,
@@ -55,7 +55,7 @@ public interface IRetrievalDao extends
      *
      * @return
      */
-    RetrievalRequestRecord activateNextRetrievalRequest(Network network)
+    RetrievalRequestRecord activateNextRetrievalRequest()
             throws DataAccessLayerException;
 
     void completeRetrievalRequest(RetrievalRequestRecord rec)
@@ -111,4 +111,7 @@ public interface IRetrievalDao extends
     List<RetrievalRequestRecord> getRequests(String subName, String url)
             throws DataAccessLayerException;
 
+    SubscriptionNotifyTask getNotifyTask();
+
+    void setNotifyTask(SubscriptionNotifyTask notifyTask);
 }

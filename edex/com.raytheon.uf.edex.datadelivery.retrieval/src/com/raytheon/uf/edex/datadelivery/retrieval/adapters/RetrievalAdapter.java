@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.adapters;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,16 +17,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.adapters;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.adapters;
 
 import java.util.Map;
 
+import com.raytheon.uf.common.datadelivery.event.retrieval.AdhocDataRetrievalEvent;
+import com.raytheon.uf.common.datadelivery.event.retrieval.DataRetrievalEvent;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.util.rate.TokenBucket;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
@@ -48,6 +49,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  *                                  processResponse
  * Jun 05, 2017  6222     tgurney   Add rate-limiting fields
  * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
+ * Jul 25, 2017  6186     rjpeter   Update signature
  *
  * </pre>
  *
@@ -57,44 +59,22 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 public abstract class RetrievalAdapter<T extends Time, C extends Coverage>
         implements IRetrievalAdapter<T, C> {
 
-    protected Retrieval prxml;
-
     private TokenBucket tokenBucket;
 
     private int priority;
 
     @Override
     public abstract IRetrievalRequestBuilder<T, C> createRequestMessage(
-            RetrievalAttribute<T, C> prxml);
+            Retrieval<T, C> retrieval);
 
     @Override
-    public abstract RetrievalResponse<T, C> performRequest(
+    public abstract RetrievalResponse performRequest(Retrieval<T, C> retrieval,
             IRetrievalRequestBuilder<T, C> request) throws Exception;
 
     @Override
     public abstract Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse<T, C> response,
-            RetrievalRequestRecord requestRecord) throws TranslationException;
-
-    /**
-     * Set the main providerRetrieval XML file
-     *
-     * @param prxml
-     */
-    @Override
-    public void setProviderRetrievalXML(Retrieval prxml) {
-        this.prxml = prxml;
-    }
-
-    /**
-     * Get the main provider retrieval XML file
-     *
-     * @return
-     */
-    @Override
-    public Retrieval getProviderRetrievalXMl() {
-        return prxml;
-    }
+            Retrieval<T, C> retrieval, IRetrievalResponse response)
+            throws TranslationException;
 
     @Override
     public TokenBucket getTokenBucket() {
@@ -117,6 +97,20 @@ public abstract class RetrievalAdapter<T extends Time, C extends Coverage>
     @Override
     public void setPriority(int priority) {
         this.priority = priority;
+    }
+
+    protected void generateRetrievalEvent(Retrieval retrieval,
+            long bytesDownloaded) {
+        boolean isAdhoc = retrieval.getSubscriptionType() != null && retrieval
+                .getSubscriptionType().equals(SubscriptionType.AD_HOC);
+        DataRetrievalEvent event = isAdhoc ? new AdhocDataRetrievalEvent()
+                : new DataRetrievalEvent();
+        event.setId(retrieval.getSubscriptionName());
+        event.setOwner(retrieval.getOwner());
+        event.setNetwork(retrieval.getNetwork().name());
+        event.setProvider(retrieval.getProvider());
+        event.setBytes(bytesDownloaded);
+        EventBus.publish(event);
     }
 
     public static class TranslationException extends Exception {

@@ -72,29 +72,27 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  *                                  message
  * May 09, 2017  6186     rjpeter   Added url
  * May 22, 2017  6130     tjensen   Fix error handling
+ * Jul 27, 2017  6186     rjpeter   Removed unused fields.
  *
  * </pre>
  *
  * @author djohnson
  */
 public class SubscriptionNotifyTask implements Runnable {
-    @VisibleForTesting
     static class SubscriptionDelay implements Delayed {
         private final String subName;
 
-        private final String url;
-
-        private final Long subRetrievalKey;
+        private final String dsmdUrl;
 
         private final String owner;
-
-        private final String plugin;
 
         private final String provider;
 
         private final SubscriptionType subscriptionType;
 
         private final Network network;
+
+        private final Long bandwidthAllocationId;
 
         private final long delayedUntilMillis;
 
@@ -103,20 +101,19 @@ public class SubscriptionNotifyTask implements Runnable {
         private final Long retrievalRequestTime;
 
         SubscriptionDelay(String subName, String url, String owner,
-                String plugin, SubscriptionType subscriptionType,
-                Network network, String provider, Long subRetrievalKey,
+                SubscriptionType subscriptionType, Network network,
+                String provider, Long bandwidthAllocationId,
                 long delayedUntilMillis, Long retrievalRequestTime) {
             this.subName = subName;
-            this.url = url;
+            this.dsmdUrl = url;
             this.owner = owner;
-            this.plugin = plugin;
-            this.provider = provider;
             this.subscriptionType = subscriptionType;
-            this.subRetrievalKey = subRetrievalKey;
             this.network = network;
+            this.provider = provider;
+            this.bandwidthAllocationId = bandwidthAllocationId;
             this.delayedUntilMillis = delayedUntilMillis;
             this.retrievalRequestTime = retrievalRequestTime;
-            key = subName + "_" + owner;
+            key = subName + "_" + dsmdUrl;
         }
 
         @Override
@@ -133,7 +130,7 @@ public class SubscriptionNotifyTask implements Runnable {
                 }
 
                 if (rval == 0) {
-                    rval = owner.compareTo(oSub.subName);
+                    rval = owner.compareTo(oSub.owner);
                 }
             }
 
@@ -183,25 +180,7 @@ public class SubscriptionNotifyTask implements Runnable {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result
-                    + (int) (delayedUntilMillis ^ (delayedUntilMillis >>> 32));
             result = prime * result + ((key == null) ? 0 : key.hashCode());
-            result = prime * result
-                    + ((network == null) ? 0 : network.hashCode());
-            result = prime * result + ((owner == null) ? 0 : owner.hashCode());
-            result = prime * result
-                    + ((plugin == null) ? 0 : plugin.hashCode());
-            result = prime * result
-                    + ((provider == null) ? 0 : provider.hashCode());
-            result = prime * result + ((retrievalRequestTime == null) ? 0
-                    : retrievalRequestTime.hashCode());
-            result = prime * result
-                    + ((subName == null) ? 0 : subName.hashCode());
-            result = prime * result + ((subRetrievalKey == null) ? 0
-                    : subRetrievalKey.hashCode());
-            result = prime * result + ((subscriptionType == null) ? 0
-                    : subscriptionType.hashCode());
-            result = prime * result + ((url == null) ? 0 : url.hashCode());
             return result;
         }
 
@@ -217,70 +196,11 @@ public class SubscriptionNotifyTask implements Runnable {
                 return false;
             }
             SubscriptionDelay other = (SubscriptionDelay) obj;
-            if (delayedUntilMillis != other.delayedUntilMillis) {
-                return false;
-            }
             if (key == null) {
                 if (other.key != null) {
                     return false;
                 }
             } else if (!key.equals(other.key)) {
-                return false;
-            }
-            if (network != other.network) {
-                return false;
-            }
-            if (owner == null) {
-                if (other.owner != null) {
-                    return false;
-                }
-            } else if (!owner.equals(other.owner)) {
-                return false;
-            }
-            if (plugin == null) {
-                if (other.plugin != null) {
-                    return false;
-                }
-            } else if (!plugin.equals(other.plugin)) {
-                return false;
-            }
-            if (provider == null) {
-                if (other.provider != null) {
-                    return false;
-                }
-            } else if (!provider.equals(other.provider)) {
-                return false;
-            }
-            if (retrievalRequestTime == null) {
-                if (other.retrievalRequestTime != null) {
-                    return false;
-                }
-            } else if (!retrievalRequestTime
-                    .equals(other.retrievalRequestTime)) {
-                return false;
-            }
-            if (subName == null) {
-                if (other.subName != null) {
-                    return false;
-                }
-            } else if (!subName.equals(other.subName)) {
-                return false;
-            }
-            if (subRetrievalKey == null) {
-                if (other.subRetrievalKey != null) {
-                    return false;
-                }
-            } else if (!subRetrievalKey.equals(other.subRetrievalKey)) {
-                return false;
-            }
-            if (subscriptionType != other.subscriptionType) {
-                return false;
-            }
-            if (url == null) {
-                if (other.url != null) {
-                    return false;
-                }
-            } else if (!url.equals(other.url)) {
                 return false;
             }
             return true;
@@ -309,11 +229,16 @@ public class SubscriptionNotifyTask implements Runnable {
             RetrievalRequestRecord record, long startTime) {
 
         Long retrievalRequestTimeLong = null;
+        Network network = null;
+        SubscriptionType subType = null;
+
         try {
             Retrieval retrievalObject = record.getRetrievalObj();
             if (retrievalObject != null) {
                 retrievalRequestTimeLong = retrievalObject
                         .getRequestRetrievalTime();
+                network = retrievalObject.getNetwork();
+                subType = retrievalObject.getSubscriptionType();
             }
         } catch (SerializationException se) {
             statusHandler.error(
@@ -325,10 +250,9 @@ public class SubscriptionNotifyTask implements Runnable {
             retrievalRequestTimeLong = Long.valueOf(0L);
         }
         // 11 seconds from start time
-        return new SubscriptionDelay(record.getId().getSubscriptionName(),
-                record.getId().getUrl(), record.getOwner(), record.getPlugin(),
-                record.getSubscriptionType(), record.getNetwork(),
-                record.getProvider(), record.getSubRetrievalKey(),
+        return new SubscriptionDelay(record.getSubscriptionName(),
+                record.getDsmdUrl(), record.getOwner(), subType, network,
+                record.getProvider(), record.getBandwidthAllocationId(),
                 startTime + 11_000, retrievalRequestTimeLong);
     }
 
@@ -341,10 +265,11 @@ public class SubscriptionNotifyTask implements Runnable {
 
     private final DelayQueue<SubscriptionDelay> subscriptionQueue = new DelayQueue<>();
 
-    private final IRetrievalDao dao;
+    private IRetrievalDao dao;
 
     public SubscriptionNotifyTask(IRetrievalDao dao) {
         this.dao = dao;
+        this.dao.setNotifyTask(this);
     }
 
     public void checkNotify(RetrievalRequestRecord record) {
@@ -388,7 +313,7 @@ public class SubscriptionNotifyTask implements Runnable {
             while (subToCheck != null) {
                 Map<RetrievalRequestRecord.State, Integer> stateCounts = dao
                         .getSubscriptionStateCounts(subToCheck.subName,
-                                subToCheck.url);
+                                subToCheck.dsmdUrl);
                 Integer numPending = stateCounts
                         .get(RetrievalRequestRecord.State.PENDING);
                 Integer numRunning = stateCounts
@@ -398,7 +323,6 @@ public class SubscriptionNotifyTask implements Runnable {
                     SubscriptionRetrievalEvent event = new SubscriptionRetrievalEvent();
                     event.setId(subToCheck.subName);
                     event.setOwner(subToCheck.owner);
-                    event.setPlugin(subToCheck.plugin);
                     event.setProvider(subToCheck.provider);
                     event.setSubscriptionType(
                             subToCheck.subscriptionType.name());
@@ -408,8 +332,8 @@ public class SubscriptionNotifyTask implements Runnable {
 
                     // event needs new key
                     RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
-                    retrievalManagerNotifyEvent
-                            .setId(Long.toString(subToCheck.subRetrievalKey));
+                    retrievalManagerNotifyEvent.setId(
+                            Long.toString(subToCheck.bandwidthAllocationId));
 
                     // check if any of the retrievals failed
                     Integer numFailed = stateCounts
@@ -428,7 +352,7 @@ public class SubscriptionNotifyTask implements Runnable {
                         // generate message
                         List<RetrievalRequestRecord> failedRecs = dao
                                 .getFailedRequests(subToCheck.subName,
-                                        subToCheck.url);
+                                        subToCheck.dsmdUrl);
                         StringBuilder sb = new StringBuilder(300);
                         try {
                             sb.append("Failed parameters: ");
@@ -436,13 +360,12 @@ public class SubscriptionNotifyTask implements Runnable {
                             for (RetrievalRequestRecord failedRec : failedRecs) {
                                 Retrieval retrieval = failedRec
                                         .getRetrievalObj();
-                                for (RetrievalAttribute<?, ?> att : retrieval
-                                        .getAttributes()) {
-                                    if (!parameters.contains(
-                                            att.getParameter().getName())) {
-                                        parameters.add(
-                                                att.getParameter().getName());
-                                    }
+                                RetrievalAttribute<?, ?> att = retrieval
+                                        .getAttribute();
+                                if (!parameters.contains(
+                                        att.getParameter().getName())) {
+                                    parameters
+                                            .add(att.getParameter().getName());
                                 }
                             }
                             for (String param : parameters) {
@@ -472,7 +395,8 @@ public class SubscriptionNotifyTask implements Runnable {
 
                     EventBus.publish(event);
                     EventBus.publish(retrievalManagerNotifyEvent);
-                    dao.removeSubscription(subToCheck.subName, subToCheck.url);
+                    dao.removeSubscription(subToCheck.subName,
+                            subToCheck.dsmdUrl);
                 }
 
                 subToCheck = subscriptionQueue.poll();

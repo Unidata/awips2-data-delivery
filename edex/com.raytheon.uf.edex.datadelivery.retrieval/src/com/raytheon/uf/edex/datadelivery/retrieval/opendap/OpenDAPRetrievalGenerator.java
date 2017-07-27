@@ -85,6 +85,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 09, 2017  6186     rjpeter   Update to handle passed in DataSetMetaData.
  * Jun 13, 2017  6204     nabowle   Cleanup.
+ * Jul 27, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -143,10 +144,11 @@ class OpenDAPRetrievalGenerator
      * @return
      */
     @Override
-    public List<Retrieval> buildRetrieval(
+    public List<Retrieval<GriddedTime, GriddedCoverage>> buildRetrieval(
             DataSetMetaData<GriddedTime, GriddedCoverage> dsmd,
             SubscriptionBundle bundle) {
-        List<Retrieval> retrievals = Collections.emptyList();
+        List<Retrieval<GriddedTime, GriddedCoverage>> retrievals = Collections
+                .emptyList();
         switch (bundle.getDataType()) {
         case GRID:
             retrievals = getGridRetrievals(dsmd, bundle);
@@ -190,7 +192,7 @@ class OpenDAPRetrievalGenerator
      * @return
      */
     @SuppressWarnings("unchecked")
-    private List<Retrieval> getGridRetrievals(
+    private List<Retrieval<GriddedTime, GriddedCoverage>> getGridRetrievals(
             DataSetMetaData<GriddedTime, GriddedCoverage> dsmd,
             SubscriptionBundle bundle) {
         OpenDapGriddedDataSetMetaData opendapdsmd = (OpenDapGriddedDataSetMetaData) dsmd;
@@ -219,7 +221,7 @@ class OpenDAPRetrievalGenerator
             ensembles = sub.getEnsemble().split(1);
         }
 
-        List<Retrieval> retrievals = new ArrayList<>();
+        List<Retrieval<GriddedTime, GriddedCoverage>> retrievals = new ArrayList<>();
         GriddedTime subTime = sub.getTime();
         for (List<Integer> timeSequence : subTime.getTimeSequences(sfactor)) {
 
@@ -235,8 +237,9 @@ class OpenDAPRetrievalGenerator
 
                     for (GriddedTime time : times) {
                         for (Ensemble ensemble : ensembles) {
-                            Retrieval retrieval = getRetrieval(sub, bundle,
-                                    param, paramLevels, time, ensemble);
+                            Retrieval<GriddedTime, GriddedCoverage> retrieval = getRetrieval(
+                                    sub, bundle, param, paramLevels, time,
+                                    ensemble);
                             retrievals.add(retrieval);
                         }
                     }
@@ -254,8 +257,8 @@ class OpenDAPRetrievalGenerator
                         for (GriddedTime time : times) {
                             for (Levels level : levels) {
                                 for (Ensemble ensemble : ensembles) {
-                                    Retrieval retrieval = getRetrieval(sub,
-                                            bundle, param, level, time,
+                                    Retrieval<GriddedTime, GriddedCoverage> retrieval = getRetrieval(
+                                            sub, bundle, param, level, time,
                                             ensemble);
                                     retrievals.add(retrieval);
                                 }
@@ -279,19 +282,19 @@ class OpenDAPRetrievalGenerator
      * @param Time
      * @return
      */
-    private Retrieval getRetrieval(
+    private Retrieval<GriddedTime, GriddedCoverage> getRetrieval(
             Subscription<GriddedTime, GriddedCoverage> sub,
             SubscriptionBundle bundle, Parameter param, Levels level,
             GriddedTime time, Ensemble ensemble) {
 
-        Retrieval retrieval = new Retrieval();
+        Retrieval<GriddedTime, GriddedCoverage> retrieval = new Retrieval<>();
         retrieval.setSubscriptionName(sub.getName());
         retrieval.setServiceType(getServiceType());
-        retrieval.setConnection(bundle.getConnection());
-        retrieval.getConnection().setUrl(sub.getUrl());
+        retrieval.setUrl(sub.getUrl());
         retrieval.setOwner(sub.getOwner());
         retrieval.setSubscriptionType(getSubscriptionType(sub));
         retrieval.setNetwork(sub.getRoute());
+        retrieval.setProvider(sub.getProvider());
 
         // Coverage and type processing
         GriddedCoverage cov = sub.getCoverage();
@@ -304,7 +307,6 @@ class OpenDAPRetrievalGenerator
         att.setTime(time);
         att.setParameter(lparam);
         att.setEnsemble(ensemble);
-        att.setSubName(retrieval.getSubscriptionName());
         Provider provider;
         try {
             provider = DataDeliveryHandlers.getProviderHandler()
@@ -316,9 +318,8 @@ class OpenDAPRetrievalGenerator
         // Look up the provider's configured plugin for this data type
         ProviderType providerType = provider
                 .getProviderType(sub.getDataSetType());
-        att.setPlugin(providerType.getPlugin());
-        att.setProvider(sub.getProvider());
-        retrieval.addAttribute(att);
+        retrieval.setPlugin(providerType.getPlugin());
+        retrieval.setAttribute(att);
 
         return retrieval;
     }

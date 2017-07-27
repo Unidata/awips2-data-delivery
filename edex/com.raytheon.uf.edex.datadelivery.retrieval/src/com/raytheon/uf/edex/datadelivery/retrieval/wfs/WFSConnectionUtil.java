@@ -59,27 +59,30 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ProviderCredentialsUtil;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 12, 2013 753        dhladky     created.
- * May 31, 2013 1763       dhladky     refined.
- * Jun 17, 2013 2106       djohnson    Use getUnencryptedPassword().
- * Jun 18, 2013 2120       dhladky     Times fixes and SSL changes
- * Jul 10, 2013 2180       dhladky     Updated credential requests
- * Aug 23, 2013 2180       mpduff      Implement changes to ProviderCredentialsUtil
- * Aug 06, 2013 2097       dhladky     WFS 2.0 compliance upgrade and switched to POST
- * Nov 20, 2013 2554       dhladky     Added GZIP capability to WFS requests.
- * Jan 13, 2014 2697       dhladky     Added util to strip unique Id field from URL.
- * Aub 20, 2014 3564       dhladky     Allow for un-authenicated HTTPS
- * Sep 03, 2014 3570       bclement    http client API changes
- * Nov 15, 2014 3757       dhladky     General HTTPS configuration
- * Jan 21, 2015 3952       njensen     Updated call to setupCredentials()
- * Jan 26, 2015 3952       njensen     gzip handled by default
- * May 10, 2015 4435       dhladky     Added keyStore retrieval to interface.
- * Dec 07, 2015 4834       njensen     getCredentials() now takes a URI
- * Jun 06, 2017 6222       tgurney     Use token bucket to rate-limit requests
- * Jun 22, 2017 6222       tgurney     Log download time and number of bytes
- * Jun 23, 2017 6322       tgurney     wfsConnect throws Exception
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * May 12, 2013  753      dhladky   created.
+ * May 31, 2013  1763     dhladky   refined.
+ * Jun 17, 2013  2106     djohnson  Use getUnencryptedPassword().
+ * Jun 18, 2013  2120     dhladky   Times fixes and SSL changes
+ * Jul 10, 2013  2180     dhladky   Updated credential requests
+ * Aug 23, 2013  2180     mpduff    Implement changes to ProviderCredentialsUtil
+ * Aug 06, 2013  2097     dhladky   WFS 2.0 compliance upgrade and switched to
+ *                                  POST
+ * Nov 20, 2013  2554     dhladky   Added GZIP capability to WFS requests.
+ * Jan 13, 2014  2697     dhladky   Added util to strip unique Id field from
+ *                                  URL.
+ * Aub 20, 2014  3564     dhladky   Allow for un-authenicated HTTPS
+ * Sep 03, 2014  3570     bclement  http client API changes
+ * Nov 15, 2014  3757     dhladky   General HTTPS configuration
+ * Jan 21, 2015  3952     njensen   Updated call to setupCredentials()
+ * Jan 26, 2015  3952     njensen   gzip handled by default
+ * May 10, 2015  4435     dhladky   Added keyStore retrieval to interface.
+ * Dec 07, 2015  4834     njensen   getCredentials() now takes a URI
+ * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
+ * Jun 22, 2017  6222     tgurney   Log download time and number of bytes
+ * Jun 23, 2017  6322     tgurney   wfsConnect throws Exception
+ * Jul 31, 2017  6186     rjpeter   Updated URL/Connection handling.
  *
  * </pre>
  *
@@ -223,7 +226,7 @@ public class WFSConnectionUtil {
                 timeTakenMillis = cis.getLastReadTimeMillis()
                         - cis.getFirstReadTimeMillis();
             } catch (IOException e) {
-                // ignore error on stream close
+                statusHandler.error("Error occurred closing stream", e);
             }
         }
 
@@ -234,18 +237,18 @@ public class WFSConnectionUtil {
      *
      * @param request
      *            The request
-     * @param providerConn
-     *            The Connection object
+     * @param url
+     *            The url
      * @param providerName
      *            The data provider's name
      * @return xml response
      * @throws Exception
      */
-    public static String wfsConnect(String request, Connection providerConn,
+    public static String wfsConnect(String request, String url,
             String providerName, TokenBucket tokenBucket, int priority)
             throws Exception {
 
-        String rootUrl = getCleanUrl(providerConn.getUrl());
+        String rootUrl = getCleanUrl(url);
         HttpClient http = getHttpClient();
         URI uri = new URI(rootUrl);
         HttpPost post = new HttpPost(uri);

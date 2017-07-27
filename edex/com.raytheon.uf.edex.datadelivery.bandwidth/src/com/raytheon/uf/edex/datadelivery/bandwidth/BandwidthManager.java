@@ -628,8 +628,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     plan.getPlanStart().getTime(), plan.getPlanEnd().getTime(),
                     dsmdList, SubscriptionUtil.getInstance());
 
-            unscheduled.addAll(scheduleSubscriptionForRetrievalTimes(
-                    subscription, retrievalTimes));
+            unscheduled = scheduleSubscriptionForRetrievalTimes(subscription,
+                    retrievalTimes);
         }
         return unscheduled;
     }

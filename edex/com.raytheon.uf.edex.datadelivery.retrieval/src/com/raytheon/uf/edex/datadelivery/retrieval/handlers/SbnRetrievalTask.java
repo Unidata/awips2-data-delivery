@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,22 +27,25 @@ import java.util.UUID;
 import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.serialization.JAXBManager;
-import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.FileUtil;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
+import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
+import com.raytheon.uf.edex.datadelivery.retrieval.xml.legacy.SbnRetrievalResponseXml;
 
 /**
- * Serializes the retrieved data to a directory.
- * 
+ * RetrievalTask that serializes the retrieved data to a directory for broadcast
+ * over SBN.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 01, 2013  1543     djohnson  Initial creation
@@ -55,14 +58,12 @@ import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
  *                                  inject IRetrievalDao.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Mar 20, 2017  6089     tjensen   Add PDARetrievalResponse to JAXBManager
- * 
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
-public class SerializeRetrievedDataToDirectory
-        implements IRetrievalPluginDataObjectsProcessor {
+public class SbnRetrievalTask extends RetrievalTask {
 
     private final JAXBManager jaxbManager;
 
@@ -70,19 +71,16 @@ public class SerializeRetrievedDataToDirectory
 
     private final IWmoHeaderApplier wmoHeaderWrapper;
 
-    private final IRetrievalDao retrievalDao;
-
     /**
      * @param directory
      */
-    public SerializeRetrievedDataToDirectory(File directory,
-            IWmoHeaderApplier wmoHeaderWrapper, IRetrievalDao retrievalDao) {
+    public SbnRetrievalTask(TokenBucket tokenBucket, File directory,
+            IWmoHeaderApplier wmoHeaderWrapper) {
+        super(tokenBucket);
         this.targetDirectory = directory;
         this.wmoHeaderWrapper = wmoHeaderWrapper;
-        this.retrievalDao = retrievalDao;
         try {
-            this.jaxbManager = new JAXBManager(RetrievalResponseXml.class,
-                    SbnRetrievalResponseXml.class,
+            this.jaxbManager = new JAXBManager(SbnRetrievalResponseXml.class,
                     OpenDapRetrievalResponse.class, WFSRetrievalResponse.class,
                     PDARetrievalResponse.class, Coverage.class);
         } catch (JAXBException e) {
@@ -90,33 +88,23 @@ public class SerializeRetrievedDataToDirectory
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @return the RetrievalRequestRecord associated with the response
-     *         processing.
-     */
     @Override
-    public RetrievalRequestRecord processRetrievedPluginDataObjects(
-            RetrievalResponseXml retrievalPluginDataObjects)
-                    throws SerializationException {
-        retrievalPluginDataObjects.prepareForSerialization();
-
+    public boolean processRetrievedData(Retrieval retrieval,
+            IRetrievalResponse retrievalPluginDataObjects) throws Exception {
         try {
             final String fileName = UUID.randomUUID().toString();
             final File finalFile = new File(targetDirectory, fileName);
             final File tempHiddenFile = new File(finalFile.getParentFile(),
                     "." + finalFile.getName());
 
-            final RetrievalRequestRecord request = retrievalDao
-                    .getById(retrievalPluginDataObjects.getRequestRecord());
+            // generate SbnRetrievalResponseXml
             final String xml = jaxbManager
-                    .marshalToXml(new SbnRetrievalResponseXml(request,
-                            retrievalPluginDataObjects));
-            final Date date = request.getInsertTime();
+                    .marshalToXml(new SbnRetrievalResponseXml(retrieval,
+                            retrievalPluginDataObjects, true));
+            final Date date = TimeUtil.newDate();
             final String textForFile = wmoHeaderWrapper.applyWmoHeader(
-                    request.getProvider(), request.getPlugin(),
-                    getSourceType(request), date, xml);
+                    retrieval.getProvider(), retrieval.getPlugin(),
+                    getSourceType(retrieval.getProvider()), date, xml);
 
             // Write as hidden file, this is OS specific, but there is no
             // platform-neutral way to do this with Java
@@ -128,28 +116,30 @@ public class SerializeRetrievedDataToDirectory
                         + tempHiddenFile.getAbsolutePath() + "] to ["
                         + finalFile.getAbsolutePath() + "]");
             }
-            return request;
+
+            return true;
         } catch (Exception e) {
-            throw new SerializationException(e);
+            throw new Exception(
+                    "Error occurred writing retrieval data to directory for retrieval["
+                            + retrieval + "]",
+                    e);
         }
     }
 
     /**
      * Determine source type from the request.
-     * 
+     *
      * TODO Simple method that is adequate for now. It will need to be updated
      * for new data from NOMADS, MADIS, and PDA.
-     * 
+     *
      * @return source type string ("MODEL", "OBSERVATION", or "SATELLITE")
      */
-    private String getSourceType(RetrievalRequestRecord request) {
-        String provider = request.getProvider();
-
+    private String getSourceType(String provider) {
         // Default to MODEL
         String sourceType = "MODEL";
-        if (provider.equalsIgnoreCase("MADIS")) {
+        if ("MADIS".equals(provider)) {
             sourceType = "OBSERVATION";
-        } else if (provider.equalsIgnoreCase("PDA")) {
+        } else if ("PDA".equals(provider)) {
             sourceType = "SATELLITE";
         }
 

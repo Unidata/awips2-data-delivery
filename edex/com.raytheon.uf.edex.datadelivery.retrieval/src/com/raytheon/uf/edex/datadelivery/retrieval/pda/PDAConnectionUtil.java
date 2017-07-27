@@ -113,16 +113,13 @@ public class PDAConnectionUtil {
     /***
      * Connect using FTPS and grab file
      *
-     * @param protocol
-     * @param providerConn
      * @param providerName
      * @param remoteFileName
-     * @param tokenBucket
      * @return
      */
-    public static String ftpsConnect(Connection providerConn,
-            String providerName, String remoteFilename) throws Exception {
-        return ftpsConnect(providerConn, providerName, remoteFilename, null,
+    public static String ftpsConnect(String providerName, String remoteFilename)
+            throws Exception {
+        return ftpsConnect(providerName, remoteFilename, null,
                 (int) TokenBucket.DEFAULT_WEIGHT);
     }
 
@@ -138,9 +135,8 @@ public class PDAConnectionUtil {
      * @return
      * @throws Exception
      */
-    public static String ftpsConnect(Connection providerConn,
-            String providerName, String remoteFilename, TokenBucket tokenBucket,
-            int priority) throws Exception {
+    public static String ftpsConnect(String providerName, String remoteFilename,
+            TokenBucket tokenBucket, int priority) throws Exception {
         String localFileName = null;
         ProviderCredentials creds = null;
         try {
@@ -300,7 +296,7 @@ public class PDAConnectionUtil {
                 try {
                     ftp.disconnect();
                 } catch (IOException f) {
-                    // do nothing
+                    logger.error("Error occurred during ftp disconnect", f);
                 }
             }
         }

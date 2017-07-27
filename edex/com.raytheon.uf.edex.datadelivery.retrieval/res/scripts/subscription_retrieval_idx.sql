@@ -20,4 +20,4 @@
 CREATE INDEX "subscription_retrieval_nextRetrieval_idx"
   ON subscription_retrieval
   USING btree
-  (state, priority, inserttime, subscriptionname, index);
+  (priority, state, id);

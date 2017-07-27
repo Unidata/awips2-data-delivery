@@ -2,13 +2,9 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs.metadata;
 
 import javax.xml.bind.JAXBException;
 
-import net.opengis.gml.v_3_1_1.AbstractFeatureType;
-import net.opengis.ows.v_1_0_0.ExceptionReport;
-import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
-
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.madis.MadisRecord;
@@ -23,29 +19,34 @@ import com.raytheon.uf.edex.plugin.madis.ogc.feature.Madis;
 import com.raytheon.uf.edex.plugin.madis.ogc.feature.MadisObjectFactory;
 import com.raytheon.uf.edex.wfs.reg.Unique;
 
+import net.opengis.gml.v_3_1_1.AbstractFeatureType;
+import net.opengis.ows.v_1_0_0.ExceptionReport;
+import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
+
 /**
- * 
+ *
  * Convert RetrievalAttribute to MadisRecords.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 12, 2013  753       dhladky      Initial javadoc
- * May 31, 2013 2038       djohnson     Move to correct git repo.
- * June 03, 2012 1763      dhladky      Made operational, moved to ogc plugin
- * Jul 14, 2014 3373       bclement     jaxb manager api changes
- * Jul 24, 2014 3441       dhladky      Fixed what the previous update broke
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------
+ * May 12, 2013  753      dhladky   Initial javadoc
+ * May 31, 2013  2038     djohnson  Move to correct git repo.
+ * Jun 03, 2012  1763     dhladky   Made operational, moved to ogc plugin
+ * Jul 14, 2014  3373     bclement  jaxb manager api changes
+ * Jul 24, 2014  3441     dhladky   Fixed what the previous update broke
+ * Jul 25, 2017  6186     rjpeter   Update signature
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 
-public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis, PointTime, Coverage>
+public class MadisMetadataAdapter
+        extends AbstractMetadataAdapter<Madis, PointTime, Coverage>
         implements IWfsMetaDataAdapter {
 
     private static final IUFStatusHandler statusHandler = UFStatus
@@ -57,7 +58,7 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis, PointTi
     public PluginDataObject getRecord(Madis madis) {
         return madis.getRecord();
     }
-    
+
     @Override
     public PluginDataObject translateFeature(AbstractFeatureType feature) {
         // For WFS features this is where the translation takes place.
@@ -73,13 +74,9 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis, PointTi
         pdos = new MadisRecord[size];
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void processAttributeXml(RetrievalAttribute<PointTime, Coverage> attXML)
+    public void processRetrieval(Retrieval<PointTime, Coverage> retrieval)
             throws InstantiationException {
-        this.attXML = attXML;
     }
 
     public void configureMarshaller() throws JAXBException {
@@ -93,8 +90,8 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis, PointTi
             try {
                 marshaller = new OgcJaxbManager(classes);
             } catch (JAXBException e1) {
-                statusHandler.handle(Priority.PROBLEM,
-                        e1.getLocalizedMessage(), e1);
+                statusHandler.handle(Priority.PROBLEM, e1.getLocalizedMessage(),
+                        e1);
             }
         }
     }
@@ -128,15 +125,18 @@ public class MadisMetadataAdapter extends AbstractMetadataAdapter<Madis, PointTi
             }
         }
     }
-    
+
     /**
      * populate pointdata views
+     *
      * @param pdos
      * @return
      * @throws PluginException
      */
-    public PluginDataObject[] setPointData(PluginDataObject[] pdos) throws PluginException {
-       
+    @Override
+    public PluginDataObject[] setPointData(PluginDataObject[] pdos)
+            throws PluginException {
+
         MadisPointDataTransform mpdt = new MadisPointDataTransform();
         mpdt.toPointData(pdos);
         return pdos;

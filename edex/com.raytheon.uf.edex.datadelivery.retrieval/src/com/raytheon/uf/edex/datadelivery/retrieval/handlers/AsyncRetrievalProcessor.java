@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,17 +17,17 @@ package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.serialization.SerializationUtil;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilities;
 
 /**
  * AsyncRetrievalProcessor
@@ -39,9 +37,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- --------------------------------------------
  * May 05, 2016  5424     dhladky   Initial creation
  * May 11, 2017  6186     rjpeter   RetrievalRequestRecordPK handling.
+ * Jul 27, 2017  6186     rjpeter   Removed AsyncBroker, record always stored
+ *                                  before request sent to provider.
  *
  * </pre>
  *
@@ -49,19 +49,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  */
 
 public class AsyncRetrievalProcessor {
-
-    /** Retrieval queue endpoint */
-    private final String destinationUri;
-
     /** retrieval DAO **/
     private final IRetrievalDao retrievalDao;
 
-    /** async retrieval broker **/
-    private AsyncRetrievalBroker broker = AsyncRetrievalBroker.getInstance();
-
     /** status handler **/
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(AsyncRetrievalProcessor.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * Spring constructor
@@ -69,9 +61,7 @@ public class AsyncRetrievalProcessor {
      * @param destinationUri
      * @param retrievalDao
      */
-    public AsyncRetrievalProcessor(String destinationUri,
-            IRetrievalDao retrievalDao) {
-        this.destinationUri = destinationUri;
+    public AsyncRetrievalProcessor(IRetrievalDao retrievalDao) {
         this.retrievalDao = retrievalDao;
     }
 
@@ -88,75 +78,52 @@ public class AsyncRetrievalProcessor {
             ars = SerializationUtil.transformFromThrift(
                     AsyncRetrievalResponse.class, retrievalBytes);
         } catch (Exception e) {
-            statusHandler
-                    .error("Couldn't deserialize RetrievalResponse class! ", e);
+            logger.error("Couldn't deserialize AsyncRetrievalResponse class! ",
+                    e);
+            return;
         }
 
-        if (ars != null) {
-            RetrievalRequestRecordPK pk = ars.getRequestId();
+        String pk = ars.getRequestId();
 
-            /**
-             * Three scenarios can happen here.
-             *
-             * 1.) The RetrievalRequestRecord hasn't been persisted yet and the
-             * async request returned too early.
-             *
-             * 2.) The AsyncRetrievalResponse has been re-queued by the
-             * SubscriptionRetrievalAgent after persisting the
-             * RetrievalRequestRecord, it's ready now.
-             *
-             * 3.) The SubscriptionRetrievalAgent wins the Race condition and
-             * persists the RetrievalRequestRecord before the
-             * AsyncRetrievalResponse gets here.
-             *
-             * broker.addRetrieval MUST occur before retrievalDao to avoid race
-             * conditions.
-             */
-            boolean isRemove = true;
+        try {
+            RetrievalRequestRecord rrr = retrievalDao
+                    .getById(Integer.parseInt(pk));
 
-            try {
+            if (rrr != null) {
+                Retrieval retrieval = rrr.getRetrievalObj();
+                String file = ars.getFileName();
 
-                broker.addRetrieval(pk.toString(), ars);
-                RetrievalRequestRecord rrr = retrievalDao.getById(pk);
-
-                /*
-                 * Scenario 2 & 3. Record has been created, process the ARS.
-                 */
-                if (rrr != null) {
-
-                    Retrieval retrieval = rrr.getRetrievalObj();
-                    retrieval.getConnection().setUrl(ars.getFileName());
+                if (!State.WAITING_RESPONSE.equals(rrr.getState())) {
+                    logger.warn("Ignoring ASYNC response for retrieval id ["
+                            + retrieval
+                            + "] retrieval not in WAITING_RESPONSE state ["
+                            + rrr.getState() + "] response ["
+                            + ars.getFileName() + "]");
+                } else if (file != null && !file.isEmpty()) {
+                    logger.info("Received async response for retrieval ["
+                            + retrieval + "] response [" + file + "]");
+                    retrieval.setUrl(ars.getFileName());
+                    rrr.setState(State.PENDING);
                     rrr.setRetrievalObj(retrieval);
-
-                    // update for posterity
-                    retrievalDao.update(rrr);
-                    // send to retrieval queue
-                    RetrievalGeneratorUtilities.sendToRetrieval(destinationUri,
-                            rrr.getNetwork(), new Object[] { pk });
-                    statusHandler
-                            .info("Sent async retrieval to Retrieval Queue. "
-                                    + rrr.getNetwork().toString());
-                }
-                /**
-                 * Scenario 1 Must wait for the SubscriptionRetrievalAgent to
-                 * re-queue the ARS.
-                 */
-                else {
-                    statusHandler.debug(
-                            "Async retrieval arrived too soon, waiting. " + pk);
-                    isRemove = false;
+                } else {
+                    logger.error(
+                            "Received emptry async response for retrieval ["
+                                    + retrieval + "] response [" + file + "]");
+                    // TODO: Also needs to fire a SubscriptionNotifyTask
+                    rrr.setState(State.FAILED);
                 }
 
-            } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Couldn't process AsyncRetrievalResponse! ID: " + pk,
-                        e);
-            } finally {
-                // Remove the record in the broker.
-                if (isRemove) {
-                    broker.remove(pk.toString());
-                }
+                // update for posterity
+                retrievalDao.update(rrr);
+            } else {
+                logger.error(
+                        "No RetrievalRequestRecord found for async response id: "
+                                + pk);
             }
+
+        } catch (Exception e) {
+            logger.error("Couldn't process AsyncRetrievalResponse! ID: " + pk,
+                    e);
         }
     }
 

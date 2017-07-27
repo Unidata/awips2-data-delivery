@@ -1,6 +1,6 @@
 package com.raytheon.uf.edex.datadelivery.retrieval.db;
 
-import java.util.Date;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,12 +14,12 @@ import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.SessionManagedDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
+import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionNotifyTask;
 
 /**
  *
@@ -41,6 +41,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.Sta
  *                                  create a new record.
  * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
  * May 09, 2017  6186     rjpeter   Added url
+ * Jul 25, 2017  6186     rjpeter   Removed network
  *
  * </pre>
  *
@@ -49,12 +50,14 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.Sta
 @Repository
 @Transactional
 // TODO: Split service functionality from DAO functionality
-public class RetrievalDao extends
-        SessionManagedDao<RetrievalRequestRecordPK, RetrievalRequestRecord>
+public class RetrievalDao
+        extends SessionManagedDao<Integer, RetrievalRequestRecord>
         implements IRetrievalDao {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RetrievalDao.class);
+
+    private SubscriptionNotifyTask notifyTask;
 
     /**
      * Constructor.
@@ -62,8 +65,20 @@ public class RetrievalDao extends
     public RetrievalDao() {
     }
 
+    public SubscriptionNotifyTask getNotifyTask() {
+        return notifyTask;
+    }
+
+    public void setNotifyTask(SubscriptionNotifyTask notifyTask) {
+        this.notifyTask = notifyTask;
+    }
+
+    /*
+     * TODO: Take into account latency so retrievals that happen often like
+     * MADIS and PDA don't get stuck behind a grid task
+     */
     @Override
-    public RetrievalRequestRecord activateNextRetrievalRequest(Network network)
+    public synchronized RetrievalRequestRecord activateNextRetrievalRequest()
             throws DataAccessLayerException {
         Session sess = null;
         RetrievalRequestRecord rval = null;
@@ -71,29 +86,22 @@ public class RetrievalDao extends
         try {
             sess = getCurrentSession();
 
+            // Find lowest priority item
             final String minPriHql = "select min(rec.priority) from RetrievalRequestRecord rec "
-                    + "where rec.state = :statePending and rec.network = :network";
-            final String minInsertHql = "select min(rec.insertTime) from RetrievalRequestRecord rec "
-                    + "where rec.state = :statePending and rec.priority = :minPri and rec.network = :network";
-            // descending record order to retrieve all for a given subscription
-            // before moving to the next one if two have the same
-            // priority/insertTime
-            final String pkHql = "select rec.id.subscriptionName, min(rec.id.index) from RetrievalRequestRecord rec "
-                    + "where rec.state = :statePending and rec.priority = :minPri and rec.insertTime = :minInsert "
-                    + "and rec.network = :network "
-                    + "group by rec.id.subscriptionName order by min(rec.id.index) desc";
+                    + "where rec.state = :statePending";
+
+            /*
+             * user lowest id, which is generally first inserted without having
+             * to worry about duplicate insert time, thus preserving ordering
+             */
+            final String pkHql = "select min(rec.id) from RetrievalRequestRecord rec "
+                    + "where rec.state = :statePending and rec.priority = :minPri";
 
             Query minPriQuery = sess.createQuery(minPriHql);
             setQueryState(minPriQuery, State.PENDING);
-            setQueryNetwork(minPriQuery, network);
-
-            Query minInsertQuery = sess.createQuery(minInsertHql);
-            setQueryState(minInsertQuery, State.PENDING);
-            setQueryNetwork(minInsertQuery, network);
 
             Query pkQuery = sess.createQuery(pkHql);
             setQueryState(pkQuery, State.PENDING);
-            setQueryNetwork(pkQuery, network);
 
             boolean done = false;
 
@@ -101,47 +109,29 @@ public class RetrievalDao extends
                 Object result = minPriQuery.uniqueResult();
                 if (result != null) {
                     int minPri = ((Number) result).intValue();
-                    minInsertQuery.setInteger("minPri", minPri);
-                    result = minInsertQuery.uniqueResult();
+                    pkQuery.setInteger("minPri", minPri);
+                    result = pkQuery.uniqueResult();
                     if (result != null) {
-                        Date minInsert = (Date) result;
-                        pkQuery.setInteger("minPri", minPri);
-                        pkQuery.setTimestamp("minInsert", minInsert);
-                        pkQuery.setMaxResults(1);
-                        while (rval == null) {
-                            // TODO: Verify recalling uniqueResult causes query
-                            // to happen again
-                            result = pkQuery.uniqueResult();
-                            if (result != null) {
-                                Object[] results = (Object[]) result;
-                                RetrievalRequestRecordPK pk = new RetrievalRequestRecordPK();
-                                pk.setSubscriptionName((String) results[0]);
-                                pk.setIndex(((Number) results[1]).intValue());
+                        rval = (RetrievalRequestRecord) sess.get(
+                                RetrievalRequestRecord.class,
+                                ((Number) result).intValue(),
+                                LockOptions.UPGRADE);
 
-                                // lookup/lock row
-                                rval = (RetrievalRequestRecord) sess.get(
-                                        RetrievalRequestRecord.class, pk,
-                                        LockOptions.UPGRADE);
-                                if (rval == null || !State.PENDING
-                                        .equals(rval.getState())) {
-                                    // another thread grabbed request while
-                                    // waiting for upgrade lock, redo sub query,
-                                    // null out rval in case it was due to state
-                                    // change
-                                    rval = null;
-                                    continue;
-                                }
-
-                                done = true;
-                            } else {
-                                // another thread grabbed last entry for this
-                                // priority/insertTime
-                                break;
-                            }
+                        if (rval == null
+                                || !State.PENDING.equals(rval.getState())) {
+                            /*
+                             * another thread grabbed request while waiting for
+                             * upgrade lock, redo sub query, null out rval in
+                             * case it was due to state change
+                             */
+                            rval = null;
+                            continue;
                         }
                     }
-                    // else another thread grabbed last entry for this priority,
-                    // repeat loop
+                    /*
+                     * else another thread grabbed last entry for this priority,
+                     * repeat loop
+                     */
                 } else {
                     // no Pending entries
                     done = true;
@@ -202,8 +192,8 @@ public class RetrievalDao extends
         Map<State, Integer> rval = new HashMap<>(8);
 
         try {
-            String hql = "select rec.state, count(rec.id.subscriptionName) from RetrievalRequestRecord rec "
-                    + "where rec.id.subscriptionName = :subName and rec.id.url = :url group by rec.state";
+            String hql = "select rec.state, count(rec.subscriptionName) from RetrievalRequestRecord rec "
+                    + "where rec.subscriptionName = :subName and rec.dsmdUrl = :url group by rec.state";
             Query query = getCurrentSession().createQuery(hql);
             query.setString("subName", subName);
             query.setString("url", url);
@@ -240,8 +230,8 @@ public class RetrievalDao extends
             Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
             query.add(Restrictions.eq("state", State.FAILED));
-            query.add(Restrictions.eq("id.subscriptionName", subName));
-            query.add(Restrictions.eq("id.url", url));
+            query.add(Restrictions.eq("subscriptionName", subName));
+            query.add(Restrictions.eq("dsmdUrl", url));
             List<RetrievalRequestRecord> rval = query.list();
             return rval;
         } catch (Exception e) {
@@ -259,7 +249,7 @@ public class RetrievalDao extends
 
         try {
             String hql = "delete from RetrievalRequestRecord rec "
-                    + "where rec.id.subscriptionName = :subName and rec.id.url = :url";
+                    + "where rec.subscriptionName = :subName and rec.dsmdUrl = :url";
             Query query = getCurrentSession().createQuery(hql);
             query.setString("subName", subName);
             query.setString("url", url);
@@ -280,8 +270,8 @@ public class RetrievalDao extends
         try {
             Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
-            query.add(Restrictions.eq("id.subscriptionName", subName));
-            query.add(Restrictions.eq("id.url", url));
+            query.add(Restrictions.eq("subscriptionName", subName));
+            query.add(Restrictions.eq("dsmdUrl", url));
             List<RetrievalRequestRecord> rval = query.list();
             return rval;
         } catch (Exception e) {
@@ -292,20 +282,35 @@ public class RetrievalDao extends
         }
     }
 
+    @Override
+    public void create(RetrievalRequestRecord obj) {
+        super.create(obj);
+        notifyTask.checkNotify(obj);
+    }
+
+    @Override
+    public void update(RetrievalRequestRecord obj) {
+        super.update(obj);
+        notifyTask.checkNotify(obj);
+    }
+
+    @Override
+    public void createOrUpdate(RetrievalRequestRecord obj) {
+        super.createOrUpdate(obj);
+        notifyTask.checkNotify(obj);
+    }
+
+    @Override
+    public void persistAll(Collection<RetrievalRequestRecord> objs) {
+        super.persistAll(objs);
+    }
+
     /**
      * @param query
      * @param state
      */
     private void setQueryState(Query query, State state) {
         query.setParameter("statePending", state);
-    }
-
-    /**
-     * @param query
-     * @param network
-     */
-    private void setQueryNetwork(Query query, Network network) {
-        query.setParameter("network", network);
     }
 
     @Override

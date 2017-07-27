@@ -25,6 +25,7 @@ import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -50,6 +51,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Apr 12, 2015  4400     dhladky   Upgrade to DAP2 protocol with backward
  *                                  compatibility.
  * Jun 13, 2017  6204     nabowle   Cleanup.
+ * Jul 27, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -65,15 +67,9 @@ public class OpenDAPTranslator
     /** Assume current version **/
     private boolean isDods = false;
 
-    public OpenDAPTranslator(
-            RetrievalAttribute<GriddedTime, GriddedCoverage> attXML)
+    public OpenDAPTranslator(Retrieval<GriddedTime, GriddedCoverage> retrieval)
             throws InstantiationException {
-        super(attXML);
-    }
-
-    OpenDAPTranslator(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML,
-            String className) throws InstantiationException {
-        super(attXML, className);
+        super(retrieval);
     }
 
     public PluginDataObject[] asPluginDataObjects(Object dds) {
@@ -179,6 +175,8 @@ public class OpenDAPTranslator
         }
 
         // retrieve data
+        RetrievalAttribute<GriddedTime, GriddedCoverage> attXML = retrieval
+                .getAttribute();
         if (attXML.getCoverage() instanceof GriddedCoverage) {
             GriddedCoverage gridCoverage = attXML.getCoverage();
 
@@ -245,7 +243,7 @@ public class OpenDAPTranslator
     protected int getSubsetNumTimes() {
 
         return ResponseProcessingUtilities
-                .getOpenDAPGridNumTimes(attXML.getTime());
+                .getOpenDAPGridNumTimes(retrieval.getAttribute().getTime());
     }
 
     /**
@@ -254,8 +252,8 @@ public class OpenDAPTranslator
     @Override
     protected int getSubsetNumLevels() {
 
-        return ResponseProcessingUtilities
-                .getOpenDAPGridNumLevels(attXML.getParameter());
+        return ResponseProcessingUtilities.getOpenDAPGridNumLevels(
+                retrieval.getAttribute().getParameter());
     }
 
     /**
@@ -265,7 +263,7 @@ public class OpenDAPTranslator
     protected List<DataTime> getTimes() {
 
         return ResponseProcessingUtilities
-                .getOpenDAPGridDataTimes(attXML.getTime());
+                .getOpenDAPGridDataTimes(retrieval.getAttribute().getTime());
     }
 
     /**

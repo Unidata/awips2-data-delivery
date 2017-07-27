@@ -1,7 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.pda;
-
-import java.io.File;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -21,32 +17,26 @@ import java.io.File;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
-import java.util.HashMap;
+import java.io.File;
+import java.util.Collections;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalEvent;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
-import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
 
 /**
  * {@link IServiceFactory} implementation for PDA.
@@ -56,7 +46,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
+ * ------------- -------- --------- ------------------------------------------
  * Jun 13, 2014  3120     dhladky   Initial creation
  * Sep 04, 2014  3121     dhladky   Sharpened the retrieval mechanism.
  * Sep 26, 2014  3127     dhladky   Adding geographic subsetting.
@@ -69,6 +59,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
  * Jun 29, 2017  6130     tjensen   Add support for local testing
+ * Jul 25, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -76,39 +67,31 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  */
 public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(PDARetrievalAdapter.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public IRetrievalRequestBuilder<Time, Coverage> createRequestMessage(
-            RetrievalAttribute<Time, Coverage> prxml) {
-
-        PDARequestBuilder reqBuilder = new PDARequestBuilder(prxml,
-                getProviderRetrievalXMl().getSubscriptionName());
-        reqBuilder.setRequest(
-                this.getProviderRetrievalXMl().getConnection().getUrl());
-
-        return reqBuilder;
+            Retrieval<Time, Coverage> retrieval) {
+        return new PDARequestBuilder(retrieval);
     }
 
     @Override
-    public RetrievalResponse<Time, Coverage> performRequest(
+    public PDARetrievalResponse performRequest(
+            Retrieval<Time, Coverage> retrieval,
             IRetrievalRequestBuilder<Time, Coverage> request) throws Exception {
 
         String localFilePath = null;
         String fileName = null;
+        String url = request.getRequest();
 
-        if (request.getRequest() != null) {
+        if (url != null && !url.isEmpty()) {
             try {
-                String providerName = request.getAttribute().getProvider();
-                ServiceConfig serviceConfig = HarvesterServiceManager
-                        .getInstance().getServiceConfig(ServiceType.PDA);
+                String providerName = retrieval.getProvider();
                 if (Boolean
                         .parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
                     // Find file in Local Test dir
                     String[] remotePathAndFile = PDAConnectionUtil
-                            .separateRemoteFileDirectoryAndFileName(
-                                    request.getRequest());
+                            .separateRemoteFileDirectoryAndFileName(url);
                     fileName = System.getProperty("LOCAL_DATA_DIR")
                             + File.separator + remotePathAndFile[1];
 
@@ -117,13 +100,11 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                      * Have to re-write the URL for the connection to the FTPS
                      * root
                      */
-                    localFilePath = PDAConnectionUtil.ftpsConnect(
-                            this.getProviderRetrievalXMl().getConnection(),
-                            providerName, request.getRequest(),
-                            getTokenBucket(), getPriority());
+                    localFilePath = PDAConnectionUtil.ftpsConnect(providerName,
+                            url, getTokenBucket(), getPriority());
 
                     if (localFilePath != null) {
-                        statusHandler.handle(Priority.INFO,
+                        logger.info(
                                 "Received file from PDA, stored to location: "
                                         + localFilePath);
                         fileName = localFilePath;
@@ -133,51 +114,42 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
                 throw new Exception("FTPS error occurred", e);
             }
         } else {
-            statusHandler.handle(Priority.ERROR,
-                    "Request URL for Dataset is null!");
-            EventBus.publish(
-                    new RetrievalEvent("Request URL for Dataset is null!"));
+            throw new Exception("FTPS URL for DataSet is empty");
         }
-
-        /*
-         * We have to read in the file and store in RetrievalResponse as a
-         * byte[] We have to do this in order to allow for Shared Subscription
-         * delivery of PDA data which must be serialized and delivered via SBN,
-         * which isn't going to give us a nice pretty file we can access.
-         */
-
-        PDARetrievalResponse pr = new PDARetrievalResponse(
-                request.getAttribute());
 
         if (fileName == null) {
             throw new Exception(
                     "Filename for object pulled from PDA server is null!");
         }
-        try {
-            // convert to byte[] and compress for friendly keeping
-            pr.setFileBytes(
-                    ResponseProcessingUtilities.getCompressedFile(fileName));
-            pr.setFileName(fileName);
-            if (request instanceof PDARequestBuilder) {
-                PDARequestBuilder pdaRequest = (PDARequestBuilder) request;
-                pr.setSubName(pdaRequest.getSubName());
-            }
-        } catch (Exception e) {
-            throw new Exception("Problem setting payload object for PDA", e);
+
+        File pdaFile = new File(fileName);
+        if (!pdaFile.exists()) {
+            throw new Exception(
+                    "File downloaded from PDA server does not exist: "
+                            + fileName);
         }
 
-        return pr;
+        if (pdaFile.length() == 0) {
+            throw new Exception(
+                    "File downloaded from PDA server is empty: " + fileName);
+        }
+
+        PDARetrievalResponse rval = new PDARetrievalResponse();
+        rval.setFileName(fileName);
+
+        // generate statistic
+        generateRetrievalEvent(retrieval, pdaFile.length());
+        return rval;
     }
 
     @Override
     public Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse<Time, Coverage> response,
-            RetrievalRequestRecord requestRecord) throws TranslationException {
-
+            Retrieval<Time, Coverage> retrieval, IRetrievalResponse response)
+            throws TranslationException {
         PDATranslator translator;
 
         try {
-            translator = getPDATranslator(response.getAttribute());
+            translator = getPDATranslator(retrieval);
         } catch (InstantiationException e) {
             throw new TranslationException(
                     "Unable to instantiate a required class!", e);
@@ -185,12 +157,11 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
 
         try {
             DataSet dataSet = DataDeliveryHandlers.getDataSetHandler()
-                    .getByNameAndProvider(requestRecord.getDataSetName(),
-                            requestRecord.getProvider());
+                    .getByNameAndProvider(retrieval.getDataSetName(),
+                            retrieval.getProvider());
 
-            translator.storeAndProcess((PDARetrievalResponse) response, dataSet,
-                    requestRecord.getOwner());
-
+            translator.storeAndProcess((PDARetrievalResponse) response,
+                    dataSet);
         } catch (ClassCastException | RegistryHandlerException e) {
             throw new TranslationException(e);
         }
@@ -199,18 +170,16 @@ public class PDARetrievalAdapter extends RetrievalAdapter<Time, Coverage> {
          * Return an empty map, as PDA Retrieval processing is finished in
          * Ingest.
          */
-        return new HashMap<>();
-
+        return Collections.emptyMap();
     }
 
     /**
-     * @param attribute
+     * @param retrieval
      * @return
      */
     private static PDATranslator getPDATranslator(
-            RetrievalAttribute<Time, Coverage> attribute)
-            throws InstantiationException {
-        return new PDATranslator(attribute);
+            Retrieval<Time, Coverage> retrieval) throws InstantiationException {
+        return new PDATranslator(retrieval);
     }
 
 }

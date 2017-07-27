@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.harvester.pda;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,11 +17,11 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.harvester.pda;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
 import com.raytheon.uf.common.datadelivery.harvester.PDACatalogServiceResponseWrapper;
-import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -45,6 +43,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAConnectionUtil;
  * Jul 11, 2016  5752     tjensen   Fix saving off file for comparison
  * Mar 09, 2017  6089     tjensen   Strip Primary/Backup from file paths
  * Jun 23, 2017  6322     tgurney   getRecordFile throws Exception
+ * Jul 25, 2017  6186     rjpeter   Removed use of Connection
  *
  * </pre>
  *
@@ -118,16 +117,13 @@ public class RetrievePDACatalogServiceResultsRecord {
         }
 
         String providerName = getHarvesterConfig().getProvider().getName();
-        Connection providerConn = getHarvesterConfig().getProvider()
-                .getConnection();
 
-        if (providerName != null && providerConn != null
-                && recordFilePath != null) {
+        if (providerName != null && recordFilePath != null) {
             recordFilePath = recordFilePath.replaceFirst("(Primary|Backup):",
                     "");
             // FTPS the file down
-            localFilePath = PDAConnectionUtil.ftpsConnect(providerConn,
-                    providerName, recordFilePath);
+            localFilePath = PDAConnectionUtil.ftpsConnect(providerName,
+                    recordFilePath);
             statusHandler
                     .info("Retrieved PDA Catalog Service getRecords() results file: "
                             + localFilePath);

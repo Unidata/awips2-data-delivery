@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.grid.GridRecord;
@@ -54,6 +55,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Sep 25, 2013  1797     dhladky   separated time from gridded time
  * Apr 22, 2014  3046     dhladky   Got rid of duplicate code.
  * Jun 13, 2017  6204     nabowle   Cleanup.
+ * Jul 27, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -69,10 +71,11 @@ public class GridMetadataAdapter
     }
 
     @Override
-    public void processAttributeXml(
-            RetrievalAttribute<GriddedTime, GriddedCoverage> attXML)
+    public void processRetrieval(
+            Retrieval<GriddedTime, GriddedCoverage> retrieval)
             throws InstantiationException {
-        this.attXML = attXML;
+        RetrievalAttribute<GriddedTime, GriddedCoverage> attXML = retrieval
+                .getAttribute();
         Level[] levels = getLevels(attXML);
         int size = levels.length;
 
@@ -102,7 +105,8 @@ public class GridMetadataAdapter
             for (String ensemble : ensembles) {
                 for (int i = 0; i < time.getSelectedTimeIndices().size(); i++) {
                     for (Level level : levels) {
-                        pdos[bin] = populateGridRecord(attXML.getSubName(),
+                        pdos[bin] = populateGridRecord(
+                                retrieval.getSubscriptionName(),
                                 attXML.getParameter(), level, ensemble,
                                 gridCoverage);
                         bin++;
@@ -111,7 +115,7 @@ public class GridMetadataAdapter
             }
         } else {
 
-            pdos[0] = populateGridRecord(attXML.getSubName(),
+            pdos[0] = populateGridRecord(retrieval.getSubscriptionName(),
                     attXML.getParameter(), levels[0], ensembles.get(0),
                     gridCoverage);
 

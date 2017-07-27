@@ -29,12 +29,11 @@ import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
 import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -57,11 +56,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 03, 2016  5599     tjensen   Added subscription name to PDA requests
  * Jul 20, 2017  6130     tjensen   Consolidate PDAAbstractRequestBuilder and
  *                                  PDAAsyncRequest into PDARequestBuilder
+ * Jul 25, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
@@ -83,11 +82,9 @@ public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
 
     protected String request = null;
 
-    protected String subName = null;
-
     private OgcJaxbManager manager = null;
 
-    private RetrievalRequestRecordPK retrievalID = null;
+    private String retrievalID = null;
 
     protected String metaDataID = null;
 
@@ -157,11 +154,9 @@ public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
      * @param metaDataID
      * @param retrievalID
      */
-    public PDARequestBuilder(RetrievalAttribute<Time, Coverage> ra,
-            String subName, String metaDataID,
-            RetrievalRequestRecordPK retrievalId) {
+    public PDARequestBuilder(Retrieval<Time, Coverage> ra, String metaDataID,
+            String retrievalId) {
         super(ra);
-        this.subName = subName;
         setMetaDataID(metaDataID);
 
         setRetrievalID(retrievalId);
@@ -175,7 +170,7 @@ public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
         }
         query.append(footer);
         // set the request
-        setRequest(query.toString());
+        request = query.toString();
     }
 
     /**
@@ -183,10 +178,9 @@ public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
      *
      * @param ra
      */
-    protected PDARequestBuilder(RetrievalAttribute<Time, Coverage> ra,
-            String subName) {
-        super(ra);
-        this.subName = subName;
+    protected PDARequestBuilder(Retrieval<Time, Coverage> retrieval) {
+        super(retrieval);
+        this.request = retrieval.getUrl();
     }
 
     @Override
@@ -196,36 +190,7 @@ public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
 
     @Override
     public String getRequest() {
-        // There are no switches for full data set PDA.
         return request;
-    }
-
-    /**
-     * Sets the request string
-     *
-     * @param request
-     */
-    public void setRequest(String request) {
-        this.request = request;
-    }
-
-    /**
-     * Get Subscription name
-     *
-     * @return
-     */
-    public String getSubName() {
-        return subName;
-    }
-
-    /**
-     * Sets Subscription name
-     *
-     * @param subName
-     *            Name of the subscription
-     */
-    public void setSubName(String subName) {
-        this.subName = subName;
     }
 
     /**
@@ -241,11 +206,6 @@ public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
         }
 
         return pdaServiceConfig;
-    }
-
-    @Override
-    public RetrievalAttribute<Time, Coverage> getAttribute() {
-        return ra;
     }
 
     /**
@@ -510,11 +470,11 @@ public class PDARequestBuilder extends RequestBuilder<Time, Coverage> {
         }
     }
 
-    private RetrievalRequestRecordPK getRetrievalID() {
+    private String getRetrievalID() {
         return retrievalID;
     }
 
-    protected void setRetrievalID(RetrievalRequestRecordPK retrievalID) {
+    protected void setRetrievalID(String retrievalID) {
         this.retrievalID = retrievalID;
     }
 

@@ -21,6 +21,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -41,7 +42,8 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
@@ -64,6 +66,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Mar 31, 2017  6186     rjpeter   Update to handle passed in DataSetMetaData.
  * Jun 29, 2017  6130     tjensen   Add support for local PDA testing and
  *                                  override getRetrievalMode
+ * Jul 25, 2017  6186     rjpeter   Update to handle Retrieval refactor
  *
  * </pre>
  *
@@ -83,15 +86,14 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
     }
 
     @Override
-    public List<Retrieval> buildRetrieval(DataSetMetaData<Time, Coverage> dsmd,
-            SubscriptionBundle bundle) {
+    public List<Retrieval<Time, Coverage>> buildRetrieval(
+            DataSetMetaData<Time, Coverage> dsmd, SubscriptionBundle bundle) {
         try {
             PDADataSetMetaData pdadsmd = (PDADataSetMetaData) dsmd;
             @SuppressWarnings("unchecked")
             Subscription<Time, Coverage> sub = (Subscription<Time, Coverage>) bundle
                     .getSubscription();
             Coverage cov = sub.getCoverage();
-            int index = 0;
 
             List<Parameter> parameters = sub.getParameter();
             if (CollectionUtil.isNullOrEmpty(parameters)) {
@@ -106,63 +108,29 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             // With PDA it's one param at a time. so always 0.
             Parameter subParam = sub.getParameter().get(0);
 
+            Retrieval<Time, Coverage> retrieval = new Retrieval<>();
+            retrieval.setSubscriptionName(sub.getName());
+            retrieval.setServiceType(getServiceType());
+            retrieval.setProvider(sub.getProvider());
+            retrieval.setOwner(sub.getOwner());
+            retrieval.setDataType(DataType.PDA);
+            retrieval.setSubscriptionType(getSubscriptionType(sub));
+            retrieval.setNetwork(sub.getRoute());
+
+            final ProviderType providerType = bundle.getProvider()
+                    .getProviderType(bundle.getDataType());
+            retrieval.setPlugin(providerType.getPlugin());
+
             RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<>();
             Parameter lparam = processParameter(subParam);
             lparam.setLevels(subParam.getLevels());
             att.setParameter(lparam);
             att.setCoverage(cov);
             att.setTime(time);
-            att.setSubName(sub.getName());
-            final ProviderType providerType = bundle.getProvider()
-                    .getProviderType(bundle.getDataType());
-            att.setPlugin(providerType.getPlugin());
-            att.setProvider(sub.getProvider());
-
-            /*
-             * Build RetrievalRecordPK key, PDA processes one at a time.
-             */
-            RetrievalRequestRecordPK retrievalId = new RetrievalRequestRecordPK();
-            retrievalId.setUrl(pdadsmd.getUrl());
-            retrievalId.setSubscriptionName(sub.getName());
-            retrievalId.setIndex(index);
-            String wcsDataURL = null;
-
-            try {
-                logger.info("Submitting WCS Request for DataSetMetaData: ["
-                        + pdadsmd.getDataSetName() + "] MetaDataID: ["
-                        + pdadsmd.getMetaDataID() + "] time ["
-                        + time.getStart().toString() + "]");
-                wcsDataURL = performWCSRequest(pdadsmd, sub, att, retrievalId);
-            } catch (Exception e) {
-                throw new Exception("PDA dataset WCS query failed! DataSet: "
-                        + sub.getDataSetName() + " url: " + pdadsmd.getUrl()
-                        + " subscriptionName: " + sub.getName(), e);
-            }
-
-            logger.info("PDA WCS response: " + wcsDataURL);
-            Retrieval retrieval = new Retrieval();
-            retrieval.setSubscriptionName(sub.getName());
-            retrieval.setServiceType(getServiceType());
-            retrieval.setConnection(bundle.getConnection());
-            retrieval.setOwner(sub.getOwner());
-
-            // null out the URL, we will request the actual one.
-            retrieval.getConnection().setUrl(null);
-            retrieval.setDataType(DataType.PDA);
-
-            retrieval.setSubscriptionType(getSubscriptionType(sub));
-            retrieval.setNetwork(sub.getRoute());
-            retrieval.addAttribute(att);
-
-            /*
-             * Sets for async as well as sync, just a placeholder for async. It
-             * will be over written with the real value when the async response
-             * is returned.
-             */
-            retrieval.getConnection().setUrl(wcsDataURL);
+            retrieval.setAttribute(att);
             return Arrays.asList(retrieval);
         } catch (Exception e) {
-            logger.error("PDA Retrieval building has failed.", e);
+            logger.error("PDA Retrieval building has failed." + e);
         }
 
         return Collections.emptyList();
@@ -174,38 +142,64 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
     }
 
     /**
-     * Submit a WCS Request to PDA returning the webservice response.
-     *
-     * @param pdadsmd
-     * @param sub
-     * @param ra
-     * @param retrievalID
-     * @return String (Filepath or Message)
-     * @throws Exception
+     * Submit WCS requests for the retrievals.
      */
-    private String performWCSRequest(PDADataSetMetaData pdadsmd,
-            Subscription<Time, Coverage> sub,
-            RetrievalAttribute<Time, Coverage> ra,
-            RetrievalRequestRecordPK retrievalId) throws Exception {
-        String metaDataKey = pdadsmd.getMetaDataID();
-        PDARequestBuilder request = null;
+    @Override
+    public List<RetrievalRequestRecord> postSaveActions(
+            DataSetMetaData<Time, Coverage> dsmd, SubscriptionBundle bundle,
+            List<RetrievalRequestRecord> records) {
+        PDADataSetMetaData pdaDsmd = (PDADataSetMetaData) dsmd;
+        String metaDataKey = pdaDsmd.getMetaDataID();
+        Subscription sub = bundle.getSubscription();
+        List<RetrievalRequestRecord> rval = new LinkedList<>();
 
-        /*
-         * TODO: Shouldn't this execute the request on a retrieval thread
-         * instead of on the generator thread
-         */
-        String retVal;
-        if (Boolean.parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
-            retVal = pdadsmd.getUrl();
-        } else {
-            request = new PDARequestBuilder(ra, sub.getName(), metaDataKey,
-                    retrievalId);
+        for (RetrievalRequestRecord record : records) {
+            try {
+                Retrieval retrieval = record.getRetrievalObj();
 
-            // Make the request then process the response.
-            retVal = request.performRequest();
+                if (Boolean
+                        .parseBoolean(System.getProperty("LOCAL_DATA_TEST"))) {
+                    // dataSetMetaData url is path to file
+                    retrieval.setUrl(pdaDsmd.getUrl());
+                    record.setState(State.PENDING);
+                    record.setRetrievalObj(retrieval);
+                    rval.add(record);
+                } else {
+                    /*
+                     * Note DO NOT return and records on this path to avoid
+                     * collision / overwrites with async response thread once
+                     * wcs request submitted
+                     */
+
+                    /*
+                     * TODO: move this to retrieval so that its not occurring on
+                     * the generator thread and doesn't cloud the issue of dsmd
+                     * url vs retrieval url
+                     */
+                    logger.info("Submitting WCS Request for Retrieval ["
+                            + retrieval + "] MetaDataID: ["
+                            + pdaDsmd.getMetaDataID() + "]");
+                    PDARequestBuilder request = new PDARequestBuilder(retrieval,
+                            metaDataKey, Integer.toString(record.getId()));
+
+                    // Make the request then process the response.
+                    String wcsDataURL = request.performRequest();
+                    logger.info("PDA WCS response: " + wcsDataURL);
+
+                    // TODO: Parse bad response and fail record immediately?
+                }
+            } catch (Exception e) {
+                logger.error("PDA dataset WCS query failed! DataSet: "
+                        + sub.getDataSetName() + " url: " + pdaDsmd.getUrl()
+                        + " subscriptionName: " + sub.getName(), e);
+                // TODO: Set SubscriptionNotifyTask for all failed
+                record.setState(State.FAILED);
+                rval.add(record);
+            }
+
         }
 
-        return retVal;
+        return rval;
     }
 
     @Override

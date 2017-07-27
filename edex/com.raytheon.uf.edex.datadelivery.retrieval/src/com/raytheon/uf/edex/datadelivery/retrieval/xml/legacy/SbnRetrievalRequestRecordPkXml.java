@@ -17,12 +17,15 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
+package com.raytheon.uf.edex.datadelivery.retrieval.xml.legacy;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * Dynamic serializer for OpenDAP retrieval responses.
+ * Used to represent legacy RetrievalRequestRecordPk
  *
  * <pre>
  *
@@ -30,26 +33,34 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
  *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
- * Feb 12, 2013  1543     djohnson  Initial creation
- * Feb 15, 2013  1543     djohnson  Also can be used as JAXB adapter for
- *                                  DataDDS.
- * Apr 15, 2015  4400     dhladky   Updated for DAP2 protocol and backward
- *                                  compatibility.
- * Jul 27, 2017  6186     rjpeter   Remove Thrift Serialization.
+ * Jul 27, 2017  6186     rjpeter   Initial creation.
  *
  * </pre>
  *
- * @author djohnson
+ * @author rjpeter
  */
-public class OpenDapRetrievalResponseSerializer
-        extends XmlAdapter<byte[], Object> {
-    @Override
-    public Object unmarshal(byte[] v) throws Exception {
-        return DodsUtils.restoreDataDdsFromByteArray(v);
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.NONE)
+public class SbnRetrievalRequestRecordPkXml {
+    @XmlAttribute
+    private String subscriptionName;
+
+    @XmlAttribute
+    private int index;
+
+    public String getSubscriptionName() {
+        return subscriptionName;
     }
 
-    @Override
-    public byte[] marshal(Object v) throws Exception {
-        return DodsUtils.convertDataDdsToByteArray(v);
+    public void setSubscriptionName(String subscriptionName) {
+        this.subscriptionName = subscriptionName;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
     }
 }

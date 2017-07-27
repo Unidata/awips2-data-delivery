@@ -64,6 +64,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * Oct 28, 2013  2448     dhladky   Request start time incorrectly used
  *                                  subscription start time.
  * Apr 20, 2017  6186     rjpeter   Update buildRetrieval signature.
+ * Jul 25, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -79,11 +80,12 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
     }
 
     @Override
-    public List<Retrieval> buildRetrieval(
+    public List<Retrieval<PointTime, Coverage>> buildRetrieval(
             DataSetMetaData<PointTime, Coverage> dsmd,
             SubscriptionBundle bundle) {
 
-        List<Retrieval> retrievals = Collections.emptyList();
+        List<Retrieval<PointTime, Coverage>> retrievals = Collections
+                .emptyList();
         switch (bundle.getDataType()) {
         case POINT:
             retrievals = getPointRetrievals(bundle);
@@ -104,9 +106,10 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private List<Retrieval> getPointRetrievals(SubscriptionBundle bundle) {
+    private List<Retrieval<PointTime, Coverage>> getPointRetrievals(
+            SubscriptionBundle bundle) {
 
-        List<Retrieval> retrievals = new ArrayList<>(1);
+        List<Retrieval<PointTime, Coverage>> retrievals = new ArrayList<>(1);
         Subscription<PointTime, Coverage> sub = (Subscription<PointTime, Coverage>) bundle
                 .getSubscription();
 
@@ -138,7 +141,8 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
                 param = sub.getParameter().get(0);
             }
 
-            Retrieval retrieval = getRetrieval(sub, bundle, param, subTime);
+            Retrieval<PointTime, Coverage> retrieval = getRetrieval(sub, bundle,
+                    param, subTime);
             retrievals.add(retrieval);
         }
 
@@ -155,14 +159,14 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
      * @param Time
      * @return
      */
-    private Retrieval getRetrieval(Subscription<PointTime, Coverage> sub,
-            SubscriptionBundle bundle, Parameter param, PointTime time) {
+    private Retrieval<PointTime, Coverage> getRetrieval(
+            Subscription<PointTime, Coverage> sub, SubscriptionBundle bundle,
+            Parameter param, PointTime time) {
 
-        Retrieval retrieval = new Retrieval();
+        Retrieval<PointTime, Coverage> retrieval = new Retrieval<>();
         retrieval.setSubscriptionName(sub.getName());
         retrieval.setServiceType(getServiceType());
-        retrieval.setConnection(bundle.getConnection());
-        retrieval.getConnection().setUrl(sub.getUrl());
+        retrieval.setUrl(sub.getUrl());
         retrieval.setOwner(sub.getOwner());
         retrieval.setSubscriptionType(getSubscriptionType(sub));
         retrieval.setNetwork(sub.getRoute());
@@ -192,10 +196,9 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
         }
 
         att.setTime(time);
-        att.setSubName(retrieval.getSubscriptionName());
-        att.setPlugin(plugin);
-        att.setProvider(sub.getProvider());
-        retrieval.addAttribute(att);
+        retrieval.setPlugin(plugin);
+        retrieval.setProvider(sub.getProvider());
+        retrieval.setAttribute(att);
 
         return retrieval;
     }

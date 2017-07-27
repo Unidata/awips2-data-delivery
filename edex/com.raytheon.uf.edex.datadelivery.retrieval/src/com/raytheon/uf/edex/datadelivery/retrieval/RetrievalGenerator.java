@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 
 /**
@@ -64,6 +66,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jun 13, 2017  6204     nabowle   Use copy constructor in processParameter()
  * Jul 10, 2017  6130     tjensen   Update getRetrievalMode to not look at
  *                                  ServiceConfig
+ * Jul 25, 2017  6186     rjpeter   Update signature
  *
  * </pre>
  *
@@ -116,8 +119,8 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
      * @return
      * @return
      */
-    public abstract List<Retrieval> buildRetrieval(DataSetMetaData<T, C> dsmd,
-            SubscriptionBundle bundle);
+    public abstract List<Retrieval<T, C>> buildRetrieval(
+            DataSetMetaData<T, C> dsmd, SubscriptionBundle bundle);
 
     public abstract RetrievalAdapter<T, C> getServiceRetrievalAdapter();
 
@@ -175,7 +178,21 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
      * @return RETRIEVAL_MODE
      */
     public RETRIEVAL_MODE getRetrievalMode() {
-
         return RETRIEVAL_MODE.SYNC;
+    }
+
+    /**
+     * Perform any post save actions on the RetrievalRequestRecord. Returns a
+     * list of RetrievalRequestRecords that need to have updated persisted.
+     *
+     * @param dsmd
+     * @param bundle
+     * @param records
+     * @return
+     */
+    public List<RetrievalRequestRecord> postSaveActions(
+            DataSetMetaData<T, C> dsmd, SubscriptionBundle bundle,
+            List<RetrievalRequestRecord> records) {
+        return Collections.emptyList();
     }
 }

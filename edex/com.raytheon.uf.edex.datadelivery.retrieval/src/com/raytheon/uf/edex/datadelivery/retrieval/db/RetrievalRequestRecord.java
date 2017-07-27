@@ -19,25 +19,24 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.db;
 
-import java.io.Serializable;
 import java.util.Date;
 
 import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
 import com.raytheon.uf.common.dataplugin.persist.IPersistableDataObject;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
-import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
-import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Retrieval Request Record
@@ -57,6 +56,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jan 30, 2014  2686     dhladky   refactor of retrieval.
  * May 11, 2015  6186     rjpeter   Updated constructor.
  * May 22, 2017  6130     tjensen   Add DataSetName
+ * Jul 31, 2017  6186     rjpeter   Refactored to be auto id.
  *
  * </pre>
  *
@@ -64,168 +64,126 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  */
 @Entity
 @Table(name = "subscription_retrieval")
-@DynamicSerialize
-public class RetrievalRequestRecord implements
-        IPersistableDataObject<RetrievalRequestRecordPK>, Serializable {
+@SequenceGenerator(initialValue = 1, allocationSize = 1, name = "SubscriptionRetrieval", sequenceName = "subscription_retrieval_seq")
+public class RetrievalRequestRecord implements IPersistableDataObject<Integer> {
 
     public enum State {
-        PENDING, RUNNING, FAILED, COMPLETED;
+        WAITING_RESPONSE, PENDING, RUNNING, FAILED, COMPLETED;
     };
 
-    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SubscriptionRetrieval")
+    protected int id;
 
-    @EmbeddedId
-    @DynamicSerializeElement
-    private RetrievalRequestRecordPK id;
+    @Column(nullable = false)
+    private String dsmdUrl;
 
-    @DynamicSerializeElement
+    @Column(nullable = false)
+    private String owner;
+
+    @Column(nullable = false)
+    private String subscriptionName;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private State state;
 
     @Column(nullable = false)
-    @DynamicSerializeElement
     private int priority = Integer.MAX_VALUE;
 
     @Column(nullable = false)
-    @DynamicSerializeElement
-    private String owner;
-
-    @Column(nullable = false)
-    @DynamicSerializeElement
-    private String plugin;
-
-    @Column(nullable = false)
-    @DynamicSerializeElement
-    private SubscriptionType subscriptionType;
-
-    @Column(nullable = false)
-    @DynamicSerializeElement
-    private Network network;
-
-    @Column(nullable = false)
-    @DynamicSerializeElement
     private String provider;
 
     @Column(nullable = false)
-    @DynamicSerializeElement
     private String dataSetName;
 
     @Column(nullable = false)
-    @DynamicSerializeElement
     private Date insertTime;
 
+    @Column(nullable = false)
+    private Long bandwidthAllocationId;
+
     @Column(nullable = false, length = 100_000)
-    @DynamicSerializeElement
     private byte[] retrieval;
+
+    /*
+     * TODO: Add latency field so that we do not get overwhelmed if a provider
+     * is down for a period time processing old data
+     */
 
     @Transient
     private Retrieval retrievalObj;
 
-    @Column(nullable = false)
-    @DynamicSerializeElement
-    private Long subRetrievalKey;
-
     public RetrievalRequestRecord() {
     }
 
-    public RetrievalRequestRecord(String url, String subscriptionName,
-            int index, Long subRetrievalKey) {
-        id = new RetrievalRequestRecordPK(url, subscriptionName, index);
-        this.subRetrievalKey = subRetrievalKey;
+    public RetrievalRequestRecord(Retrieval retrieval, String dsmdUrl,
+            State state, int priority, Long bandwidthAllocationId) {
+        this.dsmdUrl = dsmdUrl;
+        owner = retrieval.getOwner();
+        subscriptionName = retrieval.getSubscriptionName();
+        this.state = state;
+        this.priority = priority;
+        provider = retrieval.getProvider();
+        dataSetName = retrieval.getDataSetName();
+        insertTime = TimeUtil.newDate();
+        this.bandwidthAllocationId = bandwidthAllocationId;
     }
 
-    public RetrievalRequestRecordPK getId() {
+    public int getId() {
         return id;
     }
 
-    @Override
-    public RetrievalRequestRecordPK getIdentifier() {
-        return id;
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public Date getInsertTime() {
-        return insertTime;
+    public String getDsmdUrl() {
+        return dsmdUrl;
+    }
+
+    public void setDsmdUrl(String dsmdUrl) {
+        this.dsmdUrl = dsmdUrl;
     }
 
     public String getOwner() {
         return owner;
     }
 
-    public String getPlugin() {
-        return plugin;
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 
-    public int getPriority() {
-        return priority;
+    public String getSubscriptionName() {
+        return subscriptionName;
     }
 
-    public byte[] getRetrieval() {
-        return retrieval;
+    public void setSubscriptionName(String subscriptionName) {
+        this.subscriptionName = subscriptionName;
     }
 
     public State getState() {
         return state;
     }
 
-    public Long getSubRetrievalKey() {
-        return subRetrievalKey;
+    public void setState(State state) {
+        this.state = state;
     }
 
-    public void setId(RetrievalRequestRecordPK id) {
-        this.id = id;
-    }
-
-    public void setInsertTime(Date insertTime) {
-        this.insertTime = insertTime;
-    }
-
-    public void setOwner(String owner) {
-        this.owner = owner;
-    }
-
-    public void setPlugin(String plugin) {
-        this.plugin = plugin;
+    public int getPriority() {
+        return priority;
     }
 
     public void setPriority(int priority) {
         this.priority = priority;
     }
 
-    public void setRetrieval(byte[] retrieval) {
-        this.retrieval = retrieval;
-    }
-
-    public void setState(State state) {
-        this.state = state;
-    }
-
-    public void setSubRetrievalKey(Long subRetrievalKey) {
-        this.subRetrievalKey = subRetrievalKey;
-    }
-
-    public void setSubscriptionType(SubscriptionType subscriptionType) {
-        this.subscriptionType = subscriptionType;
-    }
-
-    public SubscriptionType getSubscriptionType() {
-        return subscriptionType;
-    }
-
-    public void setNetwork(Network network) {
-        this.network = network;
-    }
-
-    public Network getNetwork() {
-        return network;
+    public String getProvider() {
+        return provider;
     }
 
     public void setProvider(String provider) {
         this.provider = provider;
-    }
-
-    public String getProvider() {
-        return provider;
     }
 
     public String getDataSetName() {
@@ -234,6 +192,22 @@ public class RetrievalRequestRecord implements
 
     public void setDataSetName(String dataSetName) {
         this.dataSetName = dataSetName;
+    }
+
+    public Date getInsertTime() {
+        return insertTime;
+    }
+
+    public void setInsertTime(Date insertTime) {
+        this.insertTime = insertTime;
+    }
+
+    public byte[] getRetrieval() {
+        return retrieval;
+    }
+
+    public void setRetrieval(byte[] retrieval) {
+        this.retrieval = retrieval;
     }
 
     /**
@@ -264,4 +238,24 @@ public class RetrievalRequestRecord implements
         }
         return retrievalObj;
     }
+
+    @Override
+    public String toString() {
+        return "Id: " + id + ", Subscription: " + subscriptionName
+                + ", dataSet: " + dataSetName + ", dsmdUrl: " + dsmdUrl;
+    }
+
+    @Override
+    public Integer getIdentifier() {
+        return id;
+    }
+
+    public Long getBandwidthAllocationId() {
+        return bandwidthAllocationId;
+    }
+
+    public void setBandwidthAllocationId(Long bandwidthAllocationId) {
+        this.bandwidthAllocationId = bandwidthAllocationId;
+    }
+
 }

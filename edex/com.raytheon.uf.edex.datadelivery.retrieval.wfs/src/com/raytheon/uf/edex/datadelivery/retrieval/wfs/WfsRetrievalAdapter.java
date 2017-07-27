@@ -23,17 +23,14 @@ package com.raytheon.uf.edex.datadelivery.retrieval.wfs;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.raytheon.uf.common.datadelivery.registry.Connection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalRequestBuilder;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
 
 /**
  * WFS OGC Provider Retrieval Adapter
@@ -54,6 +51,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  *                                  processResponse
  * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
  * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
+ * Jul 25, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -67,29 +65,29 @@ public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
 
     @Override
     public IRetrievalRequestBuilder<PointTime, Coverage> createRequestMessage(
-            RetrievalAttribute<PointTime, Coverage> attXML) {
+            Retrieval<PointTime, Coverage> retrieval) {
 
         WfsRequestBuilder<PointTime, Coverage> reqBuilder = new WfsRequestBuilder<>(
-                this, attXML);
+                this, retrieval);
 
         return reqBuilder;
     }
 
     @Override
     public Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse<PointTime, Coverage> response,
-            RetrievalRequestRecord requestRecord) throws TranslationException {
+            Retrieval<PointTime, Coverage> retrieval,
+            IRetrievalResponse response) throws TranslationException {
 
         Map<String, PluginDataObject[]> map = new HashMap<>();
         WfsTranslator translator;
         try {
-            translator = getWfsTranslator(response.getAttribute());
+            translator = getWfsTranslator(retrieval);
         } catch (InstantiationException e) {
             throw new TranslationException(
                     "Unable to instantiate a required class!", e);
         }
 
-        String payload = (String) response.getPayLoad();
+        String payload = ((WFSRetrievalResponse) response).getPayLoad();
 
         try {
             if (payload != null) {
@@ -110,29 +108,33 @@ public class WfsRetrievalAdapter extends RetrievalAdapter<PointTime, Coverage> {
     }
 
     @Override
-    public RetrievalResponse<PointTime, Coverage> performRequest(
+    public WFSRetrievalResponse performRequest(
+            Retrieval<PointTime, Coverage> retrieval,
             IRetrievalRequestBuilder<PointTime, Coverage> request)
             throws Exception {
-        String xmlMessage = null;
-        Connection conn = this.getProviderRetrievalXMl().getConnection();
         // This is used as the "Realm" in HTTPS connections
-        String providerName = request.getAttribute().getProvider();
-        xmlMessage = WFSConnectionUtil.wfsConnect(request.getRequest(), conn,
-                providerName, getTokenBucket(), getPriority());
-        RetrievalResponse<PointTime, Coverage> pr = new WFSRetrievalResponse(
-                request.getAttribute());
-        pr.setPayLoad(xmlMessage);
-        return pr;
+        String providerName = retrieval.getProvider();
+        String xmlMessage = WFSConnectionUtil.wfsConnect(request.getRequest(),
+                retrieval.getUrl(), providerName, getTokenBucket(),
+                getPriority());
+        WFSRetrievalResponse rval = null;
+
+        if (xmlMessage != null && !xmlMessage.isEmpty()) {
+            rval = new WFSRetrievalResponse();
+            rval.setPayLoad(xmlMessage);
+            generateRetrievalEvent(retrieval, xmlMessage.length());
+        }
+
+        return rval;
     }
 
     /**
-     * @param attribute
+     * @param retrieval
      * @return
      */
-    WfsTranslator getWfsTranslator(
-            RetrievalAttribute<PointTime, Coverage> attribute)
+    WfsTranslator getWfsTranslator(Retrieval<PointTime, Coverage> retrieval)
             throws InstantiationException {
-        return new WfsTranslator(attribute);
+        return new WfsTranslator(retrieval);
     }
 
 }

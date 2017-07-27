@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.response;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,10 +17,10 @@ package com.raytheon.uf.edex.datadelivery.retrieval.response;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.response;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
 
 /**
  * {@link ServiceFactory} An asynchronous Retrieval Response Object.
@@ -45,16 +43,16 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
 public class AsyncRetrievalResponse {
 
     @DynamicSerializeElement
-    private RetrievalRequestRecordPK requestId;
+    private String requestId;
 
     @DynamicSerializeElement
     private String fileName;
 
-    public RetrievalRequestRecordPK getRequestId() {
+    public String getRequestId() {
         return requestId;
     }
 
-    public void setRequestId(RetrievalRequestRecordPK requestId) {
+    public void setRequestId(String requestId) {
         this.requestId = requestId;
     }
 

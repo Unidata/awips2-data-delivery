@@ -19,30 +19,19 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.common.collect.Maps;
-import com.raytheon.uf.common.datadelivery.event.retrieval.AdhocDataRetrievalEvent;
-import com.raytheon.uf.common.datadelivery.event.retrieval.DataRetrievalEvent;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
-import com.raytheon.uf.common.datadelivery.retrieval.util.DataSizeUtils;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval.SubscriptionType;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter.TranslationException;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecordPK;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalPersistUtil;
@@ -70,22 +59,19 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalPersistUtil;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
  *                                  processResponse call.
+ * Jul 27, 2017  6186     rjpeter   Utilize Retrieval.
  *
  * </pre>
  *
  * @author djohnson
- * @version 1.0
  */
 
-public class StoreRetrievedData
-        implements IRetrievalPluginDataObjectsProcessor {
+public class StoreRetrievedData {
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(StoreRetrievedData.class);
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(getClass());
 
     private final String generalDestinationUri;
-
-    private final IRetrievalDao retrievalDao;
 
     /**
      * Constructor.
@@ -93,113 +79,68 @@ public class StoreRetrievedData
      * @param generalDestinationUri
      *            the destination uri most plugin data will travel through
      */
-    public StoreRetrievedData(String generalDestinationUri,
-            IRetrievalDao retrievalDao) {
+    public StoreRetrievedData(String generalDestinationUri) {
         this.generalDestinationUri = generalDestinationUri;
-        this.retrievalDao = retrievalDao;
     }
 
     /**
-     * {@inheritDoc}
+     * Processes retrieved data into plugin data objects and stores them.
+     *
+     * @param retrieval
+     * @param retrievalResponse
+     * @throws SerializationException
+     *             on error with serialization
+     * @throws TranslationException
      */
-    @Override
-    public RetrievalRequestRecord processRetrievedPluginDataObjects(
-            RetrievalResponseXml retrievalPluginDataObjects)
+    @SuppressWarnings("rawtypes")
+    public boolean processRetrievedData(Retrieval retrieval,
+            IRetrievalResponse retrievalResponse)
             throws SerializationException, TranslationException {
         Map<String, PluginDataObject[]> pluginDataObjects = Maps.newHashMap();
-        final RetrievalRequestRecordPK id = retrievalPluginDataObjects
-                .getRequestRecord();
-        RetrievalRequestRecord requestRecord = null;
-
-        if (retrievalPluginDataObjects instanceof SbnRetrievalResponseXml) {
-            requestRecord = ((SbnRetrievalResponseXml) retrievalPluginDataObjects)
-                    .getRetrievalRequestRecord();
-        } else {
-            requestRecord = retrievalDao.getById(id);
-        }
-
-        if (requestRecord == null) {
-            throw new SerializationException(
-                    "Invalid or missing retrieval found for Response id [" + id
-                            + " ] XML from Central Registry");
-        }
-
-        final List<RetrievalResponseWrapper> retrievalAttributePluginDataObjects = retrievalPluginDataObjects
-                .getRetrievalAttributePluginDataObjects();
-        final Retrieval retrieval = requestRecord.getRetrievalObj();
-        final Iterator<RetrievalAttribute> attributesIter = retrieval
-                .getAttributes().iterator();
         final ServiceType serviceType = retrieval.getServiceType();
         final RetrievalAdapter serviceRetrievalAdapter = ServiceTypeFactory
                 .retrieveServiceRetrievalAdapter(serviceType);
 
-        for (RetrievalResponseWrapper pluginDataObjectEntry : retrievalAttributePluginDataObjects) {
-            if (!attributesIter.hasNext()) {
-                statusHandler.warn(
-                        "Did not find a RetrievalAttribute to match the retrieval response!  Skipping response...");
-            }
+        // currently map will only have one key, the plugin
+        Map<String, PluginDataObject[]> value = serviceRetrievalAdapter
+                .processResponse(retrieval, retrievalResponse);
 
-            // Restore the attribute xml prior to processing the response
-            final IRetrievalResponse retrievalResponse = pluginDataObjectEntry
-                    .getRetrievalResponse();
-            retrievalResponse.setAttribute(attributesIter.next());
+        if (value == null || value.isEmpty()) {
+            return value != null;
+        }
 
-            Map<String, PluginDataObject[]> value = serviceRetrievalAdapter
-                    .processResponse(retrievalResponse, requestRecord);
+        for (Entry<String, PluginDataObject[]> entry : value.entrySet()) {
+            final String key = entry.getKey();
+            final PluginDataObject[] objectsForEntry = entry.getValue();
 
-            if (value == null || value.isEmpty()) {
+            PluginDataObject[] objectsForPlugin = pluginDataObjects.get(key);
+            objectsForPlugin = CollectionUtil.combine(PluginDataObject.class,
+                    objectsForPlugin, objectsForEntry);
+
+            pluginDataObjects.put(key, objectsForPlugin);
+        }
+
+        boolean rval = true;
+        for (Entry<String, PluginDataObject[]> entry : pluginDataObjects
+                .entrySet()) {
+            final String pluginName = entry.getKey();
+            final PluginDataObject[] records = entry.getValue();
+
+            if (records == null) {
+                statusHandler
+                        .warn("The plugin data objects was a null array, the service retrieval adapter "
+                                + "should not return a null map of plugin data objects!");
+                rval = false;
                 continue;
             }
 
-            for (Entry<String, PluginDataObject[]> entry : value.entrySet()) {
-                final String key = entry.getKey();
-                final PluginDataObject[] objectsForEntry = entry.getValue();
+            statusHandler.info("Successfully processed: " + records.length
+                    + " : " + serviceType + " Plugin : " + pluginName);
 
-                PluginDataObject[] objectsForPlugin = pluginDataObjects
-                        .get(key);
-                objectsForPlugin = CollectionUtil.combine(
-                        PluginDataObject.class, objectsForPlugin,
-                        objectsForEntry);
-
-                pluginDataObjects.put(key, objectsForPlugin);
-            }
-
-            final RetrievalAttribute attXML = retrievalResponse.getAttribute();
-            for (Entry<String, PluginDataObject[]> entry : pluginDataObjects
-                    .entrySet()) {
-                final String pluginName = entry.getKey();
-                final PluginDataObject[] records = entry.getValue();
-
-                if (records == null) {
-                    statusHandler
-                            .warn("The plugin data objects was a null array, the service retrieval adapter "
-                                    + "should not return a null map of plugin data objects!");
-                    continue;
-                }
-
-                statusHandler.info("Successfully processed: " + records.length
-                        + " : " + serviceType + " Plugin : " + pluginName);
-                boolean isAdhoc = retrieval.getSubscriptionType() != null
-                        && retrieval.getSubscriptionType()
-                                .equals(SubscriptionType.AD_HOC);
-                DataRetrievalEvent event = isAdhoc
-                        ? new AdhocDataRetrievalEvent()
-                        : new DataRetrievalEvent();
-                event.setId(retrieval.getSubscriptionName());
-                event.setOwner(retrieval.getOwner());
-                event.setNetwork(retrieval.getNetwork().name());
-                event.setPlugin(pluginName);
-                event.setProvider(attXML.getProvider());
-                event.setNumRecords(records.length);
-                event.setBytes(
-                        DataSizeUtils.calculateSize(attXML, serviceType));
-
-                EventBus.publish(event);
-
-                sendToDestinationForStorage(records);
-            }
+            sendToDestinationForStorage(records);
         }
-        return requestRecord;
+
+        return rval;
     }
 
     /**

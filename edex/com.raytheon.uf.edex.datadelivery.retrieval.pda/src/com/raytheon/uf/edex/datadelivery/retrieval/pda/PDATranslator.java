@@ -33,7 +33,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.VersionData;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.serialization.SerializationUtil;
@@ -63,11 +63,11 @@ import com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist.DecodeInfo;
  * May 03, 2016  5599     tjensen   Pass subscription name into decodeObjects
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
  * May 22, 2017  6130     tjensen   Update for Polar products
+ * Jul 25, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 public class PDATranslator
@@ -76,9 +76,9 @@ public class PDATranslator
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PDATranslator.class);
 
-    public PDATranslator(RetrievalAttribute<Time, Coverage> attXML)
+    public PDATranslator(Retrieval<Time, Coverage> retrieval)
             throws InstantiationException {
-        super(attXML);
+        super(retrieval);
     }
 
     @Override
@@ -107,11 +107,9 @@ public class PDATranslator
      * @param dataSet
      * @param subOwner
      */
-    public void storeAndProcess(PDARetrievalResponse response, DataSet dataSet,
-            String subOwner) {
-
+    public void storeAndProcess(PDARetrievalResponse response,
+            DataSet dataSet) {
         String storeFileName = null;
-        String subName = null;
 
         try {
             String responseFileName = response.getFileName();
@@ -158,12 +156,10 @@ public class PDATranslator
                     FileUtils.moveFile(ftpsFile, storeFile);
                 }
 
-                subName = response.getSubName();
-
                 // Populate DecodeInfo for transfer
                 DecodeInfo decodeInfo = new DecodeInfo();
-                decodeInfo.setSubscriptionName(subName);
-                decodeInfo.setSubscriptionOwner(subOwner);
+                decodeInfo.setSubscriptionName(retrieval.getSubscriptionName());
+                decodeInfo.setSubscriptionOwner(retrieval.getOwner());
                 decodeInfo.setPathToFile(storeFileName);
                 decodeInfo.setRouteId(vd.getRoute());
                 decodeInfo.setDataType("PDA");
@@ -184,7 +180,7 @@ public class PDATranslator
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to decode PDA file objects for DataSet '"
                             + dataSet.getDataSetName() + "' for subscription '"
-                            + response.getSubName() + "'!",
+                            + retrieval.getSubscriptionName() + "'!",
                     e);
         }
     }

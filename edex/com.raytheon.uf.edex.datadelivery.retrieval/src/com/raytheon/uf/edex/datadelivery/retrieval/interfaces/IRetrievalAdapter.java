@@ -25,10 +25,8 @@ import java.util.Map;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.util.rate.TokenBucket;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 
 /**
  * Interface for Provider Retrieval Adapter
@@ -36,12 +34,15 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 07, 2011            dhladky     Initial creation
- * May 22, 2017  6130      tjensen     Add RetrievalRequestRecord to processResponse
- * Jun 05, 2017  6222      tgurney     Add token bucket and priority
- * Jun 23, 2017  6322      tgurney     performRequest() throws Exception
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 07, 2011           dhladky   Initial creation
+ * May 22, 2017  6130     tjensen   Add RetrievalRequestRecord to
+ *                                  processResponse
+ * Jun 05, 2017  6222     tgurney   Add token bucket and priority
+ * Jun 23, 2017  6322     tgurney   performRequest() throws Exception
+ * Jul 27, 2017  6186     rjpeter   Use Retrieval
  *
  * </pre>
  *
@@ -51,18 +52,14 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 public interface IRetrievalAdapter<T extends Time, C extends Coverage> {
 
     public IRetrievalRequestBuilder<T, C> createRequestMessage(
-            RetrievalAttribute<T, C> prxml);
+            Retrieval<T, C> retrieval);
 
-    public com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse<T, C> performRequest(
+    public IRetrievalResponse performRequest(Retrieval<T, C> retrieval,
             IRetrievalRequestBuilder<T, C> requestBuilder) throws Exception;
 
     public Map<String, PluginDataObject[]> processResponse(
-            IRetrievalResponse<T, C> response,
-            RetrievalRequestRecord requestRecord) throws Exception;
-
-    public void setProviderRetrievalXML(Retrieval prxml);
-
-    public Retrieval getProviderRetrievalXMl();
+            Retrieval<T, C> retrieval, IRetrievalResponse response)
+            throws Exception;
 
     public void setTokenBucket(TokenBucket tokenBucket);
 
