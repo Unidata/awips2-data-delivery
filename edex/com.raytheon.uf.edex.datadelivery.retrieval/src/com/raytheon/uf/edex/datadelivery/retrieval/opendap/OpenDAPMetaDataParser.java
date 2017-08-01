@@ -122,11 +122,11 @@ import opendap.dap.NoSuchAttributeException;
  * Apr 05, 2017  1045        tjensen   Update for moving datasets
  * May 04, 2017  6186        rjpeter   Utilize logger.
  * Jul 12, 2017  6178        tgurney   Updates for database-based link storage
+ * Aug 02, 2017  6186        rjpeter   Fixed cycle handling for DSMD.
  *
  * </pre>
  *
  * @author dhladky
- * @param <O>
  */
 
 class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
@@ -751,7 +751,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             // The NO_CYCLE constant will always update the single url for daily
             // release models, otherwise the parsed cycle is used
             gdsmd.setCycle(cycleAsNum);
+            dataSetTime.addCycleTime(cycleAsNum);
             dataSet.cycleUpdated(cycleAsNum);
+            // TODO: Delete post 18.1.1
             dataSet.getCyclesToUrls().put(cycleAsNum, gdsmd.getUrl());
 
             if (dataSet.getTime() == null) {

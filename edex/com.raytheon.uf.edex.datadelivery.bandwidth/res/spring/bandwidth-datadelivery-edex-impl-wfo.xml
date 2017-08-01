@@ -44,22 +44,4 @@
         <constructor-arg ref="findActiveSubscriptionsForRoute" />
     </bean>
 
-    <bean id="opsnetSubscriptionRetrievalAgentPrototype"
-        class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalAgent"
-        scope="prototype">
-        <constructor-arg value="OPSNET" />
-        <constructor-arg value="notifyRetrieval" />
-        <constructor-arg value="jms-durable:queue:asyncRetrievalQueue" />
-        <constructor-arg ref="retrievalAgentNotifier" />
-        <constructor-arg value="${bandwidth.default.retrieval.priority}" />
-        <constructor-arg ref="retrievalManager" />
-        <constructor-arg ref="bandwidthDao" />
-        <constructor-arg ref="retrievalDao" />
-        <constructor-arg ref="ProviderHandler" />
-    </bean>
-
-    <util:map id="retrievalAgents">
-        <entry key="Retrievals-OPSNET" value-ref="opsnetSubscriptionRetrievalAgentPrototype" />
-    </util:map>
-
 </beans>

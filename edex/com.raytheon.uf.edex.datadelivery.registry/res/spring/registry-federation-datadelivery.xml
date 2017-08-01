@@ -3,26 +3,28 @@
     xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <bean
+        class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
         <property name="staticMethod"
             value="com.raytheon.uf.edex.registry.ebxml.services.rest.RegistryFederationManager.addObjectTypesToSubscribeTo" />
         <property name="arguments">
             <list>
+                <!-- These should not be in DD -->
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Federation</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Registry</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Association</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Person</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Organization</value>
+
+                <!-- DD only -->
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.DataSet</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.DataSetMetaData</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.DataSetName</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.GroupDefinition</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.InitialPendingSharedSubscription</value>
-                <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.InitialPendingSiteSubscription</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.Parameter</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.ParameterLevel</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.PendingSharedSubscription</value>
-                <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.PendingSiteSubscription</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.Provider</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.SharedSubscription</value>
                 <value>urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:com.raytheon.uf.common.datadelivery.registry.SiteSubscription</value>

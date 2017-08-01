@@ -3,6 +3,8 @@
     xmlns:tx="http://www.springframework.org/schema/tx"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd
     http://www.springframework.org/schema/tx
     http://www.springframework.org/schema/tx/spring-tx.xsd">
 
@@ -30,12 +32,11 @@
         <property name="dao" ref="admin_bandwidthAllocationDao" />
     </bean>
 
-    <bean id="retrievalAgentManager"
-        class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalAgentManager"
-        init-method="start">
-        <constructor-arg ref="retrievalAgentNotifier" />
-        <constructor-arg ref="retrievalAgents" />
-        <constructor-arg ref="retrievalDao" />
+    <bean id="retrievalAgent"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalAgent">
+        <constructor-arg value="${bandwidth.default.retrieval.priority}" />
+        <constructor-arg ref="retrievalHandler" />
+        <constructor-arg ref="ProviderHandler" />
     </bean>
 
     <!-- Used as the context for creating the BandwidthManager -->
@@ -58,8 +59,24 @@
         <!-- Registry handlers required for EdexBandwidthManager -->
         <constructor-arg ref="DataSetMetaDataHandler" />
         <constructor-arg ref="SubscriptionHandler" />
-        <constructor-arg ref="AdhocSubscriptionHandler" />
         <constructor-arg ref="subscriptionNotificationService" />
         <constructor-arg ref="findActiveSubscriptionsForRoute" />
+        <constructor-arg ref="retrievalAgent" />
     </bean>
+
+    <camelContext id="bandwidth-context" xmlns="http://camel.apache.org/schema/spring"
+        errorHandlerRef="errorHandler">
+        <endpoint id="purgeBandwidthAllocationTimer" uri="timer://purgeBandwidthAllocations?fixedRate=true&amp;period=5m"/>
+        <route id="purgeBandwidthAllocationRoute">
+            <from ref="purgeBandwidthAllocationTimer" />
+            <doTry>
+                <bean ref="bandwidthManager" method="purgeAllocations" />
+                <doCatch>
+                    <exception>java.lang.Throwable</exception>
+                    <to
+                        uri="log:purge?level=ERROR" />
+                </doCatch>
+            </doTry>
+        </route>
+	</camelContext>
 </beans>

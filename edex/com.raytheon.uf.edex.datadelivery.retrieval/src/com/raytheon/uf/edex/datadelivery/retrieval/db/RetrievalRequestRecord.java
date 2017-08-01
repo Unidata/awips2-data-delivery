@@ -57,6 +57,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * May 11, 2015  6186     rjpeter   Updated constructor.
  * May 22, 2017  6130     tjensen   Add DataSetName
  * Jul 31, 2017  6186     rjpeter   Refactored to be auto id.
+ * Aug 02, 2017  6186     rjpeter   Added latencyExpireTime
  *
  * </pre>
  *
@@ -101,7 +102,7 @@ public class RetrievalRequestRecord implements IPersistableDataObject<Integer> {
     private Date insertTime;
 
     @Column(nullable = false)
-    private Long bandwidthAllocationId;
+    private Date latencyExpireTime;
 
     @Column(nullable = false, length = 100_000)
     private byte[] retrieval;
@@ -118,7 +119,7 @@ public class RetrievalRequestRecord implements IPersistableDataObject<Integer> {
     }
 
     public RetrievalRequestRecord(Retrieval retrieval, String dsmdUrl,
-            State state, int priority, Long bandwidthAllocationId) {
+            State state, int priority) {
         this.dsmdUrl = dsmdUrl;
         owner = retrieval.getOwner();
         subscriptionName = retrieval.getSubscriptionName();
@@ -127,7 +128,6 @@ public class RetrievalRequestRecord implements IPersistableDataObject<Integer> {
         provider = retrieval.getProvider();
         dataSetName = retrieval.getDataSetName();
         insertTime = TimeUtil.newDate();
-        this.bandwidthAllocationId = bandwidthAllocationId;
     }
 
     public int getId() {
@@ -250,12 +250,12 @@ public class RetrievalRequestRecord implements IPersistableDataObject<Integer> {
         return id;
     }
 
-    public Long getBandwidthAllocationId() {
-        return bandwidthAllocationId;
+    public Date getLatencyExpireTime() {
+        return latencyExpireTime;
     }
 
-    public void setBandwidthAllocationId(Long bandwidthAllocationId) {
-        this.bandwidthAllocationId = bandwidthAllocationId;
+    public void setLatencyExpireTime(Date latencyExpireTime) {
+        this.latencyExpireTime = latencyExpireTime;
     }
 
 }

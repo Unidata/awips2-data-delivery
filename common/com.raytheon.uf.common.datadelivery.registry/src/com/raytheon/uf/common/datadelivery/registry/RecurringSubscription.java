@@ -35,9 +35,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import com.google.common.collect.Sets;
 import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
 import com.raytheon.uf.common.registry.annotations.SlotAttribute;
@@ -54,43 +51,51 @@ import com.raytheon.uf.common.util.CollectionUtil;
 
 /**
  * Base definition of a recurring subscription.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 25, 2013 1841       djohnson     Extracted from Subscription.
- * Apr 08, 2013 1826       djohnson     Remove delivery options.
- * May 15, 2013 1040       mpduff       Changed to use Set for office id.
- * May 21, 2013 2020       mpduff       Rename UserSubscription to SiteSubscription.
- * Sept 30,2013 1797       dhladky      Generics
- * Oct 23, 2013 2484       dhladky      Unique ID for subscriptions updated.
- * Oct 30, 2013 2448       dhladky      Fixed pulling data before and after activePeriod starting and ending.
- * Nov 14, 2013 2548       mpduff       Add a subscription type slot.
- * Jan 08, 2014 2615       bgonzale     Implement calculate start and calculate end methods.
- * Jan 14, 2014 2459       mpduff       Add subscription state.
- * Jan 20, 2014 2398       dhladky      Fixed rescheduling beyond active period/expired window.                                
- * Jan 24, 2014 2709       bgonzale     Fix setting of active period end.  Change active period checks
- *                                      to check day of year.  removed now unused active period methods.
- * Jan 28, 2014 2636       mpduff       Changed to use GMT calendar.
- * Feb 12, 2014 2636       mpduff       Return new instance of calculated start and end.
- * Apr 02, 2014 2810       dhladky      Priority sorting of subscriptions.
- * May 20, 2014 3113       mpduff       Add the functionality that the subscription itself provides the retrieval times.
- * Jul 28, 2014 2765       dhladky      No setOwner() in the setup super() method.
- * 8/29/2014    3446       bphillip     SubscriptionUtil is now a singleton
- * Sept 05, 2014 2131      dhladky      Added PDA data types
- * Sept 14, 2014 2131      dhladky      PDA updates
- * Nov 19, 2014  3852      dhladky      Resurrected the Unscheduled state.
- * Feb 02, 2015  4014      dhladky      More consolidated subscription time checks.
- * Mar 23, 2015  3950      dhladky      Reworked the isbeforeStart() to not have gaps and take into account latency and cycle offsets
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 25, 2013  1841     djohnson  Extracted from Subscription.
+ * Apr 08, 2013  1826     djohnson  Remove delivery options.
+ * May 15, 2013  1040     mpduff    Changed to use Set for office id.
+ * May 21, 2013  2020     mpduff    Rename UserSubscription to SiteSubscription.
+ * Sept 30,2013  1797     dhladky   Generics
+ * Oct 23, 2013  2484     dhladky   Unique ID for subscriptions updated.
+ * Oct 30, 2013  2448     dhladky   Fixed pulling data before and after
+ *                                  activePeriod starting and ending.
+ * Nov 14, 2013  2548     mpduff    Add a subscription type slot.
+ * Jan 08, 2014  2615     bgonzale  Implement calculate start and calculate end
+ *                                  methods.
+ * Jan 14, 2014  2459     mpduff    Add subscription state.
+ * Jan 20, 2014  2398     dhladky   Fixed rescheduling beyond active
+ *                                  period/expired window.
+ * Jan 24, 2014  2709     bgonzale  Fix setting of active period end.  Change
+ *                                  active period checks to check day of year.
+ *                                  removed now unused active period methods.
+ * Jan 28, 2014  2636     mpduff    Changed to use GMT calendar.
+ * Feb 12, 2014  2636     mpduff    Return new instance of calculated start and
+ *                                  end.
+ * Apr 02, 2014  2810     dhladky   Priority sorting of subscriptions.
+ * May 20, 2014  3113     mpduff    Add the functionality that the subscription
+ *                                  itself provides the retrieval times.
+ * Jul 28, 2014  2765     dhladky   No setOwner() in the setup super() method.
+ * Aug 29, 2014  3446     bphillip  SubscriptionUtil is now a singleton
+ * Sep 05, 2014  2131     dhladky   Added PDA data types
+ * Sep 14, 2014  2131     dhladky   PDA updates
+ * Nov 19, 2014  3852     dhladky   Resurrected the Unscheduled state.
+ * Feb 02, 2015  4014     dhladky   More consolidated subscription time checks.
+ * Mar 23, 2015  3950     dhladky   Reworked the isbeforeStart() to not have
+ *                                  gaps and take into account latency and cycle
+ *                                  offsets
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Aug 02, 2017  6186     rjpeter   Removed url.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso({ PendingSiteSubscription.class, PendingSharedSubscription.class,
@@ -114,7 +119,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Initialization constructor.
-     * 
+     *
      * @param sub
      *            Subscription object
      * @param name
@@ -140,7 +145,6 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         this.setSubscriptionId(sub.getSubscriptionId());
         this.setSubscriptionStart(sub.getSubscriptionStart());
         this.setTime(sub.getTime());
-        this.setUrl(sub.getUrl());
         this.setDataSetType(sub.getDataSetType());
         this.setRoute(sub.getRoute());
         this.setLatencyInMinutes(sub.getLatencyInMinutes());
@@ -154,7 +158,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Copy constructor.
-     * 
+     *
      * @param sub
      *            Subscription object
      */
@@ -246,10 +250,6 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     @XmlAttribute
     @DynamicSerializeElement
-    private String url;
-
-    @XmlAttribute
-    @DynamicSerializeElement
     @SlotAttribute
     private DataType dataSetType;
 
@@ -309,7 +309,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription name.
-     * 
+     *
      * @return subscription name
      */
     @Override
@@ -319,7 +319,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set subscription name.
-     * 
+     *
      * @param name
      *            the name of the subscription
      */
@@ -330,7 +330,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription group name.
-     * 
+     *
      * @return subscription group name
      */
     @Override
@@ -340,7 +340,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set subscription group name.
-     * 
+     *
      * @param groupName
      *            the name of the subscription group
      */
@@ -351,7 +351,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set subscription provider name.
-     * 
+     *
      * @param provider
      *            the name of the subscription provider
      */
@@ -362,7 +362,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get provider name.
-     * 
+     *
      * @return provider name
      */
     @Override
@@ -370,25 +370,19 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         return provider;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Set<String> getOfficeIDs() {
         return officeIDs;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void setOfficeIDs(Set<String> officeIDs) {
-        this.officeIDs = new TreeSet<String>(officeIDs);
+        this.officeIDs = new TreeSet<>(officeIDs);
     }
 
     /**
      * Get subscription priority for fulfillment.
-     * 
+     *
      * @return subscription name
      */
     @Override
@@ -398,7 +392,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set subscription priority.
-     * 
+     *
      * @param priority
      *            priority
      */
@@ -409,7 +403,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription start time.
-     * 
+     *
      * @return subscription start
      */
     @Override
@@ -419,7 +413,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set subscription start time.
-     * 
+     *
      * @param subscriptionStart
      *            date time group for subscription start
      */
@@ -430,7 +424,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription end time.
-     * 
+     *
      * @return subscription end time date time group for subscription end
      */
     @Override
@@ -440,7 +434,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set subscription end time.
-     * 
+     *
      * @param subscriptionEnd
      *            date time group for subscription end
      */
@@ -451,7 +445,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get active period start date.
-     * 
+     *
      * @return activePeriodStart
      */
     @Override
@@ -461,7 +455,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set active period start date.
-     * 
+     *
      * @param activePeriodStart
      *            date for subscription start
      */
@@ -473,7 +467,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get active period end date.
-     * 
+     *
      * @return activePeriodEnd
      */
     @Override
@@ -483,7 +477,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set active period end date.
-     * 
+     *
      * @param activePeriodEnd
      *            date for subscription end
      */
@@ -495,8 +489,9 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     private Integer getStartActivePeriodDayOfYear() {
         if (startActivePeriodDayOfYear == null && activePeriodStart != null) {
-            startActivePeriodDayOfYear = TimeUtil.newGmtCalendar(
-                    activePeriodStart).get(Calendar.DAY_OF_YEAR);
+            startActivePeriodDayOfYear = TimeUtil
+                    .newGmtCalendar(activePeriodStart)
+                    .get(Calendar.DAY_OF_YEAR);
         }
         return startActivePeriodDayOfYear;
     }
@@ -543,7 +538,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * isNotify flag for subscription.
-     * 
+     *
      * @return boolean true if full dataset
      */
     @Override
@@ -553,7 +548,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set fullDataSet flag.
-     * 
+     *
      * @param fullDataSet
      *            true if full dataset
      */
@@ -564,7 +559,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get size of the dataset for the subscription.
-     * 
+     *
      * @return dataSetSize size of dataset
      */
     @Override
@@ -574,7 +569,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the dataset size for the subscription.
-     * 
+     *
      * @param dataSetSize
      *            size of dataset
      */
@@ -585,7 +580,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription coverage area.
-     * 
+     *
      * @return coverage
      */
     @Override
@@ -595,7 +590,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the coverage area for the subscription.
-     * 
+     *
      * @param coverage
      *            coverage area
      */
@@ -606,7 +601,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription submission time.
-     * 
+     *
      * @return subscription time
      */
     @Override
@@ -616,7 +611,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the subscription submission time.
-     * 
+     *
      * @param time
      *            time stamp
      */
@@ -627,7 +622,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the subscription parameters.
-     * 
+     *
      * @param parameter
      *            subscription parameter list
      */
@@ -638,7 +633,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription parameter list.
-     * 
+     *
      * @return subscription parameter list
      */
     @Override
@@ -648,14 +643,14 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Add subscription parameters.
-     * 
+     *
      * @param par
      *            a subscription parameter
      */
     @Override
     public void addParameter(Parameter par) {
         if (parameter == null) {
-            parameter = new ArrayList<Parameter>();
+            parameter = new ArrayList<>();
         }
 
         parameter.add(par);
@@ -663,7 +658,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Remove subscription parameters.
-     * 
+     *
      * @param par
      *            a subscription parameter
      */
@@ -674,7 +669,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Add subscription id.
-     * 
+     *
      * @param subscriptionId
      *            a subscription id
      */
@@ -685,7 +680,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription id.
-     * 
+     *
      * @return subscription id
      */
     @Override
@@ -695,7 +690,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription description.
-     * 
+     *
      * @return subscription description
      */
     @Override
@@ -705,7 +700,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the subscription description.
-     * 
+     *
      * @param description
      *            subscription description
      */
@@ -716,7 +711,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription dataset name.
-     * 
+     *
      * @return subscription dataset name
      */
     @Override
@@ -726,7 +721,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the subscription dataSetName.
-     * 
+     *
      * @param dataSetName
      *            subscription dataSetName
      */
@@ -737,7 +732,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * isActive flag for subscription status.
-     * 
+     *
      * @return boolean true if subscription is Active
      */
     @Override
@@ -747,7 +742,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set subscription valid.
-     * 
+     *
      * @param valid
      *            true if subscription valid
      */
@@ -761,7 +756,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Return if subscription is valid or invalid
-     * 
+     *
      * @return true if subscription is valid
      */
     @Override
@@ -770,29 +765,8 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     }
 
     /**
-     * Get the subscription url.
-     * 
-     * @return the url
-     */
-    @Override
-    public String getUrl() {
-        return url;
-    }
-
-    /**
-     * Set the subscription url.
-     * 
-     * @param url
-     *            the url to set
-     */
-    @Override
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    /**
      * Get subscription dataset type.
-     * 
+     *
      * @return subscription dataset type
      */
     @Override
@@ -802,7 +776,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the dataset type
-     * 
+     *
      * @param dataSetType
      *            the dataSetType to set
      */
@@ -813,7 +787,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * isDeleted flag.
-     * 
+     *
      * @return true if the subscription has been deleted
      */
     @Override
@@ -823,7 +797,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the deleted flag.
-     * 
+     *
      * @param deleted
      *            set subscription to deleted
      */
@@ -851,7 +825,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get subscription id.
-     * 
+     *
      * @return subscription id
      */
     @Override
@@ -861,7 +835,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the subscription id.
-     * 
+     *
      * @param id
      *            set subscription id
      */
@@ -872,32 +846,71 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Subscription) {
-            @SuppressWarnings("unchecked")
-            Subscription<T, C> other = (Subscription<T, C>) obj;
-
-            EqualsBuilder builder = new EqualsBuilder();
-            builder.append(getProvider(), other.getProvider());
-            builder.append(getName(), other.getName());
-            builder.append(getDataSetName(), other.getDataSetName());
-            builder.append(getOwner(), other.getOwner());
-            builder.append(getOriginatingSite(), other.getOriginatingSite());
-
-            return builder.isEquals();
+        if (this == obj) {
+            return true;
         }
-        return super.equals(obj);
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        RecurringSubscription other = (RecurringSubscription) obj;
+        if (dataSetName == null) {
+            if (other.dataSetName != null) {
+                return false;
+            }
+        } else if (!dataSetName.equals(other.dataSetName)) {
+            return false;
+        }
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        if (originatingSite == null) {
+            if (other.originatingSite != null) {
+                return false;
+            }
+        } else if (!originatingSite.equals(other.originatingSite)) {
+            return false;
+        }
+        if (provider == null) {
+            if (other.provider != null) {
+                return false;
+            }
+        } else if (!provider.equals(other.provider)) {
+            return false;
+        }
+
+        if (getOwner() == null) {
+            if (other.getOwner() != null) {
+                return false;
+            }
+        } else if (!getOwner().equals(other.getOwner())) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
     public int hashCode() {
-        HashCodeBuilder builder = new HashCodeBuilder();
-        builder.append(getProvider());
-        builder.append(getName());
-        builder.append(getDataSetName());
-        builder.append(getOwner());
-        builder.append(getOriginatingSite());
-
-        return builder.toHashCode();
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                + ((dataSetName == null) ? 0 : dataSetName.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result
+                + ((originatingSite == null) ? 0 : originatingSite.hashCode());
+        result = prime * result
+                + ((provider == null) ? 0 : provider.hashCode());
+        result = prime * result
+                + ((getOwner() == null) ? 0 : getOwner().hashCode());
+        return result;
     }
 
     @Override
@@ -920,7 +933,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     /**
      * Determine if subscription status is expired and set subscription to off
      * if it is expired.
-     * 
+     *
      * @return true if status is expired
      */
     private boolean checkAndSetExpiration() {
@@ -937,7 +950,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Check for expiration on date
-     * 
+     *
      * @param date
      * @return
      */
@@ -951,7 +964,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Check for before start date
-     * 
+     *
      * @param date
      * @return
      */
@@ -960,7 +973,10 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
         long latency = this.getLatencyInMinutes() * TimeUtil.MILLIS_PER_MINUTE;
         if (getSubscriptionStart() == null) {
-            // If subscription has no registered start time, It can't be before checked time.
+            /*
+             * If subscription has no registered start time, It can't be before
+             * checked time.
+             */
             return before;
         }
         long startTime = getSubscriptionStart().getTime();
@@ -996,7 +1012,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get the current subscription status.
-     * 
+     *
      * @return SUBSCRIPTION_STATUS
      */
     @Override
@@ -1023,7 +1039,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      * Return true if this subscription should be scheduled. Scheduling is based
      * on the status of the subscription. Returns false if the subscription is
      * expired or deactivated.
-     * 
+     *
      * @return true if this subscription should be scheduled
      */
     public boolean shouldSchedule() {
@@ -1033,7 +1049,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Should this be scheduled for this time.
-     * 
+     *
      * @param checkDate
      * @return
      */
@@ -1082,10 +1098,10 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Set the latency in minutes.
-     * 
+     *
      * @param latencyInMinutes
      *            the latency, in minutes
-     * 
+     *
      */
     @Override
     public void setLatencyInMinutes(int latencyInMinutes) {
@@ -1094,7 +1110,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get the latency, in minutes.
-     * 
+     *
      * @return the latency in minutes
      */
     @Override
@@ -1156,9 +1172,6 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         this.subscriptionState = subscriptionState;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void activate() {
         if (valid && !checkAndSetExpiration()) {
@@ -1166,9 +1179,6 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void deactivate() {
         this.setSubscriptionState(SubscriptionState.OFF);
@@ -1190,6 +1200,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         return myPriority.compareTo(oPriority);
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public SortedSet<Date> getRetrievalTimes(Date planStart, Date planEnd,
             List<DataSetMetaData> dsmdList, SubscriptionUtil subUtil) {
@@ -1208,7 +1219,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
                 Date lastArrivalTime = subUtil.getLatestArrivalTime(dsmdList);
                 Calendar lastArrival = TimeUtil.newGmtCalendar(lastArrivalTime);
                 if (lastArrival == null) {
-                    return new TreeSet<Date>();
+                    return new TreeSet<>();
                 }
                 while (lastArrival.before(planStart)) {
                     lastArrival.add(Calendar.MINUTE, interval);
@@ -1225,7 +1236,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
             int pdainterval = subUtil.calculateInterval(dsmdList);
             Date lastArrivalTime = subUtil.getLatestArrivalTime(dsmdList);
             if (lastArrivalTime == null) {
-                return new TreeSet<Date>();
+                return new TreeSet<>();
             }
             retrievalTimes = getTimes(pdainterval, lastArrivalTime, planEnd);
             break;
@@ -1240,7 +1251,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get the times for the specified time range and interval
-     * 
+     *
      * @param interval
      *            The interval
      * @param planStart
@@ -1249,19 +1260,24 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      *            The end
      * @return sorted set of calendar objects
      */
-    private SortedSet<Date> getTimes(int interval, Date planStart, Date planEnd) {
-        SortedSet<Date> subscriptionTimes = new TreeSet<Date>();
+    private SortedSet<Date> getTimes(int interval, Date planStart,
+            Date planEnd) {
+        SortedSet<Date> subscriptionTimes = new TreeSet<>();
 
         if (interval == SubscriptionUtil.MISSING || interval <= 0) {
             return subscriptionTimes;
         }
-        // starting time when subscription is first valid for scheduling
-        // based on plan start and subscription start.
+        /*
+         * starting time when subscription is first valid for scheduling based
+         * on plan start and subscription start.
+         */
         Calendar subscriptionCalculatedStart = TimeUtil
                 .newGmtCalendar(calculateStart(planStart));
 
-        // end time when when subscription is last valid for scheduling based on
-        // plan end and subscription end.
+        /*
+         * end time when when subscription is last valid for scheduling based on
+         * plan end and subscription end.
+         */
         Calendar subscriptionCalculatedEnd = TimeUtil
                 .newGmtCalendar(calculateEnd(planEnd));
 
@@ -1269,8 +1285,8 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
                 subscriptionCalculatedStart, Calendar.MINUTE, Calendar.SECOND,
                 Calendar.MILLISECOND);
 
-        Calendar start = TimeUtil.newGmtCalendar(subscriptionCalculatedStart
-                .getTime());
+        Calendar start = TimeUtil
+                .newGmtCalendar(subscriptionCalculatedStart.getTime());
         start.add(Calendar.MINUTE, interval * -1);
         while (!start.after(subscriptionCalculatedEnd)) {
             Date baseRefTime = start.getTime();
@@ -1293,7 +1309,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
 
     /**
      * Get the times for the specified time range and cycles
-     * 
+     *
      * @param cycles
      *            Cycles to consider
      * @param planStart
@@ -1305,7 +1321,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     private SortedSet<Date> getTimes(TreeSet<Integer> cycles, Date planStart,
             Date planEnd) {
 
-        SortedSet<Date> subscriptionTimes = new TreeSet<Date>();
+        SortedSet<Date> subscriptionTimes = new TreeSet<>();
         /* calendar used in these calcs with grid */
         Calendar cplanStart = TimeUtil.newGmtCalendar(planStart);
         Calendar cplanEnd = TimeUtil.newGmtCalendar(planEnd);
@@ -1342,10 +1358,9 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
                             .getDataSetAvailablityOffset(this, start.getTime());
                 } catch (RegistryHandlerException e) {
                     // Error occurred querying the registry. Log and continue on
-                    statusHandler
-                            .handle(Priority.PROBLEM,
-                                    "Unable to retrieve data availability offset, using 0 for the offset.",
-                                    e);
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Unable to retrieve data availability offset, using 0 for the offset.",
+                            e);
                 }
 
                 Date baseRefTime = start.getTime();

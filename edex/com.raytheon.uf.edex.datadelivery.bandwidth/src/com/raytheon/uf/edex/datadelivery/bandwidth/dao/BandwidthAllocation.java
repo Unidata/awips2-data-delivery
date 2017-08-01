@@ -28,26 +28,26 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
 /**
- * 
+ *
  * A bandwidth allocation.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 12, 2012 0726       djohnson     Add SW history, use string version of enum.
- * Jun 24, 2013 2106       djohnson     Add copy constructor.
- * Jul 11, 2013 2106       djohnson     Use SubscriptionPriority enum.
- * Oct 30, 2013  2448      dhladky      Moved methods to TimeUtil.
- * Apr 02, 2014  2810      dhladky      Priority sorting of allocations.
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 12, 2012  726      djohnson  Add SW history, use string version of enum.
+ * Jun 24, 2013  2106     djohnson  Add copy constructor.
+ * Jul 11, 2013  2106     djohnson  Use SubscriptionPriority enum.
+ * Oct 30, 2013  2448     dhladky   Moved methods to TimeUtil.
+ * Apr 02, 2014  2810     dhladky   Priority sorting of allocations.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Aug 02, 2017  6186     rjpeter   Removed agentType.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 @Entity
 @Table(name = "bandwidth_allocation")
@@ -56,8 +56,10 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 @DiscriminatorValue("BandwidthAllocation")
 @DynamicSerialize
 @SequenceGenerator(name = "BANDWIDTH_SEQ", sequenceName = "bandwidth_seq", allocationSize = 1, initialValue = 1)
-public class BandwidthAllocation implements IPersistableDataObject<Long>,
-        Serializable, IDeepCopyable<BandwidthAllocation>, Comparable<BandwidthAllocation> {
+// TODO: This should be merged with SubscriptionRetrieval
+public class BandwidthAllocation
+        implements IPersistableDataObject<Long>, Serializable,
+        IDeepCopyable<BandwidthAllocation>, Comparable<BandwidthAllocation> {
 
     private static final long serialVersionUID = 743702044231376839L;
 
@@ -68,10 +70,6 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
     @Column(nullable = true)
     @DynamicSerializeElement
     private Date actualStart;
-
-    @Column(nullable = false)
-    @DynamicSerializeElement
-    private String agentType;
 
     @Column(nullable = true)
     @DynamicSerializeElement
@@ -126,7 +124,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
 
     /**
      * Copy constructor.
-     * 
+     *
      * @param from
      */
     public BandwidthAllocation(BandwidthAllocation from) {
@@ -147,7 +145,6 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
             this.setEndTime(fromEndTime);
         }
 
-        this.setAgentType(from.getAgentType());
         this.setBandwidthBucket(from.getBandwidthBucket());
         this.setEstimatedSize(from.getEstimatedSize());
         this.setId(from.getId());
@@ -171,13 +168,6 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
         return actualStart;
     }
 
-    /**
-     * @return the agentType
-     */
-    public String getAgentType() {
-        return agentType;
-    }
-
     public long getBandwidthBucket() {
         return bandwidthBucket;
     }
@@ -188,7 +178,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
 
     /**
      * Get the estimated size in kilobytes (kB).
-     * 
+     *
      * @return
      */
     public long getEstimatedSize() {
@@ -240,14 +230,6 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
         this.actualStart = actualStart;
     }
 
-    /**
-     * @param agentType
-     *            the agentType to set
-     */
-    public void setAgentType(String agentType) {
-        this.agentType = agentType;
-    }
-
     public void setBandwidthBucket(long bandwidthBucket) {
         this.bandwidthBucket = bandwidthBucket;
     }
@@ -258,7 +240,7 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
 
     /**
      * Set the estimated size in kilobytes (kB).
-     * 
+     *
      * @param estimatedSize
      *            the estimated size
      */
@@ -310,15 +292,19 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
      */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         BandwidthAllocation other = (BandwidthAllocation) obj;
-        if (id != other.id)
+        if (id != other.id) {
             return false;
+        }
         return true;
     }
 
@@ -348,10 +334,10 @@ public class BandwidthAllocation implements IPersistableDataObject<Long>,
 
     @Override
     public int compareTo(BandwidthAllocation o) {
-       
+
         SubscriptionPriority oPriority = o.priority;
         SubscriptionPriority myPriority = this.priority;
-        
+
         return myPriority.compareTo(oPriority);
     }
 

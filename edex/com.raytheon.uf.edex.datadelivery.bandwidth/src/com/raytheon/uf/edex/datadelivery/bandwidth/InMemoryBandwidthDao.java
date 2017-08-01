@@ -75,7 +75,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  *                                  by network and Bandwidth Bucked Id values
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
- * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ * Aug 02, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate and added purgeAllocations.
  *
  * </pre>
  *
@@ -86,8 +86,10 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
 
     private static final AtomicLong idSequence = new AtomicLong(1);
 
-    // Explicitly ConcurrentLinkedQueue so we can use methods that require that
-    // type to be concurrently safe
+    /*
+     * Explicitly ConcurrentLinkedQueue so we can use methods that require that
+     * type to be concurrently safe
+     */
     private final ConcurrentLinkedQueue<BandwidthAllocation> bandwidthAllocations = new ConcurrentLinkedQueue<>();
 
     private final ConcurrentLinkedQueue<BandwidthSubscription> bandwidthSubscriptions = new ConcurrentLinkedQueue<>();
@@ -556,4 +558,14 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
         return null;
     }
 
+    @Override
+    public void purgeAllocations(Date purgeThreshold) {
+        Iterator<BandwidthAllocation> iter = bandwidthAllocations.iterator();
+        while (iter.hasNext()) {
+            BandwidthAllocation alloc = iter.next();
+            if (purgeThreshold.after(alloc.getEndTime())) {
+                iter.remove();
+            }
+        }
+    }
 }

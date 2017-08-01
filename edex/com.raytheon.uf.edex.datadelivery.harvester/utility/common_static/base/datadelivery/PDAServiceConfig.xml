@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <!-- 
-        This is an absolute override file, indicating that a higher priority 
-        version of the file will completely replace a lower priority version
-        of the file. 
-    -->
+<!-- This is an absolute override file, indicating that a higher priority 
+    version of the file will completely replace a lower priority version of the 
+    file. -->
 <serviceConfig name="PDA">
-    <!--  Date format used by PDA provider -->
+    <!-- Date format used by PDA provider -->
     <dateConfig>
         <format>YYYYMMddHHmmss</format>
     </dateConfig>
@@ -15,7 +13,7 @@
     <!-- FTP variant used by PDA -->
     <constant name="CONN_TYPE" value="FTPS" />
     <constant name="PORT" value="21" />
-    <!--  Directory camel drops FTP files into for ingest delivery. -->
+    <!-- Directory camel drops FTP files into for ingest delivery. -->
     <constant name="FTPS_DROP_DIR" value="data_delivery" />
     <constant name="MISSING_VALUE" value="-999999" />
     <constant name="FILL_VALUE" value="-888888" />
@@ -28,33 +26,40 @@
     <constant name="DEFAULT_FORMAT" value="SAT" />
     <!-- Decoder type (temporary, until metadata improves from PDA) -->
     <constant name="DEFAULT_TYPE" value="goesr" />
-    <!--  Default PDA OGC CRS (WGS 84) -->
+    <!-- Default PDA OGC CRS (WGS 84) -->
     <constant name="DEFAULT_CRS" value="urn:ogc:def:crs:EPSG::4326" />
     <!-- PDA data is binary -->
     <constant name="BINARY_TRANSFER" value="true" />
-    <!-- IMPLICIT_SECURITY, Will automatically try to encrypt both command and data channel, 
-         PDA data channel is not encrypted so we have this false. -->
+    <!-- IMPLICIT_SECURITY, Will automatically try to encrypt both command 
+        and data channel, PDA data channel is not encrypted so we have this false. -->
     <constant name="IMPLICIT_SECURITY" value="false" />
     <!-- PDA FTPS(S) server requires PASSV mode for FTP -->
     <constant name="PASSIVE_MODE" value="true" />
     <!-- HTTPS subset request root URL -->
-    <constant name="SUBSET_REQUEST_URL" value="https://${retrieval.pda.https.ip}/services/OGC_In_Proxy"/>
+    <constant name="SUBSET_REQUEST_URL"
+        value="https://${retrieval.pda.https.ip}/services/OGC_In_Proxy" />
     <!-- FTPS retrieval root URL -->
-    <constant name="FTPS_REQUEST_URL" value="ftps://${retrieval.pda.ftps.ip}"/>
-    <!-- REMOTE_VERIFICATION_ENABLED, False when you are hitting a load balanced FTP(S) server -->
-    <constant name="REMOTE_VERIFICATION_ENABLED" value="false"/>
-    <!-- CHECK_DATA_RETENTION_TIME, false if using test data with old start times -->
-    <constant name="CHECK_DATA_RETENTION_TIME" value="true"/>
-    <!-- FTP_CONNECT_TIMEOUT, maximum time in seconds to wait for a connection response -->
+    <constant name="FTPS_REQUEST_URL" value="ftps://${retrieval.pda.ftps.ip}" />
+    <!-- REMOTE_VERIFICATION_ENABLED, False when you are hitting a load balanced 
+        FTP(S) server -->
+    <constant name="REMOTE_VERIFICATION_ENABLED" value="false" />
+    <!-- CHECK_DATA_RETENTION_TIME, false if using test data with old start 
+        times -->
+    <constant name="CHECK_DATA_RETENTION_TIME" value="true" />
+    <!-- FTP_CONNECT_TIMEOUT, maximum time in seconds to wait for a connection 
+        response -->
     <constant name="FTP_CONNECT_TIMEOUT" value="30" />
-    <!-- FTP_DATA_TIMEOUT, maximum time in seconds to wait for a packet response during a data transfer -->
+    <!-- FTP_DATA_TIMEOUT, maximum time in seconds to wait for a packet response 
+        during a data transfer -->
     <constant name="FTP_DATA_TIMEOUT" value="120" />
-    <!-- DELETE_FILE_AFTER_PROCESSING, Deletes downloaded file after it has been processed -->
+    <!-- DELETE_FILE_AFTER_PROCESSING, Deletes downloaded file after it has 
+        been processed -->
     <constant name="DELETE_FILE_AFTER_PROCESSING" value="true" />
     <!-- Disables the secure data channel defaults (execProc=P execPbsz=0). 
-         Enabling this means you must manually specific the security protocol
-         and Buffer size for the Data Channel in FTPS -->
-    <constant name="DISABLE_SECURE_DATA_CHANNEL_DEFAULTS" value="true" />
+        Enabling this means you must manually specific the security protocol and 
+        Buffer size for the Data Channel in FTPS -->
+    <constant name="DISABLE_SECURE_DATA_CHANNEL_DEFAULTS"
+        value="true" />
     <!-- secure data channel override of default execProc=P -->
     <constant name="EXEC_PROT" value="C" />
     <!-- secure data channel override of default execPbsz=0 -->
@@ -64,5 +69,9 @@
     <!-- JKS based keystore and trust modules for DD -->
     <constant name="KEYSTORE_FILE" value="/awips2/edex/conf/security/keystore.jks" />
     <constant name="TRUSTSTORE_FILE" value="/awips2/edex/conf/security/truststore.jks" />
-    <constant name="ASYNC_RESPONSE_HANDLER" value="https://${retrieval.pda.response.external.ip}:8082/GetCoverageResponseHandler"/>
+    <constant name="ASYNC_RESPONSE_HANDLER"
+        value="https://${retrieval.pda.response.external.ip}:8082/GetCoverageResponseHandler" />
+    <!-- Combine PDA DataSets by satellite and region, requires all connected 
+        sites to be at least 18.1.1 -->
+    <constant name="COMBINE_DATASET_METADATA" value="false" />
 </serviceConfig>

@@ -57,6 +57,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 @Entity
 @DiscriminatorValue("SubscriptionRetrieval")
 @DynamicSerialize
+// TODO: Combine with BandwidthAllocation into single class
 public class SubscriptionRetrieval extends BandwidthAllocation {
 
     private static final long serialVersionUID = 4563049024191145668L;

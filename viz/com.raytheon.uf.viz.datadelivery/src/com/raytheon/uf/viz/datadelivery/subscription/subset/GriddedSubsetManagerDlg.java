@@ -117,11 +117,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jul 08, 2015  4566     dhladky   Use AWIPS naming rather than provider
  *                                  naming.
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
+ * Aug 02, 2017  6186     rjpeter   Fix adhoc processing.
  *
  * </pre>
  *
  * @author djohnson
- * @version 1.0
  */
 
 public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
@@ -581,11 +581,9 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             return null;
         }
 
-        GriddedTime time;
         int cycle = selection.getCycle();
         this.useLatestDate = (cycle == -999 ? true : false);
         if (!selection.isLatest()) {
-            newTime.addCycleTime(cycle);
             String selectedDate = selection.getDate();
             metaData = retrieveFilteredDataSetMetaData(selectedDate, cycle);
         } else {
@@ -603,7 +601,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                                     dataSet.getDataSetName(),
                                     dataSet.getProviderName());
                 }
-
             } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Unable to retrieve dates for the dataset!", e);
@@ -612,7 +609,15 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         if (metaData == null) {
             return null;
         }
-        time = (GriddedTime) metaData.getTime();
+
+        GriddedDataSetMetaData gdsmd = (GriddedDataSetMetaData) metaData;
+        GriddedTime time = gdsmd.getTime();
+
+        // Remove once central on 18.1.1
+        if (gdsmd.getCycle() != GriddedDataSetMetaData.NO_CYCLE) {
+            time.addCycleTime(cycle);
+        }
+
         return time;
     }
 
@@ -705,8 +710,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             newTime.setStepUnit(dataSetTime.getStepUnit());
             sub.setTime(newTime);
         }
-
-        sub.setUrl(getSubscriptionUrl());
 
         List<String> fcstHours = newTime.getFcstHours();
 

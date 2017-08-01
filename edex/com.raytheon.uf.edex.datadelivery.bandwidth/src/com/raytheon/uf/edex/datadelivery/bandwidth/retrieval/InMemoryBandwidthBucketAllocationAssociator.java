@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,26 +33,29 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 /**
  * Holds the associations between {@link BandwidthBucket}s and their
  * {@link BandwidthAllocation}s and {@link BandwidthReservation}s.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 25, 2013 2106       djohnson     Extracted from {@link BandwidthBucket} and {@link RetrievalPlan}.
- * Dec 17, 2013 2636       bgonzale     Prevent stale BandwidthAllocation updates by retrieving 
- *                                      them from the dao before updating.
- * Jan 08, 2013 2645       bgonzale     Update allocations in the multimap when setting status to PROCESSING.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 25, 2013  2106     djohnson  Extracted from {@link BandwidthBucket} and
+ *                                  {@link RetrievalPlan}.
+ * Dec 17, 2013  2636     bgonzale  Prevent stale BandwidthAllocation updates by
+ *                                  retrieving them from the dao before
+ *                                  updating.
+ * Jan 08, 2013  2645     bgonzale  Update allocations in the multimap when
+ *                                  setting status to PROCESSING.
+ * Aug 02, 2017  6186     rjpeter   Removed agentType
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
-public class InMemoryBandwidthBucketAllocationAssociator implements
-        IBandwidthBucketAllocationAssociator {
+public class InMemoryBandwidthBucketAllocationAssociator
+        implements IBandwidthBucketAllocationAssociator {
 
     private final IBandwidthBucketDao bucketsDao;
 
@@ -70,9 +73,6 @@ public class InMemoryBandwidthBucketAllocationAssociator implements
         this.bucketsDao = bucketsDao;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addToBucket(BandwidthBucket bucket,
             BandwidthAllocation allocation) {
@@ -80,9 +80,6 @@ public class InMemoryBandwidthBucketAllocationAssociator implements
         bucketsDao.update(bucket);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addToBucket(BandwidthBucket bucket,
             BandwidthReservation reservation) {
@@ -90,9 +87,6 @@ public class InMemoryBandwidthBucketAllocationAssociator implements
         bucketsDao.update(bucket);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void removeFromBucket(BandwidthBucket bucket,
             BandwidthAllocation reservation) {
@@ -100,9 +94,6 @@ public class InMemoryBandwidthBucketAllocationAssociator implements
         bucketsDao.update(bucket);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void removeFromBucket(BandwidthBucket bucket,
             BandwidthReservation reservation) {
@@ -110,38 +101,29 @@ public class InMemoryBandwidthBucketAllocationAssociator implements
         bucketsDao.update(bucket);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public String showBucket(BandwidthBucket bucket) {
         StringBuilder sb = new StringBuilder();
         sb.append(bucket.toString()).append("\n");
 
-        for (BandwidthAllocation allocation : allocations.get(bucket
-                .getIdentifier())) {
+        for (BandwidthAllocation allocation : allocations
+                .get(bucket.getIdentifier())) {
             sb.append("  ").append(allocation.toString()).append("\n");
         }
-        for (BandwidthReservation reservation : reservations.get(bucket
-                .getIdentifier())) {
+        for (BandwidthReservation reservation : reservations
+                .get(bucket.getIdentifier())) {
             sb.append("  ").append(reservation.toString()).append("\n");
         }
 
         return sb.toString();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public BandwidthAllocation getNextReservation(BandwidthBucket bucket,
-            String agentType) {
+    public BandwidthAllocation getNextReservation(BandwidthBucket bucket) {
         BandwidthAllocation allocation = null;
         for (BandwidthAllocation o : allocations.get(bucket.getIdentifier())) {
-            if (RetrievalStatus.READY.equals(o.getStatus())
-                    && o.getAgentType().equals(agentType)) {
-                allocation = bandwidthDao
-                        .getBandwidthAllocation(o.getId());
+            if (RetrievalStatus.READY.equals(o.getStatus())) {
+                allocation = bandwidthDao.getBandwidthAllocation(o.getId());
                 if (allocation == null) {
                     // allocation was removed from persistence, sync the
                     // mapping
@@ -158,24 +140,16 @@ public class InMemoryBandwidthBucketAllocationAssociator implements
         return allocation;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthAllocation> getBandwidthAllocationsForBucket(
             BandwidthBucket bucket) {
-        return new ArrayList<BandwidthAllocation>(allocations.get(bucket
-                .getIdentifier()));
+        return new ArrayList<>(allocations.get(bucket.getIdentifier()));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthReservation> getBandwidthReservationsForBucket(
             BandwidthBucket bucket) {
-        return new ArrayList<BandwidthReservation>(reservations.get(bucket
-                .getIdentifier()));
+        return new ArrayList<>(reservations.get(bucket.getIdentifier()));
     }
 
     /**

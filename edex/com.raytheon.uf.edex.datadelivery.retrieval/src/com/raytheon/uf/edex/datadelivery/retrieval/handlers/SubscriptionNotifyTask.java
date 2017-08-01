@@ -41,8 +41,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
-import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 
 /**
@@ -73,6 +72,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * May 09, 2017  6186     rjpeter   Added url
  * May 22, 2017  6130     tjensen   Fix error handling
  * Jul 27, 2017  6186     rjpeter   Removed unused fields.
+ * Aug 02, 2017  6186     rjpeter   Removed RetrievalManagerNotifyEvent.
  *
  * </pre>
  *
@@ -92,8 +92,6 @@ public class SubscriptionNotifyTask implements Runnable {
 
         private final Network network;
 
-        private final Long bandwidthAllocationId;
-
         private final long delayedUntilMillis;
 
         private final String key;
@@ -102,18 +100,17 @@ public class SubscriptionNotifyTask implements Runnable {
 
         SubscriptionDelay(String subName, String url, String owner,
                 SubscriptionType subscriptionType, Network network,
-                String provider, Long bandwidthAllocationId,
-                long delayedUntilMillis, Long retrievalRequestTime) {
+                String provider, long delayedUntilMillis,
+                Long retrievalRequestTime) {
             this.subName = subName;
             this.dsmdUrl = url;
             this.owner = owner;
             this.subscriptionType = subscriptionType;
             this.network = network;
             this.provider = provider;
-            this.bandwidthAllocationId = bandwidthAllocationId;
             this.delayedUntilMillis = delayedUntilMillis;
             this.retrievalRequestTime = retrievalRequestTime;
-            key = subName + "_" + dsmdUrl;
+            key = subName + "_" + dsmdUrl + "_" + owner;
         }
 
         @Override
@@ -252,8 +249,8 @@ public class SubscriptionNotifyTask implements Runnable {
         // 11 seconds from start time
         return new SubscriptionDelay(record.getSubscriptionName(),
                 record.getDsmdUrl(), record.getOwner(), subType, network,
-                record.getProvider(), record.getBandwidthAllocationId(),
-                startTime + 11_000, retrievalRequestTimeLong);
+                record.getProvider(), startTime + 11_000,
+                retrievalRequestTimeLong);
     }
 
     // set written to by other threads
@@ -265,9 +262,9 @@ public class SubscriptionNotifyTask implements Runnable {
 
     private final DelayQueue<SubscriptionDelay> subscriptionQueue = new DelayQueue<>();
 
-    private IRetrievalDao dao;
+    private RetrievalDao dao;
 
-    public SubscriptionNotifyTask(IRetrievalDao dao) {
+    public SubscriptionNotifyTask(RetrievalDao dao) {
         this.dao = dao;
         this.dao.setNotifyTask(this);
     }
@@ -313,7 +310,7 @@ public class SubscriptionNotifyTask implements Runnable {
             while (subToCheck != null) {
                 Map<RetrievalRequestRecord.State, Integer> stateCounts = dao
                         .getSubscriptionStateCounts(subToCheck.subName,
-                                subToCheck.dsmdUrl);
+                                subToCheck.dsmdUrl, subToCheck.owner);
                 Integer numPending = stateCounts
                         .get(RetrievalRequestRecord.State.PENDING);
                 Integer numRunning = stateCounts
@@ -329,11 +326,6 @@ public class SubscriptionNotifyTask implements Runnable {
                     event.setNetwork(subToCheck.network.name());
                     event.setRetrievalRequestTime(
                             subToCheck.retrievalRequestTime);
-
-                    // event needs new key
-                    RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
-                    retrievalManagerNotifyEvent.setId(
-                            Long.toString(subToCheck.bandwidthAllocationId));
 
                     // check if any of the retrievals failed
                     Integer numFailed = stateCounts
@@ -352,7 +344,7 @@ public class SubscriptionNotifyTask implements Runnable {
                         // generate message
                         List<RetrievalRequestRecord> failedRecs = dao
                                 .getFailedRequests(subToCheck.subName,
-                                        subToCheck.dsmdUrl);
+                                        subToCheck.dsmdUrl, subToCheck.owner);
                         StringBuilder sb = new StringBuilder(300);
                         try {
                             sb.append("Failed parameters: ");
@@ -394,8 +386,7 @@ public class SubscriptionNotifyTask implements Runnable {
                     }
 
                     EventBus.publish(event);
-                    EventBus.publish(retrievalManagerNotifyEvent);
-                    dao.removeSubscription(subToCheck.subName,
+                    dao.removeSubscription(subToCheck.subName, subToCheck.owner,
                             subToCheck.dsmdUrl);
                 }
 

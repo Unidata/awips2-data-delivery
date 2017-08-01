@@ -7,26 +7,20 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import com.google.common.eventbus.AllowConcurrentEvents;
-import com.google.common.eventbus.Subscribe;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
-import com.raytheon.uf.edex.datadelivery.bandwidth.notification.BandwidthEventBus;
-import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
 
 /**
- * 
+ *
  * Retrieval manager.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Oct 11, 2012  726      djohnson  Add SW history, check for bandwidth enabled,
@@ -53,24 +47,22 @@ import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
  * Jan 30, 2014  2686     dhladky   refactor of retrieval.
  * Feb 10, 2014  2678     dhladky   Prevent duplicate allocations.
  * Apr 02, 2014  2810     dhladky   Priority sorting of allocations.
- * Sept 14, 201  2131     dhladky   PDA additions
+ * Sep 14, 0201  2131     dhladky   PDA additions
  * Jan 15, 2014  3884     dhladky   Removed shutdown, replaced with restart(),
  *                                  shutdown undermined #2749 BWM ticket;
  * Mar 08, 2015  3950     dhladky   Better logging of foreign retrieval ID's.
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Aug 09, 2016  5771     rjpeter   Allow concurrent event processing
- * 
+ * Aug 02, 2017  6186     rjpeter   Removed RetrievalManagerNotifyEvent.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  */
 public class RetrievalManager {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RetrievalManager.class);
-
-    // Package-private on purpose so agents have visibility
-    static final BandwidthAllocation POISON_PILL = new BandwidthAllocation();
 
     private final IBandwidthDao bandwidthDao;
 
@@ -92,7 +84,7 @@ public class RetrievalManager {
 
     /**
      * Schedule the allocations.
-     * 
+     *
      * @param bandwidthAllocations
      *            The BandwidthAllocations to schedule.
      * @return the list of {@link BandwidthAllocation}s that were unable to be
@@ -113,10 +105,10 @@ public class RetrievalManager {
 
             if (plan != null) {
 
-                if (bandwidthAllocation.getStartTime().before(
-                        plan.getPlanStart().getTime())
-                        || bandwidthAllocation.getEndTime().after(
-                                plan.getPlanEnd().getTime())) {
+                if (bandwidthAllocation.getStartTime()
+                        .before(plan.getPlanStart().getTime())
+                        || bandwidthAllocation.getEndTime()
+                                .after(plan.getPlanEnd().getTime())) {
 
                     statusHandler
                             .warn("Attempt to schedule bandwidth outside current window. BandwidthAllocation ["
@@ -146,61 +138,8 @@ public class RetrievalManager {
         return unscheduled;
     }
 
-    @SuppressWarnings("unchecked")
-    @Subscribe
-    @AllowConcurrentEvents
-    public void retrievalCompleted(RetrievalManagerNotifyEvent event) {
-
-        long eventId = Long.parseLong(event.getId());
-
-        if (eventId == -1) {
-            statusHandler
-                    .error("Unable to mark retrieval complete, received -1 SubscriptionRetrieval id!");
-            return;
-        }
-
-        SubscriptionRetrieval subscriptionRetrieval = bandwidthDao
-                .getSubscriptionRetrieval(eventId);
-
-        if (subscriptionRetrieval == null) {
-            statusHandler.warn("Foreign(Shared) SubscriptionRetrieval id ["
-                    + eventId + "]");
-            return;
-        }
-
-        // Update the SubscriptionRetrieval in the database since the Retrievals
-        // were completed outside the Bandwidth subsystem.
-        subscriptionRetrieval.setStatus(RetrievalStatus.FULFILLED);
-        subscriptionRetrieval.setActualEnd(TimeUtil.newDate());
-
-        bandwidthDao.update(subscriptionRetrieval);
-
-        statusHandler.info("RetrievalComplete:: ["
-                + subscriptionRetrieval.getId() + "]");
-
-        // Determine if all the retrievals for the SubscriptionRetrieval are
-        // fulfilled.
-        List<SubscriptionRetrieval> subscriptionRetrievals = bandwidthDao
-                .querySubscriptionRetrievals(subscriptionRetrieval
-                        .getBandwidthSubscription().getId());
-
-        boolean completed = true;
-        // If there is more than one check them all..
-        for (SubscriptionRetrieval retrieval : subscriptionRetrievals) {
-            completed &= retrieval.getStatus()
-                    .equals(RetrievalStatus.FULFILLED);
-        }
-
-        if (completed) {
-            subscriptionRetrieval.setStatus(RetrievalStatus.FULFILLED);
-            bandwidthDao.update(subscriptionRetrieval);
-            BandwidthEventBus.publish(new SubscriptionRetrievalFulfilled(
-                    subscriptionRetrieval));
-        }
-
-    }
-
-    public BandwidthAllocation nextAllocation(Network network, String agentType) {
+    public BandwidthAllocation nextAllocation(Network network,
+            String agentType) {
 
         RetrievalPlan plan = getRetrievalPlans().get(network);
         if (plan != null) {
@@ -214,20 +153,18 @@ public class RetrievalManager {
     /***
      * Method used in practice because we need to search for expired
      * allocations.
-     * 
+     *
      * @param network
-     * @param agentType
      * @return
      */
-    public List<BandwidthAllocation> getRecentAllocations(Network network,
-            String agentType) {
+    public List<BandwidthAllocation> getRecentAllocations(Network network) {
 
         List<BandwidthAllocation> allocations = null;
 
         RetrievalPlan plan = getRetrievalPlans().get(network);
         if (plan != null) {
             synchronized (plan) {
-                return plan.getRecentAllocations(agentType);
+                return plan.getRecentAllocations();
             }
         }
 
@@ -280,7 +217,7 @@ public class RetrievalManager {
 
     /**
      * Check whether a change in the bandwidth throughput is being proposed.
-     * 
+     *
      * @param proposedRetrievalManager
      *            the other retrieval manager with any proposed changes
      * @return true if a bandwidth throughput change is being proposed

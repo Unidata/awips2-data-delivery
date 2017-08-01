@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,21 +38,22 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * The {@DataSet} for OpenDAP gridded products.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 31, 2012 1022       djohnson     Initial creation
- * Nov 19, 2012 1166       djohnson     Clean up JAXB representation of registry objects.
- * Sept 30, 2013 1797      dhladky      Generics
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 31, 2012  1022     djohnson  Initial creation
+ * Nov 19, 2012  1166     djohnson  Clean up JAXB representation of registry
+ *                                  objects.
+ * Sep 30, 2013  1797     dhladky   Generics
+ * Aug 02, 2017  6186     rjpeter   Deprecated fields/methods.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
@@ -64,17 +65,22 @@ public class OpenDapGriddedDataSet extends GriddedDataSet {
 
     }
 
+    /* Remove post 18.1.1 */
     @DynamicSerializeElement
     @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    @Deprecated
     private Map<Integer, String> cyclesToUrls = new HashMap<>();
 
+    /* Remove post 18.1.1 */
     @DynamicSerializeElement
     @XmlElement
+    @Deprecated
     private LinkedList<Integer> cycleUpdate = new LinkedList<>();
 
     /**
      * @return the cyclesToUrls
      */
+    @Deprecated
     public Map<Integer, String> getCyclesToUrls() {
         return cyclesToUrls;
     }
@@ -83,10 +89,12 @@ public class OpenDapGriddedDataSet extends GriddedDataSet {
      * @param cyclesToUrls
      *            the cyclesToUrls to set
      */
+    @Deprecated
     public void setCyclesToUrls(Map<Integer, String> cyclesToUrls) {
         this.cyclesToUrls = cyclesToUrls;
     }
 
+    @Deprecated
     public void cycleUpdated(int cycle) {
         Integer asObject = Integer.valueOf(cycle);
         // Remove all occurences
@@ -97,25 +105,12 @@ public class OpenDapGriddedDataSet extends GriddedDataSet {
     }
 
     /**
-     * @return
-     */
-    public Iterator<Integer> newestToOldestIterator() {
-        return cycleUpdate.iterator();
-    }
-
-    /**
-     * @return
-     */
-    public Iterator<Integer> oldestToNewestIterator() {
-        return cycleUpdate.descendingIterator();
-    }
-
-    /**
      * Added only to comply with Thrift. These SHOULD NOT be called by anyone
      * except for thrift.
-     * 
+     *
      * @return the cycle update
      */
+    @Deprecated
     public LinkedList<Integer> getCycleUpdate() {
         return cycleUpdate;
     }
@@ -123,10 +118,11 @@ public class OpenDapGriddedDataSet extends GriddedDataSet {
     /**
      * Added only to comply with Thrift. These SHOULD NOT be called by anyone
      * except for thrift.
-     * 
+     *
      * @param cycleUpdate
      *            the cycleUpdate to set
      */
+    @Deprecated
     public void setCycleUpdate(LinkedList<Integer> cycleUpdate) {
         // If the instance variable is not empty, then it's not thrift calling
         if (!this.cycleUpdate.isEmpty()) {
@@ -149,7 +145,8 @@ public class OpenDapGriddedDataSet extends GriddedDataSet {
 
             Map<Integer, String> oldCyclesToUrls = other.getCyclesToUrls();
             Map<Integer, String> newCyclesToUrls = this.getCyclesToUrls();
-            Iterator<Integer> updatedCycles = this.oldestToNewestIterator();
+            Iterator<Integer> updatedCycles = this.cycleUpdate
+                    .descendingIterator();
             while (updatedCycles.hasNext()) {
                 Integer cycle = updatedCycles.next();
                 other.cycleUpdated(cycle);
@@ -182,23 +179,30 @@ public class OpenDapGriddedDataSet extends GriddedDataSet {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (!super.equals(obj)) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         OpenDapGriddedDataSet other = (OpenDapGriddedDataSet) obj;
         if (cycleUpdate == null) {
-            if (other.cycleUpdate != null)
+            if (other.cycleUpdate != null) {
                 return false;
-        } else if (!cycleUpdate.equals(other.cycleUpdate))
+            }
+        } else if (!cycleUpdate.equals(other.cycleUpdate)) {
             return false;
+        }
         if (cyclesToUrls == null) {
-            if (other.cyclesToUrls != null)
+            if (other.cyclesToUrls != null) {
                 return false;
-        } else if (!cyclesToUrls.equals(other.cyclesToUrls))
+            }
+        } else if (!cyclesToUrls.equals(other.cyclesToUrls)) {
             return false;
+        }
         return true;
     }
 }

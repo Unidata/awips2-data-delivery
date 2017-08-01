@@ -23,23 +23,20 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
-import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
@@ -67,15 +64,13 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Jun 29, 2017  6130     tjensen   Add support for local PDA testing and
  *                                  override getRetrievalMode
  * Jul 25, 2017  6186     rjpeter   Update to handle Retrieval refactor
+ * Aug 02, 2017  6186     rjpeter   Get parameters from DSMD instead of sub.
  *
  * </pre>
  *
  * @author dhladky
  */
 public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     public PDARetrievalGenerator(ServiceType serviceType) {
         super(serviceType);
     }
@@ -87,26 +82,21 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
 
     @Override
     public List<Retrieval<Time, Coverage>> buildRetrieval(
-            DataSetMetaData<Time, Coverage> dsmd, SubscriptionBundle bundle) {
+            DataSetMetaData<Time, Coverage> dsmd,
+            Subscription<Time, Coverage> sub, Provider provider) {
         try {
             PDADataSetMetaData pdadsmd = (PDADataSetMetaData) dsmd;
-            @SuppressWarnings("unchecked")
-            Subscription<Time, Coverage> sub = (Subscription<Time, Coverage>) bundle
-                    .getSubscription();
-            Coverage cov = sub.getCoverage();
+            Coverage cov = dsmd.getInstanceCoverage();
 
-            List<Parameter> parameters = sub.getParameter();
-            if (CollectionUtil.isNullOrEmpty(parameters)) {
-                logger.info(
-                        "Subscription does not contain any parameters, skipping subscription: "
-                                + sub.getName());
-                return null;
+            if (cov == null) {
+                cov = sub.getCoverage();
             }
 
+            Map<String, Parameter> parameters = pdadsmd.getParameters();
             Time time = pdadsmd.getTime();
 
             // With PDA it's one param at a time. so always 0.
-            Parameter subParam = sub.getParameter().get(0);
+            Parameter subParam = parameters.values().iterator().next();
 
             Retrieval<Time, Coverage> retrieval = new Retrieval<>();
             retrieval.setSubscriptionName(sub.getName());
@@ -117,8 +107,8 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             retrieval.setSubscriptionType(getSubscriptionType(sub));
             retrieval.setNetwork(sub.getRoute());
 
-            final ProviderType providerType = bundle.getProvider()
-                    .getProviderType(bundle.getDataType());
+            final ProviderType providerType = provider
+                    .getProviderType(sub.getDataSetType());
             retrieval.setPlugin(providerType.getPlugin());
 
             RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<>();
@@ -146,11 +136,11 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
      */
     @Override
     public List<RetrievalRequestRecord> postSaveActions(
-            DataSetMetaData<Time, Coverage> dsmd, SubscriptionBundle bundle,
+            DataSetMetaData<Time, Coverage> dsmd,
+            Subscription<Time, Coverage> sub,
             List<RetrievalRequestRecord> records) {
         PDADataSetMetaData pdaDsmd = (PDADataSetMetaData) dsmd;
         String metaDataKey = pdaDsmd.getMetaDataID();
-        Subscription sub = bundle.getSubscription();
         List<RetrievalRequestRecord> rval = new LinkedList<>();
 
         for (RetrievalRequestRecord record : records) {

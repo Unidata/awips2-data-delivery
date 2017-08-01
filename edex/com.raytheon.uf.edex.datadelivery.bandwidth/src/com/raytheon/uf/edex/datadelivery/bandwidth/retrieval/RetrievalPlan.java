@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -51,33 +51,41 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Class used to hold the current scheduled and available bandwidth for a
  * particular route. {@link RetrievalManager} uses this Class to hold the
  * scheduled BandwidthAllocations.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 27, 2012 726        jspinks      Initial release.
- * Oct 16, 2012 0726       djohnson     Fix bug never updating allocations in memory.
- * Oct 23, 2012 1286       djohnson     Add ability to get/set the default bandwidth.
- * Nov 20, 2012 1286       djohnson     Handle null bucketIds being returned.
- * Jun 25, 2013 2106       djohnson     Separate state into other classes, promote BandwidthBucket to a class proper.
- * Oct 30, 2013 2448       dhladky      Moved methods to TimeUtil.
- * Nov 16, 2013 1736       dhladky      Alter size of available bandwidth by subtracting that used by registry.
- * Dec 05, 2013 2545       mpduff       BandwidthReservation now stored in bytes.
- * Dec 13, 2013 2545       mpduff       Prevent negative values in bandwidth bucket sizes.
- * Dec 17, 2013 2636       bgonzale     Check for removed buckets when removing BandwidthAllocations or 
- *                                      BandwidthReservations. Add constrained bucket addition method.
- *                                      Added debug logging.
- * Jan 08, 2014 2615       bgonzale     Log registry bandwidth calculation errors.
- * Feb 10, 2014 2678       dhladky      Prevent duplicate allocations.
- * Mar 10, 2015 3950       dhladky      Log bandwidth value in init.
- * May 27, 2015 4531       dhladky      GMT standard all Calendar refs.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 27, 2012  726      jspinks   Initial release.
+ * Oct 16, 2012  726      djohnson  Fix bug never updating allocations in
+ *                                  memory.
+ * Oct 23, 2012  1286     djohnson  Add ability to get/set the default
+ *                                  bandwidth.
+ * Nov 20, 2012  1286     djohnson  Handle null bucketIds being returned.
+ * Jun 25, 2013  2106     djohnson  Separate state into other classes, promote
+ *                                  BandwidthBucket to a class proper.
+ * Oct 30, 2013  2448     dhladky   Moved methods to TimeUtil.
+ * Nov 16, 2013  1736     dhladky   Alter size of available bandwidth by
+ *                                  subtracting that used by registry.
+ * Dec 05, 2013  2545     mpduff    BandwidthReservation now stored in bytes.
+ * Dec 13, 2013  2545     mpduff    Prevent negative values in bandwidth bucket
+ *                                  sizes.
+ * Dec 17, 2013  2636     bgonzale  Check for removed buckets when removing
+ *                                  BandwidthAllocations or
+ *                                  BandwidthReservations. Add constrained
+ *                                  bucket addition method. Added debug logging.
+ * Jan 08, 2014  2615     bgonzale  Log registry bandwidth calculation errors.
+ * Feb 10, 2014  2678     dhladky   Prevent duplicate allocations.
+ * Mar 10, 2015  3950     dhladky   Log bandwidth value in init.
+ * May 27, 2015  4531     dhladky   GMT standard all Calendar refs.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Aug 02, 2017  6186     rjpeter   Removed agentType.
+ *
  * </pre>
- * 
- * @version 1.0
+ *
+ * @author jspinks
  */
 // TODO: Need to enable transactions from BandwidthManager forward
 // @Service
@@ -112,7 +120,7 @@ public class RetrievalPlan {
     private final Object bucketsLock = new Object();
 
     // access to requestMap should always be synchronized on requestMap itself..
-    private final Map<Long, Set<Long>> requestMap = new HashMap<Long, Set<Long>>();
+    private final Map<Long, Set<Long>> requestMap = new HashMap<>();
 
     // Number of minutes of bandwidth per bucket.
     private int bucketMinutes;
@@ -166,8 +174,8 @@ public class RetrievalPlan {
                 // minute *
                 // bucket minutes)/bits per byte) ...
                 bytesPerBucket = BandwidthUtil
-                        .convertKilobytesPerSecondToBytesPerSpecifiedMinutes(
-                                bw, bucketMinutes);
+                        .convertKilobytesPerSecondToBytesPerSpecifiedMinutes(bw,
+                                bucketMinutes);
 
                 bucketsDao.create(new BandwidthBucket(currentMillis,
                         bytesPerBucket, network));
@@ -183,12 +191,13 @@ public class RetrievalPlan {
                     registryBytesPerSecond = rbs
                             .getRegistryBandwidth(startMillis);
                 } catch (IllegalArgumentException e) {
-                    statusHandler
-                            .error("Failed to init registry bandwidth calculation.  Registry bandwidth will be ignored.",
-                                    e);
+                    statusHandler.error(
+                            "Failed to init registry bandwidth calculation.  Registry bandwidth will be ignored.",
+                            e);
                 }
-                bucket.setBucketSize(bucket.getBucketSize()
-                        - (registryBytesPerSecond * TimeUtil.SECONDS_PER_MINUTE * bucketMinutes));
+                bucket.setBucketSize(
+                        bucket.getBucketSize() - (registryBytesPerSecond
+                                * TimeUtil.SECONDS_PER_MINUTE * bucketMinutes));
             }
 
             statusHandler.info("Retrieval Plan: available bandwidth: "
@@ -218,7 +227,7 @@ public class RetrievalPlan {
 
     /**
      * Schedule the {@link BandwidthAllocation}.
-     * 
+     *
      * @param bandwidthAllocation
      *            the allocation
      * @return the list of unscheduled bandwidth allocations
@@ -227,11 +236,11 @@ public class RetrievalPlan {
             BandwidthAllocation bandwidthAllocation) {
         // First make sure we have the same path
         if (!(network == bandwidthAllocation.getNetwork())) {
-            throw new IllegalArgumentException("BandwidthAllocation ["
-                    + bandwidthAllocation.getId()
-                    + "] does not have the same path ["
-                    + bandwidthAllocation.getNetwork()
-                    + "] as the RetrievalPlan [" + network + "]");
+            throw new IllegalArgumentException(
+                    "BandwidthAllocation [" + bandwidthAllocation.getId()
+                            + "] does not have the same path ["
+                            + bandwidthAllocation.getNetwork()
+                            + "] as the RetrievalPlan [" + network + "]");
         }
 
         if (planEnd.before(bandwidthAllocation.getStartTime())) {
@@ -257,7 +266,7 @@ public class RetrievalPlan {
      * Resize the plan for the parameters in the date. This method should only
      * be called internally to this class, and in tests which need access to
      * make specific changes.
-     * 
+     *
      * @param newStartOfPlan
      *            the new start of the plan
      * @param newEndOfPlan
@@ -336,7 +345,7 @@ public class RetrievalPlan {
 
     /**
      * Show the contents of the {@link RetrievalPlan}.
-     * 
+     *
      * @return
      */
     public String showPlan() {
@@ -352,7 +361,7 @@ public class RetrievalPlan {
 
     /**
      * Show the contents of the {@link BandwidthBucket}.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @return the String to display
@@ -391,9 +400,9 @@ public class RetrievalPlan {
 
     /**
      * Get the next scheduled RetrievalRequest..
-     * 
+     *
      * @param agentType
-     * 
+     *
      * @return
      */
     public BandwidthAllocation nextAllocation(String agentType) {
@@ -410,7 +419,7 @@ public class RetrievalPlan {
             // Iterate over the buckets and find the first
             // BandwidthAllocation that is in the READY state
             for (BandwidthBucket bucket : buckets) {
-                reservation = associator.getNextReservation(bucket, agentType);
+                reservation = associator.getNextReservation(bucket);
                 if (reservation != null) {
                     // TODO: do validity check for expired allocations
                     break;
@@ -423,12 +432,12 @@ public class RetrievalPlan {
 
     /**
      * Get the scheduled allocations from recent buckets
-     * 
+     *
      * @param agentType
-     * 
+     *
      * @return reservations
      */
-    public List<BandwidthAllocation> getRecentAllocations(String agentType) {
+    public List<BandwidthAllocation> getRecentAllocations() {
         List<BandwidthAllocation> reservations = null;
 
         synchronized (bucketsLock) {
@@ -443,10 +452,10 @@ public class RetrievalPlan {
             // BandwidthAllocation that are in the READY state
             for (BandwidthBucket bucket : buckets) {
                 BandwidthAllocation allocationReservation = associator
-                        .getNextReservation(bucket, agentType);
+                        .getNextReservation(bucket);
                 if (allocationReservation != null) {
                     if (reservations == null) {
-                        reservations = new ArrayList<BandwidthAllocation>();
+                        reservations = new ArrayList<>();
                     }
                     reservations.add(allocationReservation);
                 }
@@ -458,7 +467,7 @@ public class RetrievalPlan {
 
     public void updateRequestMapping(long requestId,
             Set<BandwidthBucket> buckets) {
-        Set<Long> bucketIds = new TreeSet<Long>();
+        Set<Long> bucketIds = new TreeSet<>();
         for (BandwidthBucket bucket : buckets) {
             bucketIds.add(bucket.getBucketStartTime());
         }
@@ -470,7 +479,7 @@ public class RetrievalPlan {
 
     /**
      * Remove the {@link BandwidthAllocation} from the {@link RetrievalPlan}.
-     * 
+     *
      * @param allocation
      *            the allocation
      */
@@ -490,10 +499,9 @@ public class RetrievalPlan {
                     // first bucket may have been removed.
                     BandwidthBucket bucket = getBucketNoChecks(bucketId);
                     if (bucket != null) {
-                        bucket.setCurrentSize(Math.max(
-                                0,
-                                bucket.getCurrentSize()
-                                        - allocation.getEstimatedSizeInBytes()));
+                        bucket.setCurrentSize(
+                                Math.max(0, bucket.getCurrentSize() - allocation
+                                        .getEstimatedSizeInBytes()));
                         associator.removeFromBucket(bucket, allocation);
                     }
                 }
@@ -503,7 +511,7 @@ public class RetrievalPlan {
 
     /**
      * Remove the {@link BandwidthReservation} from the {@link RetrievalPlan}.
-     * 
+     *
      * @param reservation
      *            the reservation
      */
@@ -523,8 +531,9 @@ public class RetrievalPlan {
                     // first bucket may have been removed.
                     BandwidthBucket bucket = getBucketNoChecks(bucketId);
                     if (bucket != null) {
-                        bucket.setCurrentSize(Math.max(0,
-                                bucket.getCurrentSize() - reservation.getSize()));
+                        bucket.setCurrentSize(
+                                Math.max(0, bucket.getCurrentSize()
+                                        - reservation.getSize()));
                         associator.removeFromBucket(bucket, reservation);
                     }
                 }
@@ -547,7 +556,7 @@ public class RetrievalPlan {
     /**
      * Update the BandwidthAllocation(s) in the BandwidthBuckets for a
      * particular allocation.
-     * 
+     *
      * @param allocation
      *            the allocation to update.
      */
@@ -583,7 +592,7 @@ public class RetrievalPlan {
 
     /**
      * Return the bucket for the specified id.
-     * 
+     *
      * @param bucketId
      *            the bucketId
      * @return the bucket
@@ -599,7 +608,7 @@ public class RetrievalPlan {
 
     /**
      * Return the bucket for the specified id.
-     * 
+     *
      * @param bucketId
      *            the bucketId
      * @return the bucket; null if not found
@@ -611,7 +620,7 @@ public class RetrievalPlan {
     /**
      * Return the buckets in the specified window, both boundaries are
      * inclusive. Buckets will be in order of their start time.
-     * 
+     *
      * @param startMillis
      *            the start time for buckets to include
      * @param endMillis
@@ -626,7 +635,7 @@ public class RetrievalPlan {
 
     /**
      * Adds the {@link BandwidthAllocation} to the specified bucket.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @param allocation
@@ -662,7 +671,7 @@ public class RetrievalPlan {
 
     /**
      * Adds the {@link BandwidthAllocation} to the specified bucket.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @param allocation
@@ -693,7 +702,7 @@ public class RetrievalPlan {
 
     /**
      * Adds the {@link BandwidthReservation} to the specified bucket.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @param reservation
@@ -707,8 +716,8 @@ public class RetrievalPlan {
 
         synchronized (bucketsLock) {
             BandwidthBucket actualBucket = getBucket(bucketStartTime);
-            actualBucket.setCurrentSize(actualBucket.getCurrentSize()
-                    + reservation.getSize());
+            actualBucket.setCurrentSize(
+                    actualBucket.getCurrentSize() + reservation.getSize());
             associator.addToBucket(actualBucket, reservation);
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                 statusHandler.debug("Adding to bucket "
@@ -723,7 +732,7 @@ public class RetrievalPlan {
 
     /**
      * Retrieve the {@link BandwidthAllocation}s for a {@link BandwidthBucket}.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @return the bandwidth allocations
@@ -735,7 +744,7 @@ public class RetrievalPlan {
 
     /**
      * Retrieve the {@link BandwidthReservation}s for a {@link BandwidthBucket}.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @return the bandwidth reservations
@@ -747,7 +756,7 @@ public class RetrievalPlan {
 
     /**
      * Get the number of minutes each bucket, by default, contains.
-     * 
+     *
      * @return the bucketMinutes
      */
     public int getBucketMinutes() {
@@ -756,7 +765,7 @@ public class RetrievalPlan {
 
     /**
      * Copy state from the specied {@link RetrievalPlan}.
-     * 
+     *
      * @param fromPlan
      *            the other plan
      */

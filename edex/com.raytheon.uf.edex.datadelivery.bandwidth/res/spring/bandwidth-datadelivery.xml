@@ -84,10 +84,6 @@
         <constructor-arg ref="bandwidthDao" />
     </bean>
 
-    <!-- The shared monitor object between the RetrievalAgentManager and its 
-        Agents -->
-    <bean id="retrievalAgentNotifier" class="java.lang.Object" />
-
     <bean id="retrievalManager"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager">
         <constructor-arg ref="bandwidthDao" />
@@ -111,6 +107,7 @@
         <constructor-arg ref="SubscriptionHandler" />
         <constructor-arg ref="DataSetHandler" />
         <constructor-arg ref="dataSetLatencyDao" />
+        <constructor-arg ref="network" />
     </bean>
 
     <bean id="dataSetLatencyServiceHandler"

@@ -19,6 +19,10 @@
         </property>
     </bean>
 
+    <bean id="network" class="com.raytheon.uf.common.datadelivery.registry.Network" factory-method="valueOf">
+        <constructor-arg value="SBN"/>
+    </bean>
+
     <util:map id="retrievalPlans">
         <entry key="SBN">
             <ref bean="SBNRetrievalPlan" />

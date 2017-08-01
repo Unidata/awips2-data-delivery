@@ -33,7 +33,6 @@ import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -63,8 +62,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * Oct 02, 2013  1797     dhladky   Generics time gridded time separation.
  * Oct 28, 2013  2448     dhladky   Request start time incorrectly used
  *                                  subscription start time.
- * Apr 20, 2017  6186     rjpeter   Update buildRetrieval signature.
+ * Apr 20, 2017  6186     rjpeter   Update buildRetrieval signature
  * Jul 25, 2017  6186     rjpeter   Use Retrieval
+ * Aug 02, 2017  6186     rjpeter   Removed SubscriptionBundle
  *
  * </pre>
  *
@@ -82,13 +82,13 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
     @Override
     public List<Retrieval<PointTime, Coverage>> buildRetrieval(
             DataSetMetaData<PointTime, Coverage> dsmd,
-            SubscriptionBundle bundle) {
+            Subscription<PointTime, Coverage> subscription, Provider provider) {
 
         List<Retrieval<PointTime, Coverage>> retrievals = Collections
                 .emptyList();
-        switch (bundle.getDataType()) {
+        switch (subscription.getDataSetType()) {
         case POINT:
-            retrievals = getPointRetrievals(bundle);
+            retrievals = getPointRetrievals(dsmd, subscription, provider);
             break;
         default:
             statusHandler.error("Grid DATA WFS NOT YET IMPLEMENTED");
@@ -105,46 +105,37 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
      * @param bundle
      * @return
      */
-    @SuppressWarnings("unchecked")
     private List<Retrieval<PointTime, Coverage>> getPointRetrievals(
-            SubscriptionBundle bundle) {
+            DataSetMetaData<PointTime, Coverage> dsmd,
+            Subscription<PointTime, Coverage> sub, Provider provider) {
 
         List<Retrieval<PointTime, Coverage>> retrievals = new ArrayList<>(1);
-        Subscription<PointTime, Coverage> sub = (Subscription<PointTime, Coverage>) bundle
-                .getSubscription();
+        PointTime subTime = sub.getTime();
 
-        if (sub != null) {
+        // Gets the most recent time, which is kept as the end time.
+        Date startDate = subTime.getStart();
+        Date endDate = subTime.getEnd();
 
-            if (sub.getUrl() == null) {
-                statusHandler.info("Skipping subscription " + sub.getName()
-                        + " that is unfulfillable with the current metadata (null URL.)");
-                return Collections.emptyList();
-            }
+        /*
+         * add a little extra padding to prevent gaps in data and to handle
+         * rounding
+         */
+        long paddingMillis = TimeUtil.MILLIS_PER_MINUTE / 2;
 
-            PointTime subTime = sub.getTime();
-            // Gets the most recent time, which is kept as the end time.
-            Date endDate = subTime.getEnd();
-            // We add a little extra padding in the interval to prevent gaps in
-            // data.
-            long intervalMillis = (long) (subTime.getInterval()
-                    * TimeUtil.MILLIS_PER_MINUTE * 1.5);
-            // create the request start and end times.
-            subTime.setRequestEnd(endDate);
-            Date requestStartDate = new Date(
-                    endDate.getTime() - intervalMillis);
-            subTime.setRequestStart(requestStartDate);
+        // create the request start and end times.
+        subTime.setRequestStart(new Date(startDate.getTime() - paddingMillis));
+        subTime.setRequestEnd(new Date(endDate.getTime() + paddingMillis));
 
-            // with point data they all have the same data
-            Parameter param = null;
+        // with point data they all have the same data
+        Parameter param = null;
 
-            if (sub.getParameter() != null) {
-                param = sub.getParameter().get(0);
-            }
-
-            Retrieval<PointTime, Coverage> retrieval = getRetrieval(sub, bundle,
-                    param, subTime);
-            retrievals.add(retrieval);
+        if (sub.getParameter() != null) {
+            param = sub.getParameter().get(0);
         }
+
+        Retrieval<PointTime, Coverage> retrieval = getRetrieval(dsmd, sub,
+                provider, param, subTime);
+        retrievals.add(retrieval);
 
         return retrievals;
     }
@@ -152,27 +143,32 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
     /**
      * Get the retrieval
      *
+     * @param dsmd
      * @param sub
-     * @param bundle
+     * @param provider
      * @param param
-     * @param level
-     * @param Time
+     * @param time
      * @return
      */
     private Retrieval<PointTime, Coverage> getRetrieval(
-            Subscription<PointTime, Coverage> sub, SubscriptionBundle bundle,
+            DataSetMetaData<PointTime, Coverage> dsmd,
+            Subscription<PointTime, Coverage> sub, Provider provider,
             Parameter param, PointTime time) {
 
         Retrieval<PointTime, Coverage> retrieval = new Retrieval<>();
         retrieval.setSubscriptionName(sub.getName());
         retrieval.setServiceType(getServiceType());
-        retrieval.setUrl(sub.getUrl());
+        retrieval.setUrl(dsmd.getUrl());
         retrieval.setOwner(sub.getOwner());
         retrieval.setSubscriptionType(getSubscriptionType(sub));
         retrieval.setNetwork(sub.getRoute());
 
         // Coverage and type processing
-        Coverage cov = sub.getCoverage();
+        Coverage cov = dsmd.getInstanceCoverage();
+
+        if (cov == null) {
+            cov = sub.getCoverage();
+        }
 
         if (cov instanceof Coverage) {
             retrieval.setDataType(DataType.POINT);
@@ -181,8 +177,8 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
                     "WFS retrieval does not support coverages/types other than Point. ");
         }
 
-        final ProviderType providerType = bundle.getProvider()
-                .getProviderType(bundle.getDataType());
+        final ProviderType providerType = provider
+                .getProviderType(sub.getDataSetType());
         final String plugin = providerType.getPlugin();
 
         // Attribute processing
@@ -203,9 +199,6 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
         return retrieval;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public RetrievalAdapter<PointTime, Coverage> getServiceRetrievalAdapter() {
         return new WfsRetrievalAdapter();

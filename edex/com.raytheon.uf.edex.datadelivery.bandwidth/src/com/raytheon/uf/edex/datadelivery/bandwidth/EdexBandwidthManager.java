@@ -22,12 +22,13 @@ package com.raytheon.uf.edex.datadelivery.bandwidth;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,7 +47,6 @@ import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionStatusEvent;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusDefinition;
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusEvent;
-import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataDeliveryRegistryObjectTypes;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
@@ -88,10 +88,8 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder
 import com.raytheon.uf.edex.datadelivery.bandwidth.notification.BandwidthEventBus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalPlan;
-import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
-import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalFulfilled;
+import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalAgent;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
-import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
@@ -170,7 +168,8 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  startup scheduling async now.
  * Aug 09, 2016  5771     rjpeter   Allow concurrent event processing
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
- * May 04, 2017  6186     rjpeter   Moved intersection logic to DataSetMetaData
+ * Aug 02, 2017  6186     rjpeter   Moved intersection logic to DataSetMetaData,
+ *                                  refactored dataSetMetaData processing
  *
  * </pre>
  *
@@ -228,11 +227,13 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     public EdexBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao<T, C> bandwidthDao, RetrievalManager retrievalManager,
             BandwidthDaoUtil<T, C> bandwidthDaoUtil, RegistryIdUtil idUtil,
+            SubscriptionRetrievalAgent retrievalAgent,
             DataSetMetaDataHandler dataSetMetaDataHandler,
             SubscriptionHandler subscriptionHandler,
             SendToServerSubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
-        super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil);
+        super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
+                retrievalAgent);
 
         this.dataSetMetaDataHandler = dataSetMetaDataHandler;
         this.subscriptionHandler = subscriptionHandler;
@@ -390,8 +391,6 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
          * unscheduled there and then. This saves time at start-up that was
          * eaten up waiting for the BWM keeping the JVM initialization from
          * completing.
-         *
-         *
          */
         if (insubscriptions != null) {
             for (Subscription<T, C> sub : orderSubscriptionsByPriority(
@@ -513,52 +512,6 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * These will all carry the @Subscribe notation. This means they will
      * deliver objects of their type that have been placed on the Bus.
      */
-
-    /**
-     * The callback method for BandwidthEventBus to use to notify
-     * BandwidthManager that retrievalManager has completed the retrievals for a
-     * Subscription. The updated BandwidthSubscription Object is placed on the
-     * BandwidthEventBus.
-     *
-     * @param subscription
-     *            The completed subscription.
-     */
-    @Subscribe
-    @AllowConcurrentEvents
-    public void subscriptionFulfilled(
-            SubscriptionRetrievalFulfilled subscriptionRetrievalFulfilled) {
-
-        statusHandler.info("subscriptionFulfilled() :: "
-                + subscriptionRetrievalFulfilled.getSubscriptionRetrieval());
-
-        SubscriptionRetrieval sr = subscriptionRetrievalFulfilled
-                .getSubscriptionRetrieval();
-
-        List<SubscriptionRetrieval> subscriptionRetrievals = bandwidthDao
-                .querySubscriptionRetrievals(sr.getBandwidthSubscription());
-
-        List<SubscriptionRetrieval> fulfilledList = new ArrayList<>();
-
-        /*
-         * Look to see if all the SubscriptionRetrieval's for a subscription are
-         * completed.
-         */
-        for (SubscriptionRetrieval subscription : subscriptionRetrievals) {
-            if (RetrievalStatus.FULFILLED.equals(subscription.getStatus())) {
-                fulfilledList.add(subscription);
-            }
-        }
-
-        /*
-         * Remove the completed SubscriptionRetrieval Objects from the plan..
-         */
-        for (SubscriptionRetrieval fsr : fulfilledList) {
-            RetrievalPlan plan = retrievalManager.getPlan(fsr.getNetwork());
-            plan.remove(fsr);
-            statusHandler.info(
-                    "Removing fulfilled SubscriptionRetrieval: " + fsr.getId());
-        }
-    }
 
     /**
      * When a Subscription is removed from the Registry, a RemoveRegistryEvent
@@ -784,18 +737,17 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      *            the metadadata
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    protected void updateDataSetMetaData(DataSetMetaData dataSetMetaData)
-            throws ParseException {
+    protected List<? extends Subscription> getSubscriptionsForDataSetMetaData(
+            DataSetMetaData dataSetMetaData) throws ParseException {
+        List<? extends Subscription> subscriptions = null;
+
         /*
-         * Look for active subscriptions to the dataset. Creates an ADHOC
-         * subscription replacing the allocations from scheduling and guarantees
-         * an active retrieval will be processed.
+         * Look for active subscriptions to the dataset.
          */
         String dataSetName = dataSetMetaData.getDataSetName();
         String url = dataSetMetaData.getUrl();
 
         try {
-            List<? extends Subscription> subscriptions = null;
 
             // check to see if this site is the NCF
             if (RegistryIdUtil.getId().equals(RegistryUtil.defaultUser)) {
@@ -811,53 +763,49 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                                 dataSetMetaData.getProviderName(),
                                 RegistryIdUtil.getId());
             }
-
-            if (CollectionUtil.isNullOrEmpty(subscriptions)) {
-                statusHandler.debug("No subscriptions found for dataset ["
-                        + dataSetName + "], url [" + url + "]");
-                return;
-            }
-
-            statusHandler.info(String.format(
-                    "Found [%d] subscriptions subscribed to dataset [%s], url [%s].",
-                    subscriptions.size(), dataSetName, url));
-
-            // Create an adhoc for each one, and schedule it
-            for (Subscription<T, C> subscription : subscriptions) {
-                try {
-                    String skipReason = dataSetMetaData
-                            .satisfiesSubscription(subscription);
-                    if (skipReason != null) {
-                        statusHandler.info("Skipping subscription ["
-                                + subscription.getName() + "] for dataSet["
-                                + dataSetName + "] url [" + url + "]:"
-                                + skipReason);
-                        continue;
-                    }
-                } catch (Exception e) {
-                    statusHandler.error("Error checking if dataset ["
-                            + dataSetName + "] url [" + url
-                            + "] satisfies subscription ["
-                            + subscription.getName()
-                            + "], skipping subscription", e);
-                    continue;
-                }
-
-                Subscription<T, C> sub = BandwidthUtil
-                        .updateSubscriptionWithDataSetMetaData(subscription,
-                                dataSetMetaData);
-                statusHandler.info("Updating subscription metadata: "
-                        + sub.getName() + " dataSet: " + dataSetName
-                        + " scheduling subscription for retrieval.");
-                queueRetrieval(new AdhocSubscription<>(
-                        (RecurringSubscription<T, C>) sub));
-            }
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
-                    "Failed to lookup subscriptions for dataSet [" + dataSetName
-                            + "] url [" + url + "]",
+                    "Failed to lookup subscriptions for dataset [" + dataSetName
+                            + "], url [" + url + "]",
                     e);
+            return Collections.emptyList();
         }
+
+        if (CollectionUtil.isNullOrEmpty(subscriptions)) {
+            statusHandler.debug("No subscriptions found for dataset ["
+                    + dataSetName + "], url [" + url + "]");
+            return subscriptions;
+        }
+
+        statusHandler.info(String.format(
+                "Found [%d] subscriptions subscribed to dataset [%s], url [%s].",
+                subscriptions.size(), dataSetName, url));
+
+        Iterator<? extends Subscription> subIter = subscriptions.iterator();
+        while (subIter.hasNext()) {
+            Subscription<T, C> subscription = subIter.next();
+
+            try {
+                String skipReason = dataSetMetaData
+                        .satisfiesSubscription(subscription);
+                if (skipReason != null) {
+                    // TODO: This could be a lot of logging for PDA data
+                    statusHandler.info(
+                            "Skipping subscription [" + subscription.getName()
+                                    + "] for dataSet[" + dataSetName + "] url ["
+                                    + url + "]:" + skipReason);
+                    subIter.remove();
+                }
+            } catch (Exception e) {
+                statusHandler.error("Error checking if dataset [" + dataSetName
+                        + "] url [" + url + "] satisfies subscription ["
+                        + subscription.getName() + "], skipping subscription",
+                        e);
+                subIter.remove();
+            }
+        }
+
+        return subscriptions;
     }
 
     /**
@@ -872,7 +820,15 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @AllowConcurrentEvents
     public void updatePDADataSetMetaData(PDADataSetMetaData dataSetMetaData)
             throws ParseException {
-        updateDataSetMetaData(dataSetMetaData);
+        @SuppressWarnings("rawtypes")
+        List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
+                dataSetMetaData);
+
+        if (CollectionUtil.isNullOrEmpty(subs)) {
+            return;
+        }
+
+        retrievalAgent.queueRetrievals(dataSetMetaData, subs);
     }
 
     /**
@@ -887,7 +843,15 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @AllowConcurrentEvents
     public void updateGriddedDataSetMetaData(
             GriddedDataSetMetaData dataSetMetaData) throws ParseException {
-        updateDataSetMetaData(dataSetMetaData);
+        @SuppressWarnings("rawtypes")
+        List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
+                dataSetMetaData);
+
+        if (CollectionUtil.isNullOrEmpty(subs)) {
+            return;
+        }
+
+        retrievalAgent.queueRetrievals(dataSetMetaData, subs);
     }
 
     /**
@@ -898,115 +862,31 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      *            the metadadata
      * @throws ParseException
      */
+    @SuppressWarnings("unchecked")
     @Subscribe
     @AllowConcurrentEvents
-    /* TODO: Rewrite to correctly manage retrievals based on data arrival */
     public void updatePointDataSetMetaData(PointDataSetMetaData dataSetMetaData)
             throws ParseException {
+        @SuppressWarnings("rawtypes")
+        List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
+                dataSetMetaData);
 
+        if (CollectionUtil.isNullOrEmpty(subs)) {
+            return;
+        }
+
+        // Update the subscription to be for the time of the DSMD
         final PointTime time = dataSetMetaData.getTime();
-        final String providerName = dataSetMetaData.getProviderName();
-        final String dataSetName = dataSetMetaData.getDataSetName();
         final Date pointTimeStart = time.getStart();
         final Date pointTimeEnd = time.getEnd();
 
-        final SortedSet<Integer> allowedRefreshIntervals = PointTime
-                .getAllowedRefreshIntervals();
-        final long maxAllowedRefreshIntervalInMillis = TimeUtil.MILLIS_PER_MINUTE
-                * allowedRefreshIntervals.last();
-        final long minAllowedRefreshIntervalInMillis = TimeUtil.MILLIS_PER_MINUTE
-                * allowedRefreshIntervals.first();
-
-        /*
-         * Find any retrievals ranging from those with the minimum refresh
-         * interval to the maximum refresh interval
-         */
-        final Date startDate = new Date(
-                pointTimeStart.getTime() + minAllowedRefreshIntervalInMillis);
-        final Date endDate = new Date(
-                pointTimeEnd.getTime() + maxAllowedRefreshIntervalInMillis);
-
-        final SortedSet<SubscriptionRetrieval> subscriptionRetrievals = bandwidthDao
-                .getSubscriptionRetrievals(providerName, dataSetName,
-                        RetrievalStatus.SCHEDULED, startDate, endDate);
-
-        if (!CollectionUtil.isNullOrEmpty(subscriptionRetrievals)) {
-            for (SubscriptionRetrieval retrieval : subscriptionRetrievals) {
-                /*
-                 * Now check and make sure that at least one of the times falls
-                 * in their retrieval range, their latency is the retrieval
-                 * interval.
-                 */
-                final int retrievalInterval = retrieval
-                        .getSubscriptionLatency();
-
-                /*
-                 * This is the latest time on the data we care about, once the
-                 * retrieval is signaled to go it retrieves everything up to its
-                 * start time.
-                 */
-                final Date latestRetrievalDataTime = retrieval.getStartTime();
-                // This is the earliest possible time this retrieval cares about
-                final Date earliestRetrievalDataTime = new Date(
-                        latestRetrievalDataTime.getTime()
-                                - (TimeUtil.MILLIS_PER_MINUTE
-                                        * retrievalInterval));
-
-                /*
-                 * If the end is before any times we care about or the start is
-                 * after the latest times we care about, skip it
-                 */
-                if (pointTimeEnd.before(earliestRetrievalDataTime)
-                        || pointTimeStart.after(latestRetrievalDataTime)) {
-                    statusHandler.info("Retrieval:  " + retrieval.toString()
-                            + " Outside the range: MIN: "
-                            + earliestRetrievalDataTime.toString() + " MAX: "
-                            + latestRetrievalDataTime.toString()
-                            + " \n No retrieval will be produced!");
-                    continue;
-                }
-
-                try {
-                    /*
-                     * Update the retrieval times on the subscription object
-                     * which goes through the retrieval process
-                     */
-                    final SubscriptionRetrievalAttributes<T, C> subscriptionRetrievalAttributes = bandwidthDao
-                            .getSubscriptionRetrievalAttributes(retrieval);
-                    final Subscription<T, C> subscription = subscriptionRetrievalAttributes
-                            .getSubscription();
-
-                    if (subscription.getTime() instanceof PointTime) {
-                        final PointTime subTime = (PointTime) subscription
-                                .getTime();
-                        subscription.setUrl(dataSetMetaData.getUrl());
-                        subscription
-                                .setProvider(dataSetMetaData.getProviderName());
-
-                        subTime.setRequestStart(earliestRetrievalDataTime);
-                        subTime.setRequestEnd(latestRetrievalDataTime);
-                        subTime.setTimes(time.getTimes());
-                        subscriptionRetrievalAttributes
-                                .setSubscription(subscription);
-                        retrieval.setUrl(dataSetMetaData.getUrl());
-
-                        bandwidthDao.update(subscriptionRetrievalAttributes);
-
-                        // Now update the retrieval to be ready
-                        retrieval.setStatus(RetrievalStatus.READY);
-                        bandwidthDaoUtil.update(retrieval);
-                    } else {
-                        throw new IllegalArgumentException(
-                                "Subscription time not PointType! "
-                                        + subscription.getName());
-                    }
-
-                } catch (SerializationException e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            e.getLocalizedMessage(), e);
-                }
-            }
+        for (Subscription<T, C> sub : subs) {
+            T subTime = sub.getTime();
+            subTime.setStart(pointTimeStart);
+            subTime.setEnd(pointTimeEnd);
         }
+
+        retrievalAgent.queueRetrievals(dataSetMetaData, subs);
     }
 
     /**
@@ -1114,7 +994,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      *            <Network, List<Subscription>> subMap
      */
     @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings("rawtypes")
     public List<String> initializeScheduling(
             Map<Network, List<Subscription>> subMap)
             throws SerializationException {

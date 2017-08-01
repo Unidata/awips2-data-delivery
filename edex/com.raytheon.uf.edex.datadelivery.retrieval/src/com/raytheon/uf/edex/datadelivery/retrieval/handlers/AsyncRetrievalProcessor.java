@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.serialization.SerializationUtil;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalResponse;
@@ -42,6 +42,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalRespon
  * May 11, 2017  6186     rjpeter   RetrievalRequestRecordPK handling.
  * Jul 27, 2017  6186     rjpeter   Removed AsyncBroker, record always stored
  *                                  before request sent to provider.
+ * Aug 02, 2017  6186     rjpeter   Notify RetrievalHandler.
  *
  * </pre>
  *
@@ -49,20 +50,23 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalRespon
  */
 
 public class AsyncRetrievalProcessor {
-    /** retrieval DAO **/
-    private final IRetrievalDao retrievalDao;
-
     /** status handler **/
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /** retrieval DAO **/
+    private final RetrievalDao retrievalDao;
+
+    private final RetrievalHandler retrievalHandler;
 
     /**
      * Spring constructor
      *
-     * @param destinationUri
      * @param retrievalDao
      */
-    public AsyncRetrievalProcessor(IRetrievalDao retrievalDao) {
+    public AsyncRetrievalProcessor(RetrievalDao retrievalDao,
+            RetrievalHandler retrievalHandler) {
         this.retrievalDao = retrievalDao;
+        this.retrievalHandler = retrievalHandler;
     }
 
     /**
@@ -109,12 +113,16 @@ public class AsyncRetrievalProcessor {
                     logger.error(
                             "Received emptry async response for retrieval ["
                                     + retrieval + "] response [" + file + "]");
-                    // TODO: Also needs to fire a SubscriptionNotifyTask
                     rrr.setState(State.FAILED);
                 }
 
                 // update for posterity
                 retrievalDao.update(rrr);
+
+                // notify retrieval
+                if (State.PENDING.equals(rrr.getState())) {
+                    retrievalHandler.notifyRetrieval();
+                }
             } else {
                 logger.error(
                         "No RetrievalRequestRecord found for async response id: "

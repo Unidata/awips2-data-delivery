@@ -22,12 +22,10 @@ package com.raytheon.uf.edex.datadelivery.bandwidth;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
@@ -56,27 +54,27 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 
 /**
- * 
+ *
  * This class is is used to examine all of the active subscriptions in the
  * current BandwidthBucket. If a subscription is due to expire (without
  * completing its data retrieval), then a NotificationMessage needs to be sent
  * (placed on the EventBus) to the Notification Dialog that the Subscription has
  * passed its retrieval window and failed to return the requested data.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2014 3550       ccody       Initial creation
- * Mar 09, 2015 4242       dhladky     Data integrity exception caused by dupe key 
+ * Mar 09, 2015 4242       dhladky     Data integrity exception caused by dupe key
  *                                     ~ caused gaps in scheduling
  * May 27, 2015 4531       dhladky     Remove excessive Calendar references.
  * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
- * 
+ *
  * </pre>
- * 
+ *
  * @author ccody
  * @version 1.0
  */
@@ -86,38 +84,37 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
     protected final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubscriptionLatencyCheck.class);
 
-    /** Shutdown flag */
-    public static boolean isShutdown = false;
+    /** Default extension at 25% (percentage as integer) */
+    protected static final int DEFAULT_EXTENDED_DELAY_FACTOR = 25;
 
     /** Spring may attempt to start this more than once. */
-    private static boolean started = false;
+    private volatile boolean started = false;
 
     /** Bandwidth Bucket Dao */
-    protected IBandwidthBucketDao bucketsDao;
+    protected final IBandwidthBucketDao bucketsDao;
 
     /** Bandwidth Dao */
-    protected IBandwidthDao<T, C> bandwidthDao;
+    protected final IBandwidthDao<T, C> bandwidthDao;
 
     /** Subscription Handler Object */
-    protected SubscriptionHandler subscriptionHandler;
+    protected final SubscriptionHandler subscriptionHandler;
 
     /** Data Set Handler object */
-    protected DataSetHandler dataSetHandler;
+    protected final DataSetHandler dataSetHandler;
 
     /** Data Set Latency Handler Object */
-    protected DataSetLatencyDao dataSetLatencyDao;
+    protected final DataSetLatencyDao dataSetLatencyDao;
 
-    private List<SubscriptionLatencyCheckProcessor> internalProcessorList = null;
+    protected final Network network;
+
+    private final SubscriptionLatencyCheckProcessor slcp;
 
     /** Common Simple Date Format */
     protected SimpleDateFormat sdf = new SimpleDateFormat(
             "yyyy-MM-dd_HH:mm:ss.S");
 
     /** Bandwidth Bucket Size Value from "datadelivery/bandwidthmap.xml" */
-    long configFileBandwidthBucketLength = 0;
-
-    /** Default extension at 25% (percentage as integer) */
-    protected final int DEFAULT_EXTENDED_DELAY_FACTOR = 25;
+    protected long configFileBandwidthBucketLength = 0;
 
     /**
      * Value to use for Subscription Extended Latency Factor. Loaded from
@@ -140,21 +137,11 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
         public String getStatus() {
             return statusName;
         }
-    }; // End of internal SubAllocationStatus
-
-    /**
-     * No-Arg constructor.
-     * 
-     * Necessary for declaring a Transactional class. Do not use this.
-     * 
-     */
-    public SubscriptionLatencyCheck() {
-
-    }
+    };
 
     /**
      * Create Spring persistent Bean class.
-     * 
+     *
      * @param bucketsDao
      *            Active instance of IBandwidthBucketDao
      * @param bandwidthDao
@@ -165,105 +152,91 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
      *            Active instance of IDataSetHandler
      * @param dataSetLatencyHandler
      *            Active instance of IDataSetLatencyHandler
-     * 
+     *
      */
     public SubscriptionLatencyCheck(IBandwidthBucketDao bucketsDao,
             IBandwidthDao<T, C> bandwidthDao,
             SubscriptionHandler subscriptionHandler,
-            DataSetHandler dataSetHandler, DataSetLatencyDao dataSetLatencyDao) {
+            DataSetHandler dataSetHandler, DataSetLatencyDao dataSetLatencyDao,
+            Network network) {
 
         this.bucketsDao = bucketsDao;
         this.bandwidthDao = bandwidthDao;
         this.subscriptionHandler = subscriptionHandler;
         this.dataSetHandler = dataSetHandler;
         this.dataSetLatencyDao = dataSetLatencyDao;
+        this.network = network;
+        this.slcp = new SubscriptionLatencyCheckProcessor(network);
     }
 
     /**
      * Start the Subscription Latency Check process in its own thread.
-     * 
+     *
      * Allow only 1
      */
     public void start() {
 
         if (!started) {
             started = true;
-            isShutdown = false;
 
             if (checkInitParams()) {
-                internalProcessorList = new ArrayList<>();
-                List<Network> networkValuesList = new ArrayList<Network>(
-                        Arrays.asList(Network.values()));
-
-                for (Network network : networkValuesList) {
-                    SubscriptionLatencyCheckProcessor slcp = new SubscriptionLatencyCheckProcessor(
-                            network);
-                    internalProcessorList.add(slcp);
-                }
-
-                for (SubscriptionLatencyCheckProcessor slcp : internalProcessorList) {
-                    slcp.start();
-                }
+                slcp.start();
             }
         } else {
-            statusHandler
-                    .warn("start() has already been called, ignoring further requests!");
+            statusHandler.warn(
+                    "start() has already been called, ignoring further requests!");
         }
     }
 
     /**
      * Shutdown Subscription Latency Check process.
-     * 
+     *
      */
     public void shutdown() {
         statusHandler.info("shutdown() has been called ("
                 + sdf.format(TimeUtil.currentTimeMillis())
                 + "), ignoring further requests!");
-        isShutdown = true;
-        if (internalProcessorList != null) {
-            for (SubscriptionLatencyCheckProcessor slcp : internalProcessorList) {
-                slcp.shutdown();
-            }
+        if (started) {
+            slcp.shutdown();
+            started = false;
         }
-        internalProcessorList = null;
-        started = false;
 
     }
 
     /**
      * Check initialization (Spring) parameters before starting.
-     * 
+     *
      * @return boolean true if all parameters have been assigned.
      */
     protected boolean checkInitParams() {
 
         if (this.bucketsDao == null) {
-            statusHandler
-                    .error("ERROR: Unable to perform Subscription Latency Check (Spring Bean). Bandwidth Bucket DAO is null.");
+            statusHandler.error(
+                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Bandwidth Bucket DAO is null.");
             return (false);
         }
 
         if (this.bandwidthDao == null) {
-            statusHandler
-                    .error("ERROR: Unable to perform Subscription Latency Check (Spring Bean). Bandwidth DAO is null.");
+            statusHandler.error(
+                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Bandwidth DAO is null.");
             return (false);
         }
 
         if (this.subscriptionHandler == null) {
-            statusHandler
-                    .error("ERROR: Unable to perform Subscription Latency Check (Spring Bean). Subscription Handler is null.");
+            statusHandler.error(
+                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Subscription Handler is null.");
             return (false);
         }
 
         if (this.dataSetHandler == null) {
-            statusHandler
-                    .error("ERROR: Unable to perform Subscription Latency Check (Spring Bean). Data Set Meta Data Handler is null.");
+            statusHandler.error(
+                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Data Set Meta Data Handler is null.");
             return (false);
         }
 
         if (this.dataSetLatencyDao == null) {
-            statusHandler
-                    .error("ERROR: Unable to perform Subscription Latency Check (Spring Bean). Data Set Latency Dao is null.");
+            statusHandler.error(
+                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Data Set Latency Dao is null.");
             return (false);
         }
 
@@ -272,15 +245,15 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
     /**
      * Internal Processing Class.
-     * 
+     *
      * One processing thread is needed for each Network type. Each Network can
      * have its own Bandwidth Bucket Sizes, Times, Durations, etc. For
      * simplicity of timing; each Network will be processed individually.
-     * 
+     *
      */
     private class SubscriptionLatencyCheckProcessor extends Thread {
 
-        private boolean isProcessorShutdown = false;
+        private volatile boolean isProcessorShutdown = false;
 
         /** Bandwidth Bucket (time) length in Mils */
         protected long bandwidthBucketLength = 3 * TimeUtil.MILLIS_PER_MINUTE;
@@ -296,10 +269,10 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * SubscriptionLatencyCheckProcessor.
-         * 
+         *
          * Perform the Network specific processing of checking Subscription
          * retrieval and extending wait Latency.
-         * 
+         *
          * @param network
          *            The network that this Thread is processing latent
          *            subscriptions for.
@@ -311,25 +284,23 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Shutdown Subscription Latency Check Processor thread.
-         * 
+         *
          */
         public void shutdown() {
-            statusHandler
-                    .info("SubscriptionLatencyCheckProcessor for Network: "
-                            + threadNetwork.name()
-                            + " shutdown() has been called ("
-                            + sdf.format(TimeUtil.currentTimeMillis())
-                            + "), ignoring further requests!");
+            statusHandler.info("SubscriptionLatencyCheckProcessor for Network: "
+                    + threadNetwork.name() + " shutdown() has been called ("
+                    + sdf.format(TimeUtil.currentTimeMillis())
+                    + "), ignoring further requests!");
             isProcessorShutdown = true;
         }
 
         /**
          * Perform process timing initialization.
-         * 
+         *
          * Retrieve values for Bandwidth Bucket start times and Bandwidth Bucket
          * duration. Write an event log entry if the Registry and config values
          * differ.
-         * 
+         *
          */
         protected void initialize() {
             // Get Bandwidth Bucket Gap and Subscription Extension Factor
@@ -344,9 +315,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             if (currentBandwidthBucket == null) {
                 statusHandler
                         .info("Unable to retrieve BandwidthBucket for timestamp "
-                                + now
-                                + " and Network  "
-                                + this.threadNetwork
+                                + now + " and Network  " + this.threadNetwork
                                 + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
                 return;
             }
@@ -358,8 +327,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             if (nextBandwidthBucket == null) {
                 statusHandler
                         .info("Unable to retrieve BandwidthBucket for timestamp "
-                                + nextWindow
-                                + " (next Bucket) and Network "
+                                + nextWindow + " (next Bucket) and Network "
                                 + this.threadNetwork
                                 + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
             }
@@ -396,7 +364,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                 // ignore
             }
 
-            while (this.isProcessorShutdown == false) {
+            while (!this.isProcessorShutdown) {
                 try {
                     waitTime = checkSubscriptionLatency();
                 } catch (Throwable e) {
@@ -405,12 +373,11 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                             "Unable to perform Subscription Latency Check.", e);
                 }
                 try {
-                    if ((this.isProcessorShutdown == false) && (waitTime >= 0)) {
-                        statusHandler
-                                .debug("SubscriptionLatencyCheckProcessor "
-                                        + threadNetwork.name() + " Sleeping ("
-                                        + waitTime
-                                        + " mils) until next Bandwidth Bucket.");
+                    if ((!this.isProcessorShutdown) && (waitTime >= 0)) {
+                        statusHandler.debug("SubscriptionLatencyCheckProcessor "
+                                + threadNetwork.name() + " Sleeping ("
+                                + waitTime
+                                + " mils) until next Bandwidth Bucket.");
                         Thread.sleep(waitTime);
 
                     }
@@ -422,7 +389,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Main processing method.
-         * 
+         *
          * Retrieve and check through all Scheduled/Active Bandwidth Allocation
          * objects for:
          * <p>
@@ -444,12 +411,12 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          * <p>
          * Send (and store) Notification of the changes.
          * <p>
-         * 
+         *
          * @return Wait time (mils) before starting next execution
          */
         protected long checkSubscriptionLatency() {
 
-            if (this.isProcessorShutdown == true) {
+            if (this.isProcessorShutdown) {
                 return (-1);
             }
 
@@ -458,7 +425,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             // Create a single list of Bandwidth Allocation objects that need to
             // be processed.
             List<BandwidthAllocation> rescheduleBandwidthAllocationList = new ArrayList<>();
-            scheduledNextBandwidthBucketTime = buildRescheduleBucketAllocationList(rescheduleBandwidthAllocationList);
+            scheduledNextBandwidthBucketTime = buildRescheduleBucketAllocationList(
+                    rescheduleBandwidthAllocationList);
 
             // At this point; we have a list of Bandwidth Allocation objects
             // meeting the following criteria:
@@ -471,7 +439,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             // Create/Update DataSetLatency objects to extend retrieval time.
             // Scheduler has been modified to check for DataSetLatency objects
             // prior to removing them from Retrieval.
-            List<SubscriptionLatencyData> subscriptionLatencyList = buildSubscriptionLatencyData(rescheduleBandwidthAllocationList);
+            List<SubscriptionLatencyData> subscriptionLatencyList = buildSubscriptionLatencyData(
+                    rescheduleBandwidthAllocationList);
 
             processSubscriptionLatencyDataList(subscriptionLatencyList);
 
@@ -480,7 +449,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             generateAndSendExtendedNotification(subscriptionLatencyList);
             generateAndSendExpiredNotification(subscriptionLatencyList);
 
-            long waitTime = calculateNewSleepTime(scheduledNextBandwidthBucketTime);
+            long waitTime = calculateNewSleepTime(
+                    scheduledNextBandwidthBucketTime);
 
             return (waitTime);
         }
@@ -488,11 +458,11 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
         /**
          * Build a list of Bandwidth Allocation objects for subscriptions that
          * expire in the current bandwidth bucket.
-         * 
+         *
          * This method ALSO returns the timestamp of the start of the subsequent
          * (the next, next Bandwidth Bucket start time).
          * <p>
-         * 
+         *
          * @param rescheduleBandwidthAllocationList
          *            An empty, but allocated, List to place expiring Bandwidth
          *            Allocation objects into
@@ -503,8 +473,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                 List<BandwidthAllocation> rescheduleBandwidthAllocationList) {
 
             // Set bucket time to a default value.
-            long scheduledNextBandwidthBucketTime = TimeUtil
-                    .currentTimeMillis() + bandwidthBucketLength;
+            long scheduledNextBandwidthBucketTime = TimeUtil.currentTimeMillis()
+                    + bandwidthBucketLength;
 
             // Calculate Bandwidth Bucket Window times
             long now = TimeUtil.currentTimeMillis();
@@ -563,8 +533,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     if ((baBandwidthBucket >= currentBandwidthBucketTime)
                             && (baBandwidthBucket < nextBandwidthBucketTime)) {
                         // Allocation is in the current Bandwidth Bucket
-                        currentBwBktBandwidthAllocationMap.put(
-                                subscriptionName, bandwidthAllocation);
+                        currentBwBktBandwidthAllocationMap.put(subscriptionName,
+                                bandwidthAllocation);
                     } else if ((baBandwidthBucket >= nextBandwidthBucketTime)
                             && (baBandwidthBucket < oneMoreBandwidthBucketTime)) {
                         // Allocation is in the next Bandwidth Bucket
@@ -593,17 +563,17 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                 }
             }
 
-            for (String subscriptionName : currentBwBktBandwidthAllocationMap
-                    .keySet()) {
+            for (Entry<String, BandwidthAllocation> entry : currentBwBktBandwidthAllocationMap
+                    .entrySet()) {
 
-                if (nextBwBktBandwidthAllocationMap
-                        .containsKey(subscriptionName) == false) {
-                    // An Allocation in the Current Map does NOT exist in the
-                    // Next Bandwidth Allocation Map
-                    // The Subscription is expiring in this allocation.
-                    BandwidthAllocation bandwidthAllocation = currentBwBktBandwidthAllocationMap
-                            .get(subscriptionName);
-                    rescheduleBandwidthAllocationList.add(bandwidthAllocation);
+                if (!nextBwBktBandwidthAllocationMap
+                        .containsKey(entry.getKey())) {
+                    /*
+                     * An Allocation in the Current Map does NOT exist in the
+                     * Next Bandwidth Allocation Map The Subscription is
+                     * expiring in this allocation.
+                     */
+                    rescheduleBandwidthAllocationList.add(entry.getValue());
                 }
             }
 
@@ -612,10 +582,10 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Build Subscription Latency Data List.
-         * 
+         *
          * Build a list of Subscription Latency Data objects to evaluate whether
          * to extend or expire Subscriptions.
-         * 
+         *
          * @param rescheduleBandwidthAllocationList
          *            A List of relevant BandwidthAllocation objects to evaluate
          * @return List of SubscriptionLatencyData objects
@@ -641,11 +611,10 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     BandwidthSubscription bandwidthSubscription = subRetrieval
                             .getBandwidthSubscription();
 
-                    subscriptionLatencyData.setSubscriptionLatency(subRetrieval
-                            .getSubscriptionLatency());
-                    subscriptionLatencyData
-                            .setSubscriptionName(bandwidthSubscription
-                                    .getName());
+                    subscriptionLatencyData.setSubscriptionLatency(
+                            subRetrieval.getSubscriptionLatency());
+                    subscriptionLatencyData.setSubscriptionName(
+                            bandwidthSubscription.getName());
                     long baseRefTimeLong = bandwidthSubscription
                             .getBaseReferenceTime().getTime();
                     subscriptionLatencyData
@@ -659,13 +628,13 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                             .setDataSetProviderName(dataSetProviderName);
                     DataSet<T, C> dataSet = null;
                     try {
-                        dataSet = (DataSet<T, C>) dataSetHandler
-                                .getByNameAndProvider(dataSetName,
-                                        dataSetProviderName);
+                        dataSet = dataSetHandler.getByNameAndProvider(
+                                dataSetName, dataSetProviderName);
                     } catch (RegistryHandlerException rhe) {
-                        statusHandler.error("Unable to query DataSet Name: "
-                                + dataSetName + " Provider: "
-                                + dataSetProviderName, rhe);
+                        statusHandler.error(
+                                "Unable to query DataSet Name: " + dataSetName
+                                        + " Provider: " + dataSetProviderName,
+                                rhe);
                     }
                     if (dataSet != null) {
                         subscriptionLatencyData.availabilityOffset = dataSet
@@ -690,7 +659,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          * Evaluate Subscription latency times of Data Set Latency objects to
          * determine whether a Subscription should be extended or allowed to
          * expire.
-         * 
+         *
          * @param subLatencyDataList
          *            A List of relevant SubscriptionLatencyData objects to
          *            evaluate
@@ -698,7 +667,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
         protected void processSubscriptionLatencyDataList(
                 List<SubscriptionLatencyData> subLatencyDataList) {
 
-            if ((subLatencyDataList == null) || (subLatencyDataList.isEmpty())) {
+            if ((subLatencyDataList == null)
+                    || (subLatencyDataList.isEmpty())) {
                 return;
             }
 
@@ -736,7 +706,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          * <p>
          * 4. A Notification Message of "SubscriptionExpired" is dispatched for
          * Subscriptions that will be expired.
-         * 
+         *
          * @param now
          *            A single System Timestamp to use
          * @param subLatencyData
@@ -762,12 +732,12 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                 // allocation.
                 if (dataSetLatencyBaseRefTimestamp < bandwidthAllocationBaseRefTime) {
                     // This can be extended.
-                    subLatencyData
-                            .setSubAllocationStatus(SubAllocationStatus.EXTENDED);
+                    subLatencyData.setSubAllocationStatus(
+                            SubAllocationStatus.EXTENDED);
                 } else {
                     // This can NOT be extended.
-                    subLatencyData
-                            .setSubAllocationStatus(SubAllocationStatus.EXPIRED);
+                    subLatencyData.setSubAllocationStatus(
+                            SubAllocationStatus.EXPIRED);
                 }
             } else {
                 // There is no DataSetLatency data for the Data Set
@@ -777,7 +747,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                         .setSubAllocationStatus(SubAllocationStatus.EXTENDED);
             }
 
-            if (subLatencyData.getSubAllocationStatus() == SubAllocationStatus.EXTENDED) {
+            if (subLatencyData
+                    .getSubAllocationStatus() == SubAllocationStatus.EXTENDED) {
                 dataSetLatency = getDataSetLatency(now, subLatencyData);
                 // need transaction safety here
                 if (dataSetLatency != null) {
@@ -799,7 +770,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Build DataSetLatency from SubscriptionLatencyData data.
-         * 
+         *
          * @param now
          *            GMT System time
          * @param subLatencyData
@@ -814,22 +785,22 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             if (dataSetLatency == null) {
                 dataSetLatency = new DataSetLatency();
                 dataSetLatency.setDataSetName(subLatencyData.getDataSetName());
-                dataSetLatency.setProviderName(subLatencyData
-                        .getDataSetProviderName());
+                dataSetLatency.setProviderName(
+                        subLatencyData.getDataSetProviderName());
                 subLatencyData.setDataSetLatency(dataSetLatency);
             }
             // Set a NEW Base Ref Timestamp (to refer to the current set of
             // BandwidthAllocations for the Subscription
-            dataSetLatency.setBaseRefTimestamp(subLatencyData
-                    .getBaseRefTimestamp());
+            dataSetLatency
+                    .setBaseRefTimestamp(subLatencyData.getBaseRefTimestamp());
 
             // Calculate the new extended Latency
             long oldLatencyMilsL = subLatencyData.getSubscriptionLatency()
                     * TimeUtil.MILLIS_PER_MINUTE;
             int oldLatencyMils = (int) oldLatencyMilsL;
 
-            int additionalWaitMils = (int) Math.round(oldLatencyMils
-                    * (extendedDelayTimeFactor / 100));
+            int additionalWaitMils = Math
+                    .round(oldLatencyMils * (extendedDelayTimeFactor / 100));
             int newLatencyMils = oldLatencyMils + additionalWaitMils;
             long newLatencyMinL = newLatencyMils / TimeUtil.MILLIS_PER_MINUTE;
             int newLatencyMin = (int) newLatencyMinL;
@@ -842,22 +813,24 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          * Generate and send notification message for all Subscriptions with
          * extended latencies. Send 1 notification for all Subscriptions
          * extended for the current Bandwidth Bucket.
-         * 
+         *
          * @param subLatencyDataList
          *            List of SubscriptionLatencyData objects
          */
         protected void generateAndSendExtendedNotification(
                 List<SubscriptionLatencyData> subLatencyDataList) {
             if ((subLatencyDataList == null)
-                    || (subLatencyDataList.isEmpty() == true)) {
+                    || (subLatencyDataList.isEmpty())) {
                 return;
             }
 
             boolean doSendComment = false;
             StringBuilder sb = new StringBuilder();
-            sb.append("The Latency time for the following Subscriptions has been extended:");
+            sb.append(
+                    "The Latency time for the following Subscriptions has been extended:");
             for (SubscriptionLatencyData subLatencyData : subLatencyDataList) {
-                if (subLatencyData.getSubAllocationStatus() == SubAllocationStatus.EXTENDED) {
+                if (subLatencyData
+                        .getSubAllocationStatus() == SubAllocationStatus.EXTENDED) {
                     doSendComment = true;
                     sb.append("\n\t");
                     sb.append(subLatencyData.getSubscriptionName());
@@ -881,10 +854,11 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                         sb.append(TimeUtil.prettyDuration(oldLatencyMils));
                     }
                 }
-                sb.append("\nData Set Meta Data for these Subscriptions has been received, but the corresponding data is still missing.");
+                sb.append(
+                        "\nData Set Meta Data for these Subscriptions has been received, but the corresponding data is still missing.");
             }
 
-            if (doSendComment == true) {
+            if (doSendComment) {
                 sendNotification("SubscriptionExtended", sb.toString());
             }
         }
@@ -893,22 +867,24 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          * Generate and send notification message for all Subscriptions with
          * expiring latencies. Send 1 notification for all Subscriptions that
          * will expire at the end of the current Bandwidth Bucket.
-         * 
+         *
          * @param subLatencyDataList
          *            List of SubscriptionLatencyData objects.
          */
         protected void generateAndSendExpiredNotification(
                 List<SubscriptionLatencyData> subLatencyDataList) {
             if ((subLatencyDataList == null)
-                    || (subLatencyDataList.isEmpty() == true)) {
+                    || (subLatencyDataList.isEmpty())) {
                 return;
             }
 
             boolean doSendComment = false;
             StringBuilder sb = new StringBuilder();
-            sb.append("The extended Latency time for the following Subscriptions has expired:");
+            sb.append(
+                    "The extended Latency time for the following Subscriptions has expired:");
             for (SubscriptionLatencyData subLatencyData : subLatencyDataList) {
-                if (subLatencyData.getSubAllocationStatus() == SubAllocationStatus.EXPIRED) {
+                if (subLatencyData
+                        .getSubAllocationStatus() == SubAllocationStatus.EXPIRED) {
                     doSendComment = true;
                     sb.append("\n\t");
                     sb.append(subLatencyData.getSubscriptionName());
@@ -930,23 +906,24 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                         sb.append(TimeUtil.prettyDuration(oldLatencyMils));
                     }
                 }
-                sb.append("\nData Set Meta Data for these Subscriptions has been received, but the corresponding data is still missing.");
+                sb.append(
+                        "\nData Set Meta Data for these Subscriptions has been received, but the corresponding data is still missing.");
             }
 
-            if (doSendComment == true) {
+            if (doSendComment) {
                 sendNotification("SubscriptionExpired", sb.toString());
             }
         }
 
         /**
          * Retrieve BandwidthMap file data.
-         * 
+         *
          * Retrieve Bandwidth Bucket Size and Subscription Latency Extend factor
          * (percentage) from "datadelivery/bandwidthmap.xml" file. Class
          * attributes configFileBandwidthBucketLength and
          * extendedDelayTimeFactor are also retrieved from the BandwidthMap
          * file.
-         * 
+         *
          * @return Bandwidth Update Latency in milliseconds
          */
         protected long retrieveBandwidthMapData() {
@@ -992,34 +969,36 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Calculate how long this process should sleep.
-         * 
+         *
          * Ideally this (Spring started) process sleeps until 15 seconds
          * (this.processingTimeWindow) the next:
          * <p>
          * Bandwidth Bucket Start time + Bandwidth Bucket Length is reached. The
          * time between "now" and 15 seconds before the start of the next
          * Bandwidth Bucket window is computed dynamically.
-         * 
+         *
          * @param nextBandwidthBucketStartTime
          *            System start time of the Next Bandwidth Bucket
          * @return Number of mils to sleep until the start of the next
          *         processing cycle.
          */
-        protected long calculateNewSleepTime(long nextBandwidthBucketStartTime) {
+        protected long calculateNewSleepTime(
+                long nextBandwidthBucketStartTime) {
 
-            long newSleepTime = 0; // In mils
+            long newSleepTimeMillis = 0;
             long now = TimeUtil.currentTimeMillis();
             if (nextBandwidthBucketStartTime == 0) {
                 // Startup. Just wait a full bandwidthBucketLength before
                 // starting
-                newSleepTime = this.bandwidthBucketLength;
+                newSleepTimeMillis = this.bandwidthBucketLength;
             } else {
-                if (now < (nextBandwidthBucketStartTime - this.processingTimeWindow)) {
-                    newSleepTime = nextBandwidthBucketStartTime
+                if (now < (nextBandwidthBucketStartTime
+                        - this.processingTimeWindow)) {
+                    newSleepTimeMillis = nextBandwidthBucketStartTime
                             + this.bandwidthBucketLength
                             - this.processingTimeWindow - now;
-                    if (newSleepTime < 0) {
-                        newSleepTime = 0;
+                    if (newSleepTimeMillis < 0) {
+                        newSleepTimeMillis = 0;
                     }
                 } else {
                     // Notify that it took longer than the allotted time window
@@ -1027,28 +1006,12 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     statusHandler
                             .info("SubscriptionLatencyCheck took longer than usual to complete."
                                     + " Skipping a Bandwidth Bucket cycle to avoid stacking up.");
-                    newSleepTime = (nextBandwidthBucketStartTime - this.processingTimeWindow)
+                    newSleepTimeMillis = (nextBandwidthBucketStartTime
+                            - this.processingTimeWindow)
                             + (this.bandwidthBucketLength * 2) - now;
                 }
             }
-            return (newSleepTime);
-        }
-
-        protected Set<String> generateSubNameSetFromBandwidthAllocationList(
-                List<BandwidthAllocation> bandwidthAllocationList) {
-            Set<String> subNameSet = new HashSet<String>();
-
-            if ((bandwidthAllocationList != null)
-                    && (bandwidthAllocationList.isEmpty() == false)) {
-                for (BandwidthAllocation bandwidthAllocation : bandwidthAllocationList) {
-                    SubscriptionRetrieval subRetrieval = (SubscriptionRetrieval) bandwidthAllocation;
-                    BandwidthSubscription bandwidthSubscription = subRetrieval
-                            .getBandwidthSubscription();
-                    String subscriptionName = bandwidthSubscription.getName();
-                    subNameSet.add(subscriptionName);
-                }
-            }
-            return (subNameSet);
+            return (newSleepTimeMillis);
         }
 
         /**
@@ -1058,7 +1021,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          * Note: Spring and hibernate balk when attempting to store the
          * NotificationRecord directly.
          * <p>
-         * 
+         *
          * @param category
          *            "SubscriptionExtended" or "SubscriptionExpired"
          * @param notificationString
@@ -1077,11 +1040,11 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             EventBus.publish(genericNotifyEvent);
         }
 
-    } // End of internal SubscriptionLatencyCheckProcessor class
+    }
 
     /**
      * Internal data class.
-     * 
+     *
      * Amalgamated: BandwidthAllocation, RetrievalSubscription, Subscription,
      * DataSet, and DataSetLatency data.
      */
@@ -1120,9 +1083,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get subscriptionName value.
-         * 
+         *
          * Derived from BandwidthAllocation/BandwidthSubscription
-         * 
+         *
          * @return subscriptionName
          */
         public String getSubscriptionName() {
@@ -1131,9 +1094,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set subscriptionName value.
-         * 
+         *
          * Derived from BandwidthAllocation/BandwidthSubscription
-         * 
+         *
          * @param value
          */
         public void setSubscriptionName(String value) {
@@ -1142,9 +1105,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get baseRefTime value.
-         * 
+         *
          * Derived from BandwidthAllocation/BandwidthSubscription
-         * 
+         *
          * @return baseRefTime
          */
         public long getBaseRefTimestamp() {
@@ -1153,9 +1116,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set baseRefTime value.
-         * 
+         *
          * Derived from BandwidthAllocation/BandwidthSubscription
-         * 
+         *
          * @param value
          */
         public void setBaseRefTimestamp(long value) {
@@ -1164,9 +1127,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get subscriptionLatency value in Minutes.
-         * 
+         *
          * Derived from BandwidthAllocation/BandwidthSubscription
-         * 
+         *
          * @return subscriptionLatency
          */
         public int getSubscriptionLatency() {
@@ -1175,9 +1138,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set subscriptionLatency value (in Minutes).
-         * 
+         *
          * Derived from BandwidthAllocation/BandwidthSubscription
-         * 
+         *
          * @param value
          */
         public void setSubscriptionLatency(int value) {
@@ -1186,9 +1149,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get dataSetName value.
-         * 
+         *
          * Derived from DataSet
-         * 
+         *
          * @return dataSetName
          */
         public String getDataSetName() {
@@ -1197,9 +1160,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set dataSetName value.
-         * 
+         *
          * Derived from DataSet
-         * 
+         *
          * @param value
          */
         public void setDataSetName(String value) {
@@ -1208,9 +1171,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get dataSetProviderName value.
-         * 
+         *
          * Derived from DataSet
-         * 
+         *
          * @return dataSetProviderName
          */
         public String getDataSetProviderName() {
@@ -1219,9 +1182,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set dataSetProviderName value.
-         * 
+         *
          * Derived from DataSet
-         * 
+         *
          * @param value
          */
         public void setDataSetProviderName(String value) {
@@ -1230,9 +1193,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get availabilityOffset value.
-         * 
+         *
          * Derived from DataSet
-         * 
+         *
          * @return availabilityOffset
          */
         public int getAvailabilityOffset() {
@@ -1241,9 +1204,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set availabilityOffset value.
-         * 
+         *
          * Derived from DataSet
-         * 
+         *
          * @param value
          */
         public void setDataSetProviderName(int value) {
@@ -1252,9 +1215,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get subAllocationStatus value.
-         * 
+         *
          * Derived from DataSetLatency
-         * 
+         *
          * @return subAllocationStatus
          */
         public SubAllocationStatus getSubAllocationStatus() {
@@ -1263,9 +1226,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set subAllocationStatus value.
-         * 
+         *
          * Derived from DataSetLatency
-         * 
+         *
          * @param value
          */
         public void setSubAllocationStatus(SubAllocationStatus value) {
@@ -1274,9 +1237,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Get dataSetLatency value.
-         * 
+         *
          * Derived from DataSetLatency
-         * 
+         *
          * @return dataSetLatency
          */
         public DataSetLatency getDataSetLatency() {
@@ -1285,9 +1248,9 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /**
          * Set dataSetLatency value.
-         * 
+         *
          * Derived from DataSetLatency
-         * 
+         *
          * @param value
          */
         public void setDataSetLatency(DataSetLatency value) {

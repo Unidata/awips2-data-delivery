@@ -21,6 +21,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,7 +38,7 @@ import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.time.domain.api.IDuration;
 import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
 import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
@@ -61,6 +62,7 @@ import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Jul 27, 2017  6186     rjpeter   Removed Qpid queue to allow for priority
  *                                  filtering.
+ * Aug 02, 2017  6186     rjpeter   Added queueRetrievals and notifyRetrieval.
  *
  * </pre>
  *
@@ -77,7 +79,7 @@ public class RetrievalHandler implements RegistryInitializedListener {
 
     private final ScheduledExecutorService scheduledExecutorService;
 
-    private final IRetrievalDao retrievalDao;
+    private final RetrievalDao retrievalDao;
 
     private final IDuration subnotifyTaskFrequency;
 
@@ -90,7 +92,7 @@ public class RetrievalHandler implements RegistryInitializedListener {
     private final RetrievalThread[] retrievalThreads;
 
     public RetrievalHandler(ScheduledExecutorService scheduledExecutorService,
-            IRetrievalDao retrievalDao, SubscriptionNotifyTask subNotifyTask,
+            RetrievalDao retrievalDao, SubscriptionNotifyTask subNotifyTask,
             IDuration subnotifyTaskFrequency, RetrievalTask retrievalTask,
             int numRetrievalThreads) {
         this.scheduledExecutorService = scheduledExecutorService;
@@ -138,11 +140,18 @@ public class RetrievalHandler implements RegistryInitializedListener {
         }
     }
 
-    /*
-     * TODO: Update to store the retrievals and scan on data arrival instead of
-     * cron. Will require rework of async retrieval to be part of retrieval
-     * process instead of bandwidth management
-     */
+    public void queueRetrievals(
+            List<RetrievalRequestRecord> retrievalRequests) {
+        retrievalDao.persistAll(retrievalRequests);
+        notifyRetrieval();
+    }
+
+    public void notifyRetrieval() {
+        synchronized (notifier) {
+            notifier.notifyAll();
+        }
+    }
+
     /*
      * TODO: Add task to fail any retrieval that has WAITING_RESPONSE for more
      * than X minutes

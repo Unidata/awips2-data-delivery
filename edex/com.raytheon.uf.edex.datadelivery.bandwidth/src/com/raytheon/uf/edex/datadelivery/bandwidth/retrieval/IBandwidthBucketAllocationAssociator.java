@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,25 +26,25 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
 
 /**
  * Provides associations between bandwidth buckets and their allocations.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 25, 2013 2106       djohnson     Extracted from {@link BandwidthBucket}.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------
+ * Jun 25, 2013  2106     djohnson  Extracted from {@link BandwidthBucket}.
+ * Aug 02, 2017  6186     rjpeter   Removed agentType.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 interface IBandwidthBucketAllocationAssociator {
 
     /**
      * Adds the {@link BandwidthAllocation} to the specified bucket.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @param allocation
@@ -56,7 +56,7 @@ interface IBandwidthBucketAllocationAssociator {
 
     /**
      * Adds the {@link BandwidthReservation} to the specified bucket.
-     * 
+     *
      * @param bucket
      *            the bucket
      * @param reservation
@@ -68,7 +68,7 @@ interface IBandwidthBucketAllocationAssociator {
 
     /**
      * Remove the {@link BandwidthAllocation} from the {@link BandwidthBucket}.
-     * 
+     *
      * @param bucket
      * @param reservation
      */
@@ -78,7 +78,7 @@ interface IBandwidthBucketAllocationAssociator {
     /**
      * Remove the {@link BandwidthAllocation} from the
      * {@link BandwidthReservation}.
-     * 
+     *
      * @param bucket
      * @param reservation
      */
@@ -93,18 +93,15 @@ interface IBandwidthBucketAllocationAssociator {
 
     /**
      * Get the next allocation to be processed.
-     * 
+     *
      * @param bucket
-     * @param agentType
-     *            the agent type
      * @return the allocation, or null if there is none to process
      */
-    BandwidthAllocation getNextReservation(BandwidthBucket bucket,
-            String agentType);
+    BandwidthAllocation getNextReservation(BandwidthBucket bucket);
 
     /**
      * Get the {@link BandwidthAllocation}s for the {@link BandwidthBucket}.
-     * 
+     *
      * @param bucket
      * @return
      */
@@ -113,7 +110,7 @@ interface IBandwidthBucketAllocationAssociator {
 
     /**
      * Get the {@link BandwidthReservation}s for the {@link BandwidthBucket}.
-     * 
+     *
      * @param bucket
      * @return
      */
@@ -122,7 +119,7 @@ interface IBandwidthBucketAllocationAssociator {
 
     /**
      * Copy the state from another instance.
-     * 
+     *
      * @param other
      */
     void copyState(IBandwidthBucketAllocationAssociator other);

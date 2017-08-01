@@ -21,36 +21,26 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
-import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
-import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
-import com.raytheon.uf.edex.core.EdexException;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator.RETRIEVAL_MODE;
-import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalManagerNotifyEvent;
-import com.raytheon.uf.edex.datadelivery.retrieval.db.IRetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
+import com.raytheon.uf.edex.datadelivery.retrieval.handlers.RetrievalHandler;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 
 /**
@@ -92,209 +82,84 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  *                                  dataSet per allocation.
  * May 22, 2017  6130     tjensen   Add DataSetName to RetrievalRequestRecord
  * Jul 27, 2017  6186     rjpeter   Remove asyncBroker.
+ * Aug 02, 2017  6186     rjpeter   Refactored to queueRetrievals directly.
  *
  * </pre>
  *
  */
-public class SubscriptionRetrievalAgent
-        extends RetrievalAgent<SubscriptionRetrieval> {
+public class SubscriptionRetrievalAgent {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private final int defaultPriority;
 
-    private final IBandwidthDao<?, ?> bandwidthDao;
-
-    private final IRetrievalDao retrievalDao;
+    private final RetrievalHandler retrievalHandler;
 
     private final ProviderHandler providerHandler;
 
-    public SubscriptionRetrievalAgent(Network network, String retrievalRoute,
-            String asyncRetrievalUri, final Object notifier,
-            int defaultPriority, RetrievalManager retrievalManager,
-            IBandwidthDao<?, ?> bandwidthDao, IRetrievalDao retrievalDao,
+    public SubscriptionRetrievalAgent(int defaultPriority,
+            RetrievalHandler retrievalHandler,
             ProviderHandler providerHandler) {
-        super(network, retrievalRoute, asyncRetrievalUri, notifier,
-                retrievalManager);
         this.defaultPriority = defaultPriority;
-        this.bandwidthDao = bandwidthDao;
-        this.retrievalDao = retrievalDao;
+        this.retrievalHandler = retrievalHandler;
         this.providerHandler = providerHandler;
     }
 
-    @Override
-    void processAllocations(List<SubscriptionRetrieval> subRetrievals)
-            throws EdexException {
-        Map<String, List<SubscriptionRetrieval>> retrievalUrlMap = new HashMap<>();
-
-        for (SubscriptionRetrieval subRetrieval : subRetrievals) {
-            String url = subRetrieval.getUrl();
-            List<SubscriptionRetrieval> retrievals = retrievalUrlMap.get(url);
-
-            if (retrievals == null) {
-                retrievals = new LinkedList<>();
-                retrievalUrlMap.put(url, retrievals);
-            }
-
-            /*
-             * Could have multiple subscriptions to the same dataset for
-             * different parameters
-             */
-            retrievals.add(subRetrieval);
-        }
-
-        for (Entry<String, List<SubscriptionRetrieval>> entry : retrievalUrlMap
-                .entrySet()) {
-            String url = entry.getKey();
-            DataSetMetaData<?, ?> dsmd = null;
-            try {
-                dsmd = DataDeliveryHandlers.getDataSetMetaDataHandler()
-                        .getById(url);
-                if (dsmd == null) {
-                    logger.error("No DataSetMetaData found for url [" + url
-                            + "]. Skipping retrieval");
-                    continue;
-                }
-            } catch (RegistryHandlerException e) {
-                logger.error("Unable to look up DataSetMetaData[" + url
-                        + "], skipping associated retrievals", e);
-                continue;
-            }
-
-            List<SubscriptionRetrieval> subRetrievalsForUrl = entry.getValue();
-            for (SubscriptionRetrieval retrieval : subRetrievalsForUrl) {
-                /*
-                 * TODO: Should we check/remove the same sub in list twice? Is
-                 * there a bug in generation of SubscriptionRetrieval objects?
-                 */
-                BandwidthSubscription bwSub = retrieval
-                        .getBandwidthSubscription();
-                final String subName = bwSub.getName();
-                Provider provider = null;
-
-                try {
-                    provider = providerHandler.getByName(bwSub.getProvider());
-                    if (provider == null) {
-                        logger.error(
-                                "No provider for name [" + bwSub.getProvider()
-                                        + "]. Skipping retrieval for subscription ["
-                                        + subName + "]");
-                    }
-                } catch (RegistryHandlerException e) {
-                    logger.error("Error looking up provider ["
-                            + bwSub.getProvider() + "] for subscription ["
-                            + subName + "], skipping retrieval", e);
-                    continue;
-                }
-
-                Subscription<?, ?> sub = null;
-
-                try {
-                    // TODO: Could be adhoc or recurring
-                    sub = bandwidthDao
-                            .getSubscriptionRetrievalAttributes(retrieval)
-                            .getSubscription();
-                    if (sub == null) {
-                        logger.error("Unable to find subscription [" + subName
-                                + "] based on retrieval attributes. Skipping retrieval");
-                        continue;
-                    }
-                } catch (SerializationException e) {
-                    logger.error(
-                            "Unable to deserialize subscription, skipping retrieval for subscription ["
-                                    + subName + "]",
-                            e);
-                    continue;
-                }
-
-                SubscriptionBundle bundle = new SubscriptionBundle(sub,
-                        provider);
-
-                retrieval.setActualStart(TimeUtil.newDate());
-                retrieval.setStatus(RetrievalStatus.RETRIEVAL);
-
-                // update database
-                bandwidthDao.update(retrieval);
-
-                // process the bundle into a retrieval
-                RetrievalGenerator rg = ServiceTypeFactory
-                        .retrieveServiceFactory(bundle.getProvider())
-                        .getRetrievalGenerator();
-                /*
-                 * generateRetrieval will pipeline the RetrievalRecord Objects
-                 * created to the DB. The PK objects returned are sent to the
-                 * RetrievalQueue for processing.
-                 */
-                if (!generateRetrieval(rg, dsmd, bundle,
-                        retrieval.getIdentifier())) {
-                    /**
-                     * Normally this is the job of the SubscriptionNotifyTask,
-                     * but if no retrievals were generated we have to send it
-                     * manually
-                     */
-                    RetrievalManagerNotifyEvent retrievalManagerNotifyEvent = new RetrievalManagerNotifyEvent();
-                    retrievalManagerNotifyEvent
-                            .setId(Long.toString(retrieval.getId()));
-                    EventBus.publish(retrievalManagerNotifyEvent);
-
-                }
-            }
-        }
-    }
-
-    @Override
-    protected String getAgentType() {
-        return SUBSCRIPTION_AGENT;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    Class<SubscriptionRetrieval> getAllocationTypeClass() {
-        return SubscriptionRetrieval.class;
-    }
-
-    /**
-     * Generate the retrievals for a subscription bundle.
-     *
-     * @param rg
-     *
-     * @param dsmd
-     *            the data set meta data
-     * @param bundle
-     *            the bundle
-     * @return true if retrievals were generated (and waiting to be processed)
-     */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private boolean generateRetrieval(RetrievalGenerator rg,
-            DataSetMetaData<?, ?> dsmd, SubscriptionBundle bundle,
-            Long bandwidthAllocationId) {
+    public void queueRetrievals(
+            DataSetMetaData<? extends Time, ? extends Coverage> dsmd,
+            List<? extends Subscription> subscriptions) {
+        Provider provider = null;
 
-        final String subscriptionName = bundle.getSubscription().getName();
-        logger.info("Subscription: " + subscriptionName
-                + " Being Processed for Retrieval...");
+        try {
+            provider = providerHandler.getByName(dsmd.getProviderName());
 
-        List<Retrieval> retrievals = rg.buildRetrieval(dsmd, bundle);
-        boolean retrievalsGenerated = !CollectionUtil.isNullOrEmpty(retrievals);
-
-        if (!retrievalsGenerated) {
-            logger.warn("Subscription: " + subscriptionName
-                    + " Did not generate any retrieval messages");
-            return false;
+            if (provider == null) {
+                logger.error("No provider for name [" + dsmd.getProviderName()
+                        + "] found. All subscriptions for DataSet ["
+                        + dsmd.getDataSetName() + "] will be skipped");
+                return;
+            }
+        } catch (RegistryHandlerException e) {
+            logger.error("Error looking up provider [" + dsmd.getProviderName()
+                    + "]. All subscriptions for DataSet ["
+                    + dsmd.getDataSetName() + "] will be skipped", e);
+            return;
         }
 
-        return storeRetrievalRequests(rg, dsmd, bundle, bandwidthAllocationId,
-                retrievals);
+        // process the bundle into a retrieval
+        RetrievalGenerator rg = ServiceTypeFactory
+                .retrieveServiceFactory(provider).getRetrievalGenerator();
+
+        for (Subscription<?, ?> sub : subscriptions) {
+            final String subscriptionName = sub.getName();
+            logger.info("Subscription: " + subscriptionName
+                    + " Being Processed for Retrieval...");
+
+            List<Retrieval> retrievals = rg.buildRetrieval(dsmd, sub, provider);
+            boolean retrievalsGenerated = !CollectionUtil
+                    .isNullOrEmpty(retrievals);
+
+            if (retrievalsGenerated) {
+                queueSubscriptionRetrievals(rg, dsmd, sub, retrievals);
+            } else {
+                logger.error("Subscription [" + subscriptionName
+                        + "] did not generate any retrieval messages for dataSet ["
+                        + dsmd.getDataSetName() + "], url [" + dsmd.getUrl()
+                        + "]");
+            }
+        }
     }
 
-    private boolean storeRetrievalRequests(RetrievalGenerator rg,
-            DataSetMetaData<?, ?> dsmd, SubscriptionBundle bundle,
-            Long bandwidthAllocationId, List<Retrieval> retrievals) {
+    @SuppressWarnings("rawtypes")
+    private boolean queueSubscriptionRetrievals(RetrievalGenerator rg,
+            DataSetMetaData<?, ?> dsmd, Subscription<?, ?> subscription,
+            List<Retrieval> retrievals) {
         List<RetrievalRequestRecord> requestRecords = null;
 
         // Default to "now"
         Long requestRetrievalTimeLong = Long
                 .valueOf(System.currentTimeMillis());
-        Subscription<?, ?> bundleSub = bundle.getSubscription();
-        Time requestRetrievalTimeT = bundleSub.getTime();
+        Time requestRetrievalTimeT = subscription.getTime();
         Date requestRetrievalDate = null;
 
         if (requestRetrievalTimeT != null) {
@@ -320,8 +185,9 @@ public class SubscriptionRetrievalAgent
             }
         }
 
-        int priority = (bundle.getPriority() != null)
-                ? bundle.getPriority().getPriorityValue() : defaultPriority;
+        int priority = (subscription.getPriority() != null)
+                ? subscription.getPriority().getPriorityValue()
+                : defaultPriority;
         requestRecords = new ArrayList<>(retrievals.size());
 
         ITimer timer = TimeUtil.getTimer();
@@ -334,8 +200,7 @@ public class SubscriptionRetrievalAgent
         for (Retrieval retrieval : retrievals) {
             retrieval.setRequestRetrievalTime(requestRetrievalTimeLong);
             RetrievalRequestRecord rec = new RetrievalRequestRecord(retrieval,
-                    dsmd.getUrl(), retrievalState, priority,
-                    bandwidthAllocationId);
+                    dsmd.getUrl(), retrievalState, priority);
 
             try {
                 rec.setRetrievalObj(retrieval);
@@ -356,24 +221,24 @@ public class SubscriptionRetrievalAgent
             timer.reset();
             timer.start();
 
-            retrievalDao.persistAll(requestRecords);
+            retrievalHandler.queueRetrievals(requestRecords);
 
             timer.stop();
             logger.info("Time to persist requests to db ["
                     + timer.getElapsedTime() + "] ms");
 
         } catch (Exception e) {
-            logger.error("Subscription: " + bundle.getSubscription().getName()
+            logger.error("Subscription: " + subscription.getName()
                     + " Failed to store to retrievals.", e);
             return false;
         }
 
         timer.reset();
         timer.start();
-        List<RetrievalRequestRecord> updates = rg.postSaveActions(dsmd, bundle,
-                requestRecords);
+        List<RetrievalRequestRecord> updates = rg.postSaveActions(dsmd,
+                subscription, requestRecords);
         if (!CollectionUtil.isNullOrEmpty(updates)) {
-            retrievalDao.persistAll(updates);
+            retrievalHandler.queueRetrievals(updates);
         }
 
         timer.stop();

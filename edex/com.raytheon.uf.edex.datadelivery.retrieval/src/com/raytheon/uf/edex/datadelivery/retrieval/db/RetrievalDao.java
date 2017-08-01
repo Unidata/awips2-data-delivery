@@ -40,8 +40,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionNotifyTa
  * Oct 13, 2014  3707     dhladky   Shared subscription delivery requires you to
  *                                  create a new record.
  * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
- * May 09, 2017  6186     rjpeter   Added url
+ * May 09, 2017  6186     rjpeter   Added owner/url
  * Jul 25, 2017  6186     rjpeter   Removed network
+ * Aug 02, 2017  6186     rjpeter   Removed IRetrievalDao.
  *
  * </pre>
  *
@@ -51,8 +52,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionNotifyTa
 @Transactional
 // TODO: Split service functionality from DAO functionality
 public class RetrievalDao
-        extends SessionManagedDao<Integer, RetrievalRequestRecord>
-        implements IRetrievalDao {
+        extends SessionManagedDao<Integer, RetrievalRequestRecord> {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RetrievalDao.class);
@@ -74,10 +74,16 @@ public class RetrievalDao
     }
 
     /*
+     * Returns the next PENDING retrieval request, puts it into a RUNNING state,
+     * based on current time. Based on priority and expire time.
+     *
      * TODO: Take into account latency so retrievals that happen often like
      * MADIS and PDA don't get stuck behind a grid task
+     *
+     * @param network the network to constrain requests to
+     *
+     * @return
      */
-    @Override
     public synchronized RetrievalRequestRecord activateNextRetrievalRequest()
             throws DataAccessLayerException {
         Session sess = null;
@@ -150,7 +156,11 @@ public class RetrievalDao
         return rval;
     }
 
-    @Override
+    /**
+     *
+     * @param rec
+     * @throws DataAccessLayerException
+     */
     public void completeRetrievalRequest(RetrievalRequestRecord rec)
             throws DataAccessLayerException {
         try {
@@ -166,7 +176,11 @@ public class RetrievalDao
         }
     }
 
-    @Override
+    /**
+     * TODO: This will fail in a cluster, need to limit by machine in a cluster
+     *
+     * @return
+     */
     public boolean resetRunningRetrievalsToPending() {
         boolean rval = false;
 
@@ -186,17 +200,26 @@ public class RetrievalDao
         return rval;
     }
 
-    @Override
+    /**
+     * Returns the state counts for the passed subscription, owner, and url.
+     *
+     * @param subName
+     * @param owner
+     * @param url
+     * @return
+     * @throws DataAccessLayerException
+     */
     public Map<State, Integer> getSubscriptionStateCounts(String subName,
-            String url) throws DataAccessLayerException {
+            String owner, String url) throws DataAccessLayerException {
         Map<State, Integer> rval = new HashMap<>(8);
 
         try {
             String hql = "select rec.state, count(rec.subscriptionName) from RetrievalRequestRecord rec "
-                    + "where rec.subscriptionName = :subName and rec.dsmdUrl = :url group by rec.state";
+                    + "where rec.subscriptionName = :subName and rec.dsmdUrl = :url and rec.owner = :owner group by rec.state";
             Query query = getCurrentSession().createQuery(hql);
             query.setString("subName", subName);
             query.setString("url", url);
+            query.setString("owner", owner);
             List<Object> result = query.list();
 
             if (result != null && !result.isEmpty()) {
@@ -223,15 +246,25 @@ public class RetrievalDao
         return rval;
     }
 
-    @Override
+    /**
+     * Returns any failed request for the given subscription, owner, and url.
+     *
+     * @param subName
+     * @param owner
+     * @param url
+     * @return
+     * @throws DataAccessLayerException
+     */
     public List<RetrievalRequestRecord> getFailedRequests(String subName,
-            String url) throws DataAccessLayerException {
+            String owner, String url) throws DataAccessLayerException {
         try {
             Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
             query.add(Restrictions.eq("state", State.FAILED));
             query.add(Restrictions.eq("subscriptionName", subName));
             query.add(Restrictions.eq("dsmdUrl", url));
+            query.add(Restrictions.eq("owner", owner));
+
             List<RetrievalRequestRecord> rval = query.list();
             return rval;
         } catch (Exception e) {
@@ -242,17 +275,27 @@ public class RetrievalDao
         }
     }
 
-    @Override
-    public boolean removeSubscription(String subName, String url)
+    /**
+     * Removes all RetrievalRequestRecord entries for the given subscription,
+     * owner, and url.
+     *
+     * @param subName
+     * @param owner
+     * @param url
+     * @return
+     * @throws DataAccessLayerException
+     */
+    public boolean removeSubscription(String subName, String owner, String url)
             throws DataAccessLayerException {
         boolean rval = false;
 
         try {
             String hql = "delete from RetrievalRequestRecord rec "
-                    + "where rec.subscriptionName = :subName and rec.dsmdUrl = :url";
+                    + "where rec.subscriptionName = :subName and rec.dsmdUrl = :url and rec.owner = :owner";
             Query query = getCurrentSession().createQuery(hql);
             query.setString("subName", subName);
             query.setString("url", url);
+            query.setString("owner", owner);
             query.executeUpdate();
             rval = true;
         } catch (Exception e) {
@@ -264,14 +307,23 @@ public class RetrievalDao
         return rval;
     }
 
-    @Override
-    public List<RetrievalRequestRecord> getRequests(String subName, String url)
-            throws DataAccessLayerException {
+    /**
+     * Get all requests for the subscription name, owner, and url.
+     *
+     * @param subName
+     * @param owner
+     * @param url
+     * @return
+     * @throws DataAccessLayerException
+     */
+    public List<RetrievalRequestRecord> getRequests(String subName,
+            String owner, String url) throws DataAccessLayerException {
         try {
             Criteria query = getCurrentSession()
                     .createCriteria(RetrievalRequestRecord.class);
             query.add(Restrictions.eq("subscriptionName", subName));
             query.add(Restrictions.eq("dsmdUrl", url));
+            query.add(Restrictions.eq("owner", owner));
             List<RetrievalRequestRecord> rval = query.list();
             return rval;
         } catch (Exception e) {

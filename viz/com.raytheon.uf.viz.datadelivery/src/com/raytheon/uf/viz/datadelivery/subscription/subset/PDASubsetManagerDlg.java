@@ -81,6 +81,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Oct 03, 2016  5772     tjensen   Set URL for PDA adhoc queries
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
  * Jun 29, 2017  6130     tjensen   Set coverage before getting specific time.
+ * Aug 02, 2017  6186     rjpeter   Removed setting of url.
  *
  * </pre>
  *
@@ -332,8 +333,6 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
             return null;
         }
         sub.setTime(newTime);
-
-        sub.setUrl(getSubscriptionUrl());
 
         List<Parameter> paramList = new ArrayList<>();
         Map<String, Parameter> paramMap = dataSet.getParameters();

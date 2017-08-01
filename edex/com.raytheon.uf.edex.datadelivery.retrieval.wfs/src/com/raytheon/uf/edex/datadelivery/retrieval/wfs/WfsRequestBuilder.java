@@ -178,9 +178,10 @@ public class WfsRequestBuilder<T extends Time, C extends Coverage>
             startDateString = ogcDateFormat.get()
                     .format(inTime.getRequestStart());
 
+            // TODO: switch to timeObs if its adhoc
             StringBuilder sb = new StringBuilder(256);
             sb.append(PROPRERTYISGREATERTHAN_OPEN).append(NEW_LINE);
-            sb.append(PROPERTTY_OPEN).append(typeName).append(":timeObs")
+            sb.append(PROPERTTY_OPEN).append(typeName).append(":insertTime")
                     .append(PROPERTTY_CLOSE).append(NEW_LINE);
             sb.append(ISLITERAL_OPEN).append(startDateString)
                     .append(ISLITERAL_CLOSE).append(NEW_LINE);
@@ -188,7 +189,7 @@ public class WfsRequestBuilder<T extends Time, C extends Coverage>
 
             if (endDateString != null) {
                 sb.append(PROPRERTYISLESSTHAN_OPEN).append(NEW_LINE);
-                sb.append(PROPERTTY_OPEN).append(typeName).append(":timeObs")
+                sb.append(PROPERTTY_OPEN).append(typeName).append(":insertTime")
                         .append(PROPERTTY_CLOSE).append(NEW_LINE);
                 sb.append(ISLITERAL_OPEN).append(endDateString)
                         .append(ISLITERAL_CLOSE).append(NEW_LINE);

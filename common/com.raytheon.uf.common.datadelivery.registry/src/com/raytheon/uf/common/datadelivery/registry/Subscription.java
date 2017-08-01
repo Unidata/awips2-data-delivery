@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -31,38 +31,40 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
 
 /**
  * Definition of a subscription.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 25, 2013 1841       djohnson     Extracted from UserSubscription.
- * Apr 08, 2013 1826       djohnson     Remove delivery options.
- * May 15, 2013 1040       mpduff       Changed officeId to a set.
- * Jul 11, 2013 2106       djohnson     SubscriptionPriority allows comparison.
- * Sept 30,2013 1797       dhladky      Abstracted and genericized.
- * Oct 23, 2013 2484       dhladky      Unique ID for subscriptions updated.
- * Nov 14, 2013 2548       mpduff       Add a subscription type information.
- * Jan 08, 2014 2615       bgonzale     Added calculate start and calculate end methods.
- * Jan 14, 2014 2459       mpduff       Change Subscription status code
- * Jan 24, 2013 2709       bgonzale     Added method inActivePeriodWindow.
- * Feb 05, 2014 2677       mpduff       Add subscription state getter/setter.
- * Apr 02, 2014  2810      dhladky      Priority sorting of subscriptions.
- * Apr 21, 2014  2887      dhladky      Added shouldScheduleForTime() to interface.
- * Jun 09, 2014  3113      mpduff       Added getRetrievalTimes().
- * Jul 28, 2014  2752      dhladky      Somehow setOwner() got left off the interface.
- * May 27, 2015  4531      dhladky      Remove excessive Calendar references.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 25, 2013  1841     djohnson  Extracted from UserSubscription.
+ * Apr 08, 2013  1826     djohnson  Remove delivery options.
+ * May 15, 2013  1040     mpduff    Changed officeId to a set.
+ * Jul 11, 2013  2106     djohnson  SubscriptionPriority allows comparison.
+ * Sept 30,2013  1797     dhladky   Abstracted and genericized.
+ * Oct 23, 2013  2484     dhladky   Unique ID for subscriptions updated.
+ * Nov 14, 2013  2548     mpduff    Add a subscription type information.
+ * Jan 08, 2014  2615     bgonzale  Added calculate start and calculate end
+ *                                  methods.
+ * Jan 14, 2014  2459     mpduff    Change Subscription status code
+ * Jan 24, 2013  2709     bgonzale  Added method inActivePeriodWindow.
+ * Feb 05, 2014  2677     mpduff    Add subscription state getter/setter.
+ * Apr 02, 2014  2810     dhladky   Priority sorting of subscriptions.
+ * Apr 21, 2014  2887     dhladky   Added shouldScheduleForTime() to interface.
+ * Jun 09, 2014  3113     mpduff    Added getRetrievalTimes().
+ * Jul 28, 2014  2752     dhladky   Somehow setOwner() got left off the
+ *                                  interface.
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Aug 02, 2017  6186     rjpeter   Removed url.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
-public interface Subscription<T extends Time, C extends Coverage> extends
-        Comparable<Subscription<T, C>> {
+public interface Subscription<T extends Time, C extends Coverage>
+        extends Comparable<Subscription<T, C>> {
 
     @XmlEnum
     public enum SubscriptionType {
@@ -71,7 +73,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * State of the subscription.
-     * 
+     *
      * <pre>
      * ON for Active, Inactive, Unscheduled status
      * OFF for Expired, Deactivated, Invalid status
@@ -84,7 +86,8 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /** Enumeration to use for subscription priorities */
     @XmlEnum
-    public static enum SubscriptionPriority implements
+    public static enum SubscriptionPriority
+            implements
             Comparable<SubscriptionPriority> {
 
         /*
@@ -110,14 +113,15 @@ public interface Subscription<T extends Time, C extends Coverage> extends
         /** Numeric Value of the priority */
         private final int priorityValue;
 
-        private SubscriptionPriority(String priorityName, Integer priorityValue) {
+        private SubscriptionPriority(String priorityName,
+                Integer priorityValue) {
             this.priorityName = priorityName;
             this.priorityValue = priorityValue;
         }
 
         /**
          * Get column name.
-         * 
+         *
          * @return Priority Name
          */
         public String getPriorityName() {
@@ -126,7 +130,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
         /**
          * Get the integer value of the priority
-         * 
+         *
          * @return The integer value of the priority.
          */
         public int getPriorityValue() {
@@ -140,7 +144,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
         /**
          * Check whether this priority is higher than the other priority.
-         * 
+         *
          * @param other
          *            the other priority
          * @return true if higher priority
@@ -152,13 +156,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
         /**
          * Retrieve the {@link SubscriptionPriority} by its string
          * representation.
-         * 
+         *
          * @param string
          *            the string representation
          * @return the {@link SubscriptionPriority}
          */
         public static SubscriptionPriority fromPriorityName(String string) {
-            for (SubscriptionPriority potential : SubscriptionPriority.values()) {
+            for (SubscriptionPriority potential : SubscriptionPriority
+                    .values()) {
                 if (potential.getPriorityName().equals(string)) {
                     return potential;
                 }
@@ -195,14 +200,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription name.
-     * 
+     *
      * @return subscription name
      */
     String getName();
 
     /**
      * Set subscription name.
-     * 
+     *
      * @param name
      *            the name of the subscription
      */
@@ -210,14 +215,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription group name.
-     * 
+     *
      * @return subscription group name
      */
     String getGroupName();
 
     /**
      * Set subscription group name.
-     * 
+     *
      * @param groupName
      *            the name of the subscription group
      */
@@ -225,7 +230,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Set subscription provider name.
-     * 
+     *
      * @param provider
      *            the name of the subscription provider
      */
@@ -233,28 +238,28 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get provider name.
-     * 
+     *
      * @return provider name
      */
     String getProvider();
 
     /**
      * Get subscription owner name.
-     * 
+     *
      * @return subscription owner name
      */
     String getOwner();
 
     /**
      * Get office ids.
-     * 
+     *
      * @return office id list
      */
     Set<String> getOfficeIDs();
 
     /**
      * Set office ids.
-     * 
+     *
      * @param officeIDs
      *            the office ids
      */
@@ -262,14 +267,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription priority for fulfillment.
-     * 
+     *
      * @return subscription name
      */
     SubscriptionPriority getPriority();
 
     /**
      * Set subscription priority.
-     * 
+     *
      * @param priority
      *            priority
      */
@@ -277,14 +282,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription start time.
-     * 
+     *
      * @return subscription start
      */
     Date getSubscriptionStart();
 
     /**
      * Set subscription start time.
-     * 
+     *
      * @param subscriptionStart
      *            date time group for subscription start
      */
@@ -292,14 +297,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription end time.
-     * 
+     *
      * @return subscription end time date time group for subscription end
      */
     Date getSubscriptionEnd();
 
     /**
      * Set subscription end time.
-     * 
+     *
      * @param subscriptionEnd
      *            date time group for subscription end
      */
@@ -307,14 +312,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get active period start date.
-     * 
+     *
      * @return activePeriodStart
      */
     Date getActivePeriodStart();
 
     /**
      * Set active period start date.
-     * 
+     *
      * @param activePeriodStart
      *            date for subscription start
      */
@@ -322,14 +327,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get active period end date.
-     * 
+     *
      * @return activePeriodEnd
      */
     Date getActivePeriodEnd();
 
     /**
      * Set active period end date.
-     * 
+     *
      * @param activePeriodEnd
      *            date for subscription end
      */
@@ -338,10 +343,10 @@ public interface Subscription<T extends Time, C extends Coverage> extends
     /**
      * Calculate the earliest that this subscription is valid based on active
      * period and start time.
-     * 
+     *
      * @param startConstraint
      *            the earliest valid time.
-     * 
+     *
      * @return the valid subscription start Date.
      */
     Date calculateStart(Date startConstraint);
@@ -349,10 +354,10 @@ public interface Subscription<T extends Time, C extends Coverage> extends
     /**
      * Calculate the latest that this subscription is valid based on active
      * period and end time.
-     * 
+     *
      * @param endConstraint
      *            the latest valid time.
-     * 
+     *
      * @return the valid subscription end Date.
      */
     Date calculateEnd(Date endConstraint);
@@ -360,24 +365,24 @@ public interface Subscription<T extends Time, C extends Coverage> extends
     /**
      * Check if the given value's month/day is in the Subscription's active
      * window.
-     * 
+     *
      * @param time
      *            time with month/day value to check.
-     * 
+     *
      * @return true if in the active period; false otherwise
      */
     boolean inActivePeriodWindow(Date time);
 
     /**
      * isNotify flag for subscription.
-     * 
+     *
      * @return boolean true if full dataset
      */
     boolean isFullDataSet();
 
     /**
      * Set fullDataSet flag.
-     * 
+     *
      * @param fullDataSet
      *            true if full dataset
      */
@@ -385,14 +390,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get size of the dataset for the subscription.
-     * 
+     *
      * @return dataSetSize size of dataset
      */
     long getDataSetSize();
 
     /**
      * Set the dataset size for the subscription.
-     * 
+     *
      * @param dataSetSize
      *            size of dataset
      */
@@ -400,14 +405,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription coverage area.
-     * 
+     *
      * @return coverage
      */
     C getCoverage();
 
     /**
      * Set the coverage area for the subscription.
-     * 
+     *
      * @param coverage
      *            coverage area
      */
@@ -415,14 +420,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription submission time.
-     * 
+     *
      * @return subscription time
      */
     T getTime();
 
     /**
      * Set the subscription submission time.
-     * 
+     *
      * @param time
      *            time stamp
      */
@@ -430,7 +435,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Set the subscription parameters.
-     * 
+     *
      * @param parameter
      *            subscription parameter list
      */
@@ -438,14 +443,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription parameter list.
-     * 
+     *
      * @return subscription parameter list
      */
     List<Parameter> getParameter();
 
     /**
      * Add subscription parameters.
-     * 
+     *
      * @param par
      *            a subscription parameter
      */
@@ -453,7 +458,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Remove subscription parameters.
-     * 
+     *
      * @param par
      *            a subscription parameter
      */
@@ -461,7 +466,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Add subscription id.
-     * 
+     *
      * @param subscriptionId
      *            a subscription id
      */
@@ -469,21 +474,21 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription id.
-     * 
+     *
      * @return subscription id
      */
     String getSubscriptionId();
 
     /**
      * Get subscription description.
-     * 
+     *
      * @return subscription description
      */
     String getDescription();
 
     /**
      * Set the subscription description.
-     * 
+     *
      * @param description
      *            subscription description
      */
@@ -491,14 +496,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription dataset name.
-     * 
+     *
      * @return subscription dataset name
      */
     String getDataSetName();
 
     /**
      * Set the subscription dataSetName.
-     * 
+     *
      * @param dataSetName
      *            subscription dataSetName
      */
@@ -506,14 +511,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Check if status is SubscriptionStatus.ACTIVE
-     * 
+     *
      * @return boolean true if subscription is Active
      */
     boolean isActive();
 
     /**
      * Set subscription valid.
-     * 
+     *
      * @param valid
      *            true if subscription valid
      */
@@ -521,36 +526,21 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Return if subscription is valid or invalid
-     * 
+     *
      * @return true if subscription is valid
      */
     boolean isValid();
 
     /**
-     * Get the subscription url.
-     * 
-     * @return the url
-     */
-    String getUrl();
-
-    /**
-     * Set the subscription url.
-     * 
-     * @param url
-     *            the url to set
-     */
-    void setUrl(String url);
-
-    /**
      * Get subscription dataset type.
-     * 
+     *
      * @return subscription dataset type
      */
     DataType getDataSetType();
 
     /**
      * Set the dataset type
-     * 
+     *
      * @param dataSetType
      *            the dataSetType to set
      */
@@ -558,14 +548,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * isDeleted flag.
-     * 
+     *
      * @return true if the subscription has been deleted
      */
     boolean isDeleted();
 
     /**
      * Set the deleted flag.
-     * 
+     *
      * @param deleted
      *            set subscription to deleted
      */
@@ -584,14 +574,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get subscription id.
-     * 
+     *
      * @return subscription id
      */
     String getId();
 
     /**
      * Set the subscription id.
-     * 
+     *
      * @param id
      *            set subscription id
      */
@@ -599,21 +589,21 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get the current subscription status.
-     * 
+     *
      * @return SubscriptionStatus
      */
     SubscriptionStatus getStatus();
 
     /**
      * Get the route.
-     * 
+     *
      * @return the route
      */
     Network getRoute();
 
     /**
      * Set the route.
-     * 
+     *
      * @param route
      *            the route
      */
@@ -621,30 +611,30 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Set the latency in minutes.
-     * 
+     *
      * @param latencyInMinutes
      *            the latency, in minutes
-     * 
+     *
      */
     void setLatencyInMinutes(int latencyInMinutes);
 
     /**
      * Get the latency, in minutes.
-     * 
+     *
      * @return the latency in minutes
      */
     int getLatencyInMinutes();
 
     /**
      * Get the {@link Ensemble}.
-     * 
+     *
      * @return the ensemble
      */
     Ensemble getEnsemble();
 
     /**
      * Set the ensememble.
-     * 
+     *
      * @param ensemble
      *            the ensemble
      */
@@ -652,14 +642,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Copy the subscription.
-     * 
+     *
      * @return the copy
      */
     Subscription<T, C> copy();
 
     /**
      * Copy the subscription.
-     * 
+     *
      * @return the copy with the new name
      */
     Subscription<T, C> copy(String newName);
@@ -678,42 +668,43 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Add an office Id to the list.
-     * 
+     *
      * @param officeId
      *            Office Id to add
      */
     void addOfficeID(String officeId);
-    
+
     /**
      * Sets the owner
+     *
      * @param owner
      */
     void setOwner(String owner);
 
     /**
      * Gets the original site the subscription was created as
-     * 
+     *
      * @return
      */
     String getOriginatingSite();
 
     /**
      * Sets the originating Site the subscription was created as
-     * 
+     *
      * @param originatingSite
      */
     void setOriginatingSite(String originatingSite);
 
     /**
      * Get the subscription type (Recurring or Query)
-     * 
+     *
      * @return the SubscriptionType
      */
     SubscriptionType getSubscriptionType();
 
     /**
      * Set the subscription type.
-     * 
+     *
      * @param subType
      */
     void setSubscriptionType(SubscriptionType subType);
@@ -730,7 +721,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Set the subscription's state
-     * 
+     *
      * @param state
      *            The state to set
      */
@@ -738,14 +729,14 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Get the subscription's state
-     * 
+     *
      * @return This subscrition's state
      */
     SubscriptionState getSubscriptionState();
 
     /**
      * Check against activePeriod and Start/End of subscription
-     * 
+     *
      * @param checkCal
      * @return
      */
@@ -753,7 +744,7 @@ public interface Subscription<T extends Time, C extends Coverage> extends
 
     /**
      * Return the retrieval times for the provided plan start/end.
-     * 
+     *
      * @param planStart
      *            Retrieval plan start time
      * @param planEnd

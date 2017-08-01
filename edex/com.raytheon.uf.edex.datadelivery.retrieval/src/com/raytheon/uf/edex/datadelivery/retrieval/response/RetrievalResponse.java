@@ -23,6 +23,7 @@ package com.raytheon.uf.edex.datadelivery.retrieval.response;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 
 /**
@@ -31,11 +32,14 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 07, 2011            dhladky     Initial creation
- * Feb 12, 2013 1543       djohnson    Abstract class now.
- * Feb 15, 2013 1543       djohnson    Sub-classes must implement payload methods, make JAXBable.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 07, 2011           dhladky   Initial creation
+ * Feb 12, 2013  1543     djohnson  Abstract class now.
+ * Feb 15, 2013  1543     djohnson  Sub-classes must implement payload methods,
+ *                                  make JAXBable.
+ * Aug 02, 2017  6186     rjpeter   Implemented getNextState.
  *
  * </pre>
  *
@@ -45,6 +49,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public abstract class RetrievalResponse implements IRetrievalResponse {
+    @Override
+    public State getNextState() {
+        return State.COMPLETED;
+    }
+
     @Override
     public void prepareForSerialization() throws Exception {
         // empty impl

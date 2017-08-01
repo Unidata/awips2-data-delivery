@@ -7,10 +7,10 @@ drop table if exists subscription_retrieval;
 CREATE TABLE subscription_retrieval
 (
   id integer NOT NULL,
-  bandwidthallocationid bigint NOT NULL,
   datasetname character varying(255) NOT NULL,
   dsmdurl character varying(255) NOT NULL,
   inserttime timestamp without time zone NOT NULL,
+  latencyexpiretime timestamp without time zone NOT NULL,
   owner character varying(255) NOT NULL,
   priority integer NOT NULL,
   provider character varying(255) NOT NULL,

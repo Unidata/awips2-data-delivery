@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
 import java.util.ArrayList;
@@ -9,8 +28,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
-import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.SerializationException;
@@ -57,6 +74,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * Feb 16, 2017  5899     rjpeter   Removed excessive logging.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ * Aug 02, 2017  6186     rjpeter   Moved cycle and dataset logic to datasetMetaData.
  *
  * </pre>
  *
@@ -236,53 +254,6 @@ public class BandwidthUtil {
         cal.set(Calendar.DAY_OF_MONTH, activePeriod.get(Calendar.DAY_OF_MONTH));
 
         return cal;
-    }
-
-    /**
-     * Special handling for Gridded Times with cycles and time indicies
-     *
-     * @param subTime
-     * @param dataSetMetaDataTime
-     * @return
-     */
-    private static Time handleCyclesAndSequences(Time subTime,
-            Time dataSetMetaDataTime) {
-
-        if (subTime instanceof GriddedTime) {
-            GriddedTime time = (GriddedTime) subTime;
-            GriddedTime dsmTime = (GriddedTime) dataSetMetaDataTime;
-            dsmTime.setSelectedTimeIndices(time.getSelectedTimeIndices());
-            dsmTime.setCycleTimes(time.getCycleTimes());
-        }
-
-        return dataSetMetaDataTime;
-    }
-
-    /**
-     * Updates a {@link Subscription) to reflect important attributes of the
-     * specified {@link DataSetMetaData}.
-     *
-     * @param sub
-     *            the subscription
-     * @param dataSetMetaData
-     *            the datasetmetadata update
-     * @return the subscription
-     */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static Subscription updateSubscriptionWithDataSetMetaData(
-            Subscription sub, DataSetMetaData dataSetMetaData) {
-        // TODO perfect candidate for the factory for time and coverage
-        Time dsmdTime = dataSetMetaData.getTime();
-        final Time subTime = sub.getTime();
-        dsmdTime = handleCyclesAndSequences(subTime, dsmdTime);
-        sub.setTime(dsmdTime);
-        sub.setUrl(dataSetMetaData.getUrl());
-        Coverage instanceCoverage = dataSetMetaData.getInstanceCoverage();
-        if (instanceCoverage != null) {
-            sub.setCoverage(instanceCoverage);
-        }
-
-        return sub;
     }
 
     /**

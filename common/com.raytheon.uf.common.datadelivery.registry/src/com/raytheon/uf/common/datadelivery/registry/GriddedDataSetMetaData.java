@@ -1,6 +1,27 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.datadelivery.registry;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -16,11 +37,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Gridded Meta Data object
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 20, 2011  218      dhladky   Initial creation
@@ -31,11 +52,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Sep 30, 2013  1797     dhladky   Generics
  * Dec 20, 2013  2636     mpduff    Add equals/hashcode.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
- * 
+ * May 24, 2017  6186     rjpeter   Overrode satisfiesSubscription to handle
+ *                                  cycle checking.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso(OpenDapGriddedDataSetMetaData.class)
@@ -81,12 +103,58 @@ public abstract class GriddedDataSetMetaData
         }
     }
 
+    /**
+     * Deprecated, use GriddedTime.cycleTimes.
+     *
+     * @param cycle
+     */
+    @Deprecated
     public void setCycle(int cycle) {
         this.cycle = cycle;
     }
 
+    /**
+     * Deprecated, use GriddedTime.cycleTimes.
+     *
+     * @return
+     */
+    @Deprecated
     public int getCycle() {
-        return cycle;
+        List<Integer> cycleTimes = getTime().getCycleTimes();
+        if (cycleTimes.isEmpty()) {
+            return NO_CYCLE;
+        }
+
+        return cycleTimes.get(0);
+    }
+
+    @Override
+    public String satisfiesSubscription(
+            Subscription<GriddedTime, GriddedCoverage> sub) throws Exception {
+        String rval = super.satisfiesSubscription(sub);
+
+        if (rval == null) {
+            List<Integer> cycleTimes = sub.getTime().getCycleTimes();
+
+            /*
+             * If the subscription doesn't have cycle times subscribed to, then
+             * add the NO_CYCLE marker cycle
+             */
+            boolean foundCycle = false;
+            if (cycleTimes.isEmpty()) {
+                foundCycle = getTime().getCycleTimes().isEmpty();
+            } else {
+                foundCycle = !Collections.disjoint(cycleTimes,
+                        getTime().getCycleTimes());
+            }
+
+            if (!foundCycle) {
+                rval = sub.getName() + " is not subscribed to cycle [" + cycle
+                        + "]";
+            }
+        }
+
+        return rval;
     }
 
     @Override

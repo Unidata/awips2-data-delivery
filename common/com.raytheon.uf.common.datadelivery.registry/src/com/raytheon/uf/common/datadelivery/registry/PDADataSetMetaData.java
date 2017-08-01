@@ -1,12 +1,36 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.datadelivery.registry;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.raytheon.uf.common.registry.annotations.RegistryObjectVersion;
-import com.raytheon.uf.common.registry.annotations.SlotAttribute;
+import com.raytheon.uf.common.serialization.XmlGenericMapAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
@@ -18,16 +42,17 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Jun 14, 2014  3120     dhladky   Initial creation
  * Sep 17, 2014  3127     dhladky   Added for geographic subsetting.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
+ * Aug 02, 2017  6186     rjpeter   Support dataSetMetaData being a partial
+ *                                  dataSet.
  *
  * </pre>
  *
- * @version 1.0
+ * @author dhladky
  */
-
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
 @RegistryObjectVersion(value = 1.0f)
@@ -36,8 +61,11 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
 
     @XmlAttribute
     @DynamicSerializeElement
-    @SlotAttribute
     private String metaDataID;
+
+    @DynamicSerializeElement
+    @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    protected Map<String, Parameter> parameters = new HashMap<>();
 
     public PDADataSetMetaData() {
 
@@ -51,10 +79,35 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
         this.metaDataID = metaDataID;
     }
 
+    public Map<String, Parameter> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(Map<String, Parameter> parameters) {
+        this.parameters = parameters;
+    }
+
     @Override
     public String satisfiesSubscription(Subscription<Time, Coverage> sub)
             throws Exception {
-        return super.satisfiesSubscription(sub);
-        // TODO Add parameter intersection check
+        String rval = super.satisfiesSubscription(sub);
+
+        if (rval == null) {
+            // determine if parameters intersect
+            boolean intersect = false;
+            List<Parameter> subscribedParams = sub.getParameter();
+            for (Parameter subParam : subscribedParams) {
+                if (parameters.containsKey(subParam.getName())) {
+                    intersect = true;
+                    break;
+                }
+            }
+
+            if (!intersect) {
+                rval = "the subscription is not subscribed to parameters in this dataset metadata";
+            }
+        }
+
+        return rval;
     }
 }

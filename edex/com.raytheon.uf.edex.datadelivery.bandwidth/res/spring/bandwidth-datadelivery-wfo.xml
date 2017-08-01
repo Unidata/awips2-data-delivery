@@ -35,6 +35,10 @@
         </property>
     </bean>
 
+    <bean id="network" class="com.raytheon.uf.common.datadelivery.registry.Network" factory-method="valueOf">
+        <constructor-arg value="OPSNET"/>
+    </bean>
+
     <util:map id="retrievalPlans">
         <entry key="OPSNET">
             <ref bean="OPSNETRetrievalPlan" />

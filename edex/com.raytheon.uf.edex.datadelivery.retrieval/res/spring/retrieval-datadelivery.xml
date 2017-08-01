@@ -63,6 +63,7 @@
     <!--  async retrievals run through this processor. -->
     <bean id="asyncRetrievalProcessor" class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.AsyncRetrievalProcessor">
         <constructor-arg ref="retrievalDao" />
+        <constructor-arg ref="retrievalHandler" />
     </bean>
 
     <camelContext id="dataDeliveryNotify-camel" xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">

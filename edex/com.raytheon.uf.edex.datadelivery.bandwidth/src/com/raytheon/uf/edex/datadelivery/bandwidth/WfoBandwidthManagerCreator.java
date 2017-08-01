@@ -45,6 +45,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
+import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalAgent;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -86,13 +87,14 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Jan 05, 2017  746      bsteffen  Handle multiple concurrent threads in
  *                                  getBandwidthGraphData()
  * Jun 20, 2017  6299     tgurney   Remove IProposeScheduleResponse
+ * Aug 02, 2017  6186     rjpeter   Added SubscriptionRetrievalAgent
  *
  * </pre>
  *
  * @author djohnson
  */
 public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
-        implements IEdexBandwidthManagerCreator {
+        implements IEdexBandwidthManagerCreator<T, C> {
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(WfoBandwidthManagerCreator.class);
@@ -137,15 +139,18 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
          * @param findSubscriptionsStrategy
          */
         public WfoBandwidthManager(IBandwidthDbInit dbInit,
-                IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
-                BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil,
+                IBandwidthDao<T, C> bandwidthDao,
+                RetrievalManager retrievalManager,
+                BandwidthDaoUtil<T, C> bandwidthDaoUtil, RegistryIdUtil idUtil,
+                SubscriptionRetrievalAgent retrievalAgent,
                 DataSetMetaDataHandler dataSetMetaDataHandler,
                 SubscriptionHandler subscriptionHandler,
                 SendToServerSubscriptionNotificationService subscriptionNotificationService,
                 ISubscriptionFinder findSubscriptionsStrategy) {
             super(dbInit, bandwidthDao, retrievalManager, bandwidthDaoUtil,
-                    idUtil, dataSetMetaDataHandler, subscriptionHandler,
-                    subscriptionNotificationService, findSubscriptionsStrategy);
+                    idUtil, retrievalAgent, dataSetMetaDataHandler,
+                    subscriptionHandler, subscriptionNotificationService,
+                    findSubscriptionsStrategy);
         }
 
         @Override
@@ -243,16 +248,17 @@ public class WfoBandwidthManagerCreator<T extends Time, C extends Coverage>
      */
     @Override
     public BandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
-            IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
-            BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil,
+            IBandwidthDao<T, C> bandwidthDao, RetrievalManager retrievalManager,
+            BandwidthDaoUtil<T, C> bandwidthDaoUtil, RegistryIdUtil idUtil,
+            SubscriptionRetrievalAgent retrievalAgent,
             DataSetMetaDataHandler dataSetMetaDataHandler,
             SubscriptionHandler subscriptionHandler,
             SendToServerSubscriptionNotificationService subscriptionNotificationService,
             ISubscriptionFinder findSubscriptionsStrategy) {
         return new WfoBandwidthManager<>(dbInit, bandwidthDao, retrievalManager,
-                bandwidthDaoUtil, idUtil, dataSetMetaDataHandler,
-                subscriptionHandler, subscriptionNotificationService,
-                findSubscriptionsStrategy);
+                bandwidthDaoUtil, idUtil, retrievalAgent,
+                dataSetMetaDataHandler, subscriptionHandler,
+                subscriptionNotificationService, findSubscriptionsStrategy);
     }
 
     /**

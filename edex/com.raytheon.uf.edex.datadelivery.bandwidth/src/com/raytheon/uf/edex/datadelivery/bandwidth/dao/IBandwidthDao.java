@@ -54,7 +54,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Dec 17, 2013  2636     bgonzale  Added method to get a BandwidthAllocation.
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
- * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate and added purgeAllocations
  *
  * </pre>
  *
@@ -470,4 +470,11 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      * @param id
      */
     BandwidthAllocation getBandwidthAllocation(long id);
+
+    /**
+     * Purge all allocations prior to the threshold.
+     *
+     * @param purgeThreshold
+     */
+    void purgeAllocations(Date purgeThreshold);
 }

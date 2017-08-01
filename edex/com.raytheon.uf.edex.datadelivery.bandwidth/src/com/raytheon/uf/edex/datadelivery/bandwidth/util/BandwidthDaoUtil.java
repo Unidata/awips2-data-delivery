@@ -21,19 +21,9 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.util;
 
 import java.util.List;
 
-import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.referencing.operation.TransformException;
-
-import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
-import com.raytheon.uf.common.geospatial.MapUtil;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
@@ -96,17 +86,14 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Apr 13, 2016  5573     dhladky   Recurring subscriptions fail do to null time
  *                                  object.
  * Apr 20, 2017  1045     tjensen   Update for moving datasets
+ * Aug 02, 2017  6186     rjpeter   Removed setAdhocMostRecentUrlAndTime.
  *
  * </pre>
  *
  * @author djohnson
- * @version 1.0
  */
 
 public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(BandwidthDaoUtil.class);
 
     private final IBandwidthDao<T, C> bandwidthDao;
 
@@ -155,111 +142,6 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
 
         bandwidthDao.createOrUpdate(allocation);
         retrievalManager.updateBandwidthAllocation(allocation);
-    }
-
-    /**
-     * Add the url and start time for the most recent dataset metadata update
-     * that has arrived, which matches the requested cycle of the
-     * {@link AdhocSubscription}.
-     *
-     * @param adhoc
-     *            the adhoc subscription, with its {@link Time} object's cycles
-     *            populated
-     * @param mostRecent
-     *            if true, then any base reference time will match
-     * @return the adhoc subscription, or null if no matching metadata could be
-     *         found
-     */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public AdhocSubscription<T, C> setAdhocMostRecentUrlAndTime(
-            AdhocSubscription<T, C> adhoc) {
-
-        AdhocSubscription<T, C> retVal = null;
-        DataSetMetaData dataSetMetaData = null;
-
-        try {
-
-            dataSetMetaData = DataDeliveryHandlers.getDataSetMetaDataHandler()
-                    .getMostRecentDataSetMetaData(adhoc.getDataSetName(),
-                            adhoc.getProvider());
-
-        } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "No DataSetMetaData matching query! DataSetName: "
-                            + adhoc.getDataSetName() + " Provider: "
-                            + adhoc.getProvider(),
-                    e);
-        }
-
-        if (dataSetMetaData == null) {
-            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug(String.format(
-                        "There wasn't applicable most recent dataset metadata to use for the adhoc subscription [%s].",
-                        adhoc.getName()));
-            }
-        } else {
-            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug(String.format(
-                        "Found most recent metadata for adhoc subscription [%s], using url [%s]",
-                        adhoc.getName(), dataSetMetaData.getUrl()));
-            }
-            // TODO: Restructure adhoc to make logic flow clearer
-            Coverage instanceCoverage = dataSetMetaData.getInstanceCoverage();
-            boolean doRetrieval = true;
-            if (instanceCoverage != null) {
-
-                ReferencedEnvelope intersection;
-                try {
-                    intersection = MapUtil.reprojectAndIntersect(
-                            adhoc.getCoverage().getRequestEnvelope(),
-                            instanceCoverage.getEnvelope());
-
-                    if (intersection.isNull() || intersection.isEmpty()) {
-                        /*
-                         * Skip this subscription since this metadata does not
-                         * overlap with the requested area.
-                         */
-                        statusHandler.info("Skipping subscription '"
-                                + adhoc.getName()
-                                + "' due to the requested coverage not intersecting "
-                                + "with the coverage of this instance.");
-                        doRetrieval = false;
-                    } else {
-                        adhoc.setCoverage((C) instanceCoverage);
-                    }
-                } catch (TransformException e) {
-                    statusHandler
-                            .error("Error checking moving intersection for subscription '"
-                                    + adhoc.getName()
-                                    + "'. Skipping retrieval.", e);
-                    doRetrieval = false;
-                }
-            }
-            if (doRetrieval) {
-                adhoc.setUrl(dataSetMetaData.getUrl());
-
-                /*
-                 * Safety, create a placeholder object populating both time
-                 * fields.
-                 */
-                if (adhoc.getTime() == null) {
-                    T time = (T) (new Time());
-                    time.setStart(dataSetMetaData.getDate());
-                    time.setEnd(dataSetMetaData.getDate());
-                    adhoc.setTime(time);
-                } else {
-                    adhoc.getTime().setStart(dataSetMetaData.getDate());
-                    // Safety, ensure end time is set to a default as well.
-                    if (adhoc.getTime().getEnd() == null) {
-                        adhoc.getTime().setEnd(dataSetMetaData.getDate());
-                    }
-                }
-
-                retVal = adhoc;
-            }
-        }
-
-        return retVal;
     }
 
     public RetrievalPlan getRetrievalPlan(Network network) {

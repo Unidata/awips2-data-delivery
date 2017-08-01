@@ -83,6 +83,7 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * Mar 31, 2017  6186     rjpeter   Refactored
  * May 09, 2017  6130     tjensen   Add version data to data sets support
  *                                  routing to ingest
+ * Aug 02, 2017  6186     rjpeter   Optionally combine PDA DataSetMetaData
  *
  * </pre>
  *
@@ -101,8 +102,12 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
     /** DEBUG PDA system **/
     private static final String DEBUG = "DEBUG";
 
+    private static final String COMBINE_DATASET_METADATA = "COMBINE_DATASET_METADATA";
+
     /** debug state */
     protected final boolean debug;
+
+    protected final boolean combineMetadata;
 
     private final PDAMetaDataUtil metadataUtil = PDAMetaDataUtil.getInstance();
 
@@ -111,6 +116,8 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 .getServiceConfig(ServiceType.PDA);
         // debugging MetaData parsing.
         debug = Boolean.valueOf(serviceConfig.getConstantValue(DEBUG));
+        combineMetadata = Boolean.valueOf(
+                serviceConfig.getConstantValue(COMBINE_DATASET_METADATA));
     }
 
     /**
@@ -265,6 +272,7 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 try {
                     PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
                     pdadsmd.setMetaDataID(metadataId);
+                    pdadsmd.setParameters(parameters);
                     pdadsmd.setArrivalTime(arrivalTime.getTime());
                     pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
                             collectionName, time.getStart().getTime()));
@@ -309,14 +317,22 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
      * @param sat
      * @return
      */
-    protected static String createDataSetName(String parameter, String res,
+    protected String createDataSetName(String parameter, String res,
             String sat) {
         StringBuilder sb = new StringBuilder();
-        sb.append(parameter);
+
         if (!"".equals(res)) {
-            sb.append(" " + res);
+            sb.append(' ').append(res);
+            res = sb.toString();
+            sb.setLength(0);
         }
-        sb.append(" " + sat);
+
+        if (combineMetadata) {
+            sb.append(sat);
+            sb.append(res);
+        } else {
+            sb.append(parameter).append(res).append(' ').append(sat);
+        }
 
         return sb.toString();
     }

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -31,7 +31,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
-import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalAgent;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
@@ -40,11 +39,11 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * creates one SubscriptionRetrieval per subscription, populated with the
  * necessary RetrievalRequests to fulfill the subscription using the existing
  * retrieval engine.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 18, 2012  726      jspinks   Initial creation
@@ -61,8 +60,10 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Aug 29, 2014  3446     bphillip  SubscriptionUtil is now a singleton
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 09, 2016  5771     rjpeter   Get latency for subscription once
+ * Aug 02, 2017  6186     rjpeter   Removed RetrievalAgent.
+ *
  * </pre>
- * 
+ *
  * @author jspinks
  */
 public class SimpleSubscriptionAggregator {
@@ -79,18 +80,18 @@ public class SimpleSubscriptionAggregator {
     /**
      * Generate a List of SubscriptionRetrieval Object for the provided
      * BandwidthSubscription Objects.
-     * 
+     *
      * @param container
      *            A container with a List of BandwidthSubscription Objects which
      *            were just added, and their subscription
-     * 
+     *
      * @return The SubscriptionRetrieval Objects used to fulfill the
      *         BandwidthSubscription Objects provided.
      */
     public List<SubscriptionRetrieval> aggregate(
             BandwidthSubscriptionContainer container) {
 
-        List<SubscriptionRetrieval> subscriptionRetrievals = new ArrayList<SubscriptionRetrieval>();
+        List<SubscriptionRetrieval> subscriptionRetrievals = new ArrayList<>();
 
         /*
          * No aggregation or decomposition of subscriptions, simply create the
@@ -116,8 +117,6 @@ public class SimpleSubscriptionAggregator {
             // Link this SubscriptionRetrieval with the subscription.
             subscriptionRetrieval.setBandwidthSubscription(subDao);
             subscriptionRetrieval.setNetwork(subDao.getRoute());
-            subscriptionRetrieval
-                    .setAgentType(RetrievalAgent.SUBSCRIPTION_AGENT);
             subscriptionRetrieval.setStatus(RetrievalStatus.PROCESSING);
             subscriptionRetrieval.setPriority(subDao.getPriority());
             subscriptionRetrieval.setEstimatedSize(subDao.getEstimatedSize());
@@ -131,21 +130,18 @@ public class SimpleSubscriptionAggregator {
                         .getDataSetAvailablityOffset(sub,
                                 subDao.getBaseReferenceTime());
             } catch (RegistryHandlerException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to retrieve data availability offset, using 0 for the offset.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to retrieve data availability offset, using 0 for the offset.",
+                        e);
             }
 
             subscriptionRetrieval.setDataSetAvailablityDelay(offset);
             subscriptionRetrievals.add(subscriptionRetrieval);
 
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler
-                        .debug("Created ["
-                                + subscriptionRetrievals.size()
-                                + "] SubscriptionRetrieval Objects for BandwidthSubscription ["
-                                + subDao.getIdentifier() + "]");
+                statusHandler.debug("Created [" + subscriptionRetrievals.size()
+                        + "] SubscriptionRetrieval Objects for BandwidthSubscription ["
+                        + subDao.getIdentifier() + "]");
             }
         }
 
@@ -158,26 +154,26 @@ public class SimpleSubscriptionAggregator {
      * "assemble" the finished subscription(s). This method will be called once
      * for each Subscription who's SubscriptionRetrieval Objects are all in the
      * "FULFILLED" state.
-     * 
+     *
      * @param retrievals
      *            A List of SubscriptionRetrieval(s) that make were produced
      *            from calling aggregate for a particular subscription.
-     * 
+     *
      * @return A List of completed subscriptions, ready for notification to the
      *         user.
      */
     public List<BandwidthSubscription> completeRetrieval(
             List<SubscriptionRetrieval> retrievals) {
 
-        List<BandwidthSubscription> daos = new ArrayList<BandwidthSubscription>();
+        List<BandwidthSubscription> daos = new ArrayList<>();
         /*
          * We know that only one SubscriptionRetrieval was created for each
          * Subscription so there will not be any duplication of subscription
          * ids.
          */
         for (SubscriptionRetrieval retrieval : retrievals) {
-            daos.add(bandwidthDao.getBandwidthSubscription(retrieval
-                    .getBandwidthSubscription().getId()));
+            daos.add(bandwidthDao.getBandwidthSubscription(
+                    retrieval.getBandwidthSubscription().getId()));
         }
 
         StringBuilder sb = new StringBuilder();

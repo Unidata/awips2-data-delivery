@@ -30,9 +30,9 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
+import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.datadelivery.registry.SubscriptionBundle;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
@@ -67,6 +67,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jul 10, 2017  6130     tjensen   Update getRetrievalMode to not look at
  *                                  ServiceConfig
  * Jul 25, 2017  6186     rjpeter   Update signature
+ * Aug 02, 2017  6186     rjpeter   Removed SubscriptionBundle
  *
  * </pre>
  *
@@ -115,12 +116,13 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
      * Build the necessary retrieval objects
      *
      * @param dsmd
-     * @param bundle
-     * @return
+     * @param subscription
+     * @param provider
      * @return
      */
     public abstract List<Retrieval<T, C>> buildRetrieval(
-            DataSetMetaData<T, C> dsmd, SubscriptionBundle bundle);
+            DataSetMetaData<T, C> dsmd, Subscription<T, C> subscription,
+            Provider provider);
 
     public abstract RetrievalAdapter<T, C> getServiceRetrievalAdapter();
 
@@ -186,12 +188,12 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
      * list of RetrievalRequestRecords that need to have updated persisted.
      *
      * @param dsmd
-     * @param bundle
+     * @param sub
      * @param records
      * @return
      */
     public List<RetrievalRequestRecord> postSaveActions(
-            DataSetMetaData<T, C> dsmd, SubscriptionBundle bundle,
+            DataSetMetaData<T, C> dsmd, Subscription<T, C> sub,
             List<RetrievalRequestRecord> records) {
         return Collections.emptyList();
     }

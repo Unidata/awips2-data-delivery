@@ -72,6 +72,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ * Aug 02, 2017  6186     rjpeter   Added purgeAllocations.
  *
  * </pre>
  *
@@ -452,5 +453,10 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
     @Override
     public BandwidthAllocation getBandwidthAllocation(long id) {
         return bandwidthAllocationDao.getById(id);
+    }
+
+    @Override
+    public void purgeAllocations(Date purgeThreshold) {
+        bandwidthAllocationDao.purgeAllocations(purgeThreshold);
     }
 }

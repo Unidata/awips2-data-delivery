@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,7 +24,6 @@ import java.io.File;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
-import com.raytheon.uf.common.datadelivery.registry.handlers.IAdhocSubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.localization.IPathManager;
@@ -40,6 +39,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
+import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalAgent;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.FindActiveSubscriptionsForRoute;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -47,11 +47,11 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 /**
  * {@link BandwidthContextFactory} for running in EDEX. Intentionally
  * package-private to hide implementation details.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Oct 24, 2012  1286     djohnson  Initial creation
@@ -65,9 +65,10 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 22, 2014  2992     dhladky   Added IdUtil for siteList
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 09, 2016  5771     rjpeter   Update constructor
- * 
+ * Aug 02, 2017  6186     rjpeter   Added SubscriptionRetrievalAgent
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  */
 public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
@@ -81,7 +82,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
 
         /**
          * Get the bandwidth manaager.
-         * 
+         *
          * @param dbInit
          * @param bandwidthDao
          * @param retrievalManager
@@ -91,18 +92,18 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
          * @param subscriptionHandler
          * @return the bandwidth manager
          */
-        BandwidthManager<T, C> getBandwidthManager(
-                IBandwidthDbInit dbInit,
+        BandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
                 IBandwidthDao<T, C> bandwidthDao,
                 RetrievalManager retrievalManager,
                 BandwidthDaoUtil<T, C> bandwidthDaoUtil, RegistryIdUtil idUtil,
+                SubscriptionRetrievalAgent retrievalAgent,
                 DataSetMetaDataHandler dataSetMetaDataHandler,
                 SubscriptionHandler subscriptionHandler,
                 SendToServerSubscriptionNotificationService notificationService,
                 ISubscriptionFinder findSubscriptionsStrategy);
     }
 
-    private static EdexBandwidthManager instance;
+    private static BandwidthManager instance;
 
     private final IBandwidthDao<T, C> bandwidthDao;
 
@@ -118,7 +119,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
 
     private final SubscriptionHandler subscriptionHandler;
 
-    private final IAdhocSubscriptionHandler adhocSubscriptionHandler;
+    private final SubscriptionRetrievalAgent retrievalAgent;
 
     private final SendToServerSubscriptionNotificationService notificationService;
 
@@ -127,7 +128,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
     /**
      * Intentionally package-private constructor, as it is created from Spring
      * which is able to reflectively instantiate.
-     * 
+     *
      * @param bandwidthDao
      * @param bandwidthBucketDao
      * @param bandwidthInitializer
@@ -145,9 +146,9 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
             IBandwidthDbInit dbInit,
             DataSetMetaDataHandler dataSetMetaDataHandler,
             SubscriptionHandler subscriptionHandler,
-            IAdhocSubscriptionHandler adhocSubscriptionHandler,
             SendToServerSubscriptionNotificationService notificationService,
-            FindActiveSubscriptionsForRoute findSubscriptionsStrategy) {
+            FindActiveSubscriptionsForRoute findSubscriptionsStrategy,
+            SubscriptionRetrievalAgent retrievalAgent) {
         this.bandwidthDao = bandwidthDao;
         this.bandwidthBucketDao = bandwidthBucketDao;
         this.bandwidthInitializer = bandwidthInitializer;
@@ -155,17 +156,16 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
         this.dbInit = dbInit;
         this.dataSetMetaDataHandler = dataSetMetaDataHandler;
         this.subscriptionHandler = subscriptionHandler;
-        this.adhocSubscriptionHandler = adhocSubscriptionHandler;
         this.notificationService = notificationService;
         this.findSubscriptionsStrategy = findSubscriptionsStrategy;
-
+        this.retrievalAgent = retrievalAgent;
     }
 
     /**
      * Intentionally private constructor, as it is created from Spring which is
      * able to reflectively instantiate. It is only used to set the
      * {@link BandwidthManager} instance.
-     * 
+     *
      * @param instance
      *            the {@link BandwidthManager} instance
      */
@@ -177,17 +177,17 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
     /**
      * Intentionally package-private, the instance should only be retrieved from
      * classes in the same package.
-     * 
-     * 
+     *
+     *
      * @return the instance
      */
-    static EdexBandwidthManager getInstance() {
+    static BandwidthManager getInstance() {
         return instance;
     }
 
     /**
      * Retrieve the actual bandwidth map configuration file.
-     * 
+     *
      * @return the file reference to the bandwidth map config file, the file may
      *         or may not exist
      */
@@ -199,7 +199,7 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
 
     /**
      * Retrieve the actual bandwidth map localization file.
-     * 
+     *
      * @return the localization file
      */
     public static LocalizationFile getBandwidthMapLocalizationFile() {
@@ -213,56 +213,47 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
         return lf;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthDbInit getBandwidthDbInit() {
         return dbInit;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthDao<T, C> getBandwidthDao() {
         return bandwidthDao;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthBucketDao getBandwidthBucketDao() {
         return bandwidthBucketDao;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthInitializer getBandwidthInitializer() {
         return bandwidthInitializer;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public File getBandwidthMapConfigFile() {
         return getBandwidthMapConfig();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
             BandwidthDaoUtil bandwidthDaoUtil, RegistryIdUtil idUtil) {
-        return bandwidthManagerCreator.getBandwidthManager(dbInit,
-                bandwidthDao, retrievalManager, bandwidthDaoUtil, idUtil,
-                dataSetMetaDataHandler, subscriptionHandler,
-                notificationService, findSubscriptionsStrategy);
+        BandwidthManager<T, C> rval = bandwidthManagerCreator
+                .getBandwidthManager(dbInit, bandwidthDao, retrievalManager,
+                        bandwidthDaoUtil, idUtil, retrievalAgent,
+                        dataSetMetaDataHandler, subscriptionHandler,
+                        notificationService, findSubscriptionsStrategy);
+
+        synchronized (this) {
+            if (instance == null) {
+                instance = rval;
+            }
+        }
+
+        return rval;
     }
 }
