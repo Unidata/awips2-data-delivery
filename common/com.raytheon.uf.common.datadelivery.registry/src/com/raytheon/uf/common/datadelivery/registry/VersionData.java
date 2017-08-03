@@ -20,8 +20,6 @@
 package com.raytheon.uf.common.datadelivery.registry;
 
 import java.text.ParseException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -34,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.util.app.Version;
 
 /**
  *
@@ -46,6 +45,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * May 03, 2017  6130     tjensen   Initial creation
+ * Aug 03, 2017  6352     tgurney   Moved parseVersion() to Version.fromString()
  *
  * </pre>
  *
@@ -69,9 +69,6 @@ public class VersionData {
     @XmlElement
     @DynamicSerializeElement
     private String route;
-
-    private static final Pattern versionPattern = Pattern
-            .compile("^(\\d+)(\\.(\\d+))?(\\.(\\d+))?");
 
     private Version startVersion;
 
@@ -103,7 +100,7 @@ public class VersionData {
 
     public boolean checkVersion(String version) throws ParseException {
         boolean matches = false;
-        Version ver = parseVersion(version);
+        Version ver = Version.fromString(version);
         if (ver.compareTo(getStartVersion()) >= 0) {
             matches = true;
 
@@ -118,38 +115,10 @@ public class VersionData {
         return matches;
     }
 
-    private static Version parseVersion(String version) throws ParseException {
-        Version newVer = null;
-        Matcher vm = versionPattern.matcher(version);
-
-        /*
-         * If version string does not match the expected version string, return
-         * null.
-         */
-        if (vm.find()) {
-            newVer = new Version();
-            int[] ver = new int[3];
-
-            ver[0] = Integer.parseInt(vm.group(1));
-            if (vm.group(3) != null) {
-                ver[1] = Integer.parseInt(vm.group(3));
-            }
-            if (vm.group(5) != null) {
-                ver[2] = Integer.parseInt(vm.group(5));
-            }
-            newVer.setVersionInfo(ver);
-        } else {
-            throw new ParseException("Unable to parse version from string '"
-                    + version + "'. Expected pattern = '"
-                    + versionPattern.pattern() + "'", 0);
-        }
-        return newVer;
-    }
-
     public Version getStartVersion() {
         if (startVersion == null) {
             try {
-                startVersion = parseVersion(start);
+                startVersion = Version.fromString(start);
             } catch (Exception e) {
                 logger.error("Error setting startVersion from  '" + start + "'",
                         e);
@@ -162,7 +131,7 @@ public class VersionData {
     public Version getEndVersion() {
         if (end != null && !"".equals(end) && endVersion == null) {
             try {
-                endVersion = parseVersion(end);
+                endVersion = Version.fromString(end);
             } catch (Exception e) {
                 logger.error("Error setting endVersion from  '" + end + "'", e);
             }
