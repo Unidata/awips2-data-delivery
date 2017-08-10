@@ -1,27 +1,29 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.edex.ogc.registry;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
@@ -41,12 +43,21 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationPathObserver;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.registry.schemas.ebxml.util.EbxmlJaxbManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.PropertiesUtil;
 import com.raytheon.uf.edex.ogc.common.db.ICollectorAddon;
 import com.raytheon.uf.edex.ogc.common.db.SimpleDimension;
 import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
@@ -54,25 +65,26 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
 /**
  * Collector Used to gather data with DPA, used for AWIPS registry data feeds
  * from providers.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 23, 2013            bclement     Initial creation
- * Aug 08, 2013            dhladky      Made operational
- * Jan 13, 2014  2679      dhladky      multiple layers
- * Mar 31, 2014  2889      dhladky      Added username for notification center tracking.
- * Apr 14, 2014  3012      dhladky      Cleaned up.
- * Jun 08, 2014  3141      dhladky      DPA SOAP to central registry comm
- * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 23, 2013           bclement  Initial creation
+ * Aug 08, 2013           dhladky   Made operational
+ * Jan 13, 2014  2679     dhladky   multiple layers
+ * Mar 31, 2014  2889     dhladky   Added username for notification center
+ *                                  tracking.
+ * Apr 14, 2014  3012     dhladky   Cleaned up.
+ * Jun 08, 2014  3141     dhladky   DPA SOAP to central registry comm
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Aug 04, 2017  6356     tjensen   Add support for DPA failover
+ *
  * </pre>
- * 
+ *
  * @author bclement
- * @version 1.0
  */
 public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extends SimpleLayer<D>, R extends PluginDataObject>
         implements ICollectorAddon<D, L, R> {
@@ -90,6 +102,24 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
     protected static final String pathSeparator = ":";
 
+    private static final String centralUpdatesProperty = "dpa.enable.central.updates";
+
+    private volatile boolean centralUpdatesEnabled;
+
+    private static final String DPA_PROP_FILE_PATH = "datadelivery"
+            + IPathManager.SEPARATOR + "dpa" + IPathManager.SEPARATOR
+            + "dpaConfig.properties";
+
+    private final ILocalizationPathObserver observer = new ILocalizationPathObserver() {
+
+        @Override
+        public void fileChanged(ILocalizationFile file) {
+            if (file.getPath().contains(DPA_PROP_FILE_PATH)) {
+                reloadDpaProperties();
+            }
+        }
+    };
+
     /**
      * public (Spring loaded) constructor
      */
@@ -104,8 +134,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
             try {
                 this.packageNames = paths.split(pathSeparator);
             } catch (Exception e) {
-                statusHandler.error(
-                        "Couldn't parse Registry Collector JAXB path list: "
+                statusHandler
+                        .error("Couldn't parse Registry Collector JAXB path list: "
                                 + paths, e);
             }
 
@@ -120,6 +150,9 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
                 setAgent((OGCAgent) config.getAgent());
                 storeProvider(config.getProvider());
             }
+            IPathManager pm = PathManagerFactory.getPathManager();
+            pm.addLocalizationPathObserver(DPA_PROP_FILE_PATH, observer);
+            reloadDpaProperties();
         } else {
             throw new IllegalArgumentException(
                     "The registry OGC JAXB path property, {registry.ogc.jaxb.path} is not viewable! \n"
@@ -138,7 +171,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
     /**
      * Find the DPA config
-     * 
+     *
      * @return
      */
     public HarvesterConfig getConfiguration() {
@@ -147,7 +180,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
     /**
      * Stroe Data objects
-     * 
+     *
      * @param metaDatas
      * @param dataSet
      */
@@ -157,22 +190,27 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
                 .getDataSetMetaDataHandler();
 
         final String description = metaData.getDataSetDescription();
-        statusHandler.info("Attempting store of DataSetMetaData[" + description
-                + "] " + "Date: " + metaData.getDate());
 
-        try {
-            handler.update(RegistryUtil.registryUser, metaData);
+        if (centralUpdatesEnabled) {
+            statusHandler.info("Attempting store of DataSetMetaData["
+                    + description + "] " + "Date: " + metaData.getDate());
+
+            try {
+                handler.update(RegistryUtil.registryUser, metaData);
+                statusHandler.info("DataSetMetaData [" + description
+                        + "] successfully stored in Registry");
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
+                        + description + "] failed to store in Registry", e);
+            }
+        } else {
             statusHandler.info("DataSetMetaData [" + description
-                    + "] successfully stored in Registry");
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM, "DataSetMetaData ["
-                    + description + "] failed to store in Registry");
-
+                    + "] not stored in Registry. Registry updates currently disabled.");
         }
     }
 
     /**
-     * 
+     *
      * @param dataSetToStore
      */
     protected void storeDataSetName(DataSet<?, ?> dataSetToStore) {
@@ -188,15 +226,23 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         // the DataSetName with parameters..
         dsn.setParameters(dataSetToStore.getParameters());
 
-        try {
-            DataDeliveryHandlers.getDataSetNameHandler().update(
-                    RegistryUtil.registryUser, dsn);
-            statusHandler.info("DataSetName object store complete, dataset ["
-                    + dsn.getDataSetName() + "]");
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "DataSetName object store failed:", e);
+        if (centralUpdatesEnabled) {
+            try {
+                DataDeliveryHandlers.getDataSetNameHandler()
+                        .update(RegistryUtil.registryUser, dsn);
+                statusHandler
+                        .info("DataSetName object store complete, dataset ["
+                                + dsn.getDataSetName() + "]");
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "DataSetName object store failed:", e);
+            }
+        } else {
+            statusHandler.info("DatasetName object for dataset ["
+                    + dsn.getDataSetName()
+                    + "] not stored in Registry. Registry updates currently disabled.");
         }
+
     }
 
     /**
@@ -208,39 +254,43 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         final String dataSetName = dataSetToStore.getDataSetName();
         DataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
 
-        try {
-            handler.update(RegistryUtil.registryUser, dataSetToStore);
-            statusHandler.info("Dataset [" + dataSetName
-                    + "] successfully stored in Registry");
-            storeDataSetName(dataSet);
+        if (centralUpdatesEnabled) {
+            try {
+                handler.update(RegistryUtil.registryUser, dataSetToStore);
+                statusHandler.info("Dataset [" + dataSetName
+                        + "] successfully stored in Registry");
+                storeDataSetName(dataSet);
 
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM, "Dataset [" + dataSetName
-                    + "] failed to store in Registry");
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM, "Dataset [" + dataSetName
+                        + "] failed to store in Registry", e);
+            }
+        } else {
+            statusHandler.info("Dataset [" + dataSetName
+                    + "] not stored in Registry. Registry updates currently disabled.");
         }
     }
 
     /**
      * Make sure our provider is contained in the Registry
-     * 
+     *
      * @param provider
      */
     protected void storeProvider(final Provider provider) {
 
         try {
-            DataDeliveryHandlers.getProviderHandler().update(
-                    RegistryUtil.registryUser, provider);
+            DataDeliveryHandlers.getProviderHandler()
+                    .update(RegistryUtil.registryUser, provider);
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Provider [" + provider.getName()
-                            + "] failed to store in Registry");
+            statusHandler.handle(Priority.PROBLEM, "Provider ["
+                    + provider.getName() + "] failed to store in Registry", e);
         }
     }
 
     /**
      * Checks for a {@link DataSet} already existing with the same name in the
      * Registry. If so, then combine the objects.
-     * 
+     *
      * @param dataSet
      *            the dataSet
      * @return the dataSet instance that should be stored to the registry
@@ -266,24 +316,30 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     /**
      * Store a parameter object to the registry. If necessary, also store the
      * ParameterLevel Objects needed to successfully store the Parameter Object.
-     * 
+     *
      * @param parameter
      *            The Parameter Object to store.
      */
     protected void storeParameter(Parameter parameter) {
-
-        try {
-            DataDeliveryHandlers.getParameterHandler().update(
-                    RegistryUtil.registryUser, parameter);
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Failed to store parameter [" + parameter.getName() + "]");
+        if (centralUpdatesEnabled) {
+            try {
+                DataDeliveryHandlers.getParameterHandler()
+                        .update(RegistryUtil.registryUser, parameter);
+            } catch (RegistryHandlerException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Failed to store parameter [" + parameter.getName()
+                                + "]",
+                        e);
+            }
+        } else {
+            statusHandler.debug("Parameter [" + parameter.getName()
+                    + "] not stored in Registry. Registry updates currently disabled.");
         }
     }
 
     /**
      * Get me my level types for this param
-     * 
+     *
      * @param cp
      * @return
      */
@@ -298,7 +354,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     public void setParameters(L layer) {
         synchronized (layer) {
             if (getParameters() == null || getParameters().isEmpty()) {
-                parameters = new HashMap<String, Parameter>();
+                parameters = new HashMap<>();
                 for (Parameter parm : agent.getLayer(layer.getName())
                         .getParameters()) {
                     // place in map
@@ -337,4 +393,38 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
     public abstract ISpatialObject getSpatial(R record);
 
+    private void reloadDpaProperties() {
+        IPathManager pm = PathManagerFactory.getPathManager();
+        try {
+            Properties newProps = null;
+            LocalizationContext[] localSearchHierarchy = pm
+                    .getLocalSearchHierarchy(LocalizationType.COMMON_STATIC);
+            for (int ind = localSearchHierarchy.length - 1; ind >= 0; ind--) {
+                LocalizationFile file = pm.getLocalizationFile(
+                        localSearchHierarchy[ind], DPA_PROP_FILE_PATH);
+                if (file.exists()) {
+                    Properties properties = PropertiesUtil
+                            .read(file.openInputStream());
+                    if (newProps == null) {
+                        newProps = properties;
+                    } else {
+                        newProps.putAll(properties);
+                    }
+
+                }
+            }
+            /*
+             * Store to system properties to allow flexibility for future
+             * property additions.
+             */
+            if (newProps != null && !newProps.isEmpty()) {
+                System.getProperties().putAll(newProps);
+            }
+        } catch (IOException | LocalizationException e) {
+            statusHandler.error("Failed reading property file '"
+                    + DPA_PROP_FILE_PATH + "' from localization", e);
+        }
+
+        centralUpdatesEnabled = Boolean.getBoolean(centralUpdatesProperty);
+    }
 }
