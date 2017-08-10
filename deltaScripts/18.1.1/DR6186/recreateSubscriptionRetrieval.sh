@@ -23,6 +23,6 @@ CREATE INDEX "subscription_retrieval_nextRetrieval_idx"
   ON subscription_retrieval
   USING btree
   (priority, state COLLATE pg_catalog."default", id);
-
+CREATE SEQUENCE IF NOT EXISTS subscription_retrieval_seq OWNED BY subscription_retrieval.id;
 EOF
 

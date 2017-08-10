@@ -83,6 +83,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * May 22, 2017  6130     tjensen   Add DataSetName to RetrievalRequestRecord
  * Jul 27, 2017  6186     rjpeter   Remove asyncBroker.
  * Aug 02, 2017  6186     rjpeter   Refactored to queueRetrievals directly.
+ * Aug 10, 2017  6186     nabowle   Set non-null fields on RetrievalRequestRecord
  *
  * </pre>
  *
@@ -201,6 +202,13 @@ public class SubscriptionRetrievalAgent {
             retrieval.setRequestRetrievalTime(requestRetrievalTimeLong);
             RetrievalRequestRecord rec = new RetrievalRequestRecord(retrieval,
                     dsmd.getUrl(), retrievalState, priority);
+            rec.setDataSetName(subscription.getDataSetName());
+
+            // TODO: Best Guessing at intent. Not currently used.
+            Date date = new Date(System.currentTimeMillis()
+                    + subscription.getLatencyInMinutes()
+                            * TimeUtil.MILLIS_PER_MINUTE);
+            rec.setLatencyExpireTime(date);
 
             try {
                 rec.setRetrievalObj(retrieval);

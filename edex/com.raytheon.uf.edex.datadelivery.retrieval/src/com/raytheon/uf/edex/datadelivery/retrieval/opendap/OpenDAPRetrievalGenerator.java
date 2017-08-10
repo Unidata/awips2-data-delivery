@@ -81,6 +81,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * Jun 13, 2017  6204     nabowle   Cleanup.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
  * Aug 02, 2017  6186     rjpeter   Moved satisfiesSubscription to DataSetMetaData.
+ * Aug 10, 2017  6186     nabowle   Set retrieval datasetname.
  *
  * </pre>
  *
@@ -244,6 +245,7 @@ class OpenDAPRetrievalGenerator
         retrieval.setSubscriptionType(getSubscriptionType(sub));
         retrieval.setNetwork(sub.getRoute());
         retrieval.setProvider(sub.getProvider());
+        retrieval.setDataSetName(sub.getDataSetName());
 
         // Coverage and type processing
         GriddedCoverage cov = dsmd.getInstanceCoverage();

@@ -43,6 +43,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionNotifyTa
  * May 09, 2017  6186     rjpeter   Added owner/url
  * Jul 25, 2017  6186     rjpeter   Removed network
  * Aug 02, 2017  6186     rjpeter   Removed IRetrievalDao.
+ * Aug 10, 2017  6186     nabowle   Exit loop when a Pending retrieval is found.
  *
  * </pre>
  *
@@ -133,6 +134,7 @@ public class RetrievalDao
                             rval = null;
                             continue;
                         }
+                        done = true;
                     }
                     /*
                      * else another thread grabbed last entry for this priority,

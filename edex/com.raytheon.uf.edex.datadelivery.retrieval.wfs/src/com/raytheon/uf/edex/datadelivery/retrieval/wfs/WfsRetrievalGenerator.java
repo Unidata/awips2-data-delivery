@@ -65,6 +65,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * Apr 20, 2017  6186     rjpeter   Update buildRetrieval signature
  * Jul 25, 2017  6186     rjpeter   Use Retrieval
  * Aug 02, 2017  6186     rjpeter   Removed SubscriptionBundle
+ * Aug 10, 2017  6186     nabowle   Set retrieval datasetname.
  *
  * </pre>
  *
@@ -162,6 +163,7 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
         retrieval.setOwner(sub.getOwner());
         retrieval.setSubscriptionType(getSubscriptionType(sub));
         retrieval.setNetwork(sub.getRoute());
+        retrieval.setDataSetName(sub.getDataSetName());
 
         // Coverage and type processing
         Coverage cov = dsmd.getInstanceCoverage();

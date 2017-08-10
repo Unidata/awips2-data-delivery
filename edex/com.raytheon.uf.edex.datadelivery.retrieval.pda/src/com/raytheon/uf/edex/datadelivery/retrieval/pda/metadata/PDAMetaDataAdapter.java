@@ -63,8 +63,10 @@ public class PDAMetaDataAdapter
     @Override
     public void processRetrieval(Retrieval<Time, Coverage> retrieval)
             throws InstantiationException {
-        throw new InstantiationException(
-                "PDAMetaDataAdapter is not implemented. Retrieval processing should be in ingest jvm.");
+        // no-op; Called from AbstractMetadataAdapter constructor.
+        // throw new InstantiationException(
+        // "PDAMetaDataAdapter is not implemented. Retrieval processing should
+        // be in ingest jvm.");
     }
 
     @Override

@@ -65,6 +65,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  *                                  override getRetrievalMode
  * Jul 25, 2017  6186     rjpeter   Update to handle Retrieval refactor
  * Aug 02, 2017  6186     rjpeter   Get parameters from DSMD instead of sub.
+ * Aug 10, 2017  6186     nabowle   Set retrieval datasetname.
  *
  * </pre>
  *
@@ -106,6 +107,7 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
             retrieval.setDataType(DataType.PDA);
             retrieval.setSubscriptionType(getSubscriptionType(sub));
             retrieval.setNetwork(sub.getRoute());
+            retrieval.setDataSetName(sub.getDataSetName());
 
             final ProviderType providerType = provider
                     .getProviderType(sub.getDataSetType());
