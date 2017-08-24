@@ -59,32 +59,37 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 
 /**
  * Table composite used for the subscription approval dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 18, 2012   687      lvenable     Initial creation
- * Aug 21, 2012   712      mpduff       Subscription ID fix.
- * Aug 30, 2012  1120      jpiatt       Added clickSort flag.
- * Sep 07, 2012  1102      djohnson     Log registry errors.
- * Sep 17, 2012  1157      mpduff       Handle notifications for table updating.
- * Oct 05, 2012 1241       djohnson     Replace RegistryManager calls with registry handler calls.
- * Nov 28, 2012 1286       djohnson     Remove sysout.
- * Dec 19, 2012 1413       bgonzale     In the notificationArrived method, check for approved or
- *                                      denied pending messages.
- * Apr 05, 2013 1841       djohnson     Refresh entire table on receiving a notification of the correct type.
- * Apr 10, 2013 1891       djohnson     Move logic to get column display text to the column definition, fix sorting.
- * Apr 18, 2014  3012      dhladky      Null check.
- * Oct 28, 2014  2748      ccody        Changes for receiving Subscription Status changes
- * Dec 03, 2014  3840      ccody        Correct sorting "contract violation" issue
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 18, 2012  687      lvenable  Initial creation
+ * Aug 21, 2012  712      mpduff    Subscription ID fix.
+ * Aug 30, 2012  1120     jpiatt    Added clickSort flag.
+ * Sep 07, 2012  1102     djohnson  Log registry errors.
+ * Sep 17, 2012  1157     mpduff    Handle notifications for table updating.
+ * Oct 05, 2012  1241     djohnson  Replace RegistryManager calls with registry
+ *                                  handler calls.
+ * Nov 28, 2012  1286     djohnson  Remove sysout.
+ * Dec 19, 2012  1413     bgonzale  In the notificationArrived method, check for
+ *                                  approved or denied pending messages.
+ * Apr 05, 2013  1841     djohnson  Refresh entire table on receiving a
+ *                                  notification of the correct type.
+ * Apr 10, 2013  1891     djohnson  Move logic to get column display text to the
+ *                                  column definition, fix sorting.
+ * Apr 18, 2014  3012     dhladky   Null check.
+ * Oct 28, 2014  2748     ccody     Changes for receiving Subscription Status
+ *                                  changes
+ * Dec 03, 2014  3840     ccody     Correct sorting "contract violation" issue
+ * Aug 24, 2017  6397     nabowle   Fix table ordering not matching the pending
+ *                                  subscription ordering.
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
 
 public class SubApprovalTableComp extends TableComp {
@@ -135,7 +140,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent composite.
      * @param tableConfig
@@ -156,7 +161,7 @@ public class SubApprovalTableComp extends TableComp {
      */
     private void init() {
 
-        pendingSubData = new TableDataManager<SubscriptionApprovalRowData>(
+        pendingSubData = new TableDataManager<>(
                 TABLE_TYPE.PENDING_SUBSCRIPTION);
 
         populateData();
@@ -187,7 +192,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Add a subscription to the list of data.
-     * 
+     *
      * @param subscription
      *            Subscription to add.
      */
@@ -200,14 +205,15 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Get the cell text.
-     * 
+     *
      * @param columnName
      *            Column Name.
      * @param rd
      *            Row of approval data.
      * @return Cell text string.
      */
-    private String getCellText(String columnName, SubscriptionApprovalRowData rd) {
+    private String getCellText(String columnName,
+            SubscriptionApprovalRowData rd) {
         PendingSubColumnNames column = PendingSubColumnNames
                 .valueOfColumnName(columnName);
         return column.getDisplayData(rd);
@@ -215,7 +221,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Update the table.
-     * 
+     *
      * @param updatedSubscriptions
      *            Updated subscriptions.
      */
@@ -232,7 +238,8 @@ public class SubApprovalTableComp extends TableComp {
                         rd = pendingSubData.getDataArray().get(i);
 
                         try {
-                            if (rd.getSubscription().getId().equals(s.getId())) {
+                            if (rd.getSubscription().getId()
+                                    .equals(s.getId())) {
                                 removeIndex = i;
                                 break;
                             }
@@ -258,7 +265,7 @@ public class SubApprovalTableComp extends TableComp {
                         }
                     }
 
-                    if (foundMatch == false) {
+                    if (!foundMatch) {
                         addSubscription((InitialPendingSubscription) s);
                     }
                 }
@@ -275,8 +282,8 @@ public class SubApprovalTableComp extends TableComp {
         StringBuilder diffDetails = new StringBuilder();
         final String nl = "\n";
 
-        SubscriptionApprovalRowData rowData = pendingSubData.getDataRow(table
-                .getSelectionIndex());
+        SubscriptionApprovalRowData rowData = pendingSubData
+                .getDataRow(table.getSelectionIndex());
 
         if (rowData == null) {
             return;
@@ -285,10 +292,10 @@ public class SubApprovalTableComp extends TableComp {
         InitialPendingSubscription pendingSub = rowData.getSubscription();
         diffDetails.append("Subscription Name: ").append(pendingSub.getName())
                 .append(nl);
-        diffDetails.append("Dataset Name: ")
-                .append(pendingSub.getDataSetName()).append(nl);
-        diffDetails.append("Subscription Owner: ")
-                .append(pendingSub.getOwner()).append(nl);
+        diffDetails.append("Dataset Name: ").append(pendingSub.getDataSetName())
+                .append(nl);
+        diffDetails.append("Subscription Owner: ").append(pendingSub.getOwner())
+                .append(nl);
         if (pendingSub.getChangeReason() != null) {
             diffDetails.append("Reason for Change: ")
                     .append(pendingSub.getChangeReason()).append(nl);
@@ -316,17 +323,16 @@ public class SubApprovalTableComp extends TableComp {
                         diffDetails.toString());
                 sdd.open();
             } catch (RegistryHandlerException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to find the subscription this pending subscription is associated with.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to find the subscription this pending subscription is associated with.",
+                        e);
             }
         }
     }
 
     /**
      * Handle the column selection.
-     * 
+     *
      * @param event
      *            Selection event.
      */
@@ -364,11 +370,6 @@ public class SubApprovalTableComp extends TableComp {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#createColumns()
-     */
     @Override
     protected void createColumns() {
         final PendingSubColumnNames[] columnNames = PendingSubColumnNames
@@ -395,31 +396,15 @@ public class SubApprovalTableComp extends TableComp {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#populateTable()
-     */
     @Override
     public void populateTable() {
-        TableColumn[] columns = table.getColumns();
         table.clearAll();
-        table.removeAll();
-
-        for (SubscriptionApprovalRowData rd : this.pendingSubData
-                .getDataArray()) {
-            convertRowDataToTableItem(columns, rd);
-        }
 
         if (sortedColumn == null) {
             sortedColumn = table.getColumn(0);
         }
 
-        String sortedColumnText = sortedColumn.getText();
-        SortDirection sortDirection = getCurrentSortDirection();
-        Comparator<SubscriptionApprovalRowData> sortComparator = SubscriptionApprovalRowDataComparators
-                .getComparator(sortedColumnText, sortDirection);
-        pendingSubData.sortData(sortComparator);
+        sortTable();
 
         updateColumnSortImage();
     }
@@ -431,20 +416,14 @@ public class SubApprovalTableComp extends TableComp {
         for (TableColumn column : columns) {
             String text = getCellText(column.getText(), rd);
             if (text == null) {
-                item.setText(idx++, "");
+                item.setText(idx, "");
             } else {
-                item.setText(idx++, text);
+                item.setText(idx, text);
             }
+            idx++;
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#handleTableMouseClick
-     * (org.eclipse.swt.events.MouseEvent)
-     */
     @Override
     protected void handleTableMouseClick(MouseEvent event) {
         if (event.button != 3) {
@@ -489,24 +468,11 @@ public class SubApprovalTableComp extends TableComp {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#
-     * handleTableSelectionChange(org.eclipse.swt.events.SelectionEvent)
-     */
     @Override
     protected void handleTableSelection(SelectionEvent e) {
         // Not used at this time.
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.notification.INotificationObserver#
-     * notificationArrived
-     * (com.raytheon.uf.viz.core.notification.NotificationMessage[])
-     */
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
         if (notificationMessageChecker.matchesCondition(messages)) {
@@ -523,7 +489,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Get a reference to the table.
-     * 
+     *
      * @return table
      */
     public Table getTable() {
@@ -532,7 +498,7 @@ public class SubApprovalTableComp extends TableComp {
 
     /**
      * Get the table data.
-     * 
+     *
      * @return TableDataManager<SubscriptionApprovalRowData>
      */
     public TableDataManager<SubscriptionApprovalRowData> getPendingSubData() {
