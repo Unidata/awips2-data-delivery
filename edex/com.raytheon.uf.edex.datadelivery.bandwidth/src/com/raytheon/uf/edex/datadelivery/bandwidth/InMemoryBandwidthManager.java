@@ -20,11 +20,13 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
+import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -71,6 +73,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  internal methods.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 02, 2017  6186     rjpeter   Updated super call to null for retrievalAgent
+ * Aug 29, 2017  6186     rjpeter   Override queueRetrieval to do nothing
  *
  * </pre>
  *
@@ -196,4 +199,12 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage>
             String resetReasonMessage) {
         // No in memory implementation.
     }
+
+    @Override
+    protected List<BandwidthAllocation> queueRetrieval(
+            AdhocSubscription<T, C> adhocSub) {
+        // No queuing for in memory impl
+        return Collections.emptyList();
+    }
+
 }

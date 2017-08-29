@@ -53,9 +53,7 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Levels;
-import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
-import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
@@ -118,6 +116,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *                                  naming.
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
  * Aug 02, 2017  6186     rjpeter   Fix adhoc processing.
+ * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
  *
  * </pre>
  *
@@ -145,10 +144,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
     private final List<String> asString = new ArrayList<>();
 
     private final Map<String, ImmutableDate> dateStringToDateMap = new HashMap<>();
-
-    private boolean useLatestDate = true;
-
-    private DataSetMetaData metaData;
 
     private GriddedEnsembleSubsetTab ensembleTab;
 
@@ -211,9 +206,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         setTitle();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void createTabs(TabFolder tabFolder) {
         GriddedDataSet griddedDataSet = (GriddedDataSet) dataSet;
@@ -292,9 +284,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         return invalidTabs;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void populateSubsetXML(SubsetXML subset) {
         super.populateSubsetXML(subset);
@@ -303,9 +292,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void loadFromSubsetXML(SubsetXML subsetXml) {
         super.loadFromSubsetXML(subsetXml);
@@ -417,23 +403,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         timingTabControls.setDirty(false);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public <T extends SiteSubscription> T createSubscription(T sub,
-            Network defaultRoute) {
-        T subscription = super.createSubscription(sub, defaultRoute);
-        if (subscription == null) {
-            return null;
-        }
-
-        return subscription;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected SpecificDateTimeXML getTimeXmlFromSubscription() {
         SpecificDateTimeXML timeXml = new SpecificDateTimeXML();
@@ -496,9 +465,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                 new IllegalStateException("Debugging stacktrace"));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void updateDataSize() {
         if (!initialized) {
@@ -526,9 +492,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                 + SizeUtil.prettyByteSize(dataSize.getFullSizeInBytes()));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected GriddedTime setupDataSpecificTime(Time subTime,
             Subscription sub) {
@@ -582,7 +545,8 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         }
 
         int cycle = selection.getCycle();
-        this.useLatestDate = (cycle == -999 ? true : false);
+        DataSetMetaData metaData = null;
+
         if (!selection.isLatest()) {
             String selectedDate = selection.getDate();
             metaData = retrieveFilteredDataSetMetaData(selectedDate, cycle);
@@ -608,6 +572,10 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         }
         if (metaData == null) {
             return null;
+        }
+
+        if (sub instanceof AdhocSubscription) {
+            ((AdhocSubscription) sub).setUrl(metaData.getUrl());
         }
 
         GriddedDataSetMetaData gdsmd = (GriddedDataSetMetaData) metaData;
@@ -640,23 +608,10 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             }
             return dsmd;
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error retrieving applicable DataSetMetaData.", e);
+            statusHandler.error("Error retrieving applicable DataSetMetaData.",
+                    e);
             return null;
         }
-    }
-
-    /**
-     * Return the {@link Time} object that should be associated with this
-     * subscription. It will either be null for a reoccurring subscription, or
-     * the {@link DataSetMetaData} url if an adhoc query is being performed for
-     * a non-latest date.
-     *
-     * @return the url to use
-     */
-    public String getSubscriptionUrl() {
-        return (this.useLatestDate || this.metaData == null) ? null
-                : this.metaData.getUrl();
     }
 
     @Override
@@ -669,7 +624,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         sub.setProvider(dataSet.getProviderName());
         sub.setDataSetName(dataSet.getDataSetName());
         sub.setDataSetType(dataSet.getDataSetType());
-        sub.setDataSetName(dataSet.getDataSetName());
 
         GriddedCoverage cov = griddedDataSet.getCoverage();
         cov.setModelName(dataSet.getDataSetName());
@@ -683,9 +637,12 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
 
         if (sub instanceof AdhocSubscription) {
             newTime = setupDataSpecificTime(newTime, sub);
+
             if (newTime == null) {
+                // user clicked cancel
                 return null;
             }
+
             sub.setTime(newTime);
         } else if (!create) {
             GriddedTime time = (GriddedTime) sub.getTime();
@@ -734,9 +691,6 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         return sub;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected TimeXML getDataTimeInfo() {
         return timingTabControls.getSaveInfo();

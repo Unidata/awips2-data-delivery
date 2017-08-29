@@ -54,6 +54,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * May 24, 2017  6186     rjpeter   Overrode satisfiesSubscription to handle
  *                                  cycle checking.
+ * Aug 29, 2017  6186     rjpeter   Fix version compatibility with cycle
+ *                                  checking
  *
  * </pre>
  *
@@ -120,9 +122,16 @@ public abstract class GriddedDataSetMetaData
      */
     @Deprecated
     public int getCycle() {
-        List<Integer> cycleTimes = getTime().getCycleTimes();
-        if (cycleTimes.isEmpty()) {
-            return NO_CYCLE;
+        List<Integer> cycleTimes = null;
+        GriddedTime gTime = getTime();
+        if (gTime != null) {
+            cycleTimes = gTime.getCycleTimes();
+        }
+        if (cycleTimes == null || cycleTimes.isEmpty()) {
+            /*
+             * fall back to the cycle field for version compatibility
+             */
+            return cycle;
         }
 
         return cycleTimes.get(0);
@@ -134,17 +143,23 @@ public abstract class GriddedDataSetMetaData
         String rval = super.satisfiesSubscription(sub);
 
         if (rval == null) {
-            List<Integer> cycleTimes = sub.getTime().getCycleTimes();
+            List<Integer> subCycleTimes = sub.getTime().getCycleTimes();
+            List<Integer> dsCycleTimes = getTime().getCycleTimes();
 
             /*
              * If the subscription doesn't have cycle times subscribed to, then
              * add the NO_CYCLE marker cycle
              */
             boolean foundCycle = false;
-            if (cycleTimes.isEmpty()) {
-                foundCycle = getTime().getCycleTimes().isEmpty();
+            if (dsCycleTimes == null || dsCycleTimes.isEmpty()) {
+                // check cyle for version compatibility
+                if (cycle == NO_CYCLE) {
+                    foundCycle = subCycleTimes.isEmpty();
+                } else {
+                    foundCycle = subCycleTimes.contains(cycle);
+                }
             } else {
-                foundCycle = !Collections.disjoint(cycleTimes,
+                foundCycle = !Collections.disjoint(subCycleTimes,
                         getTime().getCycleTimes());
             }
 

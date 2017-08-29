@@ -47,6 +47,7 @@ import com.google.common.base.Preconditions;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
+import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.Network;
@@ -57,6 +58,7 @@ import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.geospatial.MapUtil;
@@ -169,7 +171,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Apr 10, 2014  2864     mpduff    Changed how saved subset files are stored.
  * Aug 18, 2014  2746     ccody     Non-local Subscription changes not updating
  *                                  dialogs
- * Sept 04, 201  3121     dhladky   Setup for PDA data type
+ * Sep 04, 0201  3121     dhladky   Setup for PDA data type
  * Feb 13, 2015  3852     dhladky   All messaging is handled by the BWM and
  *                                  registry.
  * May 17, 2015  4047     dhladky   verified non-blocking.
@@ -181,6 +183,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Apr 21, 2015  5482     randerso  Fixed GUI sizing issues
  * Jul 05, 2016  5683     tjensen   Added checks for null on cancel
  * Nov 08, 2016  5976     bsteffen  Use VizApp for GUI execution.
+ * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
  *
  * </pre>
  *
@@ -571,6 +574,42 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             if (as == null) {
                 return;
             }
+
+            // if no URL set, default to most recent dataSetMetaData
+            if (as.getUrl() == null) {
+                try {
+                    DataSetMetaData dataSetMetaData = null;
+                    if (dataSet.isMoving()) {
+                        dataSetMetaData = DataDeliveryHandlers
+                                .getDataSetMetaDataHandler()
+                                .getMostRecentDataSetMetaDataByIntersection(
+                                        as.getDataSetName(), as.getProvider(),
+                                        as.getCoverage().getRequestEnvelope());
+                    } else {
+                        dataSetMetaData = DataDeliveryHandlers
+                                .getDataSetMetaDataHandler()
+                                .getMostRecentDataSetMetaData(
+                                        as.getDataSetName(), as.getProvider());
+                    }
+
+                    if (dataSetMetaData != null) {
+                        as.setUrl(dataSetMetaData.getUrl());
+                    } else {
+                        statusHandler
+                                .error("No DataSetMetaData exist for dataSet! DataSetName: "
+                                        + as.getDataSetName() + " Provider: "
+                                        + as.getProvider());
+                        return;
+                    }
+                } catch (RegistryHandlerException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "No DataSetMetaData matching query! DataSetName: "
+                                    + as.getDataSetName() + " Provider: "
+                                    + as.getProvider(),
+                            e);
+                }
+            }
+
             try {
                 String currentUser = LocalizationManager.getInstance()
                         .getCurrentUser();

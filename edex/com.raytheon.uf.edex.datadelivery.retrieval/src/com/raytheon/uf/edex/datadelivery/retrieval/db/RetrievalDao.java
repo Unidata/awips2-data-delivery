@@ -166,9 +166,7 @@ public class RetrievalDao
     public void completeRetrievalRequest(RetrievalRequestRecord rec)
             throws DataAccessLayerException {
         try {
-            // Made create or Update because SBN deliveries will not exist
-            // locally
-            createOrUpdate(rec);
+            update(rec);
         } catch (HibernateException e) {
             throw new DataAccessLayerException(
                     "Failed to update the database while changing the status on ["
