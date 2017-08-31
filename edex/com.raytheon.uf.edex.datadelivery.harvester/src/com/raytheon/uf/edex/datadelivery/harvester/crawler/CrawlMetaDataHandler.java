@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -50,6 +50,8 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.ITimer;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.datadelivery.harvester.MetaDataHandler;
@@ -65,11 +67,11 @@ import opendap.dap.DAS;
 
 /**
  * Harvest MetaData
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 20, 2011  218      dhladky   Initial creation
@@ -93,11 +95,11 @@ import opendap.dap.DAS;
  * Apr 12, 2015  4400     dhladky   Upgrade to DAP2 for harvesting.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
- * 
+ * Aug 31, 2017  6430     rjpeter   Added timing information.
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 
 public class CrawlMetaDataHandler extends MetaDataHandler {
@@ -167,7 +169,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
 
     /**
      * Check the files found by the crawler
-     * 
+     *
      * @throws Exception
      */
     public void metaDataCheck() {
@@ -196,7 +198,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                         .getCollectionByName(collectionName);
 
                 if (collection != null) {
-
+                    Set<String> linkKeys = store.getLinkKeys();
                     Provider provider = hc.getProvider();
                     IServiceFactory<String, DAS, GriddedTime, GriddedCoverage> serviceFactory = ServiceTypeFactory
                             .retrieveServiceFactory(provider);
@@ -205,35 +207,55 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                             .getExtractor();
 
                     // remove previous run
-                    store.getLinkKeys().removeAll(previousRun);
+                    linkKeys.removeAll(previousRun);
 
-                    // extract metadata, process each link
-                    List<String> removes = new ArrayList<>();
+                    if (!linkKeys.isEmpty()) {
+                        statusHandler.info("Extracting metadata from ["
+                                + linkKeys.size() + "] urls from ["
+                                + providerName + "] for collection ["
+                                + collection.getName() + "] ...");
 
-                    for (String linkKey : store.getLinkKeys()) {
-                        Link link = store.getLink(linkKey);
-                        String url = link.getUrl();
-                        try {
-                            link.setLinks(mde.extractMetaData(url));
-                            mde.setDataDate();
-                        } catch (Exception e) {
-                            final String userFriendly = String.format(
-                                    "Unable to retrieve metadata for dataset group %s: %s.",
-                                    collectionName, url);
-                            statusHandler.error(userFriendly, e);
+                        // extract metadata, process each link
+                        List<String> removes = new ArrayList<>();
+                        ITimer timer = TimeUtil.getTimer();
+                        timer.start();
 
-                            // If we can't extract it, we can't parse it, so
-                            // remove
-                            removes.add(linkKey);
+                        for (String linkKey : linkKeys) {
+                            Link link = store.getLink(linkKey);
+                            String url = link.getUrl();
+
+                            try {
+                                link.setLinks(mde.extractMetaData(url));
+                                mde.setDataDate();
+                            } catch (Exception e) {
+                                final String userFriendly = String.format(
+                                        "Unable to retrieve metadata for dataset group %s: %s.",
+                                        collectionName, url);
+                                statusHandler.error(userFriendly, e);
+
+                                /*
+                                 * If we can't extract it, we can't parse it, so
+                                 * remove
+                                 */
+                                removes.add(linkKey);
+                            }
+                        }
+
+                        timer.stop();
+                        statusHandler.info("Extracted metadata from ["
+                                + linkKeys.size() + "] urls from ["
+                                + providerName + "] for collection ["
+                                + collection.getName() + "] in [" + TimeUtil
+                                        .prettyDuration(timer.getElapsedTime())
+                                + "]");
+
+                        // remove failed entries
+                        if (!removes.isEmpty()) {
+                            linkKeys.removeAll(removes);
                         }
                     }
 
-                    // remove failed entries
-                    if (!removes.isEmpty()) {
-                        store.getLinkKeys().removeAll(removes);
-                    }
-
-                    if (!store.getLinkKeys().isEmpty()) {
+                    if (!linkKeys.isEmpty()) {
                         // now start parsing the metadata objects
                         String directoryDateFormat = collection.getDateFormat();
                         String dataDateFormat = agent.getDateFormat();
@@ -257,18 +279,26 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                         IParseMetaData mdp = serviceFactory
                                 .getParser(lastUpdate);
 
+                        ITimer timer = TimeUtil.getTimer();
+                        timer.start();
                         try {
                             mdp.parseMetaData(provider, store, collection,
                                     dataDateFormat);
+
                             previousRun.addAll(store.getLinkKeys());
                         } catch (Exception e) {
                             final String userFriendly = String.format(
                                     "Unable to parse metadata for dataset group %s.",
                                     collectionName);
 
-                            statusHandler.handle(Priority.PROBLEM, userFriendly,
-                                    e);
+                            statusHandler.error(userFriendly, e);
                         }
+                        timer.stop();
+                        statusHandler.info("Parsed and stored metadata from ["
+                                + providerName + "] for collection ["
+                                + collection.getName() + "] in [" + TimeUtil
+                                        .prettyDuration(timer.getElapsedTime())
+                                + "]");
 
                         writePreviousRun(previousRun, collectionName,
                                 providerName, store.getDateString());
@@ -290,7 +320,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
 
     /**
      * Write the previous keys
-     * 
+     *
      * @return
      */
     private void writePreviousRun(Set<String> previousRun,
@@ -330,11 +360,12 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                     if (hc != null) {
                         int daysToKeepLinks = Integer
                                 .parseInt(hc.getRetention());
-                        File[] obeFiles = FileFilterUtils
-                                .filter(new AgeFileFilter(Date.from(LocalDate
-                                        .now().minusDays(daysToKeepLinks)
+                        File[] obeFiles = FileFilterUtils.filter(
+                                new AgeFileFilter(Date.from(LocalDate.now()
+                                        .minusDays(daysToKeepLinks)
                                         .atStartOfDay(ZoneId.of("GMT"))
-                                        .toInstant())), timesDir);
+                                        .toInstant())),
+                                timesDir);
                         int deletedFiles = 0;
                         for (File obe : obeFiles) {
                             if (obe.delete()) {
