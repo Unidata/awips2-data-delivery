@@ -52,6 +52,7 @@ import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
  * May 17, 2015  4047     dhladky   verified non-blocking.
  * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
  * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ * Aug 31, 2017  6396     nabowle   Include the site in site list.
  *
  * </pre>
  *
@@ -62,8 +63,6 @@ public class SiteSelectionDlg extends CaveSWTDialog {
     private DualListComposite comp;
 
     private final String[] sharedSites;
-
-    private final String site;
 
     /**
      * Constructor.
@@ -79,12 +78,8 @@ public class SiteSelectionDlg extends CaveSWTDialog {
         super(parent, SWT.APPLICATION_MODAL | SWT.RESIZE, CAVE.DO_NOT_BLOCK);
         this.setText(site + " Site Selection");
         this.sharedSites = sharedSites;
-        this.site = site;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void initializeComponents(Shell shell) {
         GridLayout gl = new GridLayout(1, false);
@@ -96,7 +91,7 @@ public class SiteSelectionDlg extends CaveSWTDialog {
         gl = new GridLayout(1, false);
         gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         Label label = new Label(mainComp, SWT.NONE);
-        label.setText("Select sites to share with " + site + ":");
+        label.setText("Select sites to share with:");
         gl = new GridLayout(1, false);
         gd = new GridData(SWT.FILL, SWT.FILL, true, true);
 
@@ -151,11 +146,7 @@ public class SiteSelectionDlg extends CaveSWTDialog {
      * @return list of site ids
      */
     private List<String> getSiteList() {
-
         List<String> siteList = DataDeliveryUtils.getDataDeliverySiteList();
-
-        // Remove the current site
-        siteList.remove(this.site);
 
         return siteList;
     }

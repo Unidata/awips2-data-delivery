@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.datadelivery.subscription;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -185,11 +186,11 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Apr 25, 2017  1045     tjensen   Create Adhoc subscriptions for latest when
  *                                  creating a recurring subscription
  * Jun 09, 2017  746      bsteffen  Handle group conflicts with duration and period.
+ * Aug 31, 2017  6396     nabowle   Fix SharedSubscription creation.
  *
  * </pre>
  *
  * @author mpduff
- * @version 1.0
  */
 public class CreateSubscriptionDlg extends CaveSWTDialog {
     /** Status Handler */
@@ -291,13 +292,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         font = new Font(this.getDisplay(), "Monospace", 9, SWT.NORMAL);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
@@ -504,8 +498,16 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 String currentSite = DataDeliveryUtils.getDataDeliveryId();
+                /*
+                 * If there are no shared sites, default selection to the
+                 * current site.
+                 */
+                String[] ssites = sharedSites;
+                if (ssites == null || ssites.length == 0) {
+                    ssites = new String[] { currentSite };
+                }
                 SiteSelectionDlg dlg = new SiteSelectionDlg(shell, currentSite,
-                        sharedSites);
+                        ssites);
                 dlg.addCloseCallback(new ICloseCallback() {
                     @Override
                     public void dialogClosed(Object returnValue) {
@@ -1037,9 +1039,17 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         if (!validate()) {
             return false;
         }
+        String currentSite = DataDeliveryUtils.getDataDeliveryId();
 
         Subscription cachedSiteSubscription = null;
-        if (sharedSites != null && sharedSites.length > 1) {
+        Set<String> sitesSet = sharedSites == null ? Collections.emptySet()
+                : Sets.newHashSet(sharedSites);
+        /*
+         * Create a shared subscription when multiple sites are selected, or a
+         * single remote site is chosen.
+         */
+        if (sitesSet.size() > 1
+                || (sitesSet.size() == 1 && !sitesSet.contains(currentSite))) {
             SharedSubscription sharedSub = new SharedSubscription(subscription);
             sharedSub.setRoute(Network.SBN);
             Set<String> officeList = Sets.newHashSet(sharedSites);
@@ -1053,7 +1063,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             subscription = sharedSub;
         } else {
             Set<String> officeList = Sets.newHashSet();
-            officeList.add(DataDeliveryUtils.getDataDeliveryId());
+            officeList.add(currentSite);
             subscription.setOfficeIDs(officeList);
         }
 
