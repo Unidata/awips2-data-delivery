@@ -68,7 +68,7 @@ if [ $? -ne 0 ]; then
    exit 1
 fi
 
-cp -v %{_baseline_workspace}/deploy.edex-Data_Delivery/esb/bin/centralRegistryProviderCredentials.sh %{_build_root}/awips2/edex/bin/
+cp -v %{_baseline_workspace}/deploy.edex-Data_Delivery/esb/bin/*.sh %{_build_root}/awips2/edex/bin/
 if [ $? -ne 0 ]; then
    exit 1
 fi
@@ -158,4 +158,4 @@ rm -rf ${RPM_BUILD_ROOT}
 %files -f %{_additional_list}
 %defattr(644,awips,fxalpha,755)
 /awips2/edex/*
-%attr(744, -, -) /awips2/edex/bin/centralRegistryProviderCredentials.sh
+%attr(744, -, -) /awips2/edex/bin/*.sh
