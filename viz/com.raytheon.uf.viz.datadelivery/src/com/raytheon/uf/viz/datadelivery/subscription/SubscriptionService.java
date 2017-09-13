@@ -45,7 +45,6 @@ import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
-import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -121,6 +120,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Apr 10, 2017  6074     mapeters  Activate after increasing latency.
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
  * Jun 20, 2017  6299     tgurney   Remove IProposeScheduleResponse
+ * Sep 13, 2017  6431     tgurney   Fix save of pending subscription
  *
  * </pre>
  *
@@ -470,10 +470,11 @@ public class SubscriptionService {
                                 DataDeliveryHandlers.getSubscriptionHandler()
                                         .update(username, subscription);
                             } else {
-                                PendingSubscription pendingSub = subscription
-                                        .pending(username);
+                                InitialPendingSubscription pendingSub = subscription
+                                        .initialPending(username);
                                 pendingSub.setChangeReason(
                                         "Group Definition Changed");
+
                                 savePendingSub(pendingSub, username);
                                 pendingCreated.add(subscription.getName());
                             }
@@ -832,9 +833,9 @@ public class SubscriptionService {
      *
      * @throws RegistryHandlerException
      */
-    private void savePendingSub(PendingSubscription pendingSub, String username)
-            throws RegistryHandlerException {
-        DataDeliveryHandlers.getPendingSubscriptionHandler().store(username,
+    private void savePendingSub(InitialPendingSubscription pendingSub,
+            String username) throws RegistryHandlerException {
+        DataDeliveryHandlers.getPendingSubscriptionHandler().update(username,
                 pendingSub);
 
         notificationService
