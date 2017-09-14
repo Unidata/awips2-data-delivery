@@ -1,25 +1,26 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.viz.datadelivery.filter;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -35,22 +36,23 @@ import org.eclipse.swt.widgets.Shell;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 
 /**
- * 
+ *
  * Dialog that allows the user to choose which filters they want disabled.
  * Disabling a filter will retain the selection but will skip using the the
  * filtering information when updating the dataset table.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 16, 2012            lvenable    Initial creation
- * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------
+ * Feb 16, 2012           lvenable  Initial creation
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Sep 14, 2017  6413     tjensen   Use Lists instead of ArrayLists
+ *
  * </pre>
- * 
+ *
  * @author lvenable
  * @version 1.0
  */
@@ -59,25 +61,25 @@ public class EnableFilterDlg extends CaveSWTDialog {
     /**
      * Name of the filters.
      */
-    ArrayList<String> filterNames;
+    private final List<String> filterNames;
 
     /**
      * Array of check boxes for each filter.
      */
-    ArrayList<Button> filterCheckBoxes;
+    private List<Button> filterCheckBoxes;
 
     /**
      * Array of indexes representing the enabled filters.
      */
-    ArrayList<Integer> enabledIndexes;
+    private final List<Integer> enabledIndexes;
 
     /**
      * Array of selected indexes.
      */
-    ArrayList<Integer> selectedIndexes;
+    private List<Integer> selectedIndexes;
 
-    public EnableFilterDlg(Shell parentShell, ArrayList<String> names,
-            ArrayList<Integer> enabledIndexes) {
+    public EnableFilterDlg(Shell parentShell, List<String> names,
+            List<Integer> enabledIndexes) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.RESIZE, CAVE.NONE);
 
         setText("Enable Filters");
@@ -118,7 +120,7 @@ public class EnableFilterDlg extends CaveSWTDialog {
         gd.verticalIndent = 5;
         headerLbl.setLayoutData(gd);
 
-        filterCheckBoxes = new ArrayList<Button>();
+        filterCheckBoxes = new ArrayList<>();
 
         Composite checkBoxComp = new Composite(shell, SWT.NONE);
         checkBoxComp.setLayout(new GridLayout(1, false));
@@ -181,18 +183,18 @@ public class EnableFilterDlg extends CaveSWTDialog {
     }
 
     private void saveSelectedIndexes() {
-        selectedIndexes = new ArrayList<Integer>();
+        selectedIndexes = new ArrayList<>();
 
         Button chkBtn;
         for (int i = 0; i < filterCheckBoxes.size(); i++) {
             chkBtn = filterCheckBoxes.get(i);
-            if (chkBtn.getSelection() == true) {
+            if (chkBtn.getSelection()) {
                 selectedIndexes.add(i);
             }
         }
     }
 
-    public ArrayList<Integer> getSelectedIndexes() {
+    public List<Integer> getSelectedIndexes() {
         return selectedIndexes;
     }
 }

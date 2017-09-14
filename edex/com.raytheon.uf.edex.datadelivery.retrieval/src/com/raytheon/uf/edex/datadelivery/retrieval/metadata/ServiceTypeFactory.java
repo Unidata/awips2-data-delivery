@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,11 +38,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 
 /**
  * Retrieve {@link ServiceType} specific implementations of interfaces.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 24, 2012 955        djohnson     Initial creation
@@ -51,11 +51,10 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * May 31, 2013 2038       djohnson     Plugin contributable registry.
  * Sep 27, 2014 3121       dhladky      Make service type generics better.  Need to work on raw types more.
  * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * 
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> {
@@ -65,8 +64,8 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
 
     @SuppressWarnings("rawtypes")
     // TODO Figure a way to not have to do raw types with IServiceFactory
-    private static class ServiceTypeRegistry extends
-            GenericRegistry<ServiceType, Class<IServiceFactory>> {
+    private static class ServiceTypeRegistry
+            extends GenericRegistry<ServiceType, Class<IServiceFactory>> {
 
         private <O, D, T, C> ServiceTypeRegistry() {
             super(new EnumMap<ServiceType, Class<IServiceFactory>>(
@@ -83,8 +82,8 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
             Validate.notNull(t);
             Validate.notNull(s);
 
-            statusHandler.info("Registered service type factory ["
-                    + s.getName() + "] for service type [" + t + "]");
+            statusHandler.info("Registered service type factory [" + s.getName()
+                    + "] for service type [" + t + "]");
 
             return super.register(t, s);
         }
@@ -98,13 +97,13 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
 
         /**
          * Retrieve the {@link IServiceFactory} for a {@link Provider}.
-         * 
+         *
          * @param provider
          *            the provider
          * @return the {@link IServiceFactory}
          */
-        public IServiceFactory getProviderServiceFactory(Provider provider) {
-            final ServiceType serviceType = provider.getServiceType();
+        public IServiceFactory getProviderServiceFactory(
+                ServiceType serviceType) {
             final Class<IServiceFactory> serviceFactoryClass = serviceTypeRegistry
                     .getRegisteredObject(serviceType);
             if (serviceFactoryClass == null) {
@@ -118,7 +117,6 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
             IServiceFactory serviceFactory = ReflectionUtil
                     .newInstanceOfAssignableType(IServiceFactory.class,
                             serviceFactoryClass);
-            serviceFactory.setProvider(provider);
             return serviceFactory;
         }
     }
@@ -135,7 +133,7 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
     /**
      * Retrieve the {@link IServiceFactory} to handle a specific
      * {@link Provider} .
-     * 
+     *
      * @param provider
      *            the provider
      * @return the factory
@@ -144,14 +142,14 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
     @SuppressWarnings("rawtypes")
     // TODO Figure a way to not have to do raw types with IServiceFactory
     public static <O, D, T, C> IServiceFactory retrieveServiceFactory(
-            Provider provider) {
-        return SERVICE_FACTORY_LOOKUP.getProviderServiceFactory(provider);
+            ServiceType serviceType) {
+        return SERVICE_FACTORY_LOOKUP.getProviderServiceFactory(serviceType);
     }
 
     /**
      * Retrieve the {@link RetrievalAdapter} implementation for this service
      * type.
-     * 
+     *
      * @param serviceType
      *            the service type
      * @return the retrieval adapter
@@ -161,15 +159,13 @@ public final class ServiceTypeFactory<O, D, T extends Time, C extends Coverage> 
     // and Coverage
     public static <T, C> RetrievalAdapter retrieveServiceRetrievalAdapter(
             ServiceType serviceType) {
-        Provider provider = new Provider();
-        provider.setServiceType(serviceType);
-        return retrieveServiceFactory(provider).getRetrievalGenerator()
+        return retrieveServiceFactory(serviceType).getRetrievalGenerator()
                 .getServiceRetrievalAdapter();
     }
 
     /**
      * Get the service type registry.
-     * 
+     *
      * @return the registry
      */
     @SuppressWarnings("rawtypes")

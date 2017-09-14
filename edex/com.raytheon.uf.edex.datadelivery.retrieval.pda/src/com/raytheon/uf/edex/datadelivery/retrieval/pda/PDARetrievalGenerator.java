@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,6 +30,8 @@ import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
@@ -66,6 +68,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
  * Jul 25, 2017  6186     rjpeter   Update to handle Retrieval refactor
  * Aug 02, 2017  6186     rjpeter   Get parameters from DSMD instead of sub.
  * Aug 10, 2017  6186     nabowle   Set retrieval datasetname.
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  *
  * </pre>
  *
@@ -93,39 +96,53 @@ public class PDARetrievalGenerator extends RetrievalGenerator<Time, Coverage> {
                 cov = sub.getCoverage();
             }
 
-            Map<String, Parameter> parameters = pdadsmd.getParameters();
+            // Only process one provider parameter at a time
+            List<ParameterGroup> paramList = ParameterUtils
+                    .createSingleParameterLevelList(
+                            pdadsmd.getParameterGroups());
             Time time = pdadsmd.getTime();
-
-            // With PDA it's one param at a time. so always 0.
-            Parameter subParam = parameters.values().iterator().next();
-
-            Retrieval<Time, Coverage> retrieval = new Retrieval<>();
-            retrieval.setSubscriptionName(sub.getName());
-            retrieval.setServiceType(getServiceType());
-            retrieval.setProvider(sub.getProvider());
-            retrieval.setOwner(sub.getOwner());
-            retrieval.setDataType(DataType.PDA);
-            retrieval.setSubscriptionType(getSubscriptionType(sub));
-            retrieval.setNetwork(sub.getRoute());
-            retrieval.setDataSetName(sub.getDataSetName());
-
-            final ProviderType providerType = provider
-                    .getProviderType(sub.getDataSetType());
-            retrieval.setPlugin(providerType.getPlugin());
-
-            RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<>();
-            Parameter lparam = processParameter(subParam);
-            lparam.setLevels(subParam.getLevels());
-            att.setParameter(lparam);
-            att.setCoverage(cov);
-            att.setTime(time);
-            retrieval.setAttribute(att);
-            return Arrays.asList(retrieval);
+            List<Retrieval<Time, Coverage>> retrievals = new ArrayList<>(1);
+            for (ParameterGroup pg : paramList) {
+                retrievals.add(getRetrieval(sub, provider, cov, time, pg));
+            }
+            return retrievals;
         } catch (Exception e) {
             logger.error("PDA Retrieval building has failed." + e);
         }
 
         return Collections.emptyList();
+    }
+
+    private Retrieval<Time, Coverage> getRetrieval(
+            Subscription<Time, Coverage> sub, Provider provider, Coverage cov,
+            Time time, ParameterGroup subPg) {
+        Retrieval<Time, Coverage> retrieval = new Retrieval<>();
+        retrieval.setSubscriptionName(sub.getName());
+        retrieval.setServiceType(getServiceType());
+        retrieval.setProvider(sub.getProvider());
+        retrieval.setOwner(sub.getOwner());
+        retrieval.setDataType(DataType.PDA);
+        retrieval.setSubscriptionType(getSubscriptionType(sub));
+        retrieval.setNetwork(sub.getRoute());
+        retrieval.setDataSetName(sub.getDataSetName());
+
+        final ProviderType providerType = provider
+                .getProviderType(sub.getDataSetType());
+        retrieval.setPlugin(providerType.getPlugin());
+
+        RetrievalAttribute<Time, Coverage> att = new RetrievalAttribute<>();
+        ParameterGroup newPg = processParameter(subPg);
+        att.setParameterGroup(newPg);
+        att.setCoverage(cov);
+        att.setTime(time);
+
+        // TODO: OBE after all sites at 18.1.1 or beyond
+        Map<String, Parameter> params = ParameterUtils
+                .generateParametersFromGroup(newPg, DataType.PDA, null);
+        att.setParameter(params.values().iterator().next());
+
+        retrieval.setAttribute(att);
+        return retrieval;
     }
 
     @Override

@@ -21,6 +21,7 @@ package com.raytheon.uf.common.datadelivery.registry;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -57,6 +58,7 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
  *                                  interface.
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Aug 02, 2017  6186     rjpeter   Removed url.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  *
  * </pre>
  *
@@ -439,6 +441,7 @@ public interface Subscription<T extends Time, C extends Coverage>
      * @param parameter
      *            subscription parameter list
      */
+    @Deprecated
     void setParameter(List<Parameter> parameter);
 
     /**
@@ -446,23 +449,23 @@ public interface Subscription<T extends Time, C extends Coverage>
      *
      * @return subscription parameter list
      */
+    @Deprecated
     List<Parameter> getParameter();
 
     /**
-     * Add subscription parameters.
+     * Get subscription's parameter groups
      *
-     * @param par
-     *            a subscription parameter
+     * @return list of parameter groups
      */
-    void addParameter(Parameter par);
+    public Map<String, ParameterGroup> getParameterGroups();
 
     /**
-     * Remove subscription parameters.
+     * Set subscription's parameter groups
      *
-     * @param par
-     *            a subscription parameter
+     * @param parameterGroups
+     *            list of parameter groups
      */
-    void removeParameter(Parameter par);
+    public void setParameterGroups(Map<String, ParameterGroup> parameterGroups);
 
     /**
      * Add subscription id.

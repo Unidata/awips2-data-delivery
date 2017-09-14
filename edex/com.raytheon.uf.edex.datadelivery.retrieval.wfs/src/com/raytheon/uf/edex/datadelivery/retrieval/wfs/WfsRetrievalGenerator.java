@@ -23,11 +23,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
@@ -66,6 +69,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * Jul 25, 2017  6186     rjpeter   Use Retrieval
  * Aug 02, 2017  6186     rjpeter   Removed SubscriptionBundle
  * Aug 10, 2017  6186     nabowle   Set retrieval datasetname.
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  *
  * </pre>
  *
@@ -76,7 +80,7 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(WfsRetrievalGenerator.class);
 
-    WfsRetrievalGenerator(Provider provider) {
+    WfsRetrievalGenerator() {
         super(ServiceType.WFS);
     }
 
@@ -128,10 +132,11 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
         subTime.setRequestEnd(new Date(endDate.getTime() + paddingMillis));
 
         // with point data they all have the same data
-        Parameter param = null;
+        ParameterGroup param = null;
 
-        if (sub.getParameter() != null) {
-            param = sub.getParameter().get(0);
+        Map<String, ParameterGroup> parameterGroups = sub.getParameterGroups();
+        if (parameterGroups != null && !parameterGroups.isEmpty()) {
+            param = parameterGroups.values().iterator().next();
         }
 
         Retrieval<PointTime, Coverage> retrieval = getRetrieval(dsmd, sub,
@@ -154,7 +159,7 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
     private Retrieval<PointTime, Coverage> getRetrieval(
             DataSetMetaData<PointTime, Coverage> dsmd,
             Subscription<PointTime, Coverage> sub, Provider provider,
-            Parameter param, PointTime time) {
+            ParameterGroup param, PointTime time) {
 
         Retrieval<PointTime, Coverage> retrieval = new Retrieval<>();
         retrieval.setSubscriptionName(sub.getName());
@@ -171,13 +176,7 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
         if (cov == null) {
             cov = sub.getCoverage();
         }
-
-        if (cov instanceof Coverage) {
-            retrieval.setDataType(DataType.POINT);
-        } else {
-            throw new UnsupportedOperationException(
-                    "WFS retrieval does not support coverages/types other than Point. ");
-        }
+        retrieval.setDataType(DataType.POINT);
 
         final ProviderType providerType = provider
                 .getProviderType(sub.getDataSetType());
@@ -188,9 +187,13 @@ class WfsRetrievalGenerator extends RetrievalGenerator<PointTime, Coverage> {
         att.setCoverage(cov);
 
         if (param != null) {
-            Parameter lparam = processParameter(param);
-            lparam.setLevels(param.getLevels());
-            att.setParameter(lparam);
+            ParameterGroup newPg = processParameter(param);
+            att.setParameterGroup(newPg);
+
+            // TODO: OBE after all sites at 18.1.1 or beyond
+            Map<String, Parameter> params = ParameterUtils
+                    .generateParametersFromGroup(newPg, DataType.POINT, null);
+            att.setParameter(params.values().iterator().next());
         }
 
         att.setTime(time);

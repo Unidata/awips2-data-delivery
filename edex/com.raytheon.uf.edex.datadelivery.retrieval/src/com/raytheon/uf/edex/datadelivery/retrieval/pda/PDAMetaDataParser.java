@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.pda;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,13 +33,15 @@ import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -84,18 +85,13 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * May 09, 2017  6130     tjensen   Add version data to data sets support
  *                                  routing to ingest
  * Aug 02, 2017  6186     rjpeter   Optionally combine PDA DataSetMetaData
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  *
  * </pre>
  *
  * @author dhladky
  */
 public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
-
-    private static final String FILL_VALUE = "fillValue";
-
-    private static final String MISSING_VALUE = "missingValue";
-
-    private static final String UNITS = "units";
 
     private static final String FORMAT = "format";
 
@@ -215,11 +211,13 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
 
             Coverage coverage = null;
 
-            // there is only one parameter per briefRecord at this point
-            Map<String, Parameter> parameters = getParameters(providerParam,
-                    awipsParam, collectionName, provider.getName(),
-                    paramMap.get(UNITS), paramMap.get(FILL_VALUE),
-                    paramMap.get(MISSING_VALUE));
+            Map<String, ParameterGroup> parameterGroups = getParameters(
+                    providerParam, awipsParam, collectionName,
+                    provider.getName());
+            // TODO: OBE after all sites are 18.1.1 or beyond
+            Map<String, Parameter> parameters = ParameterUtils
+                    .generateParametersFromGroups(parameterGroups, DataType.PDA,
+                            null);
 
             try {
                 logger.info("Preparing to store DataSet: " + dataSetName);
@@ -230,13 +228,14 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 pdaDataSet.setDataSetType(DataType.PDA);
                 pdaDataSet.setTime(time);
                 pdaDataSet.setArrivalTime(arrivalTime.getTime());
-                pdaDataSet.setParameters(parameters);
+                pdaDataSet.setParameterGroups(parameterGroups);
 
                 // set the coverage
                 coverage = extractor.getCoverage();
                 pdaDataSet.setCoverage(coverage);
 
-                // Store the parameter, data Set name, data Set
+                // TODO: OBE after all sites are 18.1.1 or beyond
+                pdaDataSet.setParameters(parameters);
                 for (Entry<String, Parameter> parm : parameters.entrySet()) {
                     storeParameter(parm.getValue());
                 }
@@ -272,7 +271,6 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 try {
                     PDADataSetMetaData pdadsmd = new PDADataSetMetaData();
                     pdadsmd.setMetaDataID(metadataId);
-                    pdadsmd.setParameters(parameters);
                     pdadsmd.setArrivalTime(arrivalTime.getTime());
                     pdadsmd.setAvailabilityOffset(getDataSetAvailabilityTime(
                             collectionName, time.getStart().getTime()));
@@ -284,6 +282,10 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                     pdadsmd.setDataSetDescription(description);
                     pdadsmd.setDate(idate);
                     pdadsmd.setProviderName(provider.getName());
+                    pdadsmd.setParameterGroups(parameterGroups);
+
+                    // TODO: OBE after all sites are on 18.1.1
+                    pdadsmd.setParameters(parameters);
 
                     /*
                      * If this is a moving dataset, save the coverage for this
@@ -344,10 +346,6 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
      */
     private void setDefaultParams(Map<String, String> paramMap) {
         // these aren't satisfied with any extractor, use defaults
-        paramMap.put(FILL_VALUE, serviceConfig.getConstantValue("FILL_VALUE"));
-        paramMap.put(MISSING_VALUE,
-                serviceConfig.getConstantValue("MISSING_VALUE"));
-        paramMap.put(UNITS, serviceConfig.getConstantValue("UNITS"));
         paramMap.put(FORMAT, serviceConfig.getConstantValue("DEFAULT_FORMAT"));
     }
 
@@ -424,35 +422,20 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
      * @param missingValue
      * @return
      */
-    private Map<String, Parameter> getParameters(String providerName,
-            String awipsName, String collectionName, String provider,
-            String units, String fillValue, String missingValue) {
+    private Map<String, ParameterGroup> getParameters(String providerName,
+            String awipsName, String collectionName, String provider) {
 
-        Map<String, Parameter> params = new HashMap<>(1);
+        Map<String, ParameterGroup> params = new HashMap<>(1);
 
-        Parameter parm = new Parameter();
-        parm.setName(awipsName);
-        parm.setProviderName(providerName);
-        parm.setDefinition(provider + "-" + collectionName + "-" + awipsName);
-        parm.setBaseType(serviceConfig.getConstantValue("BASE_TYPE"));
+        ParameterGroup pg = new ParameterGroup(awipsName, null);
+        LevelGroup lg = new LevelGroup("Entire Atmosphere (As Single Layer)",
+                null);
+        pg.putLevelGroup(lg);
+        ParameterLevelEntry ple = new ParameterLevelEntry(providerName,
+                provider + "-" + collectionName + "-" + awipsName, null);
+        lg.addLevel(ple);
 
-        parm.setFillValue(fillValue);
-        parm.setMissingValue(missingValue);
-        parm.setUnits(units);
-
-        /*
-         * The standard default for satellite data is EA (Entire Atmosphere).
-         */
-        LevelType type = LevelType.EA;
-        DataLevelType dlt = new DataLevelType(type);
-        ArrayList<DataLevelType> types = new ArrayList<>(1);
-        types.add(dlt);
-        // set the level types
-        parm.setLevelType(types);
-        // Set the data type
-        parm.setDataType(DataType.PDA);
-        params.put(parm.getName(), parm);
-
+        params.put(pg.getKey(), pg);
         return params;
     }
 

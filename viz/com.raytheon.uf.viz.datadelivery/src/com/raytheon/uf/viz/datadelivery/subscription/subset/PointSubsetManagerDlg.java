@@ -34,16 +34,15 @@ import org.eclipse.swt.widgets.TabItem;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSet;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.PointDataSizeUtils;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.viz.datadelivery.common.xml.AreaXML;
@@ -53,36 +52,33 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
 
 /**
  * {@link SubsetManagerDlg} for point data sets.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 04, 2013    223     mpduff      Initial creation.
- * Jun 11, 2013   2064     mpduff      Fix editing of subscriptions.
- * Jun 14, 2013   2108     mpduff      Refactored DataSizeUtils and 
- *                                     implement subset size.
- * Sep 05, 2013   2335     mpduff      Fix times for adhoc point queries.
- * Sep 10, 2013   2351     dhladky     Finished adhoc queries
- * Sep 16, 2013   2383     bgonzale    Start time precedes end time.
- * Oct 10, 2013   1797     bgonzale    Refactored registry Time objects.
- * Oct 11, 2013   2386     mpduff      Refactor DD Front end.
- * Oct 30, 2014   2706     ccody       Add Check for changes on Dialog close
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 04, 2013  223      mpduff    Initial creation.
+ * Jun 11, 2013  2064     mpduff    Fix editing of subscriptions.
+ * Jun 14, 2013  2108     mpduff    Refactored DataSizeUtils and implement
+ *                                  subset size.
+ * Sep 05, 2013  2335     mpduff    Fix times for adhoc point queries.
+ * Sep 10, 2013  2351     dhladky   Finished adhoc queries
+ * Sep 16, 2013  2383     bgonzale  Start time precedes end time.
+ * Oct 10, 2013  1797     bgonzale  Refactored registry Time objects.
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Oct 30, 2014  2706     ccody     Add Check for changes on Dialog close
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class PointSubsetManagerDlg extends SubsetManagerDlg {
-    /** Status Handler */
-    private final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(PointSubsetManagerDlg.class);
 
-    private final String TIMING_TAB_TEXT = "Retrieval Interval";
+    private static final String TIMING_TAB_TEXT = "Retrieval Interval";
 
     /** Point data size utility */
     private PointDataSizeUtils dataSize;
@@ -92,7 +88,7 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            parent shell
      * @param loadDataSet
@@ -108,7 +104,7 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            parent shell
      * @param dataSet
@@ -128,7 +124,7 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
 
     /**
      * Constructor.
-     * 
+     *
      * @param shell
      *            the parent shell
      * @param dataSet
@@ -183,8 +179,8 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
         int interval = timingTabControls.getDataRetrievalInterval();
 
         // Update the data set size label text.
-        this.sizeLbl.setText(SizeUtil.prettyByteSize(dataSize
-                .getDataSetSizeInBytes(env, interval)));
+        this.sizeLbl.setText(SizeUtil
+                .prettyByteSize(dataSize.getDataSetSizeInBytes(env, interval)));
     }
 
     /**
@@ -222,7 +218,8 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
      * {@inheritDoc}
      */
     @Override
-    protected Subscription populateSubscription(Subscription sub, boolean create) {
+    protected Subscription populateSubscription(Subscription sub,
+            boolean create) {
         sub.setProvider(dataSet.getProviderName());
         sub.setDataSetName(dataSet.getDataSetName());
         sub.setDataSetType(dataSet.getDataSetType());
@@ -236,17 +233,14 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
         cov.setEnvelope(dataSet.getCoverage().getEnvelope());
         setCoverage(sub, cov);
 
-        List<Parameter> paramList = new ArrayList<Parameter>();
-        Map<String, Parameter> paramMap = dataSet.getParameters();
-        List<DataLevelType> levelTypeList = new ArrayList<DataLevelType>();
-        levelTypeList.add(new DataLevelType(DataLevelType.LevelType.SFC));
-        for (String key : paramMap.keySet()) {
-            Parameter p = paramMap.get(key);
-            p.setDataType(DataType.POINT);
-            p.setLevelType(levelTypeList);
-            paramList.add(p);
-        }
+        Map<String, ParameterGroup> paramMap = dataSet.getParameterGroups();
 
+        sub.setParameterGroups(paramMap);
+
+        // TODO: OBE after all sites are 18.1.1 or beyond
+        List<Parameter> paramList = new ArrayList<>(ParameterUtils
+                .generateParametersFromGroups(paramMap, DataType.POINT, null)
+                .values());
         sub.setParameter(paramList);
 
         if (dataSize == null) {
@@ -266,28 +260,20 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
         super.loadFromSubsetXML(subsetXml);
 
         PointTimeXML time = (PointTimeXML) subsetXml.getTime();
-        this.timingTabControls.setDataRetrievalInterval(time
-                .getDataRetrievalInterval());
+        this.timingTabControls
+                .setDataRetrievalInterval(time.getDataRetrievalInterval());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.subscription.subset.SubsetManagerDlg
-     * #loadFromSubscription
-     * (com.raytheon.uf.common.datadelivery.registry.Subscription)
-     */
     @Override
     protected void loadFromSubscription(Subscription subscription) {
         super.loadFromSubscription(subscription);
 
         PointTimeXML time = new PointTimeXML();
-        time.setDataRetrievalInterval(((PointTime) subscription.getTime())
-                .getInterval());
+        time.setDataRetrievalInterval(
+                ((PointTime) subscription.getTime()).getInterval());
 
-        this.timingTabControls.setDataRetrievalInterval(time
-                .getDataRetrievalInterval());
+        this.timingTabControls
+                .setDataRetrievalInterval(time.getDataRetrievalInterval());
 
         AreaXML area = new AreaXML();
         ReferencedEnvelope envelope = this.subscription.getCoverage()

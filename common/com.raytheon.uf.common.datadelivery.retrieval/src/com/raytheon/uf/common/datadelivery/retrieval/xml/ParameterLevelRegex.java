@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -30,17 +30,18 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * 
+ *
  * Parameter Level Regex XML object
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 2, 2016  5988       tjensen     Initial creation
- * Mar 02, 2017 5988       tjensen     Add information to be used for level parsing
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 02, 2016  5988     tjensen   Initial creation
+ * Mar 02, 2017  5988     tjensen   Add information to be used for level parsing
+ * Sep 12, 2017  6413     tjensen   Added providerLevels and reverseOrder flags
  *
  * </pre>
  *
@@ -49,7 +50,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class ParameterLevelRegex implements Comparable {
+public class ParameterLevelRegex implements Comparable<ParameterLevelRegex> {
 
     @XmlAttribute(name = "id")
     @DynamicSerializeElement
@@ -67,6 +68,10 @@ public class ParameterLevelRegex implements Comparable {
     @DynamicSerializeElement
     private String level;
 
+    @XmlAttribute(name = "masterKey")
+    @DynamicSerializeElement
+    private String masterKey;
+
     @XmlAttribute(name = "levelGroup")
     @DynamicSerializeElement
     private String levelGroup;
@@ -74,6 +79,18 @@ public class ParameterLevelRegex implements Comparable {
     @XmlAttribute(name = "units")
     @DynamicSerializeElement
     private String units;
+
+    @XmlAttribute(name = "providerLevels")
+    @DynamicSerializeElement
+    private Boolean providerLevels;
+
+    @XmlAttribute(name = "reverseOrder")
+    @DynamicSerializeElement
+    private Boolean reverseOrder;
+
+    @XmlAttribute(name = "matchAnywhere")
+    @DynamicSerializeElement
+    private Boolean matchAnywhere;
 
     private Pattern pattern;
 
@@ -95,22 +112,22 @@ public class ParameterLevelRegex implements Comparable {
 
     public Pattern getPattern() {
         if (pattern == null) {
-            pattern = Pattern.compile("^" + getRegex());
+            if (getMatchAnywhere()) {
+                pattern = Pattern.compile(getRegex());
+            } else {
+                pattern = Pattern.compile("^" + getRegex());
+            }
         }
         return pattern;
     }
 
     @Override
-    public int compareTo(Object o) {
-        if (o instanceof ParameterLevelRegex) {
-            ParameterLevelRegex other = (ParameterLevelRegex) o;
-            int orderDiff = Float.compare(order, other.getOrder());
-            if (orderDiff != 0) {
-                return orderDiff;
-            }
-            return id.compareTo(other.getId());
+    public int compareTo(ParameterLevelRegex other) {
+        int orderDiff = Float.compare(order, other.getOrder());
+        if (orderDiff != 0) {
+            return orderDiff;
         }
-        return 1;
+        return id.compareTo(other.getId());
     }
 
     public float getOrder() {
@@ -143,5 +160,43 @@ public class ParameterLevelRegex implements Comparable {
 
     public void setUnits(String units) {
         this.units = units;
+    }
+
+    public boolean hasProviderLevels() {
+        if (providerLevels != null) {
+            return providerLevels.booleanValue();
+        }
+        return false;
+    }
+
+    public void setProviderLevels(Boolean providerLevels) {
+        this.providerLevels = providerLevels;
+    }
+
+    public boolean getReverseOrder() {
+        if (reverseOrder == null) {
+            return false;
+        }
+        return reverseOrder;
+    }
+
+    public void setReverseOrder(Boolean reverseOrder) {
+        this.reverseOrder = reverseOrder;
+    }
+
+    public String getMasterKey() {
+        return masterKey;
+    }
+
+    public void setMasterKey(String masterKey) {
+        this.masterKey = masterKey;
+    }
+
+    public Boolean getMatchAnywhere() {
+        return matchAnywhere;
+    }
+
+    public void setMatchAnywhere(Boolean matchAnywhere) {
+        this.matchAnywhere = matchAnywhere;
     }
 }

@@ -21,6 +21,7 @@ package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.Status;
@@ -892,7 +893,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         // will need to be saved for obs
         if (dataSet.getDataSetType() == DataType.GRID) {
             // next save vertical layer/parameter info
-            ArrayList<VerticalXML> vertList = vTab.getSaveInfo();
+            List<VerticalXML> vertList = vTab.getSaveInfo();
             subset.setVerticalList(vertList);
         }
 

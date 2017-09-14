@@ -1,25 +1,26 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.subset.xml;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -35,11 +36,11 @@ import com.raytheon.uf.viz.datadelivery.common.xml.IDisplayXml;
 
 /**
  * Saved subset xml object.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 29, 2012            mpduff       Initial creation
@@ -47,9 +48,9 @@ import com.raytheon.uf.viz.datadelivery.common.xml.IDisplayXml;
  * Feb 15, 2013 1638       mschenke     Moved Util.EOL into FileUtil.
  * Jun 04, 2013  223       mpduff       Refactoring method name change.
  * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
- * 
+ *
  * </pre>
- * 
+ *
  * @author mpduff
  * @version 1.0
  */
@@ -74,7 +75,7 @@ public class SubsetXML implements IDisplayXml {
     protected Ensemble ensemble;
 
     @XmlElements({ @XmlElement(name = "vertical", type = VerticalXML.class) })
-    protected ArrayList<VerticalXML> verticalList = new ArrayList<VerticalXML>();
+    protected List<VerticalXML> verticalList = new ArrayList<>();
 
     @XmlElementRef
     protected TimeXML time;
@@ -127,7 +128,7 @@ public class SubsetXML implements IDisplayXml {
     /**
      * @return the verticalList
      */
-    public ArrayList<VerticalXML> getVerticalList() {
+    public List<VerticalXML> getVerticalList() {
         return verticalList;
     }
 
@@ -135,13 +136,13 @@ public class SubsetXML implements IDisplayXml {
      * @param verticalList
      *            the verticalList to set
      */
-    public void setVerticalList(ArrayList<VerticalXML> verticalList) {
+    public void setVerticalList(List<VerticalXML> verticalList) {
         this.verticalList = verticalList;
     }
 
     /**
      * Add a VerticalXML object to the list
-     * 
+     *
      * @param vertical
      *            VerticalXML object to add
      */
@@ -187,7 +188,7 @@ public class SubsetXML implements IDisplayXml {
     }
 
     /**
-     * 
+     *
      * @param provider
      */
     public void setProviderName(String providerName) {
@@ -196,10 +197,9 @@ public class SubsetXML implements IDisplayXml {
 
     /*
      * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.xml.IDisplayXml#getDisplayXmlString
-     * ()
+     *
+     * @see com.raytheon.uf.viz.datadelivery.common.xml.IDisplayXml#
+     * getDisplayXmlString ()
      */
     @Override
     public String getPreviewString() {
@@ -243,7 +243,7 @@ public class SubsetXML implements IDisplayXml {
     /**
      * Set the subsetName from a baseSubsetName (i.e. that does not have the
      * file extension appended.)
-     * 
+     *
      * @param baseSubsetName
      *            subsetName without file name extension
      */

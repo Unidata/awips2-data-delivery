@@ -15,14 +15,11 @@
     <constant name="PORT" value="21" />
     <!-- Directory camel drops FTP files into for ingest delivery. -->
     <constant name="FTPS_DROP_DIR" value="data_delivery" />
-    <constant name="MISSING_VALUE" value="-999999" />
-    <constant name="FILL_VALUE" value="-888888" />
     <constant name="DEFAULT_MULTIPLIER" value="0.5" />
     <constant name="DEFAULT_RUN_INCREMENT" value="1" />
     <constant name="DEFAULT_OFFSET" value="30" />
     <constant name="SEPARATOR" value="-" />
     <constant name="BASE_TYPE" value="Float" />
-    <constant name="UNITS" value="NONE" />
     <constant name="DEFAULT_FORMAT" value="SAT" />
     <!-- Decoder type (temporary, until metadata improves from PDA) -->
     <constant name="DEFAULT_TYPE" value="goesr" />

@@ -43,4 +43,5 @@ Export-Package: com.raytheon.uf.edex.datadelivery.harvester.crawler,
  com.raytheon.uf.edex.datadelivery.harvester.cron,
  com.raytheon.uf.edex.datadelivery.harvester.purge,
  com.raytheon.uf.edex.datadelivery.harvester.util
-Import-Package: oasis.names.tc.ebxml.regrep.wsdl.registry.services.v4
+Import-Package: com.raytheon.uf.edex.datadelivery.retrieval.pda,
+ oasis.names.tc.ebxml.regrep.wsdl.registry.services.v4

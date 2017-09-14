@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,11 +39,12 @@ import com.raytheon.uf.common.auth.resp.SuccessfulExecution;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest.RequestType;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -61,52 +63,54 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Data Delivery UI Utilities
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 3, 2012             mpduff       Initial creation
- * Jun 07, 2012   687      lvenable     Refactor to consolidate code.
- * Jun 12, 2012   702      jpiatt       Added group name & code clean up.
- * Jul 25, 2012   955      djohnson     Use List instead of ArrayList, thread-safe access to DecimalFormat.
- * Aug 29, 2012   223      mpduff       Add cycles to the subscription details.
- * Oct 31, 2012  1278      mpduff       Moved spatial methods to SpatialUtils.
- * Nov 20, 2012 1286       djohnson     Add showYesNoMessage.
- * Dec 20, 2012 1413       bgonzale     Added PendingSubColumnNames.valueOfColumnName(String).
- * Jan 10, 2013 1420       mdpuff       Added getMaxLatency().
- * Jan 14, 2013 1286       djohnson     Fix IndexOutOfBounds exception from getMaxLatency.
- * Jan 22, 2013 1519       djohnson     Correct getMaxLatency() calculations.
- * Jan 30, 2013 1543       djohnson     Use List instead of ArrayList.
- * Apr 08, 2013 1826       djohnson     Add getDisplayData() method to subscription columns.
- * Apr 10, 2013 1891       djohnson     Add getDisplayData() method to pending subscription columns.
- * May 15, 2013 1040       mpduff       Using Set for office Ids.
- * May 20, 2013 2000       djohnson     Add message to inform the user changes were applied.
- * Jun 04, 2013  223       mpduff       Add point data stuff.
- * Jun 11, 2013 2064       mpduff       Don't output Parameter header if none exist.
- * Jun 12, 2013 2064       mpduff       Use SizeUtil to format data size output.
- * Jul 26, 2031 2232       mpduff       Removed sendAuthorizationRequest method.
- * Aug 30, 2013 2288       bgonzale     Added latency to details display.
- * Sep 30, 2013 1797       dhladky      Time GriddedTime separation
- * Oct 11, 2013 2386       mpduff       Refactor DD Front end.
- * Nov 07, 2013 2291       skorolev     Added showText() method for messages with many lines.
- * Feb 11, 2014 2771       bgonzale     Added Data Delivery ID, getter, and retrieval method.
- * Apr 2,  2014 2974       dhladky      DD ID added to list for dropdowns in DD.
- * Apr 22, 2014 2992       dhladky      Unique list of all registries with data in this node.
- * May 22, 2014 2808       dhladky      Fixed static final problem with DD ID
- * Sept 04, 2014 2131      dhladky      Added PDa data type
- * Dec 03, 2014 3840       ccody        Added BrowserColumnNames.valueOfColumnName(String).
- * Jan 05, 2015 3950       dhladky      Added string constants for filtering notification records.
- * Apr 30, 2015 4047       dhladky      Use non-blocking dialogs.
- * May 17, 2015 4047       dhladky      Improved use of non-blocking dialogs.
- * Jun 01, 2015  2805      dhladky      Dataset Discovery Browser wouldn't close with message box.
- * Aug 25, 2015  4747      dhladky      Better options on message box returns.
+ * Feb 03, 2012            mpduff      Initial creation
+ * Jun 07, 2012 687        lvenable    Refactor to consolidate code.
+ * Jun 12, 2012 702        jpiatt      Added group name & code clean up.
+ * Jul 25, 2012 955        djohnson    Use List instead of ArrayList, thread-safe access to DecimalFormat.
+ * Aug 29, 2012 223        mpduff      Add cycles to the subscription details.
+ * Oct 31, 2012 1278       mpduff      Moved spatial methods to SpatialUtils.
+ * Nov 20, 2012 1286       djohnson    Add showYesNoMessage.
+ * Dec 20, 2012 1413       bgonzale    Added PendingSubColumnNames.valueOfColumnName(String).
+ * Jan 10, 2013 1420       mdpuff      Added getMaxLatency().
+ * Jan 14, 2013 1286       djohnson    Fix IndexOutOfBounds exception from getMaxLatency.
+ * Jan 22, 2013 1519       djohnson    Correct getMaxLatency() calculations.
+ * Jan 30, 2013 1543       djohnson    Use List instead of ArrayList.
+ * Apr 08, 2013 1826       djohnson    Add getDisplayData() method to subscription columns.
+ * Apr 10, 2013 1891       djohnson    Add getDisplayData() method to pending subscription columns.
+ * May 15, 2013 1040       mpduff      Using Set for office Ids.
+ * May 20, 2013 2000       djohnson    Add message to inform the user changes were applied.
+ * Jun 04, 2013 223        mpduff      Add point data stuff.
+ * Jun 11, 2013 2064       mpduff      Don't output Parameter header if none exist.
+ * Jun 12, 2013 2064       mpduff      Use SizeUtil to format data size output.
+ * Jul 26, 2031 2232       mpduff      Removed sendAuthorizationRequest method.
+ * Aug 30, 2013 2288       bgonzale    Added latency to details display.
+ * Sep 30, 2013 1797       dhladky     Time GriddedTime separation
+ * Oct 11, 2013 2386       mpduff      Refactor DD Front end.
+ * Nov 07, 2013 2291       skorolev    Added showText() method for messages with many lines.
+ * Feb 11, 2014 2771       bgonzale    Added Data Delivery ID, getter, and retrieval method.
+ * Apr 02, 2014 2974       dhladky     DD ID added to list for dropdowns in DD.
+ * Apr 22, 2014 2992       dhladky     Unique list of all registries with data in this node.
+ * May 22, 2014 2808       dhladky     Fixed static final problem with DD ID
+ * Sep 04, 2014 2131       dhladky     Added PDa data type
+ * Dec 03, 2014 3840       ccody       Added BrowserColumnNames.valueOfColumnName(String).
+ * Jan 05, 2015 3950       dhladky     Added string constants for filtering notification records.
+ * Apr 30, 2015 4047       dhladky     Use non-blocking dialogs.
+ * May 17, 2015 4047       dhladky     Improved use of non-blocking dialogs.
+ * Jun 01, 2015 2805       dhladky     Dataset Discovery Browser wouldn't close with message box.
+ * Aug 25, 2015 4747       dhladky     Better options on message box returns.
+ * Sep 12, 2017 6413       tjensen     Updated to support ParameterGroups
  * </pre>
- * 
+ *
+ * *
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class DataDeliveryUtils {
@@ -133,33 +137,33 @@ public class DataDeliveryUtils {
 
     /** latency unset value default */
     private static final int UNSET = -1;
-    
+
     /** ACTIVATED subscriptions check string */
     public static final String ACTIVATED = "ACTIVATED";
-    
+
     /** DE-ACTIVATED subscriptions check string */
     public static final String DEACTIVATED = "DEACTIVATED";
-    
+
     /** CREATED subscriptions check string */
     public static final String CREATED = "CREATED";
-    
+
     /** UPDATED subscriptions check string */
     public static final String UPDATED = "UPDATED";
-    
+
     /** DELETED subscriptions check string */
     public static final String DELETED = "DELETED";
-    
+
     /** EXPIRE subscriptions check string */
     public static final String EXPIRE = "EXPIRE";
-    
+
     /** Used for specific category check in notifications */
     public static final String SUBSCRIPTION = "Subscription";
-    
+
     /** Used for specific category check in notifications */
     public static final String RETRIEVAL = "Retrieval";
 
     /** Decimal format */
-    private final static ThreadLocal<DecimalFormat> format = new ThreadLocal<DecimalFormat>() {
+    private static final ThreadLocal<DecimalFormat> format = new ThreadLocal<DecimalFormat>() {
 
         @Override
         protected DecimalFormat initialValue() {
@@ -170,7 +174,7 @@ public class DataDeliveryUtils {
 
     public static final String UNABLE_TO_RETRIEVE_PENDING_SUBSCRIPTIONS = "Unable to retrieve pending subscriptions!";
 
-    private static String dataDeliveryId = null;
+    private static volatile String dataDeliveryId = null;
 
     /**
      * TABLE_TYPE enumeration.
@@ -211,7 +215,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get column name.
-         * 
+         *
          * @return Column Name
          */
         public String getColumnName() {
@@ -220,7 +224,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get the tool tip
-         * 
+         *
          * @return The tool tip.
          */
         public String getToolTip() {
@@ -282,16 +286,14 @@ public class DataDeliveryUtils {
             }
         },
         /** Column Subscription Expiration */
-        SUBSCRIPTION_EXPIRATION("Subscription Expiration",
-                "Date subscription will expire") {
+        SUBSCRIPTION_EXPIRATION("Subscription Expiration", "Date subscription will expire") {
             @Override
             public String getDisplayData(SubscriptionManagerRowData rd) {
                 Date date = rd.getSubscriptionEnd();
                 if (date == null) {
                     return "No Expiration";
-                } else {
-                    return formatMMddyyyyHH(date);
                 }
+                return formatMMddyyyyHH(date);
             }
         },
         /** Column Active Period Start */
@@ -358,7 +360,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get column name.
-         * 
+         *
          * @return Column Name
          */
         public String getColumnName() {
@@ -367,7 +369,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get the tool tip
-         * 
+         *
          * @return The tool tip.
          */
         public String getToolTip() {
@@ -435,7 +437,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get column name.
-         * 
+         *
          * @return Column Name
          */
         public String getColumnName() {
@@ -444,7 +446,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get the tool tip
-         * 
+         *
          * @return The tool tip.
          */
         public String getToolTip() {
@@ -454,7 +456,7 @@ public class DataDeliveryUtils {
         /**
          * Find the PendingSubColumnNames value representing the given
          * columnName.
-         * 
+         *
          * @param columnName
          * @return the corresponding PendingSubColumnNames enum value.
          */
@@ -527,7 +529,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get column name.
-         * 
+         *
          * @return Column Name
          */
         public String getColumnName() {
@@ -536,7 +538,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get the tool tip
-         * 
+         *
          * @return The tool tip.
          */
         public String getToolTip() {
@@ -546,11 +548,12 @@ public class DataDeliveryUtils {
         /**
          * Find the PendingSubColumnNames value representing the given
          * columnName.
-         * 
+         *
          * @param columnName
          * @return the corresponding PendingSubColumnNames enum value.
          */
-        public static PendingSubColumnNames valueOfColumnName(String columnName) {
+        public static PendingSubColumnNames valueOfColumnName(
+                String columnName) {
             for (PendingSubColumnNames val : PendingSubColumnNames.values()) {
                 if (val.columnName.equals(columnName)) {
                     return val;
@@ -562,7 +565,7 @@ public class DataDeliveryUtils {
 
         /**
          * Get the data this column displays for the row.
-         * 
+         *
          * @param rd
          *            the row data
          * @return the display value
@@ -572,7 +575,7 @@ public class DataDeliveryUtils {
 
     /**
      * Get the column titles (column names).
-     * 
+     *
      * @param tableType
      *            Table type.
      * @return String array of column titles.
@@ -608,13 +611,14 @@ public class DataDeliveryUtils {
 
     /**
      * Get the column tool tips.
-     * 
+     *
      * @param tableType
      *            Table type.
      * @return String array of tool tips.
      */
-    public static Map<String, String> getColumnToolTipsMap(TABLE_TYPE tableType) {
-        HashMap<String, String> toolTipMap = new HashMap<String, String>();
+    public static Map<String, String> getColumnToolTipsMap(
+            TABLE_TYPE tableType) {
+        HashMap<String, String> toolTipMap = new HashMap<>();
 
         if (tableType == TABLE_TYPE.SUBSCRIPTION) {
             for (SubColumnNames scn : SubColumnNames.values()) {
@@ -640,7 +644,7 @@ public class DataDeliveryUtils {
 
     /**
      * Show a MessageBox non-blocking.
-     * 
+     *
      * @param shell
      *            The parent shell
      * @param style
@@ -653,15 +657,16 @@ public class DataDeliveryUtils {
      */
     public static int showMessage(Shell shell, int style, String messageTitle,
             String messageText) {
-        
-        SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle, messageText, style);
+
+        SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle,
+                messageText, style);
         messageDialog.open();
         return 1;
     }
-    
+
     /**
      * Show a MessageBox without a closeable callback.
-     * 
+     *
      * @param shell
      *            The parent shell
      * @param style
@@ -672,17 +677,17 @@ public class DataDeliveryUtils {
      *            The message box message
      * @return The selected return value
      */
-    public static int showMessageNonCallback(Shell shell, int style, String messageTitle,
-            String messageText) {
+    public static int showMessageNonCallback(Shell shell, int style,
+            String messageTitle, String messageText) {
         MessageBox messageDialog = new MessageBox(shell, style);
         messageDialog.setText(messageTitle);
         messageDialog.setMessage(messageText);
         return messageDialog.open();
     }
-    
+
     /**
      * Show a non-blocking returnable Message Box.
-     * 
+     *
      * @param shell
      *            The parent shell
      * @param style
@@ -693,16 +698,17 @@ public class DataDeliveryUtils {
      *            The message box message
      * @param callback
      */
-    public static void showCallbackMessageBox(Shell shell, int style, String messageTitle,
-            String messageText, ICloseCallback callback) {
-        SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle, messageText, style);
+    public static void showCallbackMessageBox(Shell shell, int style,
+            String messageTitle, String messageText, ICloseCallback callback) {
+        SWTMessageBox messageDialog = new SWTMessageBox(shell, messageTitle,
+                messageText, style);
         messageDialog.addCloseCallback(callback);
         messageDialog.open();
     }
 
     /**
      * Show a Yes/No MessageBox.
-     * 
+     *
      * @param shell
      *            the shell reference
      * @param title
@@ -710,13 +716,14 @@ public class DataDeliveryUtils {
      * @param message
      *            the message
      */
-    public static int showYesNoMessage(Shell shell, String title, String message) {
+    public static int showYesNoMessage(Shell shell, String title,
+            String message) {
         return showMessageNonCallback(shell, SWT.YES | SWT.NO, title, message);
     }
 
     /**
      * Inform the user their changes were applied.
-     * 
+     *
      * @param shell
      *            the shell reference
      */
@@ -724,30 +731,32 @@ public class DataDeliveryUtils {
         showMessageNonCallback(shell, SWT.OK, "Changes Applied",
                 "The changes were successfully applied.");
     }
-    
+
     /**
      * Return a message dialog with ok button
-     * 
+     *
      * @param shell
      *            the shell reference
      */
-    public static void showMessageOk(Shell shell, String title, String message) {
+    public static void showMessageOk(Shell shell, String title,
+            String message) {
         showMessageNonCallback(shell, SWT.OK, title, message);
     }
-    
+
     /**
      * Return a message dialog with cancel button
-     * 
+     *
      * @param shell
      *            the shell reference
      */
-    public static void showMessageCancel(Shell shell, String title, String message) {
+    public static void showMessageCancel(Shell shell, String title,
+            String message) {
         showMessageNonCallback(shell, SWT.CANCEL, title, message);
     }
 
     /**
      * Show message with long list of lines.
-     * 
+     *
      * @param shell
      * @param messageTitle
      * @param messageText
@@ -761,10 +770,10 @@ public class DataDeliveryUtils {
 
     /**
      * Provides the text for the subscription details dialog
-     * 
+     *
      * @param sub
      *            The subscription object
-     * 
+     *
      * @return The formated details string
      */
     public static String formatDetails(Subscription<Time, Coverage> sub) {
@@ -786,8 +795,8 @@ public class DataDeliveryUtils {
         fmtStr.append("Provider: ").append(sub.getProvider()).append(newline);
         fmtStr.append("Office IDs: ")
                 .append(getFormatedList(sub.getOfficeIDs())).append(newline);
-        fmtStr.append("Priority: ")
-                .append(sub.getPriority().getPriorityValue()).append(newline);
+        fmtStr.append("Priority: ").append(sub.getPriority().getPriorityValue())
+                .append(newline);
         fmtStr.append("Network: ").append(sub.getRoute()).append(newline);
         fmtStr.append("Latency Minutes: ").append(sub.getLatencyInMinutes())
                 .append(newline);
@@ -857,30 +866,33 @@ public class DataDeliveryUtils {
             // Nothing done for Point at this time
         }
 
-        List<Parameter> parmArray = sub.getParameter();
-        if (!CollectionUtil.isNullOrEmpty(parmArray)) {
+        Map<String, ParameterGroup> parmMap = sub.getParameterGroups();
+        if (!parmMap.isEmpty()) {
             fmtStr.append("Parameters:").append(newline);
-            for (Parameter p : parmArray) {
-                fmtStr.append("------ Name: ").append(p.getName())
-                        .append(newline);
-                fmtStr.append("------ Provider Name: ")
-                        .append(p.getProviderName()).append(newline);
-                fmtStr.append("------ Definition: ").append(p.getDefinition())
-                        .append(newline);
-                fmtStr.append("------ Data Type: ").append(p.getDataType())
-                        .append(newline);
-
-                fmtStr.append("------ Level Type: ").append(newline);
-                for (DataLevelType dlt : p.getLevelType()) {
-                    fmtStr.append("------------ Type: ").append(dlt.getType())
-                            .append(newline);
-                    fmtStr.append("------------ ID: ").append(dlt.getId())
-                            .append(newline);
-                    if (dlt.getUnit() != null) {
-                        fmtStr.append("------------ Unit: ")
-                                .append(dlt.getUnit()).append(newline);
-                    } else {
-                        fmtStr.append("------------ Unit: ").append(newline);
+            Set<String> displayedNames = new HashSet<>(1);
+            for (ParameterGroup pg : parmMap.values()) {
+                for (LevelGroup lg : pg.getGroupedLevels().values()) {
+                    for (ParameterLevelEntry ple : lg.getLevels()) {
+                        /*
+                         * Only display info for each provider name once. May
+                         * have duplicate entries for if it has multiple levels
+                         * of info.
+                         */
+                        String providerName = ple.getProviderName();
+                        if (!displayedNames.contains(providerName)) {
+                            fmtStr.append("------ Name: ")
+                                    .append(pg.getAbbrev()).append(newline);
+                            fmtStr.append("------ Provider Name: ")
+                                    .append(providerName).append(newline);
+                            fmtStr.append("------ Definition: ")
+                                    .append(ple.getDescription())
+                                    .append(newline);
+                            fmtStr.append("------ Level Type: ")
+                                    .append(lg.getName()).append(newline);
+                            fmtStr.append("------ Level Unit: ")
+                                    .append(lg.getUnits()).append(newline);
+                            displayedNames.add(providerName);
+                        }
                     }
                 }
             }
@@ -891,7 +903,7 @@ public class DataDeliveryUtils {
 
     /**
      * Get a formatted list.
-     * 
+     *
      * @param list
      *            List of items
      * @return a formatted list as a String
@@ -903,7 +915,7 @@ public class DataDeliveryUtils {
     /**
      * Get the maximum latency for the provided subscription. Calculated as the
      * maximum cyclic difference.
-     * 
+     *
      * @param subscription
      *            The subscription
      * @return the maximum latency in minutes
@@ -912,22 +924,21 @@ public class DataDeliveryUtils {
         if (subscription.getDataSetType() == DataType.POINT) {
             return subscription.getLatencyInMinutes();
         } else if (subscription.getDataSetType() == DataType.GRID) {
-            return getMaxLatency(((GriddedTime) subscription.getTime())
-                    .getCycleTimes());
+            return getMaxLatency(
+                    ((GriddedTime) subscription.getTime()).getCycleTimes());
         }
         if (subscription.getDataSetType() == DataType.PDA) {
             // TODO: Figure a method for actually calculating this.
             return 45;
-        } else {
-            throw new IllegalArgumentException("Invalid Data Type: "
-                    + subscription.getDataSetType().name());
         }
+        throw new IllegalArgumentException(
+                "Invalid Data Type: " + subscription.getDataSetType().name());
     }
 
     /**
      * Get the maximum latency for the provided cycles. Calculated as the
      * maximum cyclic difference.
-     * 
+     *
      * @param cycles
      *            The list of cycles
      * @return the maximum latency in minutes
@@ -958,13 +969,13 @@ public class DataDeliveryUtils {
     /**
      * Get the maximum latency for the provided dataSet. Calculated as the
      * maximum cyclic difference.
-     * 
+     *
      * @param dataSet
      *            the dataset
      * @return the maximum latency in minutes
      */
     public static int getMaxLatency(GriddedDataSet dataSet) {
-        return getMaxLatency(new ArrayList<Integer>(dataSet.getCycles()));
+        return getMaxLatency(new ArrayList<>(dataSet.getCycles()));
     }
 
     public static String getDataDeliveryId() {
@@ -990,7 +1001,7 @@ public class DataDeliveryUtils {
 
     /**
      * Gets the DD id containing site List.
-     * 
+     *
      * @return
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })

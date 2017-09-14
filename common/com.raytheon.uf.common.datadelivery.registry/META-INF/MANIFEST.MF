@@ -27,7 +27,8 @@ Require-Bundle: javax.persistence,
  com.raytheon.uf.common.datadelivery.request;bundle-version="1.0.0",
  org.apache.commons.codec;bundle-version="1.4.0",
  org.apache.commons.cxf;bundle-version="1.0.0",
- com.raytheon.uf.common.security;bundle-version="1.14.0"
+ com.raytheon.uf.common.security;bundle-version="1.14.0",
+ com.raytheon.uf.common.parameter
 Export-Package: com.raytheon.uf.common.datadelivery.registry,
  com.raytheon.uf.common.datadelivery.registry.ebxml,
  com.raytheon.uf.common.datadelivery.registry.handlers

@@ -691,7 +691,7 @@ public class LookupManager {
      * @param modelName
      * @return
      */
-    private static String getParamFileName() {
+    public static String getParamFileName() {
         return CONFIG_FILE_ROOT + CONFIG_FILE_PARAM;
     }
 

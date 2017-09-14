@@ -9,6 +9,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
@@ -23,6 +24,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 27, 2017  6186     rjpeter   Initial creation.
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  *
  * </pre>
  *
@@ -32,7 +34,11 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 @XmlAccessorType(XmlAccessType.NONE)
 public class SbnRetrievalAttributeXml<T extends Time, C extends Coverage> {
     @XmlElement
+    @Deprecated
     private Parameter parameter;
+
+    @XmlElement
+    private ParameterGroup parameterGroup;
 
     @XmlElement
     private String subName;
@@ -121,6 +127,14 @@ public class SbnRetrievalAttributeXml<T extends Time, C extends Coverage> {
 
     public void setEnsemble(Ensemble ensemble) {
         this.ensemble = ensemble;
+    }
+
+    public ParameterGroup getParameterGroup() {
+        return parameterGroup;
+    }
+
+    public void setParameterGroup(ParameterGroup parameterGroup) {
+        this.parameterGroup = parameterGroup;
     }
 
 }

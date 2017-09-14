@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Properties;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +84,7 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 25, 2017  6186     rjpeter   Updated abstract method naming.
  * Aug 04, 2017  6356     tjensen   Add support for DPA failover
+ * Sep 12, 2017  6413     tjensen   Removed parameters from DataSetName
  *
  * </pre>
  *
@@ -136,8 +137,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
             try {
                 this.packageNames = paths.split(pathSeparator);
             } catch (Exception e) {
-                logger
-                        .error("Couldn't parse Registry Collector JAXB path list: "
+                logger.error(
+                        "Couldn't parse Registry Collector JAXB path list: "
                                 + paths,
                         e);
             }
@@ -195,16 +196,16 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         final String description = metaData.getDataSetDescription();
 
         if (centralUpdatesEnabled) {
-        logger.info("Attempting store of DataSetMetaData[" + description + "] "
-                + "Date: " + metaData.getDate());
+            logger.info("Attempting store of DataSetMetaData[" + description
+                    + "] " + "Date: " + metaData.getDate());
 
             try {
                 handler.update(RegistryUtil.registryUser, metaData);
-            logger.info("DataSetMetaData [" + description
+                logger.info("DataSetMetaData [" + description
                         + "] successfully stored in Registry");
             } catch (RegistryHandlerException e) {
-            logger.error("DataSetMetaData [" + description
-                    + "] failed to store in Registry", e);
+                logger.error("DataSetMetaData [" + description
+                        + "] failed to store in Registry", e);
             }
         } else {
             logger.info("DataSetMetaData [" + description
@@ -225,18 +226,14 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         dsn.setDataSetType(dataSetToStore.getDataSetType());
         dsn.setDataSetName(dataSetToStore.getDataSetName());
 
-        // Now add the parameter Objects so we can associate
-        // the DataSetName with parameters..
-        dsn.setParameters(dataSetToStore.getParameters());
-
         if (centralUpdatesEnabled) {
             try {
-            DataDeliveryHandlers.getDataSetNameHandler()
-                    .update(RegistryUtil.registryUser, dsn);
-            logger.info("DataSetName object store complete, dataset ["
-                    + dsn.getDataSetName() + "]");
-        } catch (RegistryHandlerException e) {
-            logger.error("DataSetName object store failed:", e);
+                DataDeliveryHandlers.getDataSetNameHandler()
+                        .update(RegistryUtil.registryUser, dsn);
+                logger.info("DataSetName object store complete, dataset ["
+                        + dsn.getDataSetName() + "]");
+            } catch (RegistryHandlerException e) {
+                logger.error("DataSetName object store failed:", e);
             }
         } else {
             logger.info("DatasetName object for dataset ["
@@ -258,14 +255,13 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         if (centralUpdatesEnabled) {
             try {
                 handler.update(RegistryUtil.registryUser, dataSetToStore);
-            logger.info("Dataset [" + dataSetName
+                logger.info("Dataset [" + dataSetName
                         + "] successfully stored in Registry");
                 storeDataSetName(dataSet);
 
             } catch (RegistryHandlerException e) {
-            logger.error(
-                    "Dataset [" + dataSetName + "] failed to store in Registry",
-                    e);
+                logger.error("Dataset [" + dataSetName
+                        + "] failed to store in Registry", e);
             }
         } else {
             logger.info("Dataset [" + dataSetName
@@ -326,9 +322,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
                 DataDeliveryHandlers.getParameterHandler()
                         .update(RegistryUtil.registryUser, parameter);
             } catch (RegistryHandlerException e) {
-            logger.error(
-                    "Failed to store parameter [" + parameter.getName() + "]",
-                    e);
+                logger.error("Failed to store parameter [" + parameter.getName()
+                        + "]", e);
             }
         } else {
             logger.debug("Parameter [" + parameter.getName()
@@ -360,7 +355,6 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
                         .getParameters()) {
                     // place in map
                     rval.put(parm.getName(), parm);
-                    storeParameter(parm);
                 }
 
                 parametersByLayer.put(layer.getName(), rval);
@@ -423,8 +417,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
                 System.getProperties().putAll(newProps);
             }
         } catch (IOException | LocalizationException e) {
-            logger.error("Failed reading property file '"
-                    + DPA_PROP_FILE_PATH + "' from localization", e);
+            logger.error("Failed reading property file '" + DPA_PROP_FILE_PATH
+                    + "' from localization", e);
         }
 
         centralUpdatesEnabled = Boolean.getBoolean(centralUpdatesProperty);

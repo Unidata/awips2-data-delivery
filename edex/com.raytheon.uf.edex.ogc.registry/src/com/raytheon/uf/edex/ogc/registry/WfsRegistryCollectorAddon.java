@@ -38,6 +38,8 @@ import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.Levels;
+import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
@@ -73,11 +75,13 @@ import com.vividsolutions.jts.geom.Envelope;
  *                                  request window.
  * Apr 13, 2014  3012     dhladky   Cleaned up.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
- * May 25, 2017  6186     rjpeter   Refactored, combined tracking under WfsLayerInfo, correctly follow CollectorAddon pattern.
+ * May 25, 2017  6186     rjpeter   Refactored, combined tracking under
+ *                                  WfsLayerInfo, correctly follow
+ *                                  CollectorAddon pattern.
  * Aug 30, 2017  6412     tjensen   Changed to store insert times in metadata
  *                                  instead of obs times
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Sep 26, 2017  6416     nabowle   Set availableOffset in metadata.
- *
  *
  * </pre>
  *
@@ -337,7 +341,17 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
         wpds.setDataSetName(layer.getName());
         wpds.setProviderName(getConfiguration().getProvider().getName());
         wpds.setCollectionName(layer.getName());
-        wpds.setParameters(getParameters(layer));
+
+        Map<String, Parameter> parameters = getParameters(layer);
+        wpds.setParameterGroups(ParameterUtils
+                .generateParameterGroupsFromParameters(parameters.values()));
+
+        // TODO: OBE after all sites are 18.1.1 or beyond
+        wpds.setParameters(parameters);
+        for (Parameter parm : parameters.values()) {
+            storeParameter(parm);
+        }
+
         wpds.setTime(new PointTime());
     }
 

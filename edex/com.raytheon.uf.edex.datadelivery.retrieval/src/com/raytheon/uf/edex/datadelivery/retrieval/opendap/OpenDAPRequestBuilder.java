@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,17 +17,25 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
+import com.raytheon.uf.common.datadelivery.registry.GriddedParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Levels;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.gridcoverage.GridCoverage;
 import com.raytheon.uf.common.gridcoverage.subgrid.SubGrid;
+import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
 
 /**
@@ -53,6 +59,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
  * Sep 27, 2014  2131     dhladky   removed un-needed casting.
  * Oct 14, 2014  3127     dhladky   Fixed stack overflow.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
+ * Sep 12, 2017  6413     tjensen   Removed unnecessary requestLevelStart and
+ *                                  End
  *
  * </pre>
  *
@@ -60,6 +68,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.request.RequestBuilder;
  */
 class OpenDAPRequestBuilder
         extends RequestBuilder<GriddedTime, GriddedCoverage> {
+
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String openDAPURL;
 
@@ -79,7 +89,8 @@ class OpenDAPRequestBuilder
         buffer.append("?");
         RetrievalAttribute<GriddedTime, GriddedCoverage> att = retrieval
                 .getAttribute();
-        buffer.append(att.getParameter().getProviderName());
+
+        buffer.append(att.getEntry().getProviderName());
         // process ensemble first
         buffer.append(processEnsemble());
         // process time second
@@ -93,32 +104,33 @@ class OpenDAPRequestBuilder
     /**
      * Gets a string vertical levels DAP from XML
      *
+     * @param string
+     *
      * @param prcXML
      * @return
      */
-    private String processDAPLevels(Parameter parm) {
+    private String processDAPLevels(ParameterLevelEntry ple, String url) {
 
         StringBuilder buf = new StringBuilder();
 
-        // multilevel request
-        if (parm.getLevels() != null || parm.getLevels().size() > 1) {
-
-            Levels levs = parm.getLevels();
-
-            if (levs.size() == 1 && !levs.getLevel().contains(Double.NaN)) {
-                buf.append("[0]");
-            } else if (levs.size() > 1) {
-                // one particular level selected
-                if (levs.getRequestLevelStart() == levs.getRequestLevelEnd()) {
-                    buf.append("[" + levs.getRequestLevelStart() + "]");
+        if (ple instanceof GriddedParameterLevelEntry) {
+            GriddedParameterLevelEntry gple = (GriddedParameterLevelEntry) ple;
+            if (gple.isUseProviderLevel()) {
+                try {
+                    DataSetMetaData<?, ?> dsmd = DataDeliveryHandlers
+                            .getDataSetMetaDataHandler().getById(url);
+                    if (dsmd instanceof GriddedDataSetMetaData) {
+                        GriddedDataSetMetaData gdsmd = (GriddedDataSetMetaData) dsmd;
+                        buf.append("["
+                                + gdsmd.findProviderLevelIndex(
+                                        Double.parseDouble(gple.getLevelOne()))
+                                + "]");
+                    }
+                } catch (RegistryHandlerException e) {
+                    logger.error(
+                            "Error retrieving metadata for url '" + url + "'",
+                            e);
                 }
-                // range of levels selected
-                else {
-                    buf.append("[" + levs.getRequestLevelStart() + ":1:"
-                            + levs.getRequestLevelEnd() + "]");
-                }
-            } else {
-                buf.append("");
             }
         }
 
@@ -153,7 +165,8 @@ class OpenDAPRequestBuilder
     public String processCoverage(GriddedCoverage coverage) {
 
         StringBuilder sb = new StringBuilder();
-        sb.append(processDAPLevels(retrieval.getAttribute().getParameter()));
+        sb.append(processDAPLevels(retrieval.getAttribute().getEntry(),
+                retrieval.getUrl()));
         sb.append(getCoverageString(coverage));
 
         return sb.toString();
@@ -203,12 +216,10 @@ class OpenDAPRequestBuilder
             int[] range = e.getSelectedRange();
             if (range[0] == range[1]) {
                 return "[" + range[0] + "]";
-            } else {
-                return "[" + range[0] + ":" + range[1] + "]";
             }
-        } else {
-            return "";
+            return "[" + range[0] + ":" + range[1] + "]";
         }
+        return "";
     }
 
     @Override

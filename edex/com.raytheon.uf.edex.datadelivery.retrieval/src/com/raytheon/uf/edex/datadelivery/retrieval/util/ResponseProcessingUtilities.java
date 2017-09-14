@@ -23,17 +23,19 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import com.google.common.io.Files;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Levels;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.dataplugin.grid.GridRecord;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
@@ -68,6 +70,8 @@ import com.raytheon.uf.common.time.DataTime;
  *                                  and reading tools.
  * Jun 13, 2017  6204     nabowle   Use awipsName for parameter abbreviation
  *                                  when available. Cleanup.
+ * Sep 12, 2017  6413     tjensen   Removed unnecessary requestLevelStart and
+ *                                  End
  *
  * </pre>
  *
@@ -79,18 +83,14 @@ public class ResponseProcessingUtilities {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(ResponseProcessingUtilities.class);
 
-    public static GridRecord getGridRecord(String name, Parameter parm,
-            Level level, String ensembleId, GridCoverage gridCoverage) {
+    public static GridRecord getGridRecord(String name, ParameterGroup parm,
+            ParameterLevelEntry entry, Level level, String ensembleId,
+            GridCoverage gridCoverage) {
 
         com.raytheon.uf.common.parameter.Parameter parameter = new com.raytheon.uf.common.parameter.Parameter();
 
-        String abbrev = parm.getAwipsName();
-        if (abbrev == null) {
-            abbrev = parm.getName();
-        }
-
-        parameter.setAbbreviation(abbrev);
-        parameter.setName(parm.getDefinition());
+        parameter.setAbbreviation(parm.getAbbrev());
+        parameter.setName(entry.getDescription());
         parameter.setUnitString(parm.getUnits());
 
         GridRecord record = new GridRecord();
@@ -133,13 +133,10 @@ public class ResponseProcessingUtilities {
      * @param parm
      * @return
      */
-    public static int getOpenDAPGridNumLevels(Parameter parm) {
-        if (parm.getLevels().getSelectedLevelIndices() == null) {
-            return 1;
-        }
-        int numLevs = parm.getLevels().getSelectedLevelIndices().size();
-        if (numLevs == 0) {
-            numLevs = 1;
+    public static int getOpenDAPGridNumLevels(ParameterGroup paramGroup) {
+        int numLevs = 0;
+        for (LevelGroup ple : paramGroup.getGroupedLevels().values()) {
+            numLevs += ple.getLevels().size();
         }
         return numLevs;
     }
@@ -175,32 +172,45 @@ public class ResponseProcessingUtilities {
      * @param parm
      * @return
      */
-    public static List<Level> getOpenDAPGridLevels(Levels plevels) {
+    public static List<Level> getOpenDAPGridLevels(LevelGroup lg) {
 
-        int startLevel = plevels.getRequestLevelStart();
-        int endLevel = plevels.getRequestLevelEnd();
-        List<Level> levels = new ArrayList<>(endLevel - startLevel + 1);
+        List<Level> levels = new ArrayList<>(lg.getLevels().size());
+        String masterLevelName = lg.getMasterKey();
+        MasterLevel masterLevel = LevelFactory.getInstance()
+                .getMasterLevel(masterLevelName);
 
         try {
-            for (int index = startLevel; index <= endLevel; index++) {
-                double levelOneValue = plevels.getLevelAt(index);
-                String masterLevelName = LevelType
-                        .getLevelTypeIdName(plevels.getLevelType());
-                MasterLevel masterLevel = LevelFactory.getInstance()
-                        .getMasterLevel(masterLevelName);
-                Level level = LevelFactory.getInstance()
-                        .getLevel(masterLevelName, levelOneValue);
+            for (ParameterLevelEntry ple : lg.getLevels()) {
+                double levelOneValue = Double.NaN;
+                double levelTwoValue = Level.getInvalidLevelValue();
+                if (NumberUtils.isNumber(ple.getLevelOne())) {
+                    levelOneValue = Double.parseDouble(ple.getLevelOne());
+                }
+                if (NumberUtils.isNumber(ple.getLevelTwo())) {
+                    levelTwoValue = Double.parseDouble(ple.getLevelTwo());
+                }
+
+                Level level = LevelFactory.getInstance().getLevel(
+                        masterLevelName, levelOneValue, levelTwoValue);
                 level.setMasterLevel(masterLevel);
                 levels.add(level);
             }
         } catch (Exception e) {
-            statusHandler.error(
-                    "Couldn't retrieve the levels : " + plevels.getLevelType(),
+            statusHandler.error("Couldn't retrieve the levels : " + lg.getKey(),
                     e);
         }
 
         return levels;
 
+    }
+
+    public static List<Level> getOpenDAPGridLevels(
+            Collection<LevelGroup> levelGroups) {
+        List<Level> levels = new ArrayList<>(levelGroups.size());
+        for (LevelGroup lg : levelGroups) {
+            levels.addAll(getOpenDAPGridLevels(lg));
+        }
+        return levels;
     }
 
     /**

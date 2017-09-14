@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
@@ -42,12 +43,13 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 import com.google.common.collect.Ordering;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
@@ -62,6 +64,7 @@ import com.raytheon.uf.viz.datadelivery.common.xml.AreaXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.PointTimeXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.SubsetXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
+import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.VerticalXML;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
@@ -82,6 +85,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
  * Jun 29, 2017  6130     tjensen   Set coverage before getting specific time.
  * Aug 02, 2017  6186     rjpeter   Removed setting of url.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  *
  * </pre>
  *
@@ -187,6 +191,16 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         SortedSet<ImmutableDate> dates = retrieveDatesForDataSet(null);
         timingTabControls = new PDATimingSubsetTab(timingComp, this, shell,
                 dates);
+
+        TabItem verticalTab = new TabItem(tabFolder, SWT.NONE);
+        verticalTab.setText(VERTICAL_TAB);
+        verticalTab.setData("valid", false);
+        Composite vertComp = new Composite(tabFolder, SWT.NONE);
+        vertComp.setLayout(sgl);
+        vertComp.setLayoutData(sgd);
+        verticalTab.setControl(vertComp);
+        vTab = new VerticalSubsetTab(vertComp, dataSet, this);
+
         TabItem spatialTab = new TabItem(tabFolder, SWT.NONE);
         spatialTab.setText(SPATIAL_TAB);
         Composite spatialComp = new Composite(tabFolder, SWT.NONE);
@@ -207,10 +221,12 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         }
 
         ReferencedEnvelope env = spatialTabControls.getEnvelope();
+        Map<String, ParameterGroup> params = vTab.getParameters();
 
         // Update the data set size label text.
-        this.sizeLbl.setText(
-                SizeUtil.prettyByteSize(dataSize.getDataSetSizeInBytes(env)));
+        this.sizeLbl.setText(SizeUtil.prettyByteSize(
+                dataSize.getDataSetSizeInBytes(params, env)) + " of "
+                + SizeUtil.prettyByteSize(dataSize.getFullSizeInBytes()));
     }
 
     @SuppressWarnings({ "rawtypes" })
@@ -334,16 +350,14 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         }
         sub.setTime(newTime);
 
-        List<Parameter> paramList = new ArrayList<>();
-        Map<String, Parameter> paramMap = dataSet.getParameters();
-        List<DataLevelType> levelTypeList = new ArrayList<>();
-        levelTypeList.add(new DataLevelType(DataLevelType.LevelType.SFC));
-        for (Parameter p : paramMap.values()) {
-            p.setDataType(DataType.PDA);
-            p.setLevelType(levelTypeList);
-            paramList.add(p);
-        }
+        Map<String, ParameterGroup> selectedParameterObjs = vTab
+                .getParameters();
+        sub.setParameterGroups(selectedParameterObjs);
 
+        // TODO: OBE after all sites are 18.1.1 or beyond
+        List<Parameter> paramList = new ArrayList<>(
+                ParameterUtils.generateParametersFromGroups(
+                        selectedParameterObjs, DataType.PDA, null).values());
         sub.setParameter(paramList);
 
         if (dataSize == null) {
@@ -355,7 +369,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         return sub;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected void loadFromSubscription(Subscription mySubscription) {
         super.loadFromSubscription(mySubscription);
@@ -372,6 +386,26 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         }
         spatialTabControls.setDataSet(this.dataSet);
         spatialTabControls.populate(area);
+
+        // Vertical/Parameters
+        Map<String, VerticalXML> levelMap = new HashMap<>();
+        Map<String, Map<String, ParameterGroup>> paramsByNameByLevel = ParameterUtils
+                .getParameterLevelMap(this.subscription.getParameterGroups());
+
+        for (Entry<String, Map<String, ParameterGroup>> levelEntry : paramsByNameByLevel
+                .entrySet()) {
+            String levelLabel = levelEntry.getKey();
+            Map<String, ParameterGroup> params = levelEntry.getValue();
+            VerticalXML v = new VerticalXML();
+            v.setLayerType(levelLabel);
+            v.setLevels(
+                    ParameterUtils.getLevelNamesForLevel(levelLabel, params));
+            v.setParameterList(new ArrayList<>(params.keySet()));
+
+            levelMap.put(levelLabel, v);
+        }
+        ArrayList<VerticalXML> vertList = new ArrayList<>(levelMap.values());
+        vTab.populate(vertList, dataSet);
     }
 
     /**

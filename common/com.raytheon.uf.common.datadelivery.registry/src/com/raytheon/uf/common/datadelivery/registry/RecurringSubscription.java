@@ -20,10 +20,10 @@
 package com.raytheon.uf.common.datadelivery.registry;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -34,6 +34,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.google.common.collect.Sets;
 import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
@@ -42,6 +43,7 @@ import com.raytheon.uf.common.registry.annotations.SlotAttributeConverter;
 import com.raytheon.uf.common.registry.ebxml.RegistryUtil;
 import com.raytheon.uf.common.registry.ebxml.slots.SetSlotConverter;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
+import com.raytheon.uf.common.serialization.XmlGenericMapAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -92,6 +94,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  *                                  offsets
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Aug 02, 2017  6186     rjpeter   Removed url.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  *
  * </pre>
  *
@@ -139,6 +142,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         this.setOwner(sub.getOwner());
         this.setOfficeIDs(sub.getOfficeIDs());
         this.setParameter(sub.getParameter());
+        this.setParameterGroups(sub.getParameterGroups());
         this.setPriority(sub.getPriority());
         this.setProvider(sub.getProvider());
         this.setSubscriptionEnd(sub.getSubscriptionEnd());
@@ -253,9 +257,19 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     @SlotAttribute
     private DataType dataSetType;
 
+    /**
+     * Deprecated.
+     *
+     * Needed for compatibility with sites using versions older than 18.1.1
+     */
     @XmlElements({ @XmlElement })
     @DynamicSerializeElement
+    @Deprecated
     private List<Parameter> parameter;
+
+    @DynamicSerializeElement
+    @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    private Map<String, ParameterGroup> parameterGroups;
 
     @XmlElement
     @DynamicSerializeElement
@@ -627,6 +641,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      *            subscription parameter list
      */
     @Override
+    @Deprecated
     public void setParameter(List<Parameter> parameter) {
         this.parameter = parameter;
     }
@@ -637,34 +652,31 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
      * @return subscription parameter list
      */
     @Override
+    @Deprecated
     public List<Parameter> getParameter() {
         return parameter;
     }
 
-    /**
-     * Add subscription parameters.
-     *
-     * @param par
-     *            a subscription parameter
-     */
     @Override
-    public void addParameter(Parameter par) {
-        if (parameter == null) {
-            parameter = new ArrayList<>();
+    public Map<String, ParameterGroup> getParameterGroups() {
+        /*
+         * Subscriptions generated pre-18.1.1 will not have parameterGroup
+         * populated, so we need to generate it from the parameter list.
+         *
+         * TODO: After all sites are at 18.1.1 or beyond, this should be
+         * removed.
+         */
+        if (parameterGroups == null) {
+            parameterGroups = ParameterUtils
+                    .generateParameterGroupsFromParameters(parameter);
         }
-
-        parameter.add(par);
+        return parameterGroups;
     }
 
-    /**
-     * Remove subscription parameters.
-     *
-     * @param par
-     *            a subscription parameter
-     */
     @Override
-    public void removeParameter(Parameter par) {
-        parameter.remove(par);
+    public void setParameterGroups(
+            Map<String, ParameterGroup> parameterGroups) {
+        this.parameterGroups = parameterGroups;
     }
 
     /**

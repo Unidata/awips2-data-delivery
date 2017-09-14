@@ -41,6 +41,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 27, 2017  6186     rjpeter   Initial creation.
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  *
  * </pre>
  *
@@ -179,6 +180,7 @@ public class SbnRetrievalXml {
         att.setCoverage(attribute.getCoverage());
         att.setEnsemble(attribute.getEnsemble());
         att.setParameter(attribute.getParameter());
+        att.setParameterGroup(attribute.getParameterGroup());
         att.setTime(attribute.getTime());
         retrieval.setAttribute(att);
         return retrieval;

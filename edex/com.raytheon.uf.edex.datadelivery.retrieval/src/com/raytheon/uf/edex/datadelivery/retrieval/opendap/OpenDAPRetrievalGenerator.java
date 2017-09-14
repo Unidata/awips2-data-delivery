@@ -26,25 +26,22 @@ import java.util.List;
 import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
+import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Levels;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.ProviderType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
-import com.raytheon.uf.common.dataplugin.level.Level;
-import com.raytheon.uf.common.time.DataTime;
-import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalGenerator;
 import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilities;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilities;
 
 /**
  *
@@ -80,8 +77,11 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilit
  * May 09, 2017  6186     rjpeter   Update to handle passed in DataSetMetaData.
  * Jun 13, 2017  6204     nabowle   Cleanup.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
- * Aug 02, 2017  6186     rjpeter   Moved satisfiesSubscription to DataSetMetaData.
+ * Aug 02, 2017  6186     rjpeter   Moved satisfiesSubscription to
+ *                                  DataSetMetaData.
  * Aug 10, 2017  6186     nabowle   Set retrieval datasetname.
+ * Sep 12, 2017  6413     tjensen   Simplified logic. Always retrieve one
+ *                                  param/level at a time
  *
  * </pre>
  *
@@ -106,12 +106,11 @@ class OpenDAPRetrievalGenerator
             Provider provider) {
         List<Retrieval<GriddedTime, GriddedCoverage>> retrievals = Collections
                 .emptyList();
-        switch (subscription.getDataSetType()) {
-        case GRID:
+        if (subscription.getDataSetType() == DataType.GRID) {
             retrievals = getGridRetrievals(dsmd, subscription, provider);
-            break;
-        default:
-            logger.error("Point DATA OPENDAP NOT YET IMPLEMENTED");
+        } else {
+            logger.error("OPENDAP not yet implemented for type "
+                    + subscription.getDataSetType());
         }
 
         return retrievals;
@@ -129,20 +128,6 @@ class OpenDAPRetrievalGenerator
     }
 
     /**
-     * Process the RetrievalAttribute
-     *
-     * @param parm
-     * @return
-     */
-    protected Map<DataTime, List<Level>> getGridDuplicates(String name,
-            Parameter parm, List<DataTime> times, List<Level> levels,
-            List<String> ensembleMembers, GriddedCoverage cov) {
-
-        return RetrievalGeneratorUtilities.findGridDuplicates(name, times,
-                levels, ensembleMembers, parm, cov.getRequestGridCoverage());
-    }
-
-    /**
      * create the grid type retrievals
      *
      * @param dsmd
@@ -153,8 +138,6 @@ class OpenDAPRetrievalGenerator
     private List<Retrieval<GriddedTime, GriddedCoverage>> getGridRetrievals(
             DataSetMetaData<GriddedTime, GriddedCoverage> dsmd,
             Subscription<GriddedTime, GriddedCoverage> sub, Provider provider) {
-        sub = removeDuplicates(sub);
-
         // Subscription has already been fully retrieved
         if (sub == null) {
             return Collections.emptyList();
@@ -172,45 +155,17 @@ class OpenDAPRetrievalGenerator
         List<Retrieval<GriddedTime, GriddedCoverage>> retrievals = new ArrayList<>();
         GriddedTime subTime = sub.getTime();
         for (List<Integer> timeSequence : subTime.getTimeSequences(sfactor)) {
-            for (Parameter param : sub.getParameter()) {
-                final Levels paramLevels = param.getLevels();
-                if (CollectionUtil
-                        .isNullOrEmpty(paramLevels.getSelectedLevelIndices())) {
-                    // handle single level
-                    paramLevels.setRequestLevelEnd(0);
-                    paramLevels.setRequestLevelStart(0);
-                    List<GriddedTime> times = processTime(timeSequence,
-                            sub.getTime());
-
-                    for (GriddedTime time : times) {
-                        for (Ensemble ensemble : ensembles) {
-                            Retrieval<GriddedTime, GriddedCoverage> retrieval = getRetrieval(
-                                    dsmd, sub, provider, param, paramLevels,
-                                    time, ensemble);
-                            retrievals.add(retrieval);
-                        }
-                    }
-                } else {
-                    for (List<Integer> levelSequence : paramLevels
-                            .getLevelSequences(sfactor)) {
-
-                        List<GriddedTime> times = processTime(timeSequence,
-                                sub.getTime());
-                        List<Levels> levels = processLevels(levelSequence,
-                                paramLevels);
-
-                        // temporarily make all requests single level
-                        // and time
-                        for (GriddedTime time : times) {
-                            for (Levels level : levels) {
-                                for (Ensemble ensemble : ensembles) {
-                                    Retrieval<GriddedTime, GriddedCoverage> retrieval = getRetrieval(
-                                            dsmd, sub, provider, param, level,
-                                            time, ensemble);
-                                    retrievals.add(retrieval);
-                                }
-                            }
-                        }
+            // Only process one provider parameter at a time
+            List<ParameterGroup> paramList = ParameterUtils
+                    .createSingleParameterLevelList(sub.getParameterGroups());
+            List<GriddedTime> times = processTime(timeSequence, sub.getTime());
+            for (ParameterGroup param : paramList) {
+                // make all requests single level and time
+                for (GriddedTime time : times) {
+                    for (Ensemble ensemble : ensembles) {
+                        Retrieval<GriddedTime, GriddedCoverage> retrieval = getRetrieval(
+                                dsmd, sub, provider, param, time, ensemble);
+                        retrievals.add(retrieval);
                     }
                 }
             }
@@ -225,7 +180,7 @@ class OpenDAPRetrievalGenerator
      * @param dsmd
      * @param sub
      * @param provider
-     * @param param
+     * @param paramGroup
      * @param level
      * @param time
      * @param ensemble
@@ -234,8 +189,7 @@ class OpenDAPRetrievalGenerator
     private Retrieval<GriddedTime, GriddedCoverage> getRetrieval(
             DataSetMetaData<GriddedTime, GriddedCoverage> dsmd,
             Subscription<GriddedTime, GriddedCoverage> sub, Provider provider,
-            Parameter param, Levels level, GriddedTime time,
-            Ensemble ensemble) {
+            ParameterGroup paramGroup, GriddedTime time, Ensemble ensemble) {
 
         Retrieval<GriddedTime, GriddedCoverage> retrieval = new Retrieval<>();
         retrieval.setSubscriptionName(sub.getName());
@@ -256,12 +210,15 @@ class OpenDAPRetrievalGenerator
 
         // Attribute processing
         RetrievalAttribute<GriddedTime, GriddedCoverage> att = new RetrievalAttribute<>();
-        Parameter lparam = processParameter(param);
         att.setCoverage(cov);
-        lparam.setLevels(level);
         att.setTime(time);
-        att.setParameter(lparam);
         att.setEnsemble(ensemble);
+        att.setParameterGroup(paramGroup);
+
+        // TODO: OBE after all sites at 18.1.1 or beyond
+        Map<String, Parameter> params = ParameterUtils
+                .generateParametersFromGroup(paramGroup, DataType.GRID, dsmd);
+        att.setParameter(params.values().iterator().next());
 
         // Look up the provider's configured plugin for this data type
         ProviderType providerType = provider
@@ -303,33 +260,6 @@ class OpenDAPRetrievalGenerator
     }
 
     /**
-     * Get the level sequence
-     *
-     * @param levelSequence
-     * @param parmLevels
-     * @return
-     */
-    private List<Levels> processLevels(List<Integer> levelSequence,
-            Levels parmLevels) {
-
-        List<Levels> levels = new ArrayList<>();
-        for (Integer currentLevelSequence : levelSequence) {
-            Levels level = new Levels();
-            level.setLevel(parmLevels.getLevel());
-            level.setDz(parmLevels.getDz());
-            level.setLevelType(parmLevels.getLevelType());
-            level.setRequestLevelStart(currentLevelSequence);
-            level.setRequestLevelEnd(currentLevelSequence);
-            level.setName(parmLevels.getName());
-            level.setSelectedLevelIndices(Arrays.asList(currentLevelSequence));
-            levels.add(level);
-        }
-
-        return levels;
-
-    }
-
-    /**
      * Process sequences of hours for separate retrieval
      *
      * @param timeSequence
@@ -357,129 +287,5 @@ class OpenDAPRetrievalGenerator
         }
 
         return times;
-    }
-
-    /**
-     * Remove duplicate levels, times, subscriptions
-     */
-    protected Subscription<GriddedTime, GriddedCoverage> removeDuplicates(
-            Subscription<GriddedTime, GriddedCoverage> sub) {
-
-        GriddedCoverage cov = sub.getCoverage();
-        GriddedTime time = sub.getTime();
-
-        int sfactor = getSizingFactor(getDimensionalSize(cov));
-
-        List<String> ensembles = null;
-        if (sub.getEnsemble() != null && sub.getEnsemble().hasSelection()) {
-            ensembles = sub.getEnsemble().getSelectedMembers();
-        } else {
-            ensembles = Arrays.asList((String) null);
-        }
-
-        for (List<Integer> timeSequence : time.getTimeSequences(sfactor)) {
-
-            for (Parameter param : sub.getParameter()) {
-
-                if (param.getLevels().getSelectedLevelIndices() == null || param
-                        .getLevels().getSelectedLevelIndices().size() == 0) {
-                    // levels don't matter so much here it's just one
-                    param.getLevels().setRequestLevelEnd(0);
-                    param.getLevels().setRequestLevelStart(0);
-
-                    List<DataTime> times = null;
-
-                    for (GriddedTime gtime : processTime(timeSequence, time)) {
-                        times = ResponseProcessingUtilities
-                                .getOpenDAPGridDataTimes(gtime);
-                    }
-
-                    List<Level> levels = ResponseProcessingUtilities
-                            .getOpenDAPGridLevels(param.getLevels());
-
-                    Map<DataTime, List<Level>> dups = getGridDuplicates(
-                            sub.getName(), param, times, levels, ensembles,
-                            cov);
-
-                    for (int i = 0; i < times.size(); i++) {
-                        DataTime dtime = times.get(i);
-                        List<Level> levDups = dups.get(dtime);
-
-                        if (levDups != null) {
-                            // single level, remove the time
-                            time.getSelectedTimeIndices()
-                                    .remove(timeSequence.get(i));
-                            logger.info("Removing duplicate time: "
-                                    + dtime.toString());
-                        }
-                    }
-
-                } else {
-
-                    for (List<Integer> levelSequence : param.getLevels()
-                            .getLevelSequences(sfactor)) {
-
-                        List<DataTime> times = null;
-                        List<Level> plevels = null;
-
-                        for (GriddedTime gtime : processTime(timeSequence,
-                                time)) {
-                            times = ResponseProcessingUtilities
-                                    .getOpenDAPGridDataTimes(gtime);
-                        }
-                        for (Levels level : processLevels(levelSequence,
-                                param.getLevels())) {
-                            plevels = ResponseProcessingUtilities
-                                    .getOpenDAPGridLevels(level);
-                        }
-
-                        Map<DataTime, List<Level>> dups = getGridDuplicates(
-                                sub.getName(), param, times, plevels, ensembles,
-                                cov);
-
-                        for (int i = 0; i < times.size(); i++) {
-                            DataTime dtime = times.get(i);
-                            List<Level> levDups = dups.get(dtime);
-
-                            if (levDups != null) {
-
-                                if (levDups.size() == plevels.size()) {
-                                    // just remove the entire time
-                                    time.getSelectedTimeIndices()
-                                            .remove(timeSequence.get(i));
-                                    logger.info("Removing duplicate time: "
-                                            + dtime.toString());
-                                } else {
-
-                                    for (int j = 0; j < plevels.size(); j++) {
-                                        Level lev = plevels.get(j);
-                                        for (Level plev : levDups) {
-                                            if (plev.equals(lev)) {
-                                                param.getLevels()
-                                                        .getSelectedLevelIndices()
-                                                        .remove(levelSequence
-                                                                .get(j));
-                                                logger.info(
-                                                        "Removing duplicate level: "
-                                                                + lev.getMasterLevel()
-                                                                        .getDescription());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // remove entire subscription, it's a duplicate
-        if (time.getSelectedTimeIndices().isEmpty()) {
-            logger.info("Removing duplicate subscription: " + sub.getName());
-            return null;
-        }
-
-        return sub;
-
     }
 }

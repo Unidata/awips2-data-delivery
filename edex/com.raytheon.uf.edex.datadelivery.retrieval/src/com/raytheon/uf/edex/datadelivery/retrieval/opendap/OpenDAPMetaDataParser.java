@@ -26,24 +26,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
+import com.raytheon.uf.common.datadelivery.registry.GriddedParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Levels;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -123,6 +125,7 @@ import opendap.dap.NoSuchAttributeException;
  * Aug 02, 2017  6186        rjpeter   Fixed cycle handling for DSMD.
  * Aug 31, 2017  6430        rjpeter   Fixed to not use dataSet as map key and
  *                                     stored parameters once.
+ * Sep 12, 2017  6413        tjensen   Updated to support ParameterGroups
  * Sep 25, 2017  6178        tgurney   parseMetaData generate link key from url
  *
  * </pre>
@@ -132,75 +135,31 @@ import opendap.dap.NoSuchAttributeException;
 
 class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
+    private final Pattern levelRangePattern;
+
     OpenDAPMetaDataParser() {
         serviceConfig = HarvesterServiceManager.getInstance()
                 .getServiceConfig(ServiceType.OPENDAP);
+        levelRangePattern = Pattern
+                .compile("(\\d+(\\.\\d+)?)-(\\d+(\\.\\d+)?)");
     }
 
-    /**
-     * Gets the levels for types we are aware of. {@link DataLevelType} Right
-     * now it can only recognize MB (pressure levels) for DAP types. It also
-     * rudimentarily recognizes Heights Above Sea Level, SEAB. dz = number of
-     * levels levMin = minimum level value levMax = maximum level value
-     *
-     * @param type
-     * @param collectionName
-     * @param gdsmd
-     * @param dz
-     * @param levMin
-     * @param levMax
-     * @return
-     */
-    private Levels getLevels(DataLevelType type, String collectionName,
-            GriddedDataSetMetaData gdsmd, Double dz, Float levMin,
-            Float levMax) {
-
-        Levels levels = new Levels();
-
-        final LevelType levelType = type.getType();
-        try {
-
-            levels.setName(levelType.toString());
-            levels.setLevelType(type.getId());
-
-            if (!LookupManager.getInstance()
-                    .levelLookupExists(collectionName)) {
-                // create new default lookups
-                if (levelType.equals(LevelType.MB)
-                        || levelType.equals(LevelType.SEAB)) {
-
-                    List<Double> levelList = OpenDAPParseUtility.getInstance()
-                            .parseLevels(gdsmd.getUrl(),
-                                    serviceConfig.getConstantValue("LEV"));
-                    LookupManager.getInstance().modifyLevelLookups(
-                            collectionName, dz, levMin, levMax, levelList);
-                }
-            }
-
-            if (levelType.equals(LevelType.MB)
-                    || levelType.equals(LevelType.SEAB)) {
-                List<Double> levelList = LookupManager.getInstance()
-                        .getLevels(collectionName).getLevelXml();
-                levels.setLevel(levelList);
-            } else {
-                // default added when only one
-                levels.addLevel(Double.NaN);
-            }
-
-            levels.setDz(dz);
-
-            // TODO: Add more level type, if and when they exist
-            if (!gdsmd.getLevelTypes().containsKey(type)) {
-                gdsmd.addLevelType(type, levels);
-            }
-
-        } catch (Exception e) {
-            logger.error(" Couldn't parse Level info: " + levelType.toString()
-                    + " dataset: " + collectionName + " url: " + gdsmd.getUrl(),
-                    e);
+    private List<Double> getProviderLevels(String collectionName,
+            GriddedDataSetMetaData gdsmd, Double dz, Float levMin, Float levMax)
+            throws Exception {
+        List<Double> levelList = null;
+        if (!LookupManager.levelLookupExists(collectionName)) {
+            levelList = OpenDAPParseUtility.getInstance().parseLevels(
+                    gdsmd.getUrl(), serviceConfig.getConstantValue("LEV"));
+            LookupManager.getInstance().modifyLevelLookups(collectionName, dz,
+                    levMin, levMax, levelList);
+        } else {
+            levelList = LookupManager.getInstance().getLevels(collectionName)
+                    .getLevelXml();
         }
+        gdsmd.setProviderLevels(levelList);
 
-        return levels;
+        return levelList;
     }
 
     /**
@@ -215,7 +174,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
      * @return
      * @throws NoSuchAttributeException
      */
-    private Map<String, Parameter> getParameters(DAS das,
+    private Map<String, ParameterGroup> getParameters(DAS das,
             GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd,
             String subName, Collection collection, String dataDateFormat)
             throws NoSuchAttributeException {
@@ -237,7 +196,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         gridCoverage.setSpacingUnit(serviceConfig.getConstantValue("DEGREE"));
         gridCoverage.setFirstGridPointCorner(Corner.LowerLeft);
 
-        Map<String, Parameter> parameters = new HashMap<>();
+        Map<String, ParameterGroup> paramGroups = new HashMap<>();
         final String timecon = serviceConfig.getConstantValue("TIME");
         final String size = serviceConfig.getConstantValue("SIZE");
         final String minimum = serviceConfig.getConstantValue("MINIMUM");
@@ -254,7 +213,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         final String long_name = serviceConfig.getConstantValue("LONG_NAME");
         final String missing_value = serviceConfig
                 .getConstantValue("MISSING_VALUE");
-        final String fill_value = serviceConfig.getConstantValue("FILL_VALUE");
         final String fill = Float.toString(GridUtil.GRID_FILL_VALUE);
 
         // process globals first
@@ -406,8 +364,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                 try {
 
                     AttributeTable at = das.getAttributeTable(providerName);
-                    Parameter parm = new Parameter();
-                    parm.setDataType(dataSet.getDataSetType());
 
                     // UNKNOWN DESCRIPTION
                     String description = "unknown description";
@@ -422,12 +378,10 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                     // Clean up description stuff
                     description = description.replaceAll("^[* ]+", "");
 
-                    parm.setDefinition(description);
-                    parm.setUnits(OpenDAPParseUtility.getInstance()
-                            .parseUnits(description));
+                    String paramUnits = OpenDAPParseUtility.getInstance()
+                            .parseUnits(description);
 
                     // Check for an AWIPS name
-                    String displayName = providerName;
                     String awipsName = null;
 
                     /*
@@ -445,7 +399,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                     }
 
                     if (specificMap != null) {
-                        displayName = specificMap.getDisplay();
                         awipsName = specificMap.getAwips();
                     } else {
                         /*
@@ -453,43 +406,25 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                          * description to the known patterns
                          */
                         awipsName = parseParamName(providerName, description);
-                        if (!awipsName.equals(providerName)) {
-                            String levelInfo = parseLevelName(description);
-                            displayName = awipsName + " (" + levelInfo + ")";
-                        }
                     }
 
-                    parm.setName(displayName);
-                    parm.setAwipsName(awipsName);
-                    parm.setProviderName(providerName);
-
+                    String missingValue = fill;
                     try {
-                        parm.setMissingValue(OpenDAPParseUtility.getInstance()
-                                .trim(at.getAttribute(missing_value)
-                                        .getValueAt(0)));
+                        missingValue = OpenDAPParseUtility.getInstance().trim(
+                                at.getAttribute(missing_value).getValueAt(0));
                     } catch (Exception iae) {
                         logger.error("Invalid DAP missing value block! "
                                 + providerName, iae);
-                        parm.setMissingValue(fill);
                     }
 
-                    try {
-                        parm.setFillValue(OpenDAPParseUtility.getInstance()
-                                .trim(at.getAttribute(fill_value)
-                                        .getValueAt(0)));
-                    } catch (Exception iae) {
-                        logger.error(
-                                "Invalid DAP fill value block! " + providerName,
-                                iae);
-                        parm.setMissingValue(fill);
+                    ParameterGroup pg = paramGroups.get(
+                            ParameterUtils.buildKey(awipsName, paramUnits));
+                    if (pg == null) {
+                        pg = new ParameterGroup(awipsName, paramUnits);
+                        paramGroups.put(pg.getKey(), pg);
                     }
-
-                    DataLevelType type = parseLevelType(parm);
-                    parm.setLevels(getLevels(type, collectionName, gdsmd, dz,
-                            levMin, levMax));
-                    parm.addLevelType(type);
-                    // add to map
-                    parameters.put(parm.getName(), parm);
+                    parseLevels(pg, description, providerName, missingValue,
+                            collectionName, gdsmd, dz, levMin, levMax);
 
                 } catch (Exception le) {
                     logger.error(" Couldn't parse Parameter: " + providerName
@@ -514,7 +449,102 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         griddedCoverage.setGridCoverage(gridCoverage);
         griddedCoverage.generateEnvelopeFromGridCoverage();
 
-        return parameters;
+        return paramGroups;
+    }
+
+    private void parseLevels(ParameterGroup pg, String description,
+            String providerName, String missingValue, String collectionName,
+            GriddedDataSetMetaData gdsmd, double dz, float levMin,
+            float levMax) {
+
+        String levelName = "UNKNOWN";
+        String levelUnits = "";
+        String levelInfo = "";
+        boolean providerLevels = false;
+        boolean reverseOrder = false;
+        String masterKey = "";
+        Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
+                .getParamLevelRegexes();
+
+        Matcher m = null;
+        for (ParameterLevelRegex myPLR : plr.values()) {
+            m = myPLR.getPattern().matcher(description);
+            if (m.find()) {
+                levelName = myPLR.getLevel();
+                levelUnits = myPLR.getUnits();
+                providerLevels = myPLR.hasProviderLevels();
+                reverseOrder = myPLR.getReverseOrder();
+                masterKey = myPLR.getMasterKey();
+                if (myPLR.getLevelGroup() != null) {
+                    levelInfo = m.group().replaceAll(myPLR.getRegex(),
+                            myPLR.getLevelGroup());
+                }
+                break;
+            }
+        }
+        if ("UNKNOWN".equals(levelName)) {
+            logger.warn(" Couldn't parse Level info for parameter '"
+                    + providerName + "' from '" + description + "'. Dataset: '"
+                    + collectionName + "'. URL: '" + gdsmd.getUrl()
+                    + "'. An entry should be added to "
+                    + LookupManager.getParamFileName() + " for this level.");
+        }
+
+        LevelGroup lg = pg
+                .getLevelGroup(ParameterUtils.buildKey(levelName, levelUnits));
+        if (lg == null) {
+            lg = new LevelGroup(levelName, levelUnits);
+            if (reverseOrder) {
+                lg.setReverseOrder(reverseOrder);
+            }
+            if (!masterKey.isEmpty()) {
+                lg.setMasterKey(masterKey);
+            }
+            pg.putLevelGroup(lg);
+        }
+        try {
+            List<Double> levelList = null;
+            // create new default lookups
+            if (providerLevels) {
+
+                levelList = getProviderLevels(collectionName, gdsmd, dz, levMin,
+                        levMax);
+
+                if (levelList != null) {
+                    for (Double lvl : levelList) {
+                        GriddedParameterLevelEntry gple = new GriddedParameterLevelEntry(
+                                providerName, description, lvl.toString());
+                        gple.setUseProviderLevel(true);
+                        gple.setMissingValue(missingValue);
+                        lg.addLevel(gple);
+                    }
+                }
+            } else {
+                GriddedParameterLevelEntry newLevel;
+
+                if (levelInfo != null && !levelInfo.isEmpty()) {
+                    Pattern p = getLevelRangePattern();
+                    m = p.matcher(levelInfo);
+                    if (m.matches()) {
+                        newLevel = new GriddedParameterLevelEntry(providerName,
+                                description, m.group(1), m.group(3));
+                    } else {
+                        newLevel = new GriddedParameterLevelEntry(providerName,
+                                description, levelInfo);
+                    }
+                } else {
+                    newLevel = new GriddedParameterLevelEntry(providerName,
+                            description, levelInfo);
+                }
+                newLevel.setMissingValue(missingValue);
+                lg.addLevel(newLevel);
+            }
+
+        } catch (Exception e) {
+            logger.error(" Couldn't parse Level info. name: " + providerName
+                    + " description: '" + description + "' dataset: "
+                    + collectionName + " url: " + gdsmd.getUrl(), e);
+        }
     }
 
     /**
@@ -573,87 +603,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         return paramName;
     }
 
-    /**
-     * Uses the parameter description to determine the Level information for a
-     * given parameter. This can include the specific level, the units, and/or
-     * the level type (as applicable).
-     *
-     * @param description
-     *            parameter description.
-     * @return String describing the level information for this parameter
-     */
-    private static String parseLevelName(String description) {
-        Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
-                .getParamLevelRegexes();
-        Map<String, ParameterNameRegex> pnr = LookupManager.getInstance()
-                .getParamNameRegexes();
-
-        StringBuilder sb = new StringBuilder();
-
-        if (plr != null && pnr != null) {
-            Matcher m = null;
-            String tempDescription = description;
-            for (ParameterLevelRegex myPLR : plr.values()) {
-                m = myPLR.getPattern().matcher(tempDescription);
-                if (m.find()) {
-                    // Save off the level info
-                    if (myPLR.getLevelGroup() != null) {
-                        sb.append(m.group(0).replaceAll(myPLR.getRegex(),
-                                myPLR.getLevelGroup()));
-                    }
-                    if (myPLR.getUnits() != null) {
-                        sb.append(myPLR.getUnits());
-                    }
-                    DataLevelType type = new DataLevelType(
-                            LevelType.fromDescription(myPLR.getLevel()));
-                    sb.append(" " + type.getType().toString());
-                    break;
-                }
-            }
-        }
-        String levelInfo = sb.toString();
-
-        return levelInfo.trim();
-    }
-
-    /**
-     * Get the correct level type
-     *
-     * @param param
-     * @return
-     */
-    private DataLevelType parseLevelType(Parameter param) {
-
-        DataLevelType type = null;
-        // SEA ICE special case
-        if (param.getDefinition().contains(LevelType.SEAB.getLevelType())) {
-            type = new DataLevelType(LevelType.SEAB);
-        } else {
-            Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
-                    .getParamLevelRegexes();
-
-            Matcher m = null;
-            String tempDescription = param.getDefinition();
-            for (ParameterLevelRegex myPLR : plr.values()) {
-                m = myPLR.getPattern().matcher(tempDescription);
-                if (m.find()) {
-                    type = new DataLevelType(
-                            LevelType.fromDescription(myPLR.getLevel()));
-                    type.setUnit(myPLR.getUnits());
-                    break;
-                }
-            }
-        }
-
-        if (type == null) {
-            logger.warn("Unable to determine level type for: "
-                    + param.getDefinition());
-            type = new DataLevelType(LevelType.UNKNOWN);
-        }
-
-        return type;
-    }
-
     @Override
     public List<DataSetMetaData<?, ?>> parseMetaData(Provider provider,
             List<Link> links, Collection collection, String dataDateFormat)
@@ -666,8 +615,11 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         if (CollectionUtil.isNullOrEmpty(links)) {
             return null;
         }
+        String providerName = provider.getName();
+        String collectionName = collection.getName();
 
         for (Link link : links) {
+
             List<String> vals = null;
             try {
                 vals = OpenDAPParseUtility.getInstance()
@@ -678,14 +630,15 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             }
 
             String dataSetName = vals.get(0);
+            String cycle = vals.get(1);
+            String cycleAsParseableNum = vals.get(2);
             OpenDapGriddedDataSet dataSet = new OpenDapGriddedDataSet();
-            dataSet.setCollectionName(collection.getName());
-            dataSet.setProviderName(provider.getName());
+            dataSet.setCollectionName(collectionName);
+            dataSet.setProviderName(providerName);
             dataSet.setDataSetName(dataSetName);
 
             final GriddedDataSetMetaData gdsmd = new OpenDapGriddedDataSetMetaData();
-            gdsmd.setDataSetName(dataSet.getDataSetName());
-            String providerName = dataSet.getProviderName();
+            gdsmd.setDataSetName(dataSetName);
             gdsmd.setProviderName(providerName);
 
             DAS das = link.getMetadata().get(DAP_TYPE.DAS.getDapType());
@@ -693,8 +646,15 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             gdsmd.setUrl(link.getUrl().replace(
                     serviceConfig.getConstantValue("META_DATA_SUFFIX"),
                     serviceConfig.getConstantValue("BLANK")));
-            Map<String, Parameter> paramMap = getParameters(das, dataSet, gdsmd,
-                    link.getSubName(), collection, dataDateFormat);
+
+            dataSet.setParameterGroups(getParameters(das, dataSet, gdsmd,
+                    link.getSubName(), collection, dataDateFormat));
+
+            // TODO: OBE after all sites are at 18.1.1 or above
+            Map<String, Parameter> paramMap = ParameterUtils
+                    .generateParametersFromGroups(dataSet.getParameterGroups(),
+                            dataSet.getDataSetType(), gdsmd);
+
             dataSet.setParameters(paramMap);
             parameters.putAll(paramMap);
 
@@ -719,10 +679,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
             // The opendap specific info
             Map<String, String> cyclesToUrls = new HashMap<>();
-            String cycle = vals.get(1);
             cyclesToUrls.put(cycle, gdsmd.getUrl());
-
-            String cycleAsParseableNum = vals.get(2);
 
             int cycleAsNum = GriddedDataSetMetaData.NO_CYCLE;
             if (cycleAsParseableNum != null) {
@@ -834,13 +791,15 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         // Store DataSets
         for (Entry<String, List<DataSetMetaData<?, ?>>> entry : metaDatas
                 .entrySet()) {
-            logger.info("Processing DataSet [" + entry.getKey() + "] with ["
-                    + entry.getValue().size()
+            String dataSetName = entry.getKey();
+            List<DataSetMetaData<?, ?>> dataSetMetaDatas = entry.getValue();
+            logger.info("Processing DataSet [" + dataSetName + "] with ["
+                    + dataSetMetaDatas.size()
                     + "] DataSetMetaData entries ...");
-            OpenDapGriddedDataSet dataSet = dataSets.get(entry.getKey());
+            OpenDapGriddedDataSet dataSet = dataSets.get(dataSetName);
             storeDataSet(dataSet);
-            storeMetaData(entry.getValue(), dataSet);
-            parsedMetadatas.addAll(entry.getValue());
+            storeMetaData(dataSetMetaDatas, dataSet);
+            parsedMetadatas.addAll(dataSetMetaDatas);
         }
 
         return parsedMetadatas;
@@ -852,6 +811,10 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         throw new UnsupportedOperationException(
                 "Not implemented for this type");
 
+    }
+
+    public Pattern getLevelRangePattern() {
+        return levelRangePattern;
     }
 
 }

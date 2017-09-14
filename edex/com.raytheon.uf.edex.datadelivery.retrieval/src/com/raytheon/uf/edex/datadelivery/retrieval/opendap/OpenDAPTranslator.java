@@ -24,7 +24,9 @@ import java.util.Enumeration;
 import java.util.List;
 
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GriddedParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
@@ -52,6 +54,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  *                                  compatibility.
  * Jun 13, 2017  6204     nabowle   Cleanup.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  * Sep 21, 2017  6441     tgurney   Remove references to dods-1.1.7
  *
  * </pre>
@@ -190,19 +193,22 @@ public class OpenDAPTranslator
 
                     float[] subValues = Arrays.copyOfRange(values, start, end);
 
-                    subValues = GridMetadataAdapter.adjustGrid(nx, ny,
-                            subValues,
-                            Float.parseFloat(
-                                    attXML.getParameter().getMissingValue()),
-                            true);
+                    ParameterLevelEntry entry = attXML.getEntry();
+                    if (entry instanceof GriddedParameterLevelEntry) {
+                        GriddedParameterLevelEntry gridEntry = (GriddedParameterLevelEntry) entry;
+                        subValues = GridMetadataAdapter.adjustGrid(nx, ny,
+                                subValues,
+                                Float.parseFloat(gridEntry.getMissingValue()),
+                                true);
 
-                    record.setMessageData(subValues);
-                    record.setOverwriteAllowed(true);
-                    records[bin] = record;
-                    bin++;
-                    statusHandler
-                            .info("Creating record: " + record.getDataURI());
-                    start = end;
+                        record.setMessageData(subValues);
+                        record.setOverwriteAllowed(true);
+                        records[bin] = record;
+                        bin++;
+                        statusHandler.info(
+                                "Creating record: " + record.getDataURI());
+                        start = end;
+                    }
                 }
             }
         }
@@ -221,7 +227,7 @@ public class OpenDAPTranslator
     @Override
     protected int getSubsetNumLevels() {
         return ResponseProcessingUtilities.getOpenDAPGridNumLevels(
-                retrieval.getAttribute().getParameter());
+                retrieval.getAttribute().getParameterGroup());
     }
 
     /** get list of data times from subset */

@@ -20,15 +20,12 @@
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
-import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
-import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -39,9 +36,9 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
 import com.raytheon.uf.edex.datadelivery.harvester.MetaDataHandler;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IExtractMetaData;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IParseMetaData;
-import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.Link;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
+import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapServiceFactory;
 
 import opendap.dap.DAS;
 
@@ -85,7 +82,7 @@ import opendap.dap.DAS;
 
 public class CrawlMetaDataHandler extends MetaDataHandler {
 
-    private CrawlerLinkDao crawlerLinkDao = new CrawlerLinkDao();
+    private final CrawlerLinkDao crawlerLinkDao = new CrawlerLinkDao();
 
     public CrawlMetaDataHandler(ProviderHandler providerHandler) {
         this.providerHandler = providerHandler;
@@ -129,8 +126,9 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
 
                 if (collection != null) {
                     Provider provider = hc.getProvider();
-                    IServiceFactory<String, DAS, GriddedTime, GriddedCoverage> serviceFactory = ServiceTypeFactory
-                            .retrieveServiceFactory(provider);
+                    OpenDapServiceFactory serviceFactory = (OpenDapServiceFactory) ServiceTypeFactory
+                            .retrieveServiceFactory(provider.getServiceType());
+                    serviceFactory.setProvider(provider);
 
                     IExtractMetaData<String, DAS> mde = serviceFactory
                             .getExtractor();
@@ -145,7 +143,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                             mde.setDataDate();
                         } catch (Exception e) {
                             final String userFriendly = String.format(
-                                "Unable to retrieve metadata for dataset group %s: %s",
+                                    "Unable to retrieve metadata for dataset group %s: %s",
                                     collectionName, url);
                             statusHandler.error(userFriendly, e);
 
@@ -163,8 +161,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                         // now start parsing the metadata objects
                         String dataDateFormat = agent.getDateFormat();
 
-                        IParseMetaData mdp = serviceFactory.getParser(
-                                new Date(System.currentTimeMillis()));
+                        IParseMetaData mdp = serviceFactory.getParser();
 
                         ITimer timer = TimeUtil.getTimer();
                         timer.start();
@@ -180,9 +177,9 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                                     + providerName + " : " + collectionName);
                             crawlerLinkDao.createLinks(crawlerLinks);
                         } catch (Exception e) {
-                            statusHandler.error("Unable to parse metadata for dataset group"
-                                            + collectionName,
-                                    e);
+                            statusHandler
+                                    .error("Unable to parse metadata for dataset group"
+                                            + collectionName, e);
                         }
                         timer.stop();
                         statusHandler.info("Parsed and stored metadata from ["

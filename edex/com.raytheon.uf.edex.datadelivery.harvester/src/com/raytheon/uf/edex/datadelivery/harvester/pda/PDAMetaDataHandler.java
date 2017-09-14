@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,7 +22,6 @@ package com.raytheon.uf.edex.datadelivery.harvester.pda;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Date;
 import java.util.List;
 
 import javax.xml.bind.JAXBElement;
@@ -32,20 +31,16 @@ import org.apache.commons.io.FileDeleteStrategy;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
-import com.raytheon.uf.common.datadelivery.harvester.PDAAgent;
 import com.raytheon.uf.common.datadelivery.harvester.PDACatalogServiceResponseWrapper;
-import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
-import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.harvester.MetaDataHandler;
-import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IServiceFactory;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAMetaDataParser;
+import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAServiceFactory;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 
 import net.opengis.cat.csw.v_2_0_2.AbstractRecordType;
@@ -54,11 +49,11 @@ import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
 
 /**
  * Harvest PDA MetaData
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jun 13, 2014  3120     dhladky   Initial creation
@@ -68,16 +63,16 @@ import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
  *                                  with transactions.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Mar 08, 2017  6089     tjensen   Drop date format from parseMetadata calls
- * 
+ *
  * </pre>
- * 
+ *
  * @author dhladky
  * @version 1.0
  */
 
 public class PDAMetaDataHandler extends MetaDataHandler {
 
-    OgcJaxbManager jaxbManager = null;
+    private OgcJaxbManager jaxbManager = null;
 
     private static final String fileExtension = ".xml";
 
@@ -93,11 +88,10 @@ public class PDAMetaDataHandler extends MetaDataHandler {
 
     /**
      * Process PDA metadata records
-     * 
+     *
      * @param bytes
      * @throws IOException
      */
-    @SuppressWarnings("rawtypes")
     public void processFile(byte[] bytes) throws IOException {
 
         GetRecordsResponseType briefRecords = null;
@@ -106,12 +100,9 @@ public class PDAMetaDataHandler extends MetaDataHandler {
         File directory = null;
         HarvesterConfig config = HarvesterConfigurationManager
                 .getPDAConfiguration();
-        PDAAgent agent = (PDAAgent) config.getAgent();
         Provider provider = config.getProvider();
-        @SuppressWarnings("unchecked")
-        IServiceFactory<BriefRecordType, PDAMetaDataParser, Time, Coverage> serviceFactory = ServiceTypeFactory
-                .retrieveServiceFactory(config.getProvider());
-        Date lastDate = TimeUtil.newGmtCalendar().getTime();
+        PDAServiceFactory serviceFactory = (PDAServiceFactory) ServiceTypeFactory
+                .retrieveServiceFactory(provider.getServiceType());
 
         try {
             PDACatalogServiceResponseWrapper wrapper = SerializationUtil
@@ -162,7 +153,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
         if (briefRecords != null) {
             // Make a parser
             PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory
-                    .getParser(lastDate);
+                    .getParser();
             // extract brief record(s) and send to parser
             List<JAXBElement<? extends AbstractRecordType>> briefs = briefRecords
                     .getSearchResults().getAbstractRecord();
@@ -210,10 +201,9 @@ public class PDAMetaDataHandler extends MetaDataHandler {
 
     /**
      * Process PDA transaction based messages
-     * 
+     *
      * @param bytes
      */
-    @SuppressWarnings("rawtypes")
     public void processTransaction(byte[] bytes) {
 
         if (bytes != null) {
@@ -221,16 +211,13 @@ public class PDAMetaDataHandler extends MetaDataHandler {
             BriefRecordType briefRecord = null;
             HarvesterConfig config = HarvesterConfigurationManager
                     .getPDAConfiguration();
-            PDAAgent agent = (PDAAgent) config.getAgent();
             Provider provider = config.getProvider();
-            @SuppressWarnings("unchecked")
-            IServiceFactory<BriefRecordType, PDAMetaDataParser, Time, Coverage> serviceFactory = ServiceTypeFactory
-                    .retrieveServiceFactory(config.getProvider());
-            Date lastDate = TimeUtil.newGmtCalendar().getTime();
+            PDAServiceFactory serviceFactory = (PDAServiceFactory) ServiceTypeFactory
+                    .retrieveServiceFactory(provider.getServiceType());
 
             // Make a parser
             PDAMetaDataParser parser = (PDAMetaDataParser) serviceFactory
-                    .getParser(lastDate);
+                    .getParser();
 
             try {
                 // true, parse for metaData updates in transactions.
@@ -247,7 +234,7 @@ public class PDAMetaDataHandler extends MetaDataHandler {
 
     /**
      * Gets the JAXB manager for use with BriefRecord decode
-     * 
+     *
      * @return
      */
     private OgcJaxbManager getJaxbManager() {

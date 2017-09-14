@@ -19,13 +19,14 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
@@ -56,6 +57,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Apr 22, 2014  3046     dhladky   Got rid of duplicate code.
  * Jun 13, 2017  6204     nabowle   Cleanup.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  *
  * </pre>
  *
@@ -107,8 +109,8 @@ public class GridMetadataAdapter
                     for (Level level : levels) {
                         pdos[bin] = populateGridRecord(
                                 retrieval.getSubscriptionName(),
-                                attXML.getParameter(), level, ensemble,
-                                gridCoverage);
+                                attXML.getParameterGroup(), attXML.getEntry(),
+                                level, ensemble, gridCoverage);
                         bin++;
                     }
                 }
@@ -116,8 +118,8 @@ public class GridMetadataAdapter
         } else {
 
             pdos[0] = populateGridRecord(retrieval.getSubscriptionName(),
-                    attXML.getParameter(), levels[0], ensembles.get(0),
-                    gridCoverage);
+                    attXML.getParameterGroup(), attXML.getEntry(), levels[0],
+                    ensembles.get(0), gridCoverage);
 
         }
     }
@@ -130,14 +132,15 @@ public class GridMetadataAdapter
      * @param gridCoverage
      * @return
      */
-    private GridRecord populateGridRecord(String name, Parameter parm,
-            Level level, String ensembleId, GridCoverage gridCoverage) {
+    private GridRecord populateGridRecord(String name, ParameterGroup parm,
+            ParameterLevelEntry entry, Level level, String ensembleId,
+            GridCoverage gridCoverage) {
 
         GridRecord rec = null;
 
         try {
-            rec = ResponseProcessingUtilities.getGridRecord(name, parm, level,
-                    ensembleId, gridCoverage);
+            rec = ResponseProcessingUtilities.getGridRecord(name, parm, entry,
+                    level, ensembleId, gridCoverage);
         } catch (Exception e) {
             statusHandler.error("Couldn't create grid record! ", e);
         }
@@ -145,10 +148,12 @@ public class GridMetadataAdapter
         return rec;
     }
 
-    @VisibleForTesting
-    Level[] getLevels(RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
-        List<Level> levels = ResponseProcessingUtilities
-                .getOpenDAPGridLevels(attXML.getParameter().getLevels());
+    private static Level[] getLevels(
+            RetrievalAttribute<GriddedTime, GriddedCoverage> attXML) {
+        List<Level> levels = new ArrayList<>(1);
+        levels.addAll(ResponseProcessingUtilities.getOpenDAPGridLevels(
+                attXML.getParameterGroup().getGroupedLevels().values()));
+
         return levels.toArray(new Level[levels.size()]);
     }
 

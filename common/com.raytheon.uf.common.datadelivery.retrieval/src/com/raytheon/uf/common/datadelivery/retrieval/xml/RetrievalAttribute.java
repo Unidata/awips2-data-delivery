@@ -19,9 +19,15 @@
  **/
 package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
+import java.util.List;
+import java.util.Map;
+
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
@@ -41,6 +47,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Oct 01, 2013  1797     dhladky   Generics
  * Nov 07, 2013  2361     njensen   Remove ISerializableObject
  * Jul 20, 2017  6186     rjpeter   Removed redundant fields with retrieval.
+ * Sep 20, 2017  6413     tjensen   Updated for ParameterGroups
  *
  * </pre>
  *
@@ -50,7 +57,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class RetrievalAttribute<T extends Time, C extends Coverage> {
 
     @DynamicSerializeElement
+    @Deprecated
     private Parameter parameter;
+
+    @DynamicSerializeElement
+    private ParameterGroup parameterGroup;
 
     @DynamicSerializeElement
     private C coverage;
@@ -92,6 +103,51 @@ public class RetrievalAttribute<T extends Time, C extends Coverage> {
 
     public void setEnsemble(Ensemble ensemble) {
         this.ensemble = ensemble;
+    }
+
+    public ParameterGroup getParameterGroup() {
+        return parameterGroup;
+    }
+
+    public void setParameterGroup(ParameterGroup parameterGroup) {
+        this.parameterGroup = parameterGroup;
+    }
+
+    /**
+     * The ParameterGroup on retrieval attributes should contain a single level
+     * group. If it does, return that level group. Else throw an exception
+     *
+     * @return the single LevelGroup in the ParameterGroup
+     */
+    public LevelGroup getLevelGroup() {
+        Map<String, LevelGroup> groupedLevels = parameterGroup
+                .getGroupedLevels();
+        if (groupedLevels.size() != 1) {
+            throw new IllegalStateException(
+                    "Retrieval Attribute for parameter '"
+                            + parameterGroup.getAbbrev()
+                            + "' contains multiple level groups.");
+        }
+        return groupedLevels.values().iterator().next();
+    }
+
+    /**
+     * The ParameterGroup on retrieval attributes should contain a single level
+     * group. If it does, return that level group. Else throw an exception
+     *
+     * @return the single LevelGroup in the ParameterGroup
+     */
+    public ParameterLevelEntry getEntry() {
+        LevelGroup lg = getLevelGroup();
+        if (lg != null) {
+            List<ParameterLevelEntry> levels = lg.getLevels();
+            if (levels.size() == 1) {
+                return levels.get(0);
+            }
+        }
+        throw new IllegalStateException(
+                "Retrieval Attribute for parameter '" + parameterGroup.getAbbrev()
+                        + "' contains multiple level entries.");
     }
 
 }

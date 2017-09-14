@@ -3,6 +3,7 @@ package com.raytheon.uf.common.datadelivery.registry;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -18,11 +19,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Level Type, lev type name
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 24, 2012           dhladky   Initial creation.
@@ -33,16 +34,21 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *                                  objects.
  * Jan 24, 2013  1527     dhladky   Changed 0DEG to FRZ
  * Mar 02, 2017  5988     tjensen   Update level population for friendly naming
- * 
+ * Sep 14, 2017  6413     tjensen   Deprecated
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
+@Deprecated
 public class DataLevelType implements Serializable {
-
+    /*
+     * Parameter and Level information should be accessed via ParameterGroup
+     * objects. This method should be removed once Parameter objects are no
+     * longer used for version compatibility
+     */
     private static final long serialVersionUID = -6953092339309118122L;
 
     /**
@@ -59,7 +65,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * Constructor.
-     * 
+     *
      * @param type
      * @param id
      */
@@ -70,7 +76,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * Copy constructor
-     * 
+     *
      * @param copy
      */
     public DataLevelType(DataLevelType copy) {
@@ -91,7 +97,7 @@ public class DataLevelType implements Serializable {
 
     @XmlElements({ @XmlElement(name = "layer") })
     @DynamicSerializeElement
-    private ArrayList<Double> layer;
+    private List<Double> layer;
 
     /**
      * LevelType enumeration
@@ -100,29 +106,29 @@ public class DataLevelType implements Serializable {
     @XmlEnum
     @XmlType(namespace = "com.raytheon.uf.common.datadelivery.registry")
     public enum LevelType {
-        MB("pressure", "Pressure Levels", 100), 
-        SFC("surface", "Surface", 1), 
-        MAXW("max", "Maximum Level", 102), 
-        TROP("tropopause", "Tropopause Level", 105), 
-        FHAG("height", "Height Level", 104), 
-        HSCLW("highest", "Highest Level", 106), 
-        LSCLW("lowest", "Lowest Level", 107), 
-        EL("equilibrium", "Equlibrium Level", 108), 
-        CCL("convective", "Convective Level", 109), 
-        CBL("cloud","Cloud Level", 110), 
-        SIGL("sigma", "Sigma Level", 111), 
-        PVL("pv", "PV Level", 111), 
-        CTL("top", "Top Level", 112), 
-        MSL("mean", "Mean Sea Level", 113), 
-        EA("entire","Entire Atmosphere (As Single Layer)", 114), 
-        FRZ("0c","0c isotherm", 115), 
-        LCY("low", "Low Cloud Level", 116), 
-        MCY("middle", "Middle Cloud Level", 117), 
-        HCY("high", "High Cloud Level", 118), 
-        PBL("planetary", "Planetary Boundary Layer", 119), 
-        SEAB("sea_", "Sea Ice, Elevation/Area/Thickness/Movement", 123), 
-        EO("entire", "Entire Ocean (As Single Layer)", 124), 
-        SEQ("sequence", "Sequence", 125), 
+        MB("pressure", "Pressure Levels", 100),
+        SFC("surface", "Surface", 1),
+        MAXW("max", "Maximum Level", 102),
+        TROP("tropopause", "Tropopause Level", 105),
+        FHAG("height", "Height Level", 104),
+        HSCLW("highest", "Highest Level", 106),
+        LSCLW("lowest", "Lowest Level", 107),
+        EL("equilibrium", "Equlibrium Level", 108),
+        CCL("convective", "Convective Level", 109),
+        CBL("cloud", "Cloud Level", 110),
+        SIGL("sigma", "Sigma Level", 111),
+        PVL("pv", "PV Level", 111),
+        CTL("top", "Top Level", 112),
+        MSL("mean", "Mean Sea Level", 113),
+        EA("entire", "Entire Atmosphere (As Single Layer)", 114),
+        FRZ("0c", "0c isotherm", 115),
+        LCY("low", "Low Cloud Level", 116),
+        MCY("middle", "Middle Cloud Level", 117),
+        HCY("high", "High Cloud Level", 118),
+        PBL("planetary", "Planetary Boundary Layer", 119),
+        SEAB("sea_", "Sea Ice, Elevation/Area/Thickness/Movement", 123),
+        EO("entire", "Entire Ocean (As Single Layer)", 124),
+        SEQ("sequence", "Sequence", 125),
         UNKNOWN("unknown", "UNKNOWN", 0);
 
         private final String levelType;
@@ -157,7 +163,7 @@ public class DataLevelType implements Serializable {
 
         /**
          * Get level type id.
-         * 
+         *
          * @return level type id
          */
         public int getLevelTypeId() {
@@ -168,7 +174,7 @@ public class DataLevelType implements Serializable {
          * Returns the level name based on the level type Id. However, this
          * method has some special cases because there is currently no unified
          * mapping yet.
-         * 
+         *
          * @return the level name
          */
         public static String getLevelTypeIdName(int levelTypeId) {
@@ -185,7 +191,7 @@ public class DataLevelType implements Serializable {
 
         /**
          * Look up the enum instance via its description.
-         * 
+         *
          * @param description
          *            the description
          * @return the enum instance
@@ -205,7 +211,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * Set type.
-     * 
+     *
      * @param type
      */
     public void setType(LevelType type) {
@@ -214,7 +220,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * Get type.
-     * 
+     *
      * @return type
      */
     public LevelType getType() {
@@ -223,25 +229,25 @@ public class DataLevelType implements Serializable {
 
     /**
      * Set layer.
-     * 
+     *
      * @param layer
      */
-    public void setLayer(ArrayList<Double> layer) {
+    public void setLayer(List<Double> layer) {
         this.layer = layer;
     }
 
     /**
      * Get layer
-     * 
+     *
      * @return layer
      */
-    public ArrayList<Double> getLayer() {
+    public List<Double> getLayer() {
         return layer;
     }
 
     /**
      * Add layer.
-     * 
+     *
      * @param l
      */
     public void addLayer(Double l) {
@@ -254,7 +260,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * Set unit.
-     * 
+     *
      * @param unit
      */
     public void setUnit(String unit) {
@@ -263,7 +269,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * Get unit.
-     * 
+     *
      * @return unit
      */
     public String getUnit() {
@@ -272,7 +278,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * Get the level type description
-     * 
+     *
      * @return description of the level type
      */
     public String getDescription() {
@@ -281,7 +287,7 @@ public class DataLevelType implements Serializable {
 
     /**
      * A unique key for this object.
-     * 
+     *
      * @return String the unique key
      */
     public String getKey() {
@@ -292,11 +298,6 @@ public class DataLevelType implements Serializable {
         return key;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -309,42 +310,52 @@ public class DataLevelType implements Serializable {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#equals(java.lang.Object)
      */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         DataLevelType other = (DataLevelType) obj;
         if (layer == null) {
-            if (other.layer != null)
+            if (other.layer != null) {
                 return false;
-        } else if (!layer.equals(other.layer))
+            }
+        } else if (!layer.equals(other.layer)) {
             return false;
+        }
         if (type == null) {
-            if (other.type != null)
+            if (other.type != null) {
                 return false;
-        } else if (!type.equals(other.type))
+            }
+        } else if (!type.equals(other.type)) {
             return false;
+        }
         if (unit == null) {
-            if (other.unit != null)
+            if (other.unit != null) {
                 return false;
-        } else if (!unit.equals(other.unit))
+            }
+        } else if (!unit.equals(other.unit)) {
             return false;
+        }
         return true;
     }
 
     /**
      * Delegate
-     * 
+     *
      * @return
      */
     public int getId() {
         return type.getLevelTypeId();
     }
+
 }

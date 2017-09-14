@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -27,7 +26,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.viz.ui.widgets.duallist.DualList;
 import com.raytheon.viz.ui.widgets.duallist.DualListConfig;
 import com.raytheon.viz.ui.widgets.duallist.IUpdate;
@@ -46,6 +44,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * May 05, 2016  5487     tjensen   Added special case for Pressure Level
  *                                  sorting
  * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ * Sep 12, 2017  6413     tjensen   Remove levelType
  *
  * </pre>
  *
@@ -57,8 +56,6 @@ public class LevelParameterSelection extends Composite implements IUpdate {
     private final List<String> levelList;
 
     private final List<String> paramList;
-
-    private final DataLevelType levelType;
 
     /** Dual list for levels */
     private DualList dualLevelList;
@@ -78,6 +75,7 @@ public class LevelParameterSelection extends Composite implements IUpdate {
      *
      * @param parent
      * @param style
+     * @param levelGroupKey
      * @param levelType
      * @param levelList
      * @param paramList
@@ -85,10 +83,9 @@ public class LevelParameterSelection extends Composite implements IUpdate {
      * @param id
      */
     public LevelParameterSelection(Composite parent, int style,
-            DataLevelType levelType, List<String> levelList,
-            List<String> paramList, ISubset callback, String id) {
+            List<String> levelList, List<String> paramList, ISubset callback,
+            String id) {
         super(parent, style);
-        this.levelType = levelType;
         this.levelList = levelList;
         this.paramList = paramList;
         this.callback = callback;
@@ -105,22 +102,16 @@ public class LevelParameterSelection extends Composite implements IUpdate {
         this.setLayout(gl);
         this.setLayoutData(gd);
 
-        if (levelList != null && levelList.size() > 0) {
+        if (levelList != null && !levelList.isEmpty()) {
             DualListConfig levelConfig = new DualListConfig();
             levelConfig.setAvailableListLabel("Available Levels:");
             levelConfig.setSelectedListLabel("Selected Levels:");
             levelConfig.setVisibleItems(6);
             levelConfig.setListWidthInChars(15);
             levelConfig.setShowUpDownBtns(false);
-            /*
-             * Pressure levels are numeric values that are sorted in reverse
-             * order.
-             */
-            if (id.equals("Pressure Levels")) {
-                levelConfig.setNumericData(true);
-                levelConfig.setReverseSort(true);
-            }
             levelConfig.setFullList(levelList);
+            levelConfig.setPreSorted(true);
+            levelConfig.setSortList(true);
 
             dualLevelList = new DualList(this, SWT.NONE, levelConfig, this);
         }
@@ -136,12 +127,6 @@ public class LevelParameterSelection extends Composite implements IUpdate {
         dualParamList = new DualList(this, SWT.NONE, paramConfig, this);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.IUpdate#hasEntries(boolean)
-     */
     @Override
     public void hasEntries(boolean entries) {
         if (dualParamList != null && dualLevelList != null) {
@@ -226,7 +211,7 @@ public class LevelParameterSelection extends Composite implements IUpdate {
      *
      * @param levelList
      */
-    public void selectLevels(ArrayList<String> levelList) {
+    public void selectLevels(List<String> levelList) {
         dualLevelList
                 .selectItems(levelList.toArray(new String[levelList.size()]));
     }
@@ -236,7 +221,7 @@ public class LevelParameterSelection extends Composite implements IUpdate {
      *
      * @param paramList
      */
-    public void selectParameters(ArrayList<String> paramList) {
+    public void selectParameters(List<String> paramList) {
         dualParamList
                 .selectItems(paramList.toArray(new String[paramList.size()]));
     }
@@ -262,8 +247,7 @@ public class LevelParameterSelection extends Composite implements IUpdate {
         isDirty = true;
     }
 
-    public DataLevelType getLevelType() {
-        return levelType;
+    public String getId() {
+        return id;
     }
-
 }

@@ -187,7 +187,8 @@ public class SubscriptionRetrievalAgent {
 
         // process the bundle into a retrieval
         RetrievalGenerator rg = ServiceTypeFactory
-                .retrieveServiceFactory(provider).getRetrievalGenerator();
+                .retrieveServiceFactory(provider.getServiceType())
+                .getRetrievalGenerator();
 
         for (Subscription<?, ?> sub : subscriptions) {
             final String subscriptionName = sub.getName();

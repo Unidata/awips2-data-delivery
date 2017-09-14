@@ -1,31 +1,32 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.edex.datadelivery.service.verify;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.edex.datadelivery.service.verify.SubscriptionIntegrityVerifier.IVerificationResponse;
 import com.raytheon.uf.edex.datadelivery.service.verify.SubscriptionIntegrityVerifier.IVerificationStrategy;
@@ -33,20 +34,20 @@ import com.raytheon.uf.edex.datadelivery.service.verify.SubscriptionIntegrityVer
 /**
  * Simple implementation of {@link IVerificationStrategy}. Intentionally
  * package-private to enforce dependency injection.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 07, 2012 1104       djohnson     Initial creation
- * Jan 30, 2013 1543       djohnson     Use List instead of ArrayList.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------
+ * Dec 07, 2012  1104     djohnson  Initial creation
+ * Jan 30, 2013  1543     djohnson  Use List instead of ArrayList.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 class BaseSubscriptionVerifier implements IVerificationStrategy {
 
@@ -81,37 +82,33 @@ class BaseSubscriptionVerifier implements IVerificationStrategy {
     public IVerificationResponse verify(DataSet dataSet,
             Subscription subscription) {
 
-        Collection<Parameter> dataSetParams = dataSet.getParameters()
-                .values();
-        if (dataSetParams == null) {
-            dataSetParams = new ArrayList<Parameter>(0);
-        }
+        Map<String, ParameterGroup> subParamGroups = subscription
+                .getParameterGroups();
+        Map<String, ParameterGroup> dsParamGroups = dataSet
+                .getParameterGroups();
 
-        List<Parameter> subParams = subscription.getParameter();
-        if (subParams == null) {
-            subParams = new ArrayList<Parameter>(0);
-        }
-        subParams.removeAll(dataSetParams);
+        List<ParameterGroup> invalidParameters = ParameterUtils
+                .getUnique(subParamGroups, dsParamGroups);
 
-        final boolean invalidSubscriptionParameters = !subParams.isEmpty();
-
-        if (invalidSubscriptionParameters) {
+        if (!invalidParameters.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            sb.append("Subscription ").append(subscription.getName())
-                    .append(" has failed verification.  The following parameters are no longer available: ");
-            for (Iterator<Parameter> iter = subParams.iterator(); iter
-                    .hasNext();) {
-                Parameter param = iter.next();
-                sb.append(param.getName());
-                if (iter.hasNext()) {
-                    sb.append(", ");
+            sb.append("Subscription ").append(subscription.getName()).append(
+                    " has failed verification.  The following parameters are no longer available: ");
+            String prefix = "";
+            for (ParameterGroup param : invalidParameters) {
+                for (LevelGroup lg : param.getGroupedLevels().values()) {
+                    for (ParameterLevelEntry ple : lg.getLevels()) {
+                        sb.append(prefix).append(ple.getProviderName())
+                                .append(" (").append(param.getAbbrev())
+                                .append(")");
+                        prefix = ", ";
+                    }
                 }
             }
 
             return new VerificationResponse(sb.toString());
-        } else {
-            return new VerificationResponse(null);
         }
+        return new VerificationResponse(null);
     }
 
 }

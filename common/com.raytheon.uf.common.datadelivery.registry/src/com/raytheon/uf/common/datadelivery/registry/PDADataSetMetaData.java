@@ -20,7 +20,6 @@
 package com.raytheon.uf.common.datadelivery.registry;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -48,6 +47,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * Aug 02, 2017  6186     rjpeter   Support dataSetMetaData being a partial
  *                                  dataSet.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  *
  * </pre>
  *
@@ -63,9 +63,19 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
     @DynamicSerializeElement
     private String metaDataID;
 
+    /**
+     * Deprecated.
+     *
+     * Needed for compatibility with sites using versions older than 18.1.1
+     */
     @DynamicSerializeElement
     @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    @Deprecated
     protected Map<String, Parameter> parameters = new HashMap<>();
+
+    @DynamicSerializeElement
+    @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    protected Map<String, ParameterGroup> parameterGroups = new HashMap<>();
 
     public PDADataSetMetaData() {
 
@@ -79,10 +89,12 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
         this.metaDataID = metaDataID;
     }
 
+    @Deprecated
     public Map<String, Parameter> getParameters() {
         return parameters;
     }
 
+    @Deprecated
     public void setParameters(Map<String, Parameter> parameters) {
         this.parameters = parameters;
     }
@@ -94,14 +106,8 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
 
         if (rval == null) {
             // determine if parameters intersect
-            boolean intersect = false;
-            List<Parameter> subscribedParams = sub.getParameter();
-            for (Parameter subParam : subscribedParams) {
-                if (parameters.containsKey(subParam.getName())) {
-                    intersect = true;
-                    break;
-                }
-            }
+            boolean intersect = ParameterUtils.intersects(parameterGroups,
+                    sub.getParameterGroups());
 
             if (!intersect) {
                 rval = "the subscription is not subscribed to parameters in this dataset metadata";
@@ -110,4 +116,14 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
 
         return rval;
     }
+
+    public Map<String, ParameterGroup> getParameterGroups() {
+        return parameterGroups;
+    }
+
+    public void setParameterGroups(
+            Map<String, ParameterGroup> parameterGroups) {
+        this.parameterGroups = parameterGroups;
+    }
+
 }

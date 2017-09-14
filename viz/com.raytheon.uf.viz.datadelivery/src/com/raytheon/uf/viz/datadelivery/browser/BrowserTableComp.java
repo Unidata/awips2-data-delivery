@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
@@ -42,7 +43,9 @@ import org.eclipse.swt.widgets.TableItem;
 
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -62,37 +65,40 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.BrowserColumnNam
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 
 /**
- * 
+ *
  * Class that contains the data table. The data table will hold the data sets
  * that are retrieved when the filters are filled out and the data is retrieved.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 21, 2012            lvenable     Initial creation.
- * Jun  1, 2012    645     jpiatt       Added tooltips.
- * Jun 07, 2012    687     lvenable     Table data refactor.
- * Jun 21, 2012    736     djohnson     Accept List instead of ArrayList.
- * Jun 22, 2012    687     lvenable     Table data refactor.
- * Jul 24, 2012    955     djohnson     Accept List instead of ArrayList.
- * Aug 10, 2012   1022     djohnson     Use GriddedDataSet.
- * Aug 20, 2012   0743     djohnson     Finish making registry type-safe.
- * Aug 30, 2012   1120     jpiatt       Added clickSort flag.
- * Oct 05, 2012   1241     djohnson     Replace RegistryManager calls with registry handler calls.
- * Jan 10, 2013   1346     mpduff       Add additional information to the dataset details output.
- * Feb 15, 2013   1638     mschenke     Moved Util.EOL into FileUtil
- * Apr 10, 2013   1891     djohnson     Declare variable as List.
- * Sep 11, 2013   2352     mpduff       Add siteId to getSubscribedToDataSetNames method.
- * Feb 11, 2014   2771     bgonzale     Use Data Delivery ID instead of Site.
- * Dec 03, 2014   3840     ccody        Correct sorting "contract violation" issue
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 21, 2012           lvenable  Initial creation.
+ * Jun 01, 2012  645      jpiatt    Added tooltips.
+ * Jun 07, 2012  687      lvenable  Table data refactor.
+ * Jun 21, 2012  736      djohnson  Accept List instead of ArrayList.
+ * Jun 22, 2012  687      lvenable  Table data refactor.
+ * Jul 24, 2012  955      djohnson  Accept List instead of ArrayList.
+ * Aug 10, 2012  1022     djohnson  Use GriddedDataSet.
+ * Aug 20, 2012  743      djohnson  Finish making registry type-safe.
+ * Aug 30, 2012  1120     jpiatt    Added clickSort flag.
+ * Oct 05, 2012  1241     djohnson  Replace RegistryManager calls with registry
+ *                                  handler calls.
+ * Jan 10, 2013  1346     mpduff    Add additional information to the dataset
+ *                                  details output.
+ * Feb 15, 2013  1638     mschenke  Moved Util.EOL into FileUtil
+ * Apr 10, 2013  1891     djohnson  Declare variable as List.
+ * Sep 11, 2013  2352     mpduff    Add siteId to getSubscribedToDataSetNames
+ *                                  method.
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Dec 03, 2014  3840     ccody     Correct sorting "contract violation" issue
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
 public class BrowserTableComp extends TableComp implements IDialogClosed {
     /** Status Handler */
@@ -109,10 +115,10 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
     private Menu popupMenu;
 
     /** View details map. */
-    private final HashMap<String, ViewDetailsDlg> detailsDlgMap = new HashMap<String, ViewDetailsDlg>();
+    private final HashMap<String, ViewDetailsDlg> detailsDlgMap = new HashMap<>();
 
     /** View subscription map. */
-    private final HashMap<String, SubscriptionViewer> subscriptionDlgMap = new HashMap<String, SubscriptionViewer>();
+    private final HashMap<String, SubscriptionViewer> subscriptionDlgMap = new HashMap<>();
 
     /** Lock details flag. */
     private boolean lockDetailsDlgMap = false;
@@ -123,12 +129,6 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
     /** TableItem object. */
     private TableItem rightClickTableItem;
 
-    /** TableColumn object. */
-    private TableColumn tc;
-
-    /** String array containing column. */
-    private String[] columns = null;
-
     /** TableItem object. */
     private final Composite parentComp;
 
@@ -137,7 +137,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent composite.
      * @param tableConfig
@@ -181,7 +181,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Show or hide the tool tip for the table columns.
-     * 
+     *
      * @param flag
      *            Show/Hide the tooltips.
      */
@@ -245,7 +245,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         }
         String providerName = dataSet.getProviderName();
 
-        if (subscriptionDlgMap.containsKey(id) == true) {
+        if (subscriptionDlgMap.containsKey(id)) {
             subscriptionDlgMap.get(id).bringToTop();
         } else {
             SubscriptionViewer viewer = new SubscriptionViewer(this.getShell(),
@@ -275,7 +275,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
             id = dsmd.getDataSetName();
         }
 
-        if (detailsDlgMap.containsKey(id) == true) {
+        if (detailsDlgMap.containsKey(id)) {
             detailsDlgMap.get(id).bringToTop();
         } else {
 
@@ -291,11 +291,12 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Format the dataset data.
-     * 
+     *
      * @param dataSet
      *            The dataset
      * @return
      */
+    @SuppressWarnings("unchecked")
     private String formatDatasetData(DataSet dataSet) {
         StringBuilder sb = new StringBuilder(150);
         sb.append("Dataset Name: ")
@@ -325,7 +326,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
         if (dataSet instanceof GriddedDataSet) {
             GriddedDataSet gds = (GriddedDataSet) dataSet;
-            List<Integer> cycleList = new ArrayList<Integer>(gds.getCycles());
+            List<Integer> cycleList = new ArrayList<>(gds.getCycles());
             if (!cycleList.isEmpty()) {
                 sb.append("Dataset Cycles: ");
                 Collections.sort(cycleList);
@@ -335,8 +336,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
                 sb.append(FileUtil.EOL);
             }
 
-            List<Integer> fcstHrs = new ArrayList<Integer>(
-                    gds.getForecastHours());
+            List<Integer> fcstHrs = new ArrayList<>(gds.getForecastHours());
             if (!fcstHrs.isEmpty()) {
                 sb.append("Forecast Hours: ");
 
@@ -357,10 +357,27 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
             }
         }
 
-        Map<String, Parameter> paramMap = dataSet.getParameters();
+        Map<String, ParameterGroup> paramMap = dataSet.getParameterGroups();
         if (!paramMap.isEmpty()) {
             sb.append("Parameters:").append(FileUtil.EOL);
-            List<String> paramList = new ArrayList<String>(paramMap.keySet());
+
+            /*
+             * Loop over all parameter groups and levels to build all
+             * descriptions. Will be displayed as below
+             *
+             * providerName(awipsName) description
+             */
+            Map<String, String> paramDescriptions = new TreeMap<>();
+            for (ParameterGroup param : paramMap.values()) {
+                for (LevelGroup lg : param.getGroupedLevels().values()) {
+                    for (ParameterLevelEntry ple : lg.getLevels()) {
+                        paramDescriptions.put(ple.getProviderName() + "("
+                                + param.getAbbrev() + ")", ple.getDescription());
+                    }
+                }
+            }
+            List<String> paramList = new ArrayList<>(
+                    paramDescriptions.keySet());
             Collections.sort(paramList, String.CASE_INSENSITIVE_ORDER);
 
             // Get the largest parameter name for alignment
@@ -374,8 +391,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
             for (String param : paramList) {
                 sb.append("--- ").append(param);
                 sb.append(getSpacing(max + 1, param));
-                sb.append(paramMap.get(param).getDefinition()).append(
-                        FileUtil.EOL);
+                sb.append(paramDescriptions.get(param)).append(FileUtil.EOL);
             }
         }
 
@@ -384,7 +400,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Generate the spacing of the parameter definitions.
-     * 
+     *
      * @param start
      *            the point at which the string should start
      * @param the
@@ -401,7 +417,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Validate string to verify it is not null.
-     * 
+     *
      * @param str
      *            String to be verified.
      * @return The validated string.
@@ -416,7 +432,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Get the number of items in the table.
-     * 
+     *
      * @return The number of items in the table.
      */
     public int getTableItemCount() {
@@ -425,7 +441,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Get the metadata for the selected dataset.
-     * 
+     *
      * @return metatdata
      */
     public DataSet getSelectedDataset() {
@@ -437,17 +453,10 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.IDialogClosed#dialogClosed
-     * (java.lang.String)
-     */
     @Override
     public void dialogClosed(String id) {
 
-        if (lockDetailsDlgMap == true) {
+        if (lockDetailsDlgMap) {
             return;
         }
 
@@ -493,7 +502,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Handle the column selection.
-     * 
+     *
      * @param event
      *            Selection Event.
      */
@@ -528,7 +537,8 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
         for (BrowserTableRowData btrd : btrdArray) {
             TableItem ti = new TableItem(this.table, SWT.NONE);
-            ti.setText(BrowserColumnNames.NAME.ordinal(), btrd.getDataSetName());
+            ti.setText(BrowserColumnNames.NAME.ordinal(),
+                    btrd.getDataSetName());
             ti.setText(BrowserColumnNames.SUBSCRIPTION.ordinal(),
                     btrd.getSubscriptionName());
             ti.setText(BrowserColumnNames.PROVIDER.ordinal(),
@@ -555,7 +565,7 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
 
     /**
      * Update the table.
-     * 
+     *
      * @param dataList
      *            Array of dataset metadata.
      */
@@ -565,20 +575,15 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         populateTable();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#createColumns()
-     */
     @Override
     protected void createColumns() {
-        columns = new String[BrowserColumnNames.values().length];
+        String[] columns = new String[BrowserColumnNames.values().length];
         for (int i = 0; i < columns.length; i++) {
             columns[i] = BrowserColumnNames.values()[i].getColumnName();
         }
 
         for (int i = 0; i < columns.length; i++) {
-            tc = new TableColumn(table, SWT.LEFT);
+            TableColumn tc = new TableColumn(table, SWT.LEFT);
             tc.setText(columns[i]);
 
             if (i == 1) {
@@ -603,19 +608,13 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#populateTable()
-     */
     @Override
     public void populateTable() {
         if (tableData != null) {
             tableData = null;
         }
 
-        tableData = new TableDataManager<BrowserTableRowData>(
-                TABLE_TYPE.BROWSER);
+        tableData = new TableDataManager<>(TABLE_TYPE.BROWSER);
         closeAllViewerDialogs();
 
         Set<String> datasetNames = Collections.emptySet();
@@ -657,13 +656,6 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         updateTableRowChanged();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#handleTableMouseClick
-     * (org.eclipse.swt.events.MouseEvent)
-     */
     @Override
     protected void handleTableMouseClick(MouseEvent me) {
         if (me.button == 3) {
@@ -680,12 +672,6 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#
-     * handleTableSelectionChange(org.eclipse.swt.events.SelectionEvent)
-     */
     @Override
     protected void handleTableSelection(SelectionEvent e) {
         if (table.getSelectionCount() > 0) {
@@ -695,13 +681,6 @@ public class BrowserTableComp extends TableComp implements IDialogClosed {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.notification.INotificationObserver#
-     * notificationArrived
-     * (com.raytheon.uf.viz.core.notification.NotificationMessage[])
-     */
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
         // NOT USED.

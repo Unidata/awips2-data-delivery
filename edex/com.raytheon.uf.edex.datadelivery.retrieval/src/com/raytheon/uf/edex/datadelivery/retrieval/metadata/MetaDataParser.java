@@ -93,6 +93,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.CoverageUtil;
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
  * May 04, 2017  6186     rjpeter   Made logger protected.
  * May 09, 2017  6130     tjensen   Updated to support routing to ingest
+ * Sep 12, 2017  6413     tjensen   Removed parameters from DataSetName
  *
  * </pre>
  *
@@ -212,10 +213,6 @@ public abstract class MetaDataParser<O extends Object>
         dsn.setProviderName(dataSetToStore.getProviderName());
         dsn.setDataSetType(dataSetToStore.getDataSetType());
         dsn.setDataSetName(dataSetToStore.getDataSetName());
-
-        // Now add the parameter Objects so we can associate
-        // the DataSetName with parameters..
-        dsn.setParameters(dataSetToStore.getParameters());
 
         try {
             DataDeliveryHandlers.getDataSetNameHandler()

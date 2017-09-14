@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
@@ -68,6 +68,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  *                                  ServiceConfig
  * Jul 25, 2017  6186     rjpeter   Update signature
  * Aug 02, 2017  6186     rjpeter   Removed SubscriptionBundle
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  *
  * </pre>
  *
@@ -154,8 +155,8 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
      *            parameter
      * @return
      */
-    protected Parameter processParameter(Parameter origParm) {
-        return new Parameter(origParm);
+    protected ParameterGroup processParameter(ParameterGroup origParm) {
+        return new ParameterGroup(origParm);
     }
 
     /**

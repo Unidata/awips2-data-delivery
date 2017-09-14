@@ -27,6 +27,8 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
@@ -56,6 +58,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *                                  cycle checking.
  * Aug 29, 2017  6186     rjpeter   Fix version compatibility with cycle
  *                                  checking
+ * Sep 20, 2017  6413     tjensen   Added provider levels
  *
  * </pre>
  *
@@ -87,6 +90,14 @@ public abstract class GriddedDataSetMetaData
     @XmlAttribute
     @SlotAttribute(CYCLE_SLOT)
     private int cycle = NO_CYCLE;
+
+    /**
+     * List of levels from the provider tied to this DataSet's collectionName
+     * (ie. 'Pressure Level' levels)
+     */
+    @DynamicSerializeElement
+    @XmlElements({ @XmlElement })
+    private List<Double> providerLevels;
 
     public void setLevelTypes(Map<DataLevelType, Levels> levelTypes) {
         this.levelTypes = levelTypes;
@@ -205,5 +216,24 @@ public abstract class GriddedDataSetMetaData
             return false;
         }
         return true;
+    }
+
+    public List<Double> getProviderLevels() {
+        return providerLevels;
+    }
+
+    public void setProviderLevels(List<Double> providerLevels) {
+        this.providerLevels = providerLevels;
+    }
+
+    public int findProviderLevelIndex(double value) {
+        int index = 0;
+        for (Double level : getProviderLevels()) {
+            if (level == value) {
+                break;
+            }
+            index++;
+        }
+        return index;
     }
 }

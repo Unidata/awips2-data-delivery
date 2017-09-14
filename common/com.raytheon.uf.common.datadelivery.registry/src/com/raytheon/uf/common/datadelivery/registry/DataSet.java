@@ -52,11 +52,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Apr 05, 2017  1045     tjensen   Add information to support moving datasets
  * May 09, 2017  6130     tjensen   Add version data to support routing to
  *                                  ingest
+ * Sep 12, 2017  6413     tjensen   Added ParameterGroups to store parameters
+ *                                  and levels. Parameters deprecated.
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
@@ -82,14 +83,24 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
     protected String dataSetName;
 
     /**
-     * Map of parameters and their descriptions.
+     * Deprecated.
+     *
+     * Needed for compatibility with sites using versions older than 18.1.1
      */
     @DynamicSerializeElement
     @RegistryObjectAssociation(MapValuesResolver.class)
     @SlotAttribute
     @SlotAttributeConverter(KeySetSlotConverter.class)
     @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    @Deprecated
     protected Map<String, Parameter> parameters = new HashMap<>();
+
+    /**
+     * Map of parameters and their descriptions. Key is "abbrev (units)".
+     */
+    @DynamicSerializeElement
+    @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    protected Map<String, ParameterGroup> parameterGroups = new HashMap<>();
 
     @XmlElement(name = "coverage")
     @DynamicSerializeElement
@@ -129,10 +140,12 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
     @DynamicSerializeElement
     private List<VersionData> versionData;
 
+    @Deprecated
     public Map<String, Parameter> getParameters() {
         return parameters;
     }
 
+    @Deprecated
     public void setParameters(Map<String, Parameter> parameters) {
         this.parameters = parameters;
     }
@@ -316,6 +329,7 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
      *            the combined dataset
      */
     public void combine(DataSet<T, C> toCombine) {
+        this.getParameterGroups().putAll(toCombine.getParameterGroups());
         this.getParameters().putAll(toCombine.getParameters());
     }
 
@@ -368,5 +382,14 @@ public abstract class DataSet<T extends Time, C extends Coverage> {
             }
         }
         return retval;
+    }
+
+    public Map<String, ParameterGroup> getParameterGroups() {
+        return parameterGroups;
+    }
+
+    public void setParameterGroups(
+            Map<String, ParameterGroup> parameterGroups) {
+        this.parameterGroups = parameterGroups;
     }
 }

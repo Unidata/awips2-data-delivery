@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.datadelivery.retrieval.util;
 
+import java.util.Map;
+
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
@@ -26,7 +28,9 @@ import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSet;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
@@ -36,33 +40,35 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Data Structure for calculating Data Set Size.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 6, 2012    1002     mpduff     Initial creation
- * Aug 12, 2012  1022      djohnson   Stop coordinates on GriddedCoverage from being corrupted.
- * Oct 31, 2012  1278      mpduff     Clarified a Javadoc comment.
- * Dec 10, 2012  1259      bsteffen   Switch Data Delivery from LatLon to referenced envelopes.
- * Jun 11, 2013  2021      dhladky    WFS semi-scientific sizing.
- * Jun 14, 2013  2108      mpduff     Abstracted the class.
- * Sept 09, 2013 2351      dhladky    Fixed incorrect calculation for default pointdata overhead
- * Nov 20, 2013   2554     dhladky    Generics
- * Sept 19, 2014 3121      dhladky    PDA data sizes.
- * Apr 19, 2016  5424      dhladky    Re-visited sizing.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 06, 2012  1002     mpduff    Initial creation
+ * Aug 12, 2012  1022     djohnson  Stop coordinates on GriddedCoverage from
+ *                                  being corrupted.
+ * Oct 31, 2012  1278     mpduff    Clarified a Javadoc comment.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Jun 11, 2013  2021     dhladky   WFS semi-scientific sizing.
+ * Jun 14, 2013  2108     mpduff    Abstracted the class.
+ * Sep 09, 2013  2351     dhladky   Fixed incorrect calculation for default
+ *                                  pointdata overhead
+ * Nov 20, 2013  2554     dhladky   Generics
+ * Sep 19, 2014  3121     dhladky   PDA data sizes.
+ * Apr 19, 2016  5424     dhladky   Re-visited sizing.
+ * Sep 14, 2017  6413     tjensen   Update for ParameterGroups
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
 
-    
     /**
      * The constant 5 is chosen because 5/5 in the getDataSetSizeInBytes
      * calculation will yield a "1".
@@ -71,7 +77,7 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
 
     /**
      * Factory method to get a DataSizeUtils.
-     * 
+     *
      * @param dataSet
      *            The data set
      * @param subscription
@@ -94,14 +100,15 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
 
     /**
      * Get data size.
-     * 
+     *
      * @param ra
      *            RetrievalAttribute
      * @param st
      *            ServiceType
      * @return dataset size
      */
-    public static long calculateSize(RetrievalAttribute<?, ?> ra, ServiceType st) {
+    public static long calculateSize(RetrievalAttribute<?, ?> ra,
+            ServiceType st) {
 
         if (st == ServiceType.OPENDAP) {
             if (ra.getCoverage() instanceof GriddedCoverage) {
@@ -130,7 +137,7 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
             long l = st.getRequestBytesPerLatLonBoxAndTime(latSpan, lonSpan,
                     time.getInterval());
             return l;
-            
+
         } else if (st == ServiceType.PDA) {
 
             ReferencedEnvelope re = ra.getCoverage().getRequestEnvelope();
@@ -142,7 +149,7 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
             return st.getRequestBytesPerLatLonBoxAndTime(latSpan, lonSpan,
                     PDADataSizeUtils.TIME_SIZE);
         }
-        
+
         else {
             throw new IllegalStateException(
                     "Couldn't calculate the retrieval size for a retrieval of type "
@@ -156,27 +163,25 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
     /** Data Set Object */
     protected DS dataSet;
 
-    /** Data Set Size */
-    protected final long size = 0;
-
     /** Full Data Set Size in bytes */
     protected long fullSize = -999;
 
     /**
      * Returns the estimated full data set size in bytes.
-     * 
+     *
      * @return full data set size in bytes
      */
     public abstract long getFullSizeInBytes();
 
     /**
      * Get the data set size for the provided subscription.
-     * 
+     *
      * @param subscription
      *            Subscription for calculating the size
      * @return Data size in bytes
      */
-    protected abstract long getDataSetSizeInBytes(Subscription<?, ?> subscription);
+    protected abstract long getDataSetSizeInBytes(
+            Subscription<?, ?> subscription);
 
     /**
      * @return the dataSet
@@ -187,10 +192,10 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
 
     /**
      * Returns the estimated data set size in kB.
-     * 
+     *
      * @param subscription
      *            The subscription to size
-     * 
+     *
      * @return the size in kB
      */
     public long getDataSetSizeInKb(Subscription<?, ?> subscription) {
@@ -199,7 +204,7 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
 
     /**
      * Returns the estimated full dataset size in kB.
-     * 
+     *
      * @return full data set size in kB
      */
     public long getFullSizeInKb() {
@@ -207,9 +212,26 @@ public abstract class DataSizeUtils<DS extends DataSet<?, ?>> {
     }
 
     /**
-     * @return the size
+     * Get the number of grids for the request.
+     *
+     * @param parameterList
+     *            the list of parameters
+     *
+     * @return number of grids
      */
-    public long getSize() {
-        return size;
+    protected static int getNumberParameterLevels(
+            Map<String, ParameterGroup> paramMap) {
+        int paramLevels = 0;
+
+        // Get the number of requested grids
+        if (paramMap != null) {
+            for (ParameterGroup pg : paramMap.values()) {
+                for (LevelGroup lg : pg.getGroupedLevels().values()) {
+                    paramLevels += lg.getLevels().size();
+                }
+            }
+        }
+
+        return paramLevels;
     }
 }

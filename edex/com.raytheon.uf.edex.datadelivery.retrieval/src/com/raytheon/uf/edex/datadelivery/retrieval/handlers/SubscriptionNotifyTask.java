@@ -73,6 +73,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * May 22, 2017  6130     tjensen   Fix error handling
  * Jul 27, 2017  6186     rjpeter   Removed unused fields.
  * Aug 02, 2017  6186     rjpeter   Removed RetrievalManagerNotifyEvent.
+ * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  *
  * </pre>
  *
@@ -262,7 +263,7 @@ public class SubscriptionNotifyTask implements Runnable {
 
     private final DelayQueue<SubscriptionDelay> subscriptionQueue = new DelayQueue<>();
 
-    private RetrievalDao dao;
+    private final RetrievalDao dao;
 
     public SubscriptionNotifyTask(RetrievalDao dao) {
         this.dao = dao;
@@ -299,8 +300,10 @@ public class SubscriptionNotifyTask implements Runnable {
                 waitingSubscriptions = tmp;
             }
 
-            // don't check if complete until haven't received a new
-            // retrieval for 10 seconds
+            /*
+             * don't check if complete until haven't received a new retrieval
+             * for 10 seconds
+             */
             if (!subscriptionsInProcess.isEmpty()) {
                 subscriptionQueue.addAll(subscriptionsInProcess.values());
                 subscriptionsInProcess.clear();
@@ -354,10 +357,10 @@ public class SubscriptionNotifyTask implements Runnable {
                                         .getRetrievalObj();
                                 RetrievalAttribute<?, ?> att = retrieval
                                         .getAttribute();
-                                if (!parameters.contains(
-                                        att.getParameter().getName())) {
-                                    parameters
-                                            .add(att.getParameter().getName());
+                                String paramName = att.getParameterGroup()
+                                        .getAbbrev();
+                                if (!parameters.contains(paramName)) {
+                                    parameters.add(paramName);
                                 }
                             }
                             for (String param : parameters) {

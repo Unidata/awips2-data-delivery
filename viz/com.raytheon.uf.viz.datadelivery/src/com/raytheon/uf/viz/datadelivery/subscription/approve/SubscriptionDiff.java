@@ -24,55 +24,52 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Find the differences between a Subscription Object and its
  * PendingSubscription Object.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 20, 2012            mpduff       Initial creation
- * Jul 25, 2012 955        djohnson     Use List instead of ArrayList.
- * Sep 24, 2012 1157       mpduff       Use InitialPendingSubsription.
- * Dec 10, 2012 1259       bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Jan 25, 2013 1528       djohnson     Compare priorities as primitive ints.
- * Jan 30, 2013 1543       djohnson     Use List instead of ArrayList.
- * Apr 08, 2013 1826       djohnson     Remove delivery options.
- * Sept 25, 2013 1797      dhladky      Handle gridded times
- * Oct 10, 2013 1797       bgonzale     Refactored registry Time objects.
- * Jul 08, 2015 4566       dhladky      Use AWIPS naming rather than provider naming.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 20, 2012           mpduff    Initial creation
+ * Jul 25, 2012  955      djohnson  Use List instead of ArrayList.
+ * Sep 24, 2012  1157     mpduff    Use InitialPendingSubsription.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Jan 25, 2013  1528     djohnson  Compare priorities as primitive ints.
+ * Jan 30, 2013  1543     djohnson  Use List instead of ArrayList.
+ * Apr 08, 2013  1826     djohnson  Remove delivery options.
+ * Sep 25, 2013  1797     dhladky   Handle gridded times
+ * Oct 10, 2013  1797     bgonzale  Refactored registry Time objects.
+ * Jul 08, 2015  4566     dhladky   Use AWIPS naming rather than provider
+ *                                  naming.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class SubscriptionDiff<T extends Time, C extends Coverage> {
-    
-    /** Status Handler */
-    private final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(SubscriptionDiff.class);
-    
+
     /** Subscription start/end date format */
     private final SimpleDateFormat format = new SimpleDateFormat(
             "MM/dd/yyyy HH");
@@ -82,7 +79,7 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
     /** Active period start/end date format */
     private final SimpleDateFormat activeFormat = new SimpleDateFormat("MM/dd");
 
-    private final String nl = "\n";
+    private static final String nl = "\n";
 
     private final Subscription<T, C> sub;
 
@@ -90,11 +87,9 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
 
     private HashMap<String, Boolean> diffMap;
 
-    private ArrayList<String> diffList;
-
     /**
      * Constructor.
-     * 
+     *
      * @param subscription
      *            The Subscription object
      * @param pendingSubscription
@@ -104,23 +99,11 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
             InitialPendingSubscription<T, C> pendingSubscription) {
         this.sub = subscription;
         this.pendingSub = pendingSubscription;
-        init();
-    }
-
-    private void init() {
-        diffList = new ArrayList<String>();
-
-        String[] columns = DataDeliveryUtils
-                .getColumnTitles(TABLE_TYPE.SUBSCRIPTION);
-
-        for (String col : columns) {
-            diffList.add(col);
-        }
     }
 
     /**
      * Get the differences.
-     * 
+     *
      * @return String detailing the differences
      */
     public String getDifferences() {
@@ -143,13 +126,13 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         if (sub.getActivePeriodEnd() != null
                 && pendingSub.getActivePeriodEnd() == null
                 || sub.getActivePeriodEnd() == null
-                && pendingSub.getActivePeriodEnd() != null) {
+                        && pendingSub.getActivePeriodEnd() != null) {
             diffMap.put("activePeriodEnd", true);
         } else {
             if (sub.getActivePeriodEnd() != null
                     && pendingSub.getActivePeriodEnd() != null) {
-                if (!(sub.getActivePeriodEnd().equals(pendingSub
-                        .getActivePeriodEnd()))) {
+                if (!(sub.getActivePeriodEnd()
+                        .equals(pendingSub.getActivePeriodEnd()))) {
                     diffMap.put("activePeriodEnd", true);
                 }
             }
@@ -158,13 +141,13 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         if (sub.getActivePeriodStart() != null
                 && pendingSub.getActivePeriodStart() == null
                 || sub.getActivePeriodStart() == null
-                && pendingSub.getActivePeriodStart() != null) {
+                        && pendingSub.getActivePeriodStart() != null) {
             diffMap.put("activePeriodStart", true);
         } else {
             if (sub.getActivePeriodStart() != null
                     && pendingSub.getActivePeriodStart() != null) {
-                if (!(sub.getActivePeriodStart().equals(pendingSub
-                        .getActivePeriodStart()))) {
+                if (!(sub.getActivePeriodStart()
+                        .equals(pendingSub.getActivePeriodStart()))) {
                     diffMap.put("activePeriodStart", true);
                 }
             }
@@ -176,13 +159,13 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         if (subTime.getRequestStart() != null
                 && pendingTime.getRequestStart() == null
                 || subTime.getRequestStart() == null
-                && pendingTime.getRequestStart() != null) {
+                        && pendingTime.getRequestStart() != null) {
             diffMap.put("subscriptionStart", true);
         } else {
             if (subTime.getRequestStart() != null
                     && pendingTime.getRequestStart() != null) {
-                if (!(subTime.getRequestStart().equals(pendingTime
-                        .getRequestStart()))) {
+                if (!(subTime.getRequestStart()
+                        .equals(pendingTime.getRequestStart()))) {
                     diffMap.put("subscriptionStart", true);
                 }
             }
@@ -191,13 +174,13 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         if (subTime.getRequestEnd() != null
                 && pendingTime.getRequestEnd() == null
                 || subTime.getRequestEnd() == null
-                && pendingTime.getRequestEnd() != null) {
+                        && pendingTime.getRequestEnd() != null) {
             diffMap.put("subscriptionEnd", true);
         } else {
             if (subTime.getRequestEnd() != null
                     && pendingTime.getRequestEnd() != null) {
-                if (!(subTime.getRequestEnd().equals(pendingTime
-                        .getRequestEnd()))) {
+                if (!(subTime.getRequestEnd()
+                        .equals(pendingTime.getRequestEnd()))) {
                     diffMap.put("subscriptionEnd", true);
                 }
             }
@@ -207,9 +190,9 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         List<Integer> pendingCycles = null;
         List<String> subFcstHoursAll = null;
         List<String> pendingFcstHoursAll = null;
-        List<String> subFcstHours = new ArrayList<String>();
-        List<String> pendingFcstHours = new ArrayList<String>();
-        
+        List<String> subFcstHours = new ArrayList<>();
+        List<String> pendingFcstHours = new ArrayList<>();
+
         // handle gridded times
         if (subTime instanceof GriddedTime) {
 
@@ -227,7 +210,7 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
             // Check forecast hours
             subFcstHoursAll = gtime.getFcstHours();
             pendingFcstHoursAll = gtime.getFcstHours();
-            
+
             for (int i : gtime.getSelectedTimeIndices()) {
                 subFcstHours.add(subFcstHoursAll.get(i));
             }
@@ -248,153 +231,35 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         ReferencedEnvelope env = cov.getRequestEnvelope();
         ReferencedEnvelope pendingEnv = pendingCov.getRequestEnvelope();
 
-        boolean envEqual = env == null ? pendingEnv == null : env
-                .equals(pendingEnv);
+        boolean envEqual = env == null ? pendingEnv == null
+                : env.equals(pendingEnv);
 
         if (!envEqual) {
             diffMap.put("coverage", true);
         }
 
-        List<Parameter> subParamList = sub.getParameter();
-        List<Parameter> pendingSubParamList = pendingSub.getParameter();
+        Map<String, ParameterGroup> subParamMap = sub.getParameterGroups();
+        Map<String, ParameterGroup> pendingParamMap = pendingSub
+                .getParameterGroups();
 
-        ArrayList<String> subParams = new ArrayList<String>();
-        ArrayList<String> pendingSubParams = new ArrayList<String>();
+        List<ParameterGroup> addedParameters = ParameterUtils
+                .getUnique(pendingParamMap, subParamMap);
+        List<ParameterGroup> deletedParameters = ParameterUtils
+                .getUnique(subParamMap, pendingParamMap);
 
-        ArrayList<String> newParameters = new ArrayList<String>();
-        ArrayList<String> removedParameters = new ArrayList<String>();
-
-        // Check for new or removed parameters
-        for (Parameter p : subParamList) {
-            subParams.add(p.getName());
-        }
-
-        for (Parameter p : pendingSubParamList) {
-            pendingSubParams.add(p.getName());
-        }
-
-        // Check for new parameters, if in pending list, but not sub list
-        for (String s : pendingSubParams) {
-            if (subParams.contains(s) == false) {
-                newParameters.add(s);
-            }
-        }
-
-        // Check for removed parameters, if in sub list, but not pending list
-        for (String s : subParams) {
-            if (pendingSubParams.contains(s) == false) {
-                removedParameters.add(s);
-            }
-        }
-
-        // get a list of all parameters in both the new and the pending subs
-        subParams.removeAll(removedParameters);
-        ArrayList<ParameterDiff> parameterDiffList = new ArrayList<ParameterDiff>();
-        if (subParamList.size() > pendingSubParamList.size()) {
-            for (Parameter p : subParamList) {
-                if (subParams.contains(p.getName())) {
-                    // See if anything changed for this parameter, which is
-                    // layer or fcstHr
-                    for (Parameter pendingP : pendingSubParamList) {
-                        if (p.getName().equals(
-                                pendingP.getName())) {
-                            parameterDiffList
-                                    .add(new ParameterDiff(p, pendingP));
-                            break;
-                        }
-                    }
-                }
-            }
-        } else {
-            for (Parameter pendingP : pendingSubParamList) {
-                if (subParams.contains(pendingP.getName())) {
-                    // See if anything changed for this parameter, which is
-                    // layer or fcstHr
-                    for (Parameter p : subParamList) {
-                        if (p.getName().equals(
-                                pendingP.getName())) {
-                            parameterDiffList
-                                    .add(new ParameterDiff(p, pendingP));
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        StringBuilder tmpBuffer = new StringBuilder();
-
-        for (ParameterDiff pd : parameterDiffList) {
-            if (pd.isDifferent()) {
-                tmpBuffer.append(pd.getDiffText());
-            }
-        }
-
-        buffer.append("Changed Parameters:").append(nl);
-        buffer.append("  tmpprs").append(nl);
-        buffer.append("    New Levels: 1000, 900, 800, 700").append(nl);
-        buffer.append("    Added Levels: 1000, 900, 800").append(nl);
-        buffer.append("    Removed Levels 200, 100, 50").append(nl).append(nl);
+        StringBuilder tmpBuffer = listGroupInfo(addedParameters);
 
         if (tmpBuffer.length() > 0) {
-            buffer.append("Changed Parameters:").append(nl);
+            buffer.append("New Parameters and Levels:").append(nl);
             buffer.append(tmpBuffer.toString());
             buffer.append(nl);
         }
 
-        tmpBuffer = new StringBuilder();
-
-        for (Parameter p : pendingSubParamList) {
-            for (String newParameter : newParameters) {
-                if (p.getName().equals(newParameter)) {
-                    tmpBuffer.append("Parameter: ").append(p.getName())
-                            .append(nl);
-                    if (p.getLevelType().size() > 0) {
-                        List<DataLevelType> dltList = p.getLevelType();
-                        for (DataLevelType dlt : dltList) {
-                            tmpBuffer.append("LevelId: ").append(dlt.getId())
-                                    .append(nl);
-                            tmpBuffer.append("Level Type: ")
-                                    .append(dlt.getType()).append(nl);
-
-                            if (dlt.getLayer() != null
-                                    && dlt.getLayer().size() > 0) {
-                                for (Double i : dlt.getLayer()) {
-                                    tmpBuffer.append(i).append("  ");
-                                }
-
-                                tmpBuffer.append(nl);
-                            }
-
-                            List<Integer> selectedIndices = p.getLevels()
-                                    .getSelectedLevelIndices();
-                            for (int i : selectedIndices) {
-                                tmpBuffer.append(
-                                        p.getLevels().getLevel().get(i))
-                                        .append("  ");
-                            }
-
-                            if (selectedIndices.size() > 0) {
-                                tmpBuffer.append(nl);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
+        tmpBuffer = listGroupInfo(deletedParameters);
         if (tmpBuffer.length() > 0) {
-            buffer.append("New Parameters:").append(nl);
+            buffer.append("Removed Parameters and Levels:").append(nl);
             buffer.append(tmpBuffer.toString());
             buffer.append(nl);
-        }
-
-        if (removedParameters.size() > 0) {
-            buffer.append("Removed Parameters:").append(nl);
-            for (String s : removedParameters) {
-                buffer.append("Parameter: ").append(s).append(nl);
-                buffer.append(nl);
-            }
         }
 
         if (diffMap.get("priority")) {
@@ -454,19 +319,19 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
                     buffer.append("Subscription Active Period End:").append(nl);
                     buffer.append(activeFormat.format(sub.getActivePeriodEnd()))
                             .append(" to ");
-                    buffer.append(
-                            activeFormat.format(pendingSub.getActivePeriodEnd()))
+                    buffer.append(activeFormat
+                            .format(pendingSub.getActivePeriodEnd()))
                             .append(nl);
                 } else if (sub.getActivePeriodEnd() == null
                         && pendingSub.getActivePeriodEnd() != null) {
                     buffer.append("Subscription Active Period End set to ");
-                    buffer.append(
-                            activeFormat.format(pendingSub.getActivePeriodEnd()))
+                    buffer.append(activeFormat
+                            .format(pendingSub.getActivePeriodEnd()))
                             .append(nl);
                 }
             }
         }
-        
+
         // handle pending and subscription cycles
         if (subCycles != null && pendingCycles != null) {
 
@@ -487,7 +352,7 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         }
 
         // handle pending and subscription fcst hours
-        if (subFcstHours != null && pendingFcstHours != null) {
+        if (!subFcstHours.isEmpty() && !pendingFcstHours.isEmpty()) {
 
             if (diffMap.get("fcstHours")) {
                 buffer.append("Forecast Hours changed:").append(nl);
@@ -508,7 +373,8 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
             if (pendingSub.isFullDataSet()) {
                 buffer.append("Subscription is now for the Full Data Set");
             } else {
-                buffer.append("Subscription is now a subset of the original area");
+                buffer.append(
+                        "Subscription is now a subset of the original area");
             }
             buffer.append(nl).append(nl);
         }
@@ -546,6 +412,25 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         return buffer.toString();
     }
 
+    private StringBuilder listGroupInfo(List<ParameterGroup> parameterGroups) {
+        StringBuilder tmpBuffer = new StringBuilder();
+        for (ParameterGroup newParam : parameterGroups) {
+            tmpBuffer.append("Parameter: ").append(newParam.getKey())
+                    .append(nl);
+            for (LevelGroup newLg : newParam.getGroupedLevels().values()) {
+                tmpBuffer.append("  Level Type: ").append(newLg.getKey())
+                        .append(nl);
+                for (ParameterLevelEntry newLevel : newLg.getLevels()) {
+                    if (newLevel.getDisplayString() != null) {
+                        tmpBuffer.append("    Level Info: ")
+                                .append(newLevel.getDisplayString()).append(nl);
+                    }
+                }
+            }
+        }
+        return tmpBuffer;
+    }
+
     private String getDiffs(List<?> originalList, List<?> newList) {
         if (originalList.containsAll(newList)
                 && newList.containsAll(originalList)) {
@@ -553,8 +438,8 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
             return null;
         }
 
-        List<Object> additionsList = new ArrayList<Object>();
-        List<Object> removedList = new ArrayList<Object>();
+        List<Object> additionsList = new ArrayList<>();
+        List<Object> removedList = new ArrayList<>();
 
         // Find additions
         if (!originalList.containsAll(newList)) {
@@ -575,7 +460,7 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
         }
 
         StringBuilder buffer = new StringBuilder("  ");
-        if (additionsList.size() > 0) {
+        if (!additionsList.isEmpty()) {
             buffer.append("Added items: ");
             for (Object o : additionsList) {
                 buffer.append(o).append("  ");
@@ -583,7 +468,7 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
 
             buffer.append(nl);
         }
-        if (removedList.size() > 0) {
+        if (!removedList.isEmpty()) {
             buffer.append("  Removed items: ");
             for (Object o : removedList) {
                 buffer.append(o).append("  ");
@@ -597,7 +482,7 @@ public class SubscriptionDiff<T extends Time, C extends Coverage> {
 
     private HashMap<String, Boolean> getMap() {
         if (diffMap == null) {
-            diffMap = new HashMap<String, Boolean>();
+            diffMap = new HashMap<>();
 
             diffMap.put("priority", false);
             diffMap.put("subscriptionStart", false);

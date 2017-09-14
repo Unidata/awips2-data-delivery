@@ -31,11 +31,12 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalResponse;
-import com.raytheon.uf.edex.datadelivery.retrieval.util.RetrievalGeneratorUtilities;
 import com.raytheon.uf.edex.ogc.common.jaxb.OgcJaxbManager;
 import com.raytheon.uf.edex.ogc.common.soap.ServiceExceptionReport;
 
@@ -56,6 +57,7 @@ import net.opengis.ows.v_2_0.ReferenceGroupType;
  * Apr 21, 2016  5424     dhladky   Fixes from initial testing.
  * May 06, 2016  5424     dhladky   Added work around for PDA timing issue.
  * Jul 27, 2017  6186     rjpeter   Updated id parsing
+ * Sep 20, 2017  6413     tjensen   Remove RetrievalGeneratorUtilities
  *
  * </pre>
  *
@@ -165,8 +167,9 @@ public class GetCoverageResponseHandler
 
             if (ars != null) {
                 try {
-                    RetrievalGeneratorUtilities
-                            .sendToAsyncRetrieval(destinationUri, ars);
+                    byte[] bytes = SerializationUtil.transformToThrift(ars);
+                    EDEXUtil.getMessageProducer().sendAsyncUri(destinationUri,
+                            bytes);
                 } catch (Exception e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "Couldn't send RetrievalRecords to Async Queue!",

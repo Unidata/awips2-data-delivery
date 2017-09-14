@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
@@ -45,15 +46,16 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.google.common.collect.Ordering;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
+import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Levels;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
@@ -117,6 +119,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Apr 25, 2017  1045     tjensen   Update for moving datasets
  * Aug 02, 2017  6186     rjpeter   Fix adhoc processing.
  * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  *
  * </pre>
  *
@@ -299,7 +302,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             ensembleTab.loadFromSubsetXML(subsetXml);
         }
 
-        ArrayList<VerticalXML> vertList = subsetXml.getVerticalList();
+        List<VerticalXML> vertList = subsetXml.getVerticalList();
         vTab.populate(vertList, dataSet);
 
         TimeXML time = subsetXml.getTime();
@@ -309,6 +312,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         updateDataSize();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void loadFromSubscription(Subscription subscription) {
         super.loadFromSubscription(subscription);
@@ -325,40 +329,21 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
 
         // Vertical/Parameters
         Map<String, VerticalXML> levelMap = new HashMap<>();
-        List<Parameter> paramaterList = this.subscription.getParameter();
+        Map<String, Map<String, ParameterGroup>> paramsByNameByLevel = ParameterUtils
+                .getParameterLevelMap(this.subscription.getParameterGroups());
 
-        for (Parameter p : paramaterList) {
-            for (DataLevelType levelType : p.getLevelType()) {
-                if (!levelMap.containsKey(levelType.getKey())) {
-                    VerticalXML v = new VerticalXML();
-                    if (levelType.getUnit() == null) {
-                        v.setLayerType(
-                                String.valueOf(levelType.getDescription()));
-                    } else {
-                        v.setLayerType(levelType.getDescription() + " ("
-                                + levelType.getUnit() + "" + ")");
-                    }
-                    levelMap.put(levelType.getKey(), v);
-                }
-                VerticalXML v = levelMap.get(levelType.getKey());
-                v.addParameter(p.getName());
+        for (Entry<String, Map<String, ParameterGroup>> levelEntry : paramsByNameByLevel
+                .entrySet()) {
+            String levelLabel = levelEntry.getKey();
+            Map<String, ParameterGroup> params = levelEntry.getValue();
+            VerticalXML v = new VerticalXML();
+            v.setLayerType(levelLabel);
+            v.setLevels(
+                    ParameterUtils.getLevelNamesForLevel(levelLabel, params));
+            v.setParameterList(new ArrayList<>(params.keySet()));
 
-                // TODO - This is set up to only have one level type with
-                // Multiple parameters. This will need to change if other
-                // Data providers have parameters with multiple level types
-                // containing multiple levels
-                if (levelType.getId() == 100) {
-                    final Levels levels = p.getLevels();
-                    final List<Integer> selectedLevelIndices = levels
-                            .getSelectedLevelIndices();
-                    for (int index : selectedLevelIndices) {
-                        v.addLevel(
-                                String.valueOf(levels.getLevel().get(index)));
-                    }
-                }
-            }
+            levelMap.put(levelLabel, v);
         }
-
         ArrayList<VerticalXML> vertList = new ArrayList<>(levelMap.values());
         vTab.populate(vertList, dataSet);
 
@@ -476,7 +461,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         }
 
         // Update the data set size label text.
-        List<Parameter> params = vTab.getParameters();
+        Map<String, ParameterGroup> params = vTab.getParameters();
         int numFcstHrs = this.timingTabControls.getSelectedFcstHours().length;
         ReferencedEnvelope envelope = this.spatialTabControls.getEnvelope();
         int ensembleCount = 1;
@@ -614,13 +599,33 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         }
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     protected <T extends Subscription> T populateSubscription(T sub,
             boolean create) {
         GriddedDataSet griddedDataSet = (GriddedDataSet) dataSet;
 
-        ArrayList<Parameter> selectedParameterObjs = vTab.getParameters();
-        sub.setParameter(selectedParameterObjs);
+        Map<String, ParameterGroup> selectedParameterObjs = vTab
+                .getParameters();
+        sub.setParameterGroups(selectedParameterObjs);
+
+        // TODO: OBE after all sites are 18.1.1 or beyond
+        try {
+            DataSetMetaData dsmd = DataDeliveryHandlers
+                    .getDataSetMetaDataHandler()
+                    .getMostRecentDataSetMetaData(dataSet.getDataSetName(),
+                            dataSet.getProviderName());
+            List<Parameter> paramList = new ArrayList<>(ParameterUtils
+                    .generateParametersFromGroups(selectedParameterObjs,
+                            DataType.GRID, dsmd)
+                    .values());
+            sub.setParameter(paramList);
+        } catch (RegistryHandlerException e) {
+            statusHandler
+                    .error("Error generating Parameters from ParameterGroup. "
+                            + "Parameters not set for subscription", e);
+        }
+
         sub.setProvider(dataSet.getProviderName());
         sub.setDataSetName(dataSet.getDataSetName());
         sub.setDataSetType(dataSet.getDataSetType());

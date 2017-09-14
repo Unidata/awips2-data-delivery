@@ -1,25 +1,24 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.datadelivery.retrieval.util;
 
-import java.util.List;
 import java.util.Map;
 
 import org.geotools.geometry.jts.ReferencedEnvelope;
@@ -28,19 +27,17 @@ import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
 import com.raytheon.uf.common.datadelivery.registry.GriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.Levels;
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.gridcoverage.GridCoverage;
-import com.raytheon.uf.common.util.CollectionUtil;
 
 /**
  * Gridded implementation of DataSizeUtils
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jun 13, 2013  2108     mpduff    Initial creation.
@@ -48,18 +45,18 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Nov 20, 2013  2554     dhladky   Generics
  * Apr 05, 2017  1045     tjensen   Add support for estimated size for moving
  *                                  datasets
- * 
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
 
     /**
      * Gridded constructor.
-     * 
+     *
      * @param dataSet
      *            the data set
      */
@@ -69,7 +66,7 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
 
     /**
      * Calculate the number of grid cells for the envelope.
-     * 
+     *
      * @param envelope
      *            The areal envelope
      * @return number of grid cells
@@ -95,39 +92,6 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
     }
 
     /**
-     * Get the number of grids for the request.
-     * 
-     * @param parameterList
-     *            the list of parameters
-     * 
-     * @return number of grids
-     */
-    private int getNumberRequestedGrids(List<Parameter> parameterList) {
-        int numGrids = 0;
-
-        // Get the number of requested grids
-        if (!CollectionUtil.isNullOrEmpty(parameterList)) {
-            for (Parameter par : parameterList) {
-                Levels parLevels = par.getLevels();
-                int numSelectedLevels = parLevels.getSelectedLevelIndices()
-                        .size();
-                if (numSelectedLevels < 1) {
-                    // if parameter is not available on more than level, then by
-                    // default the single level is selected
-                    if (parLevels.size() <= 1) {
-                        numSelectedLevels = 1;
-                    }
-                    // else user did not select any levels for this parameter
-                }
-
-                numGrids += numSelectedLevels;
-            }
-        }
-
-        return numGrids;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -143,15 +107,9 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
                 }
 
                 // get the number of grids available
-                long numGridsAvailable = 0;
-                Map<String, Parameter> paramMap = dataSet.getParameters();
-                for (Parameter p : paramMap.values()) {
-                    int numLevels = p.getLevels().getLevel().size();
-
-                    // parameter is always at least on one level, level
-                    // just may not be named/enumerated
-                    numGridsAvailable += (numLevels > 0 ? numLevels : 1);
-                }
+                Map<String, ParameterGroup> paramMap = dataSet
+                        .getParameterGroups();
+                long numGridsAvailable = getNumberParameterLevels(paramMap);
 
                 long bytesPerParameterPerLevel = 0;
                 if (dataSet.isMoving()) {
@@ -179,7 +137,7 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
         final Ensemble ensemble = subscription.getEnsemble();
         int numEnsemble = (ensemble == null) ? 1 : ensemble.getMemberCount();
 
-        return getDataSetSizeInBytes(subscription.getParameter(),
+        return getDataSetSizeInBytes(subscription.getParameterGroups(),
                 ((GriddedTime) subscription.getTime()).getSelectedTimeIndices()
                         .size(),
                 numEnsemble, subscription.getCoverage().getRequestEnvelope());
@@ -187,7 +145,7 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
 
     /**
      * Get the data set size in bytes.
-     * 
+     *
      * @param params
      *            List of parameters
      * @param numFcstHrs
@@ -198,10 +156,11 @@ public class GriddedDataSizeUtils extends DataSizeUtils<GriddedDataSet> {
      *            ReferencedEnvelope
      * @return Number of bytes
      */
-    public long getDataSetSizeInBytes(List<Parameter> params, int numFcstHrs,
-            int numEnsembleMembers, ReferencedEnvelope envelope) {
+    public long getDataSetSizeInBytes(Map<String, ParameterGroup> params,
+            int numFcstHrs, int numEnsembleMembers,
+            ReferencedEnvelope envelope) {
 
-        int numRequestedGrids = getNumberRequestedGrids(params);
+        int numRequestedGrids = getNumberParameterLevels(params);
 
         long bytesPerParameterPerLevel = 0;
         if (dataSet.isMoving()) {
