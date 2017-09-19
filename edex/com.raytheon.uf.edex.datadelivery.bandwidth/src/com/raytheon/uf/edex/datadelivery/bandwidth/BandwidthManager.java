@@ -79,6 +79,7 @@ import com.raytheon.uf.common.util.algorithm.AlgorithmUtil.IBinarySearchResponse
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.core.EDEXUtil;
+import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
@@ -186,7 +187,9 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Jun 20, 2017  6299     tgurney   Remove IProposeScheduleResponse
  * Jul 18, 2017  6286     randerso  Changed to use new Roles/Permissions
  *                                  framework
- * Aug 02, 2017  6186     rJpeter   Added retrievalAgent
+ * Aug 02, 2017  6186     rjpeter   Added retrievalAgent
+ * Sep 18, 2017  6415     rjpeter   Updated purgeAllocations to purge
+ *                                  SubscriptionRetrieval
  *
  * </pre>
  *
@@ -1722,7 +1725,13 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * Purge all bandwidth allocations before current time.
      */
     public void purgeAllocations() {
-        bandwidthDao.purgeAllocations(TimeUtil.newDate());
-        // TODO: Update RetrievalPlan also?
+        Date threshold = TimeUtil.newDate();
+        try {
+            bandwidthDao.purgeSubscriptionRetrievalsBeforeDate(threshold);
+        } catch (DataAccessLayerException e) {
+            statusHandler.error(
+                    "Failed to purge allocations before [" + threshold + "]",
+                    e);
+        }
     }
 }

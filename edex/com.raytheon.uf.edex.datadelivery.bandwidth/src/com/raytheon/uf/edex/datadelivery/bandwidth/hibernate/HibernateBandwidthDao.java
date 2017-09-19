@@ -36,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
@@ -73,6 +74,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
  * Aug 02, 2017  6186     rjpeter   Added purgeAllocations.
+ * Sep 18, 2017  6415     rjpeter   Purge SubscriptionRetrieval
  *
  * </pre>
  *
@@ -456,7 +458,8 @@ public class HibernateBandwidthDao<T extends Time, C extends Coverage>
     }
 
     @Override
-    public void purgeAllocations(Date purgeThreshold) {
-        bandwidthAllocationDao.purgeAllocations(purgeThreshold);
+    public void purgeSubscriptionRetrievalsBeforeDate(Date threshold)
+            throws DataAccessLayerException {
+        subscriptionRetrievalDao.deleteBeforeDate(threshold);
     }
 }

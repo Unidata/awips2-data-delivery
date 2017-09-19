@@ -82,6 +82,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * May 27, 2015  4531     dhladky   GMT standard all Calendar refs.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 02, 2017  6186     rjpeter   Removed agentType.
+ * Sep 18, 2017  6415     rjpeter   Call deleteBucketUpToTime
  *
  * </pre>
  *
@@ -329,7 +330,7 @@ public class RetrievalPlan {
         long newStart = newStartOfPlan.getTimeInMillis();
 
         try {
-            bucketsDao.deleteEmptyBucketsUpToTime(newStart, network);
+            bucketsDao.deleteBucketsUpToTime(newStart, network);
         } catch (DataAccessLayerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to remove empty buckets!", e);

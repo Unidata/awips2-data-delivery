@@ -29,6 +29,7 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 
@@ -54,7 +55,9 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Dec 17, 2013  2636     bgonzale  Added method to get a BandwidthAllocation.
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
- * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate and added purgeAllocations
+ * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate and added
+ *                                  purgeAllocations
+ * Sep 18, 2017  6415     rjpeter   Purge SubscriptionRetrieval
  *
  * </pre>
  *
@@ -472,9 +475,10 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
     BandwidthAllocation getBandwidthAllocation(long id);
 
     /**
-     * Purge all allocations prior to the threshold.
+     * Purge all subscription retrievals prior to the threshold.
      *
      * @param purgeThreshold
      */
-    void purgeAllocations(Date purgeThreshold);
+    void purgeSubscriptionRetrievalsBeforeDate(Date purgeThreshold)
+            throws DataAccessLayerException;
 }

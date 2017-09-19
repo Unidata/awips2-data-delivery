@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -46,24 +46,26 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 /**
  * Extracted from {@link RetrievalPlan}. This will be replaced with a database
  * version.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 18, 2013 2106       djohnson     Extracted from {@link RetrievalPlan}.
- * Spet 08, 2013 2351      dhladky      Changed from ascending to descending bandwidth bucket selection
- * Sept 17, 2013 2383      bgonzale     Switched back to start from ceiling and end from floor.
- *                                      Constrain start and end keys by each other.
- * Dec 3,  2013  1736      dhladky      Bandwidth bucket size attenuation.
- * Jan 25, 2014  2741      dhladky      Unsafe nullpointer being thrown.
- * 
+ *
+ * Date           Ticket#  Engineer  Description
+ * -------------- -------- --------- -------------------------------------------
+ * Jun 18, 2013   2106     djohnson  Extracted from {@link RetrievalPlan}.
+ * Spet 08, 2013  2351     dhladky   Changed from ascending to descending
+ *                                   bandwidth bucket selection
+ * Sep 17, 2013   2383     bgonzale  Switched back to start from ceiling and end
+ *                                   from floor. Constrain start and end keys by
+ *                                   each other.
+ * Dec 03, 2013   1736     dhladky   Bandwidth bucket size attenuation.
+ * Jan 25, 2014   2741     dhladky   Unsafe nullpointer being thrown.
+ * Sep 18, 2017   6415     rjpeter   Delete buckets up to time regardless if empty.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
@@ -73,17 +75,14 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
 
     private static final AtomicLong idSequence = new AtomicLong(1);
 
-    private final Map<Network, NavigableMap<Long, BandwidthBucket>> allBuckets = new EnumMap<Network, NavigableMap<Long, BandwidthBucket>>(
+    private final Map<Network, NavigableMap<Long, BandwidthBucket>> allBuckets = new EnumMap<>(
             Network.class);
     {
         for (Network network : Network.values()) {
-            allBuckets.put(network, new TreeMap<Long, BandwidthBucket>());
+            allBuckets.put(network, new TreeMap<>());
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void create(BandwidthBucket bandwidthBucket) {
         NavigableMap<Long, BandwidthBucket> buckets = allBuckets
@@ -94,9 +93,6 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
         buckets.put(bandwidthBucket.getBucketStartTime(), bandwidthBucket);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void update(BandwidthBucket bandwidthBucket) {
         NavigableMap<Long, BandwidthBucket> buckets = allBuckets
@@ -107,32 +103,21 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void deleteEmptyBucketsUpToTime(long timeToDeleteUpTo,
-            Network network) {
+    public void deleteBucketsUpToTime(long timeToDeleteUpTo, Network network) {
         NavigableMap<Long, BandwidthBucket> buckets = allBuckets.get(network);
-        NavigableMap<Long, BandwidthBucket> x = buckets.headMap(
-                timeToDeleteUpTo, true);
+        NavigableMap<Long, BandwidthBucket> x = buckets
+                .headMap(timeToDeleteUpTo, true);
         Iterator<Long> itr = x.keySet().iterator();
         while (itr.hasNext()) {
             Long key = itr.next();
             BandwidthBucket b = x.get(key);
-            // If the bucket is empty, remove it from the Map,
-            // which should result in removal from the parent Map,
-            if (b.isEmpty()) {
-                statusHandler.info("resize() - Removing bucket ["
-                        + b.getBucketStartTime() + "]");
-                itr.remove();
-            }
+            statusHandler.info("resize() - Removing bucket ["
+                    + b.getBucketStartTime() + "]");
+            itr.remove();
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<BandwidthBucket> getAll(Network network) {
         final NavigableMap<Long, BandwidthBucket> buckets = allBuckets
@@ -140,9 +125,6 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
         return copyAndWrapInUnmodifiableList(buckets.values());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthBucket getLastBucket(Network network) {
         final NavigableMap<Long, BandwidthBucket> buckets = allBuckets
@@ -151,18 +133,15 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
     }
 
     @Override
-    public List<BandwidthBucket> getWhereStartTimeIsLessThanOrEqualTo(
-            long time, Network network) {
+    public List<BandwidthBucket> getWhereStartTimeIsLessThanOrEqualTo(long time,
+            Network network) {
         final NavigableMap<Long, BandwidthBucket> buckets = allBuckets
                 .get(network);
-        SortedMap<Long, BandwidthBucket> available = buckets
-                .headMap(time, true);
+        SortedMap<Long, BandwidthBucket> available = buckets.headMap(time,
+                true);
         return copyAndWrapInUnmodifiableList(available.values());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthBucket getFirstBucket(Network network) {
         final NavigableMap<Long, BandwidthBucket> buckets = allBuckets
@@ -170,18 +149,12 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
         return buckets.firstEntry().getValue().copy();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthBucket getByStartTime(long bucketId, Network network) {
         BandwidthBucket bucket = getActualBucketByStartTime(bucketId, network);
         return (bucket == null) ? bucket : bucket.copy();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public SortedSet<BandwidthBucket> getBucketsInWindow(Long startMillis,
             Long endMillis, Network network) {
@@ -198,10 +171,9 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
         // (shouldn't happen, so just throw an exception with as much
         // information as we have)
         if (startKey == null || endKey == null) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Invalid start and end times requested for getBucketsInWindow(): start time [%s], end time [%s], bucket start key [%s], bucket end key [%s].",
-                            startMillis, endMillis, startKey, endKey));
+            throw new IllegalArgumentException(String.format(
+                    "Invalid start and end times requested for getBucketsInWindow(): start time [%s], end time [%s], bucket start key [%s], bucket end key [%s].",
+                    startMillis, endMillis, startKey, endKey));
         }
 
         final NavigableMap<Long, BandwidthBucket> buckets = allBuckets
@@ -216,8 +188,7 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
 
         NavigableMap<Long, BandwidthBucket> window = null;
         try {
-            window = buckets.subMap(startKey,
-                true, endKey, true);
+            window = buckets.subMap(startKey, true, endKey, true);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
                     "Failed to get Bucket SubMap: \nstartMillis: "
@@ -227,16 +198,16 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
                             + new Date(endKey) + "\nfirstBucketKey: "
                             + new Date(buckets.firstKey())
                             + "\nlastBucketsKey: "
-                            + new Date(buckets.lastKey()), e);
+                            + new Date(buckets.lastKey()),
+                    e);
         }
-        return new TreeSet<BandwidthBucket>(
-                copyAndWrapInUnmodifiableList(window.values()));
+        return new TreeSet<>(copyAndWrapInUnmodifiableList(window.values()));
     }
 
     /**
      * Returns the greatest key less than or equal to the given key, or null if
      * there is no such key.
-     * 
+     *
      * @param key
      * @param keyConstraint
      * @return the floored key, or null
@@ -261,7 +232,7 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
     /**
      * Returns the least key greater than or equal to the given key, or null if
      * there is no such key.
-     * 
+     *
      * @param key
      * @param keyConstraint
      * @return the ceiling-ed key, or null
@@ -283,14 +254,11 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
         return lastKey;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void copyState(IBandwidthBucketDao bucketsDao) {
         this.allBuckets.clear();
         for (Network network : Network.values()) {
-            final TreeMap<Long, BandwidthBucket> buckets = new TreeMap<Long, BandwidthBucket>();
+            final TreeMap<Long, BandwidthBucket> buckets = new TreeMap<>();
             this.allBuckets.put(network, buckets);
             for (BandwidthBucket bucket : bucketsDao.getAll(network)) {
                 buckets.put(bucket.getBucketStartTime(), bucket.copy());
@@ -301,7 +269,7 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
     /**
      * Copies each {@link BandwidthBucket} and places them in an unmodifiable
      * list.
-     * 
+     *
      * @param buckets
      *            the buckets
      * @return the list
@@ -317,7 +285,7 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
 
     /**
      * Get the real {@link BandwidthBucket} instance by its start time.
-     * 
+     *
      * @return {@link BandwidthBucket}
      */
     private BandwidthBucket getActualBucketByStartTime(long bucketId,
@@ -328,9 +296,6 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
         return bucket;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public BandwidthBucket getBucketContainingTime(long millis,
             Network network) {
@@ -339,7 +304,7 @@ public class InMemoryBandwidthBucketDao implements IBandwidthBucketDao {
                 millis, network);
         // last bucket.
         if (!buckets.isEmpty()) {
-            return buckets.get(buckets.size() -1);
+            return buckets.get(buckets.size() - 1);
         } else {
             return null;
         }

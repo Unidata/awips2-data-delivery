@@ -42,6 +42,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
@@ -65,18 +66,19 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 01, 2014 3550       ccody       Initial creation
- * Mar 09, 2015 4242       dhladky     Data integrity exception caused by dupe key
- *                                     ~ caused gaps in scheduling
- * May 27, 2015 4531       dhladky     Remove excessive Calendar references.
- * Mar 16, 2016 3919       tjensen     Cleanup unneeded interfaces
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 01, 2014  3550     ccody     Initial creation
+ * Mar 09, 2015  4242     dhladky   Data integrity exception caused by dupe key
+ *                                  caused gaps in scheduling
+ * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Sep 19, 2017  6415     rjpeter   Fixed calculateNewSleepTime to always be
+ *                                  positive
  *
  * </pre>
  *
  * @author ccody
- * @version 1.0
  */
 public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
@@ -86,6 +88,15 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
     /** Default extension at 25% (percentage as integer) */
     protected static final int DEFAULT_EXTENDED_DELAY_FACTOR = 25;
+
+    /**
+     * Subscription Latency Check processing time window. This is how long
+     * (Mils) before the end of a Bandwidth Bucket that this check should
+     * execute.
+     */
+    protected static final long PROCESSING_TIME_WINDOW = Long.getLong(
+            "datadelivery.bandwidth.latency.processingWindow",
+            15 * TimeUtil.MILLIS_PER_SECOND);
 
     /** Spring may attempt to start this more than once. */
     private volatile boolean started = false;
@@ -159,7 +170,6 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             SubscriptionHandler subscriptionHandler,
             DataSetHandler dataSetHandler, DataSetLatencyDao dataSetLatencyDao,
             Network network) {
-
         this.bucketsDao = bucketsDao;
         this.bandwidthDao = bandwidthDao;
         this.subscriptionHandler = subscriptionHandler;
@@ -257,13 +267,6 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
         /** Bandwidth Bucket (time) length in Mils */
         protected long bandwidthBucketLength = 3 * TimeUtil.MILLIS_PER_MINUTE;
-
-        /**
-         * Subscription Latency Check processing time window. This is how long
-         * (Mils) before the end of a Bandwidth Bucket that this check should
-         * execute.
-         */
-        protected long processingTimeWindow = 15 * TimeUtil.MILLIS_PER_SECOND;
 
         private final Network threadNetwork;
 
@@ -365,13 +368,20 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             }
 
             while (!this.isProcessorShutdown) {
+                ITimer timer = TimeUtil.getTimer();
+                timer.start();
+
                 try {
+                    statusHandler.info("Checking subscription latencies...");
                     waitTime = checkSubscriptionLatency();
                 } catch (Throwable e) {
                     // so thread doesn't die
                     statusHandler.error(
                             "Unable to perform Subscription Latency Check.", e);
                 }
+                timer.stop();
+                statusHandler.info("Checking subscription latency took "
+                        + timer.getElapsedTime() + "ms.");
                 try {
                     if ((!this.isProcessorShutdown) && (waitTime >= 0)) {
                         statusHandler.debug("SubscriptionLatencyCheckProcessor "
@@ -449,10 +459,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             generateAndSendExtendedNotification(subscriptionLatencyList);
             generateAndSendExpiredNotification(subscriptionLatencyList);
 
-            long waitTime = calculateNewSleepTime(
-                    scheduledNextBandwidthBucketTime);
-
-            return (waitTime);
+            return calculateNewSleepTime(scheduledNextBandwidthBucketTime);
         }
 
         /**
@@ -543,7 +550,6 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     } else if (baBandwidthBucket < currentBandwidthBucketTime) {
                         // This allocation should have been removed.
                         // Record it for tracking purposes
-                        SubscriptionRetrieval subRetrieval = (SubscriptionRetrieval) bandwidthAllocation;
                         statusHandler
                                 .info("Bandwidth Allocation: Bandwidth Bucket set earlier than most current Bandwidth Bucket. Id: "
                                         + baId
@@ -970,8 +976,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
         /**
          * Calculate how long this process should sleep.
          *
-         * Ideally this (Spring started) process sleeps until 15 seconds
-         * (this.processingTimeWindow) the next:
+         * Ideally this (Spring started) process sleeps until
+         * PROCESSING_TIME_WINDOW before the next:
          * <p>
          * Bandwidth Bucket Start time + Bandwidth Bucket Length is reached. The
          * time between "now" and 15 seconds before the start of the next
@@ -984,34 +990,28 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          */
         protected long calculateNewSleepTime(
                 long nextBandwidthBucketStartTime) {
-
-            long newSleepTimeMillis = 0;
             long now = TimeUtil.currentTimeMillis();
-            if (nextBandwidthBucketStartTime == 0) {
-                // Startup. Just wait a full bandwidthBucketLength before
-                // starting
-                newSleepTimeMillis = this.bandwidthBucketLength;
-            } else {
-                if (now < (nextBandwidthBucketStartTime
-                        - this.processingTimeWindow)) {
-                    newSleepTimeMillis = nextBandwidthBucketStartTime
-                            + this.bandwidthBucketLength
-                            - this.processingTimeWindow - now;
-                    if (newSleepTimeMillis < 0) {
-                        newSleepTimeMillis = 0;
-                    }
-                } else {
-                    // Notify that it took longer than the allotted time window
-                    // to complete. Skip a cycle
-                    statusHandler
-                            .info("SubscriptionLatencyCheck took longer than usual to complete."
-                                    + " Skipping a Bandwidth Bucket cycle to avoid stacking up.");
-                    newSleepTimeMillis = (nextBandwidthBucketStartTime
-                            - this.processingTimeWindow)
-                            + (this.bandwidthBucketLength * 2) - now;
-                }
+            long newSleepTimeMillis = this.bandwidthBucketLength;
+
+            // advance nextBandwidthBucketStartTime if necessary
+            if (nextBandwidthBucketStartTime < now) {
+                long additionalBuckets = ((now - nextBandwidthBucketStartTime)
+                        / bandwidthBucketLength) + 1;
+                nextBandwidthBucketStartTime += additionalBuckets
+                        * bandwidthBucketLength;
             }
-            return (newSleepTimeMillis);
+
+            newSleepTimeMillis = nextBandwidthBucketStartTime - now
+                    - PROCESSING_TIME_WINDOW;
+
+            // common use case, usually takes less than
+            // PROCESSING_TIME_WINDOW to do the latency check
+            while (newSleepTimeMillis <= 0) {
+                newSleepTimeMillis += bandwidthBucketLength;
+            }
+
+            return newSleepTimeMillis;
+
         }
 
         /**

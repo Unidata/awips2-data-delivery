@@ -64,6 +64,17 @@
         <constructor-arg ref="retrievalAgent" />
     </bean>
 
+    <bean id="subscriptionLatencyCheck"
+        class="com.raytheon.uf.edex.datadelivery.bandwidth.SubscriptionLatencyCheck"
+        init-method="start">
+        <constructor-arg ref="bandwidthBucketDao" />
+        <constructor-arg ref="bandwidthDao" />
+        <constructor-arg ref="SubscriptionHandler" />
+        <constructor-arg ref="DataSetHandler" />
+        <constructor-arg ref="dataSetLatencyDao" />
+        <constructor-arg ref="network" />
+    </bean>
+
     <camelContext id="bandwidth-context" xmlns="http://camel.apache.org/schema/spring"
         errorHandlerRef="errorHandler">
         <endpoint id="purgeBandwidthAllocationTimer" uri="timer://purgeBandwidthAllocations?fixedRate=true&amp;period=5m"/>

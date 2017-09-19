@@ -69,7 +69,7 @@
     <nameRegex order="7.0" id="catIcePlts" AWIPS="CICEP" pattern="categorical ice pellets"/>
     <nameRegex order="8.0" id="convIn" AWIPS="CIn" pattern="convective inhibition"/>
     <nameRegex order="9.0" id="catRain" AWIPS="CRAIN" pattern="categorical rain"/>
-    <nameRegex order="10.0" id="cldMixRat" AWIPS="CSNOW" pattern="cloud mixing ratio"/>
+    <nameRegex order="10.0" id="catSnow" AWIPS="CSNOW" pattern="categorical snow"/>
     <nameRegex order="11.0" id="dewPtTemp" AWIPS="DpT" pattern="dew point temperature"/>
     <nameRegex order="12.0" id="vertVeloG" AWIPS="GVV" pattern="vertical velocity \(geometric\)"/>
     <nameRegex order="13.0" id="pot" AWIPS="PoT" pattern="pseudo-adiabatic potential temperature \(or equivalent potential temperature\)"/>
@@ -90,6 +90,7 @@
     <nameRegex order="28.0" id="snowDepth" AWIPS="SnD" pattern="snow depth"/>
     <nameRegex order="29.0" id="specHum" AWIPS="SH" pattern="specific humidity"/>
     <nameRegex order="30.0" id="totCldCov" AWIPS="TCC" pattern="total cloud cover"/>
+    <nameRegex order="30.5" id="cldMixRat" AWIPS="CLWMR" pattern="cloud mixing ratio"/>
     <nameRegex order="31.0" id="uWind" AWIPS="uW" pattern="u-component of wind"/>
     <nameRegex order="32.0" id="vWind" AWIPS="vW" pattern="v-component of wind"/>
     <nameRegex order="33.0" id="vertVeloP" AWIPS="PVV" pattern="vertical velocity \(pressure\)"/>

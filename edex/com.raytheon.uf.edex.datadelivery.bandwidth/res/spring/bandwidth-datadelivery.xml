@@ -99,17 +99,6 @@
         <constructor-arg ref="tokenBucketUpdater" />
     </bean>
 
-    <bean id="subscriptionLatencyCheck"
-        class="com.raytheon.uf.edex.datadelivery.bandwidth.SubscriptionLatencyCheck"
-        init-method="start">
-        <constructor-arg ref="bandwidthBucketDao" />
-        <constructor-arg ref="bandwidthDao" />
-        <constructor-arg ref="SubscriptionHandler" />
-        <constructor-arg ref="DataSetHandler" />
-        <constructor-arg ref="dataSetLatencyDao" />
-        <constructor-arg ref="network" />
-    </bean>
-
     <bean id="dataSetLatencyServiceHandler"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.handler.DataSetLatencyServiceHandler">
         <property name="dataSetLatencyDao" ref="dataSetLatencyDao" />
