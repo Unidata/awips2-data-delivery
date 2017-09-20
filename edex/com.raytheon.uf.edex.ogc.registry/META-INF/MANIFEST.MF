@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Ogc Registry
+Bundle-SymbolicName: com.raytheon.uf.edex.ogc.registry
+Bundle-Version: 1.17.0.qualifier
+Bundle-Vendor: RAYTHEON
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: com.raytheon.uf.edex.ogc.common,
+ com.raytheon.uf.common.datadelivery.harvester,
+ com.raytheon.uf.common.datadelivery.registry,
+ org.geotools,
+ com.raytheon.uf.common.status,
+ com.raytheon.uf.common.time,
+ com.raytheon.uf.common.dataplugin,
+ com.raytheon.uf.common.registry.ebxml,
+ com.raytheon.uf.common.datadelivery.retrieval,
+ com.raytheon.uf.common.geospatial,
+ com.raytheon.uf.edex.wfs,
+ com.raytheon.uf.edex.core;bundle-version="1.14.0",
+ com.raytheon.uf.common.registry.schemas.ebxml;bundle-version="1.14.0",
+ com.raytheon.uf.common.localization,
+ org.slf4j
+Export-Package: com.raytheon.uf.edex.ogc.registry
+Import-Package: com.raytheon.uf.common.util

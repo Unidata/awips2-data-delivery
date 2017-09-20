@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -42,6 +43,7 @@ import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.registry.WFSPointDataSet;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.ogc.common.db.SimpleDimension;
 import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -69,6 +71,8 @@ import com.vividsolutions.jts.geom.Envelope;
  * Apr 13, 2014  3012     dhladky   Cleaned up.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 25, 2017  6186     rjpeter   Refactored, combined tracking under WfsLayerInfo, correctly follow CollectorAddon pattern.
+ * Aug 30, 2017  6412     tjensen   Changed to store insert times in metadata
+ *                                  instead of obs times
  *
  * </pre>
  *
@@ -125,10 +129,42 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
     public static final String UNIQUE_ID_SEPARATOR = ",";
 
     protected final String baseUrl;
+    private static final int START_BUFFER_DEFAULT = 300;
+    private static final int END_BUFFER_DEFAULT = 1;
+
+    private static final int INSERT_START_TIME_BUFFER_IN_SECS;
+
+    private static final int INSERT_END_TIME_BUFFER_IN_SECS;
+
+    static {
+        int start_buffer = Integer.getInteger("dpa.insert-time-buffer.start",
+                START_BUFFER_DEFAULT);
+        int end_buffer = Integer.getInteger("dpa.insert-time-buffer.end",
+                END_BUFFER_DEFAULT);
+        if (start_buffer < 0) {
+            start_buffer = START_BUFFER_DEFAULT;
+        }
+        if (end_buffer < 0) {
+            end_buffer = END_BUFFER_DEFAULT;
+        }
+
+        INSERT_START_TIME_BUFFER_IN_SECS = start_buffer;
+
+        INSERT_END_TIME_BUFFER_IN_SECS = end_buffer;
+    }
+
 
     public WfsRegistryCollectorAddon() {
         super();
         baseUrl = getConfiguration().getProvider().getConnection().getUrl();
+        if (INSERT_END_TIME_BUFFER_IN_SECS
+                + INSERT_START_TIME_BUFFER_IN_SECS < 300) {
+            logger
+                    .warn("Insert time buffers do not add a minimum of 5 minutes. Start buffer: "
+                            + INSERT_START_TIME_BUFFER_IN_SECS
+                            + "; End buffer: "
+                            + INSERT_END_TIME_BUFFER_IN_SECS);
+        }
     }
 
     @Override
@@ -153,8 +189,12 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
      * @return
      */
     protected Date getTime(R record) {
-        Date refTime = record.getDataTime().getRefTime();
-        return refTime;
+        /*
+         * Track only the insert times for now, as that is what the data is
+         * currently queried on.
+         */
+        Date insertTime = record.getInsertTime().getTime();
+        return insertTime;
     }
 
     /**
@@ -227,9 +267,23 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
 
                 PointDataSetMetaData dsmd = layerInfo.dataSetMetaData;
                 PointTime time = new PointTime();
-                time.setTimes(new ArrayList<>(layerInfo.dataTimes));
-                time.setStart(layerInfo.earliestInsertTime);
-                time.setEnd(layerInfo.latestInsertTime);
+
+                List<Date> timeList = new ArrayList<>();
+                Date startTime = new Date();
+                startTime.setTime(layerInfo.earliestInsertTime.getTime()
+                        - (TimeUtil.MILLIS_PER_SECOND
+                                * INSERT_START_TIME_BUFFER_IN_SECS));
+                Date endTime = new Date();
+                endTime.setTime(layerInfo.latestInsertTime.getTime()
+                        + (TimeUtil.MILLIS_PER_SECOND
+                                * INSERT_END_TIME_BUFFER_IN_SECS));
+
+                timeList.add(startTime);
+                timeList.add(endTime);
+                time.setTimes(new ArrayList<>(timeList));
+
+                time.setStart(startTime);
+                time.setEnd(endTime);
                 time.setNumTimes(time.getTimes().size());
                 dsmd.setTime(time);
                 StringBuilder url = new StringBuilder(160);

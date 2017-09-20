@@ -17,10 +17,8 @@
           For these we make the dataSetName = collectionName + separator + dataSetName
           The other portions of this are for paring the date and cycle from the dataset. -->
     <dataSetConfig>
-        <!-- Cycle on end of date (3) with the date pattern, dataSetName on front (1) parsed using pattern -->
-        <pattern name="PATTERN1" dataSetLocation="1" cycleLocation="3" regex="(.*)(\d{8})_(\d+z)$" />
-        <!-- Cycle on end (2), dataSetName on front (1) parsed using pattern -->
-        <pattern name="PATTERN2" dataSetLocation="1" cycleLocation="2" regex="(.*)_(\d+z)$" />
+        <!-- Cycle on end of date (2) with the date pattern, dataSetName on front (1) parsed using pattern -->
+        <pattern name="PATTERN1" dataSetLocation="1" cycleLocation="2" regex="(.*?)(?:\d{8})?_(\d+z)$" />
         <!-- Cycle in the middle (2) dataSetName (1,3) -->
         <pattern name="PATTERN3" dataSetLocation="1,3" cycleLocation="2" regex="(.*)_(\d+z)(_.*)$" />
     </dataSetConfig>

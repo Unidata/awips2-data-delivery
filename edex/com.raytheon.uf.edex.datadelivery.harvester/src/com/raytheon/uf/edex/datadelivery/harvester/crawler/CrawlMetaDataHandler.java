@@ -32,6 +32,8 @@ import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.ITimer;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.query.DatabaseQuery;
 import com.raytheon.uf.edex.datadelivery.harvester.MetaDataHandler;
@@ -74,6 +76,7 @@ import opendap.dap.DAS;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * Jul 12, 2017  6178     tgurney   Change link storage from file system to database
+ * Aug 31, 2017  6430     rjpeter   Added timing information.
  *
  * </pre>
  *
@@ -134,13 +137,15 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
 
                     List<CrawlerLink> removes = new ArrayList<>();
                     for (CrawlerLink link : crawlerLinks) {
+
                         String url = link.getUrl();
+
                         try {
                             link.setMetadata(mde.extractMetaData(url));
                             mde.setDataDate();
                         } catch (Exception e) {
                             final String userFriendly = String.format(
-                                    "Unable to retrieve metadata for dataset group %s: %s",
+                                "Unable to retrieve metadata for dataset group %s: %s",
                                     collectionName, url);
                             statusHandler.error(userFriendly, e);
 
@@ -161,6 +166,8 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                         IParseMetaData mdp = serviceFactory.getParser(
                                 new Date(System.currentTimeMillis()));
 
+                        ITimer timer = TimeUtil.getTimer();
+                        timer.start();
                         try {
                             List<Link> links = crawlerLinks.stream()
                                     .map(CrawlerLink::asLink)
@@ -173,11 +180,16 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                                     + providerName + " : " + collectionName);
                             crawlerLinkDao.createLinks(crawlerLinks);
                         } catch (Exception e) {
-                            statusHandler.handle(Priority.PROBLEM,
-                                    "Unable to parse metadata for dataset group"
+                            statusHandler.error("Unable to parse metadata for dataset group"
                                             + collectionName,
                                     e);
                         }
+                        timer.stop();
+                        statusHandler.info("Parsed and stored metadata from ["
+                                + providerName + "] for collection ["
+                                + collection.getName() + "] in [" + TimeUtil
+                                        .prettyDuration(timer.getElapsedTime())
+                                + "]");
                     } else {
                         statusHandler.info("No new data for " + providerName
                                 + " : " + collectionName);

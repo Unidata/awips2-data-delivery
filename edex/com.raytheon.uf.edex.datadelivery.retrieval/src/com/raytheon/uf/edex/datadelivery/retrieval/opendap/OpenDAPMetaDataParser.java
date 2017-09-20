@@ -35,7 +35,6 @@ import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
-import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
@@ -123,6 +122,8 @@ import opendap.dap.NoSuchAttributeException;
  * May 04, 2017  6186        rjpeter   Utilize logger.
  * Jul 12, 2017  6178        tgurney   Updates for database-based link storage
  * Aug 02, 2017  6186        rjpeter   Fixed cycle handling for DSMD.
+ * Aug 31, 2017  6430        rjpeter   Fixed to not use dataSet as map key and
+ *                                     stored parameters once.
  *
  * </pre>
  *
@@ -658,54 +659,46 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             List<Link> links, Collection collection, String dataDateFormat)
             throws NoSuchAttributeException {
 
-        final Map<OpenDapGriddedDataSet, List<DataSetMetaData<?, ?>>> metaDatas = new HashMap<>();
+        Map<String, Parameter> parameters = new HashMap<>();
+        Map<String, OpenDapGriddedDataSet> dataSets = new HashMap<>();
+        Map<String, List<DataSetMetaData<?,?>>> metaDatas = new HashMap<>();
 
         if (CollectionUtil.isNullOrEmpty(links)) {
             return null;
         }
 
         for (Link link : links) {
-            OpenDapGriddedDataSet dataSet = new OpenDapGriddedDataSet();
-            dataSet.setCollectionName(collection.getName());
-            String providerName = provider.getName();
-            dataSet.setProviderName(providerName);
-
-            final GriddedDataSetMetaData gdsmd = new OpenDapGriddedDataSetMetaData();
-
             List<String> vals = null;
             try {
                 vals = OpenDAPParseUtility.getInstance()
                         .getDataSetNameAndCycle(link.getSubName(), collection);
             } catch (Exception e1) {
-                throw new IllegalStateException(
+                logger.error(
                         "Failed to get cycle and dataset name set...", e1);
+                continue;
             }
-            dataSet.setDataSetName(vals.get(0));
-            gdsmd.setDataSetName(dataSet.getDataSetName());
-            gdsmd.setProviderName(dataSet.getProviderName());
 
-            // Reuse existing dataset if we've already parsed it
-            Set<OpenDapGriddedDataSet> keySet = metaDatas.keySet();
-            if (keySet.contains(dataSet)) {
-                for (OpenDapGriddedDataSet existingDataSet : keySet) {
-                    if (existingDataSet.equals(dataSet)) {
-                        dataSet = existingDataSet;
-                        break;
-                    }
-                }
-            }
+            String dataSetName = vals.get(0);
+            OpenDapGriddedDataSet dataSet = new OpenDapGriddedDataSet();
+            dataSet.setCollectionName(collection.getName());
+            dataSet.setProviderName(provider.getName());
+            dataSet.setDataSetName(dataSetName);
+
+            final GriddedDataSetMetaData gdsmd = new OpenDapGriddedDataSetMetaData();
+            gdsmd.setDataSetName(dataSet.getDataSetName());
+            String providerName = dataSet.getProviderName();
+			gdsmd.setProviderName(providerName);
 
             DAS das = link.getMetadata().get(DAP_TYPE.DAS.getDapType());
             // set url first, used for level lookups
             gdsmd.setUrl(link.getUrl().replace(
                     serviceConfig.getConstantValue("META_DATA_SUFFIX"),
                     serviceConfig.getConstantValue("BLANK")));
-            dataSet.setParameters(getParameters(das, dataSet, gdsmd,
-                    link.getSubName(), collection, dataDateFormat));
-            for (Entry<String, Parameter> parm : dataSet.getParameters()
-                    .entrySet()) {
-                storeParameter(parm.getValue());
-            }
+            Map<String, Parameter> paramMap = getParameters(das, dataSet, gdsmd,
+                    link.getSubName(), collection, dataDateFormat);
+            dataSet.setParameters(paramMap);
+            parameters.putAll(paramMap);
+
             GriddedTime dataSetTime = gdsmd.getTime();
             if (dataSetTime == null) {
                 throw new IllegalStateException(
@@ -720,7 +713,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                     forecastHoursAsInteger.add(Integer.parseInt(forecastHour));
                 } catch (NumberFormatException nfe) {
                     logger.warn("Unable to parse [" + forecastHour
-                            + "] as an integer!");
+                            + "] as an integer!", nfe);
                 }
             }
             dataSet.getForecastHours().addAll(forecastHoursAsInteger);
@@ -814,26 +807,41 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                 logger.debug("Arrival Time: " + dataSet.getArrivalTime());
             }
 
-            List<DataSetMetaData<?, ?>> toStore = metaDatas.get(dataSet);
+            if (dataSets.containsKey(dataSetName)) {
+                dataSets.get(dataSetName).combine(dataSet);
+            } else {
+                dataSets.put(dataSetName, dataSet);
+            }
 
+            List<DataSetMetaData<?,?>> toStore = metaDatas.get(dataSetName);
             if (toStore == null) {
                 toStore = new ArrayList<>();
-                metaDatas.put(dataSet, toStore);
+                metaDatas.put(dataSetName, toStore);
             }
 
             toStore.add(gdsmd);
         }
 
         List<DataSetMetaData<?, ?>> parsedMetadatas = new ArrayList<>();
-        for (DataSet<GriddedTime, GriddedCoverage> dataSet : metaDatas
-                .keySet()) {
-            List<DataSetMetaData<?, ?>> dataSetMetaDatas = metaDatas
-                    .get(dataSet);
 
+        logger.info("Processing [" + parameters.size()
+                + "] parameters for Collection [" + collection.getName()
+                + "] ...");
+        // Store the Parameters
+        for (Parameter parm : parameters.values()) {
+            storeParameter(parm);
+        }
+
+        // Store DataSets
+        for (Entry<String, List<DataSetMetaData<?,?>>> entry : metaDatas
+                .entrySet()) {
+            logger.info("Processing DataSet [" + entry.getKey()
+                    + "] with [" + entry.getValue().size()
+                    + "] DataSetMetaData entries ...");
+            OpenDapGriddedDataSet dataSet = dataSets.get(entry.getKey());
             storeDataSet(dataSet);
-            storeMetaData(dataSetMetaDatas, dataSet);
-
-            parsedMetadatas.addAll(dataSetMetaDatas);
+            storeMetaData(entry.getValue(), dataSet);
+            parsedMetadatas.addAll(entry.getValue());
         }
 
         return parsedMetadatas;
