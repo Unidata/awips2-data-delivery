@@ -44,6 +44,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionNotifyTa
  * Jul 25, 2017  6186     rjpeter   Removed network
  * Aug 02, 2017  6186     rjpeter   Removed IRetrievalDao.
  * Aug 10, 2017  6186     nabowle   Exit loop when a Pending retrieval is found.
+ * Sep 21, 2017  6433     tgurney   Add provider arg to activateNextRetrievalRequest
  *
  * </pre>
  *
@@ -78,84 +79,89 @@ public class RetrievalDao
      * Returns the next PENDING retrieval request, puts it into a RUNNING state,
      * based on current time. Based on priority and expire time.
      *
-     * TODO: Take into account latency so retrievals that happen often like
-     * MADIS and PDA don't get stuck behind a grid task
+     * @param provider the provider to constrain requests to
      *
-     * @param network the network to constrain requests to
+     * @param syncObj synchronize on this object for the entire length of this
+     * method
      *
      * @return
      */
-    public synchronized RetrievalRequestRecord activateNextRetrievalRequest()
-            throws DataAccessLayerException {
-        Session sess = null;
-        RetrievalRequestRecord rval = null;
+    public RetrievalRequestRecord activateNextRetrievalRequest(String provider,
+            final Object syncObj) throws DataAccessLayerException {
+        synchronized (syncObj) {
+            Session sess = null;
+            RetrievalRequestRecord rval = null;
 
-        try {
-            sess = getCurrentSession();
+            try {
+                sess = getCurrentSession();
 
-            // Find lowest priority item
-            final String minPriHql = "select min(rec.priority) from RetrievalRequestRecord rec "
-                    + "where rec.state = :statePending";
+                // Find lowest priority item
+                final String minPriHql = "select min(rec.priority) from RetrievalRequestRecord rec "
+                        + "where rec.state = :statePending  and rec.provider = :provider";
 
-            /*
-             * user lowest id, which is generally first inserted without having
-             * to worry about duplicate insert time, thus preserving ordering
-             */
-            final String pkHql = "select min(rec.id) from RetrievalRequestRecord rec "
-                    + "where rec.state = :statePending and rec.priority = :minPri";
+                /*
+                 * user lowest id, which is generally first inserted without
+                 * having to worry about duplicate insert time, thus preserving
+                 * ordering
+                 */
+                final String pkHql = "select min(rec.id) from RetrievalRequestRecord rec "
+                        + "where rec.state = :statePending and rec.priority = :minPri and rec.provider = :provider";
 
-            Query minPriQuery = sess.createQuery(minPriHql);
-            setQueryState(minPriQuery, State.PENDING);
+                Query minPriQuery = sess.createQuery(minPriHql);
+                setQueryState(minPriQuery, State.PENDING);
+                minPriQuery.setString("provider", provider);
 
-            Query pkQuery = sess.createQuery(pkHql);
-            setQueryState(pkQuery, State.PENDING);
+                Query pkQuery = sess.createQuery(pkHql);
+                pkQuery.setString("provider", provider);
+                setQueryState(pkQuery, State.PENDING);
 
-            boolean done = false;
+                boolean done = false;
 
-            while (!done) {
-                Object result = minPriQuery.uniqueResult();
-                if (result != null) {
-                    int minPri = ((Number) result).intValue();
-                    pkQuery.setInteger("minPri", minPri);
-                    result = pkQuery.uniqueResult();
+                while (!done) {
+                    Object result = minPriQuery.uniqueResult();
                     if (result != null) {
-                        rval = (RetrievalRequestRecord) sess.get(
-                                RetrievalRequestRecord.class,
-                                ((Number) result).intValue(),
-                                LockOptions.UPGRADE);
+                        int minPri = ((Number) result).intValue();
+                        pkQuery.setInteger("minPri", minPri);
+                        result = pkQuery.uniqueResult();
+                        if (result != null) {
+                            rval = (RetrievalRequestRecord) sess.get(
+                                    RetrievalRequestRecord.class,
+                                    ((Number) result).intValue(),
+                                    LockOptions.UPGRADE);
 
-                        if (rval == null
-                                || !State.PENDING.equals(rval.getState())) {
-                            /*
-                             * another thread grabbed request while waiting for
-                             * upgrade lock, redo sub query, null out rval in
-                             * case it was due to state change
-                             */
-                            rval = null;
-                            continue;
+                            if (rval == null
+                                    || !State.PENDING.equals(rval.getState())) {
+                                /*
+                                 * another thread grabbed request while waiting
+                                 * for upgrade lock, redo sub query, null out
+                                 * rval in case it was due to state change
+                                 */
+                                rval = null;
+                                continue;
+                            }
+                            done = true;
                         }
+                        /*
+                         * else another thread grabbed last entry for this
+                         * priority, repeat loop
+                         */
+                    } else {
+                        // no Pending entries
                         done = true;
                     }
-                    /*
-                     * else another thread grabbed last entry for this priority,
-                     * repeat loop
-                     */
-                } else {
-                    // no Pending entries
-                    done = true;
                 }
+
+                if (rval != null) {
+                    rval.setState(State.RUNNING);
+                    sess.update(rval);
+                }
+            } catch (Exception e) {
+                throw new DataAccessLayerException(
+                        "Failed looking up next retrieval", e);
             }
 
-            if (rval != null) {
-                rval.setState(State.RUNNING);
-                sess.update(rval);
-            }
-        } catch (Exception e) {
-            throw new DataAccessLayerException(
-                    "Failed looking up next retrieval", e);
+            return rval;
         }
-
-        return rval;
     }
 
     /**

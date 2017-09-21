@@ -56,7 +56,6 @@
                 <constructor-arg value="${subnotify.task.frequency}" />
             </bean>
         </constructor-arg>
-        <constructor-arg value="${retrieval-process.threads}"/>
         <constructor-arg ref="retrievalTask" />
     </bean>
 
