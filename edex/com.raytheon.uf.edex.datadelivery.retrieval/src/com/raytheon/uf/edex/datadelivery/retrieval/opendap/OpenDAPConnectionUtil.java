@@ -42,32 +42,13 @@ import com.raytheon.uf.common.comm.ProxyConfiguration;
  * Apr 14, 2015 4400       dhladky      Upgraded to DAP2 with backward compatibility.
  * Jun 06, 2017 6222       tgurney      Use token bucket to rate-limit requests
  * Jun 22, 2017 6222       tgurney      Receive stream wrapper from caller
+ * Sep 21, 2017 6441       tgurney      Remove references to dods-1.1.7
  * </pre>
  *
  * @author djohnson
  */
 
 public class OpenDAPConnectionUtil {
-    /**
-     * Retrieve a DConnect instance.
-     *
-     * @param urlString
-     * @return DConnect instance
-     * @throws FileNotFoundException
-     *             rethrown from DConnect
-     */
-    public static dods.dap.DConnect getDConnectDODS(String urlString)
-            throws FileNotFoundException {
-
-        // older xdods-serialized version
-        if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
-            return new dods.dap.DConnect(urlString,
-                    ProxyConfiguration.getHttpProxyHost(),
-                    ProxyConfiguration.getHttpProxyPortString());
-        } else {
-            return new dods.dap.DConnect(urlString);
-        }
-    }
 
     /**
      * Retrieve a DConnect instance.
@@ -97,9 +78,8 @@ public class OpenDAPConnectionUtil {
             return new opendap.dap.DConnect(urlString,
                     ProxyConfiguration.getHttpProxyHost(),
                     ProxyConfiguration.getHttpProxyPortString(), streamWrapper);
-        } else {
-            return new opendap.dap.DConnect(urlString);
         }
+        return new opendap.dap.DConnect(urlString);
     }
 
     /**

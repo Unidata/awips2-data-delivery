@@ -67,7 +67,4 @@
     <constant name="DEFAULT_MULTIPLIER" value="1.5" />
     <constant name="DEFAULT_RUN_INCREMENT" value="6" />
     <constant name="DEFAULT_OFFSET" value="270" />
-    <!-- Version of OpenDAP this server will use internally and 
-         for exporting (Shared Subscriptions) if writing to SBN -->
-    <constant name="DAP_VERSION" value="2.0" />
 </serviceConfig>

@@ -19,10 +19,16 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
+import com.raytheon.uf.common.serialization.SerializationException;
+
 /**
- * Dynamic serializer for OpenDAP retrieval responses.
+ * Serializer for OpenDAP retrieval responses.
  *
  * <pre>
  *
@@ -36,6 +42,7 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
  * Apr 15, 2015  4400     dhladky   Updated for DAP2 protocol and backward
  *                                  compatibility.
  * Jul 27, 2017  6186     rjpeter   Remove Thrift Serialization.
+ * Sep 21, 2017  6441     tgurney   Remove references to dods-1.1.7
  *
  * </pre>
  *
@@ -45,11 +52,28 @@ public class OpenDapRetrievalResponseSerializer
         extends XmlAdapter<byte[], Object> {
     @Override
     public Object unmarshal(byte[] v) throws Exception {
-        return DodsUtils.restoreDataDdsFromByteArray(v);
+        opendap.dap.DConnect dconnect = new opendap.dap.DConnect(
+                new ByteArrayInputStream(v));
+        return dconnect.getData(null);
     }
 
     @Override
     public byte[] marshal(Object v) throws Exception {
-        return DodsUtils.convertDataDdsToByteArray(v);
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream(700)) {
+
+            if (v instanceof opendap.dap.DataDDS) {
+                ((opendap.dap.DataDDS) v).externalize(os, true, true);
+            } else {
+                throw new SerializationException(
+                        "Unknown type for DDS serialization. "
+                                + v.getClass().getName());
+            }
+
+            return os.toByteArray();
+
+        } catch (IOException e) {
+            throw new SerializationException(
+                    "Unable to externalize the DataDDS instance.", e);
+        }
     }
 }

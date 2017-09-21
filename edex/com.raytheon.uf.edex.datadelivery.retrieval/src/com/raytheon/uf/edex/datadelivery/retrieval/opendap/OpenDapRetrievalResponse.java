@@ -36,14 +36,14 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalResponse;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 12, 2013 1543       djohnson     Initial creation
- * Feb 15, 2013 1543       djohnson     Only allow DataDDS payloads.
- * Apr 14, 2015 4400       dhladky      Updated to DAP2 protocol made backward compatible.
+ * Feb 12, 2013 1543       djohnson    Initial creation
+ * Feb 15, 2013 1543       djohnson    Only allow DataDDS payloads.
+ * Apr 14, 2015 4400       dhladky     Updated to DAP2 protocol made backward compatible.
+ * Sep 21, 2017 6441       tgurney     Remove references to dods-1.1.7
  *
  * </pre>
  *
  * @author djohnson
- * @version 1.0
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
@@ -58,8 +58,6 @@ public class OpenDapRetrievalResponse extends RetrievalResponse {
         if (payload != null) {
             if (payload instanceof opendap.dap.DataDDS) {
                 this.payload = opendap.dap.DataDDS.class.cast(payload);
-            } else if (payload instanceof dods.dap.DataDDS) {
-                this.payload = dods.dap.DataDDS.class.cast(payload);
             } else {
                 throw new IllegalArgumentException(
                         "Payload must be a DataDDS instance, not "

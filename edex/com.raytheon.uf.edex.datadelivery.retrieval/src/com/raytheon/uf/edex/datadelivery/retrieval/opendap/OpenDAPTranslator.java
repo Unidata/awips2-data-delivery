@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  *                                  compatibility.
  * Jun 13, 2017  6204     nabowle   Cleanup.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
+ * Sep 21, 2017  6441     tgurney   Remove references to dods-1.1.7
  *
  * </pre>
  *
@@ -64,21 +65,12 @@ public class OpenDAPTranslator
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPTranslator.class);
 
-    /** Assume current version **/
-    private boolean isDods = false;
-
     public OpenDAPTranslator(Retrieval<GriddedTime, GriddedCoverage> retrieval)
             throws InstantiationException {
         super(retrieval);
     }
 
     public PluginDataObject[] asPluginDataObjects(Object dds) {
-
-        if (dds instanceof dods.dap.DataDDS) {
-            isDods = true;
-        } else {
-            isDods = false;
-        }
 
         PluginDataObject[] pdos = null;
 
@@ -89,11 +81,7 @@ public class OpenDAPTranslator
             Class<?> dclass = getClass(baseType);
 
             try {
-                if (dclass == dods.dap.DGrid.class) {
-                    pdos = translateGrid(baseType);
-                } else if (dclass == dods.dap.DArray.class) {
-                    pdos = translateArray(baseType);
-                } else if (dclass == opendap.dap.DGrid.class) {
+                if (dclass == opendap.dap.DGrid.class) {
                     pdos = translateGrid(baseType);
                 } else if (dclass == opendap.dap.DArray.class) {
                     pdos = translateArray(baseType);
@@ -148,29 +136,15 @@ public class OpenDAPTranslator
         int numLevels = getSubsetNumLevels();
         List<DataTime> times = getTimes();
 
-        if (isDods) {
-            for (Enumeration<?> e = ((dods.dap.DArray) darray)
-                    .getDimensions(); e.hasMoreElements();) {
-                dods.dap.DArrayDimension d = (dods.dap.DArrayDimension) e
-                        .nextElement();
+        for (Enumeration<?> e = ((opendap.dap.DArray) darray).getDimensions(); e
+                .hasMoreElements();) {
+            opendap.dap.DArrayDimension d = (opendap.dap.DArrayDimension) e
+                    .nextElement();
 
-                if ("lat".equals(d.getName())) {
-                    dny = d.getSize();
-                } else if ("lon".equals(d.getName())) {
-                    dnx = d.getSize();
-                }
-            }
-        } else {
-            for (Enumeration<?> e = ((opendap.dap.DArray) darray)
-                    .getDimensions(); e.hasMoreElements();) {
-                opendap.dap.DArrayDimension d = (opendap.dap.DArrayDimension) e
-                        .nextElement();
-
-                if ("lat".equals(d.getName())) {
-                    dny = d.getSize();
-                } else if ("lon".equals(d.getName())) {
-                    dnx = d.getSize();
-                }
+            if ("lat".equals(d.getName())) {
+                dny = d.getSize();
+            } else if ("lon".equals(d.getName())) {
+                dnx = d.getSize();
             }
         }
 
@@ -236,95 +210,47 @@ public class OpenDAPTranslator
         return records;
     }
 
-    /**
-     * get # of subset times
-     */
+    /** get # of subset times */
     @Override
     protected int getSubsetNumTimes() {
-
         return ResponseProcessingUtilities
                 .getOpenDAPGridNumTimes(retrieval.getAttribute().getTime());
     }
 
-    /**
-     * get subset levels
-     */
+    /** get subset levels */
     @Override
     protected int getSubsetNumLevels() {
-
         return ResponseProcessingUtilities.getOpenDAPGridNumLevels(
                 retrieval.getAttribute().getParameter());
     }
 
-    /**
-     * get list of data times from subset
-     */
+    /** get list of data times from subset */
     @Override
     protected List<DataTime> getTimes() {
-
         return ResponseProcessingUtilities
                 .getOpenDAPGridDataTimes(retrieval.getAttribute().getTime());
     }
 
-    /**
-     * Gets the class from the BaseType
-     *
-     * @param b
-     * @return
-     */
+    /** Gets the class from the BaseType */
     private Class<?> getClass(Object baseType) {
-        if (isDods) {
-            return ((dods.dap.BaseType) baseType).getClass();
-        } else {
-            return ((opendap.dap.BaseType) baseType).getClass();
-        }
+        return ((opendap.dap.BaseType) baseType).getClass();
     }
 
-    /**
-     * Gets the variable enumeration from the DDS object
-     *
-     * @param dds
-     * @return
-     */
+    /** Gets the variable enumeration from the DDS object */
     private Enumeration<?> getDDSVariables(Object dds) {
-        if (isDods) {
-            return ((dods.dap.DataDDS) dds).getVariables();
-        } else {
-            return ((opendap.dap.DataDDS) dds).getVariables();
-        }
+        return ((opendap.dap.DataDDS) dds).getVariables();
     }
 
-    /**
-     * Gets the variable enumeration from the DGrid object
-     *
-     * @param dds
-     * @return
-     */
+    /** Gets the variable enumeration from the DGrid object */
     private Enumeration<?> getGridVariables(Object dgrid) {
-        if (isDods) {
-            return ((dods.dap.DGrid) dgrid).getVariables();
-        } else {
-            return ((opendap.dap.DGrid) dgrid).getVariables();
-        }
+        return ((opendap.dap.DGrid) dgrid).getVariables();
     }
 
-    /**
-     * Gets the array of values from the DARRAY object
-     *
-     * @param dds
-     * @return
-     */
+    /** Gets the array of values from the DARRAY object */
     private float[] getValues(Object darray) {
-        if (isDods) {
-            dods.dap.PrimitiveVector pm = ((dods.dap.DArray) darray)
-                    .getPrimitiveVector();
-            return (float[]) pm.getInternalStorage();
-        } else {
-            opendap.dap.PrimitiveVector pm = ((opendap.dap.DArray) darray)
-                    .getPrimitiveVector();
-            return (float[]) pm.getInternalStorage();
-        }
-
+        opendap.dap.PrimitiveVector pm = ((opendap.dap.DArray) darray)
+                .getPrimitiveVector();
+        return (float[]) pm.getInternalStorage();
     }
 
 }

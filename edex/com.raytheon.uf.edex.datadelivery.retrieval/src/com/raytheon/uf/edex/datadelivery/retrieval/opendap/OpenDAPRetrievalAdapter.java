@@ -79,9 +79,6 @@ class OpenDAPRetrievalAdapter
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OpenDAPRetrievalAdapter.class);
 
-    /** convert if older XDODS version **/
-    private final boolean isDods = DodsUtils.isOlderXDODSVersion();
-
     /**
      * Wraps an input stream with counting and (optionally) rate limiting
      * streams.
@@ -134,22 +131,16 @@ class OpenDAPRetrievalAdapter
             throws Exception {
 
         Object data = null;
-        if (isDods) {
-            dods.dap.DConnect connect = OpenDAPConnectionUtil
-                    .getDConnectDODS(request.getRequest());
-            data = connect.getData(null);
-        } else {
-            CountingInputStreamWrapper streamWrapper = new CountingInputStreamWrapper(
-                    getTokenBucket(), getPriority());
-            opendap.dap.DConnect connect = OpenDAPConnectionUtil
-                    .getDConnectDAP2(request.getRequest(), streamWrapper);
-            data = connect.getData(null);
-            statusHandler.info("Downloaded "
-                    + SizeUtil.prettyByteSize(streamWrapper.getBytesRead())
-                    + " in " + TimeUtil.prettyDuration(
-                            streamWrapper.getTimeTakenMillis()));
-            generateRetrievalEvent(retrieval, streamWrapper.getBytesRead());
-        }
+
+        CountingInputStreamWrapper streamWrapper = new CountingInputStreamWrapper(
+                getTokenBucket(), getPriority());
+        opendap.dap.DConnect connect = OpenDAPConnectionUtil
+                .getDConnectDAP2(request.getRequest(), streamWrapper);
+        data = connect.getData(null);
+        statusHandler.info("Downloaded "
+                + SizeUtil.prettyByteSize(streamWrapper.getBytesRead()) + " in "
+                + TimeUtil.prettyDuration(streamWrapper.getTimeTakenMillis()));
+        generateRetrievalEvent(retrieval, streamWrapper.getBytesRead());
 
         OpenDapRetrievalResponse rval = null;
 
