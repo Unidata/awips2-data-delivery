@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.regex.Matcher;
 
 import org.opengis.referencing.FactoryException;
@@ -124,6 +123,7 @@ import opendap.dap.NoSuchAttributeException;
  * Aug 02, 2017  6186        rjpeter   Fixed cycle handling for DSMD.
  * Aug 31, 2017  6430        rjpeter   Fixed to not use dataSet as map key and
  *                                     stored parameters once.
+ * Sep 25, 2017  6178        tgurney   parseMetaData generate link key from url
  *
  * </pre>
  *
@@ -661,7 +661,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
         Map<String, Parameter> parameters = new HashMap<>();
         Map<String, OpenDapGriddedDataSet> dataSets = new HashMap<>();
-        Map<String, List<DataSetMetaData<?,?>>> metaDatas = new HashMap<>();
+        Map<String, List<DataSetMetaData<?, ?>>> metaDatas = new HashMap<>();
 
         if (CollectionUtil.isNullOrEmpty(links)) {
             return null;
@@ -671,10 +671,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             List<String> vals = null;
             try {
                 vals = OpenDAPParseUtility.getInstance()
-                        .getDataSetNameAndCycle(link.getSubName(), collection);
+                        .getDataSetNameAndCycle(link.getLinkKey(), collection);
             } catch (Exception e1) {
-                logger.error(
-                        "Failed to get cycle and dataset name set...", e1);
+                logger.error("Failed to get cycle and dataset name set...", e1);
                 continue;
             }
 
@@ -687,7 +686,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             final GriddedDataSetMetaData gdsmd = new OpenDapGriddedDataSetMetaData();
             gdsmd.setDataSetName(dataSet.getDataSetName());
             String providerName = dataSet.getProviderName();
-			gdsmd.setProviderName(providerName);
+            gdsmd.setProviderName(providerName);
 
             DAS das = link.getMetadata().get(DAP_TYPE.DAS.getDapType());
             // set url first, used for level lookups
@@ -813,7 +812,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                 dataSets.put(dataSetName, dataSet);
             }
 
-            List<DataSetMetaData<?,?>> toStore = metaDatas.get(dataSetName);
+            List<DataSetMetaData<?, ?>> toStore = metaDatas.get(dataSetName);
             if (toStore == null) {
                 toStore = new ArrayList<>();
                 metaDatas.put(dataSetName, toStore);
@@ -833,10 +832,10 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         }
 
         // Store DataSets
-        for (Entry<String, List<DataSetMetaData<?,?>>> entry : metaDatas
+        for (Entry<String, List<DataSetMetaData<?, ?>>> entry : metaDatas
                 .entrySet()) {
-            logger.info("Processing DataSet [" + entry.getKey()
-                    + "] with [" + entry.getValue().size()
+            logger.info("Processing DataSet [" + entry.getKey() + "] with ["
+                    + entry.getValue().size()
                     + "] DataSetMetaData entries ...");
             OpenDapGriddedDataSet dataSet = dataSets.get(entry.getKey());
             storeDataSet(dataSet);
