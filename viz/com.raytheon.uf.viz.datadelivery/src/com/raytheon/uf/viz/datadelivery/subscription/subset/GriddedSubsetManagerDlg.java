@@ -46,6 +46,7 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 import com.google.common.collect.Ordering;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.DataLevelType;
+import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
@@ -84,36 +85,43 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 22, 2012 0743       djohnson     Initial creation
- * Aug 29, 2012 0223       mpduff       Removed call to add cycle times to subscription.
- * Sep 27, 2012 1202       bgonzale     Fixed dateStringtoDateMap key creation.
- * Oct 05, 2012 1241       djohnson     Replace RegistryManager calls with registry handler calls.
- * Oct 11, 2012 1263       jpiatt       Modified for cancel flag.
- * Dec 10, 2012 1259       bsteffen     Switch Data Delivery from LatLon to referenced envelopes.
- * Jan 04, 2013 1299       djohnson     Add logging of invalid forecast hour information if it occurs again.
- * Jan 04, 2013 1420       mpduff       Pass cycles in for rules.
- * Jan 18, 2013 1414       bsteffen     Add ensemble tab.
- * Jan 28, 2013 1533       djohnson     Update the calculated dataset size after loading subset xml.
- * Mar 21, 2013 1794       djohnson     Add option to create a shared subscription, if phase3 code is available.
- * Mar 29, 2013 1841       djohnson     Subscription is now UserSubscription.
- * May 21, 2013 2020       mpduff       Rename UserSubscription to SiteSubscription.
- * Jun 04, 2013  223       mpduff       Added grid specific items to this class.
- * Jun 11, 2013 2064       mpduff       Fix editing of subscriptions.
- * Jun 14, 2013 2108       mpduff       Refactored DataSizeUtils.
- * Jul 18, 2013 2205       djohnson     If null time is selected from the dialog, return null for the adhoc.
- * Sept 25, 2013 1797      dhladky      Separated Time from GriddedTime
- * Oct 11, 2013  2386      mpduff       Refactor DD Front end.
- * Sept 04, 2014 2131      dhladky      Changes to allow for PDA data type
- * Jul 08, 2015 4566       dhladky      Use AWIPS naming rather than provider naming.
- * 
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 22, 2012  743      djohnson  Initial creation
+ * Aug 29, 2012  223      mpduff    Removed call to add cycle times to
+ *                                  subscription.
+ * Sep 27, 2012  1202     bgonzale  Fixed dateStringtoDateMap key creation.
+ * Oct 05, 2012  1241     djohnson  Replace RegistryManager calls with registry
+ *                                  handler calls.
+ * Oct 11, 2012  1263     jpiatt    Modified for cancel flag.
+ * Dec 10, 2012  1259     bsteffen  Switch Data Delivery from LatLon to
+ *                                  referenced envelopes.
+ * Jan 04, 2013  1299     djohnson  Add logging of invalid forecast hour
+ *                                  information if it occurs again.
+ * Jan 04, 2013  1420     mpduff    Pass cycles in for rules.
+ * Jan 18, 2013  1414     bsteffen  Add ensemble tab.
+ * Jan 28, 2013  1533     djohnson  Update the calculated dataset size after
+ *                                  loading subset xml.
+ * Mar 21, 2013  1794     djohnson  Add option to create a shared subscription,
+ *                                  if phase3 code is available.
+ * Mar 29, 2013  1841     djohnson  Subscription is now UserSubscription.
+ * May 21, 2013  2020     mpduff    Rename UserSubscription to SiteSubscription.
+ * Jun 04, 2013  223      mpduff    Added grid specific items to this class.
+ * Jun 11, 2013  2064     mpduff    Fix editing of subscriptions.
+ * Jun 14, 2013  2108     mpduff    Refactored DataSizeUtils.
+ * Jul 18, 2013  2205     djohnson  If null time is selected from the dialog,
+ *                                  return null for the adhoc.
+ * Sep 25, 2013  1797     dhladky   Separated Time from GriddedTime
+ * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
+ * Sep 04, 2014  2131     dhladky   Changes to allow for PDA data type
+ * Jul 08, 2015  4566     dhladky   Use AWIPS naming rather than provider
+ *                                  naming.
+ * Sep 26, 2017  6438     tgurney   Fix handling of Sea Ice selected levels
+ *
  * </pre>
  * 
  * @author djohnson
- * @version 1.0
  */
 
 public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
@@ -361,7 +369,9 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                 // Multiple parameters. This will need to change if other
                 // Data providers have parameters with multiple level types
                 // containing multiple levels
-                if (levelType.getId() == 100) {
+                if (levelType.getId() == LevelType.MB.getLevelTypeId()
+                        || levelType.getId() == LevelType.SEAB
+                                .getLevelTypeId()) {
                     final Levels levels = p.getLevels();
                     final List<Integer> selectedLevelIndices = levels
                             .getSelectedLevelIndices();
