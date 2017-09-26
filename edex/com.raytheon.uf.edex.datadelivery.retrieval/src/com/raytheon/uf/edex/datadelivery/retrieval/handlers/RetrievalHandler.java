@@ -19,13 +19,21 @@
  **/
 package com.raytheon.uf.edex.datadelivery.retrieval.handlers;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import javax.xml.bind.JAXBException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +43,19 @@ import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatus
 import com.raytheon.uf.common.datadelivery.event.status.DataDeliverySystemStatusEvent;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.event.EventBus;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.time.domain.api.IDuration;
 import com.raytheon.uf.edex.core.EDEXUtil;
+import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalThreadsConfig;
+import com.raytheon.uf.edex.datadelivery.retrieval.RetrievalThreadsProvider;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
@@ -63,6 +81,7 @@ import com.raytheon.uf.edex.registry.ebxml.init.RegistryInitializedListener;
  * Jul 27, 2017  6186     rjpeter   Removed Qpid queue to allow for priority
  *                                  filtering.
  * Aug 02, 2017  6186     rjpeter   Added queueRetrievals and notifyRetrieval.
+ * Sep 21, 2017  6433     tgurney   Use per-provider retrieval threads
  *
  * </pre>
  *
@@ -87,32 +106,99 @@ public class RetrievalHandler implements RegistryInitializedListener {
 
     private final RetrievalTask retrievalTask;
 
-    private final Object notifier = new Object();
+    private final List<RetrievalThread> retrievalThreads = new ArrayList<>();
 
-    private final RetrievalThread[] retrievalThreads;
+    private final Map<String, Object> providerSyncObjects = new HashMap<>();
+
+    private final Map<String, Object> providerNotifiers = new HashMap<>();
 
     public RetrievalHandler(ScheduledExecutorService scheduledExecutorService,
             RetrievalDao retrievalDao, SubscriptionNotifyTask subNotifyTask,
-            IDuration subnotifyTaskFrequency, RetrievalTask retrievalTask,
-            int numRetrievalThreads) {
+            IDuration subnotifyTaskFrequency, RetrievalTask retrievalTask)
+            throws Exception {
         this.scheduledExecutorService = scheduledExecutorService;
         this.retrievalDao = retrievalDao;
         this.subNotifyTask = subNotifyTask;
         this.subnotifyTaskFrequency = subnotifyTaskFrequency;
         this.retrievalTask = retrievalTask;
-        retrievalThreads = new RetrievalThread[numRetrievalThreads];
-        for (int i = 0; i < numRetrievalThreads; i++) {
-            retrievalThreads[i] = new RetrievalThread();
-            retrievalThreads[i].setName("RetrievalThread-" + i);
+        createRetrievalThreads();
+    }
+
+    /** Creates all retrieval threads listed in XML config. Call only once! */
+    private void createRetrievalThreads() throws Exception {
+        // Read config files into map with incremental override
+        LocalizationLevel[] levels = new LocalizationLevel[] {
+                LocalizationLevel.BASE, LocalizationLevel.SITE };
+        Map<String, Integer> providerThreadCountMap = new HashMap<>();
+        for (LocalizationLevel level : levels) {
+            RetrievalThreadsConfig config = getRetrievalThreadsConfig(level);
+            if (config != null) {
+                for (RetrievalThreadsProvider provider : config
+                        .getProviders()) {
+                    providerThreadCountMap.put(provider.getName(),
+                            provider.getThreads());
+                }
+            }
+        }
+        if (providerThreadCountMap.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No retrieval threads config was found");
+        }
+        // Create objects for per-provider synchronization and notify
+        for (String provider : providerThreadCountMap.keySet()) {
+            providerSyncObjects.put(provider, new Object());
+            providerNotifiers.put(provider, new Object());
+        }
+        // Create the threads
+        for (Entry<String, Integer> e : providerThreadCountMap.entrySet()) {
+            for (int i = 1; i <= e.getValue(); i++) {
+                String provider = e.getKey();
+                Object notifier = providerNotifiers.get(provider);
+                RetrievalThread thread = new RetrievalThread(provider,
+                        notifier);
+                thread.setName("Retrieval-" + provider + "-" + i);
+                retrievalThreads.add(thread);
+            }
         }
     }
 
+    private RetrievalThreadsConfig getRetrievalThreadsConfig(
+            LocalizationLevel level) throws JAXBException,
+            SerializationException, LocalizationException {
+        IPathManager pathManager = PathManagerFactory.getPathManager();
+        LocalizationContext ctx = pathManager
+                .getContext(LocalizationType.COMMON_STATIC, level);
+        ILocalizationFile file = PathManagerFactory.getPathManager()
+                .getLocalizationFile(ctx, "datadelivery/retrieval-threads.xml");
+        RetrievalThreadsConfig config = null;
+        if (file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                config = new JAXBManager(RetrievalThreadsConfig.class)
+                        .unmarshalFromInputStream(RetrievalThreadsConfig.class,
+                                is);
+            } catch (IOException e) {
+                logger.debug("Error on stream close", e);
+            }
+        }
+        return config;
+    }
+
     private class RetrievalThread extends Thread {
+
+        private final String provider;
+
+        private final Object notifier;
+
+        public RetrievalThread(String provider, Object notifier) {
+            this.provider = provider;
+            this.notifier = notifier;
+        }
+
         @Override
         public void run() {
             while (!EDEXUtil.isShuttingDown()) {
                 try {
-                    if (!scanForRetrievals()) {
+                    if (!scanForRetrievals(provider)) {
                         synchronized (notifier) {
                             try {
                                 notifier.wait(30_000);
@@ -126,6 +212,7 @@ public class RetrievalHandler implements RegistryInitializedListener {
                 }
             }
         }
+
     }
 
     @Override
@@ -143,12 +230,30 @@ public class RetrievalHandler implements RegistryInitializedListener {
     public void queueRetrievals(
             List<RetrievalRequestRecord> retrievalRequests) {
         retrievalDao.persistAll(retrievalRequests);
-        notifyRetrieval();
+        Set<String> providersToNotify = new HashSet<>();
+        for (RetrievalRequestRecord r : retrievalRequests) {
+            providersToNotify.add(r.getProvider());
+        }
+        for (String provider : providersToNotify) {
+            notifyRetrieval(provider);
+        }
     }
 
-    public void notifyRetrieval() {
-        synchronized (notifier) {
-            notifier.notifyAll();
+    public void notifyRetrieval(String provider) {
+        Object notifier = providerNotifiers.get(provider);
+        boolean noProviderThreads = true;
+        for (RetrievalThread r : retrievalThreads) {
+            if (r.provider.equals(provider)) {
+                noProviderThreads = false;
+            }
+        }
+        if (noProviderThreads) {
+            logger.error("Got a retrieval request for " + provider
+                    + ", but no retrieval threads for " + provider + " exist!");
+        } else {
+            synchronized (notifier) {
+                notifier.notifyAll();
+            }
         }
     }
 
@@ -159,12 +264,15 @@ public class RetrievalHandler implements RegistryInitializedListener {
     /**
      * Scans database for retrievals waiting to process. Return true if an entry
      * was processed, false if nothing was processed and thread should sleep.
+     *
+     * @param provider
      */
-    public boolean scanForRetrievals() {
+    public boolean scanForRetrievals(String provider) {
         RetrievalRequestRecord rec = null;
 
         try {
-            rec = retrievalDao.activateNextRetrievalRequest();
+            rec = retrievalDao.activateNextRetrievalRequest(provider,
+                    providerSyncObjects.get(provider));
         } catch (Exception e) {
             logger.error("Error occurred looking up next retrieval", e);
             return false;
