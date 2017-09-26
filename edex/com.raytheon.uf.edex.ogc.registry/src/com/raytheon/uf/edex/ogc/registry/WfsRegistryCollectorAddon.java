@@ -40,7 +40,10 @@ import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.Levels;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
+import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.WFSPointDataSet;
+import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.time.util.TimeUtil;
@@ -73,6 +76,8 @@ import com.vividsolutions.jts.geom.Envelope;
  * May 25, 2017  6186     rjpeter   Refactored, combined tracking under WfsLayerInfo, correctly follow CollectorAddon pattern.
  * Aug 30, 2017  6412     tjensen   Changed to store insert times in metadata
  *                                  instead of obs times
+ * Sep 26, 2017  6416     nabowle   Set availableOffset in metadata.
+ *
  *
  * </pre>
  *
@@ -129,12 +134,18 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
     public static final String UNIQUE_ID_SEPARATOR = ",";
 
     protected final String baseUrl;
+
     private static final int START_BUFFER_DEFAULT = 300;
+
     private static final int END_BUFFER_DEFAULT = 1;
+
+    private static final int DEFAULT_OFFSET_MINS = 5;
 
     private static final int INSERT_START_TIME_BUFFER_IN_SECS;
 
     private static final int INSERT_END_TIME_BUFFER_IN_SECS;
+
+    private static final int AVAILABILITY_OFFSET;
 
     static {
         int start_buffer = Integer.getInteger("dpa.insert-time-buffer.start",
@@ -151,16 +162,32 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
         INSERT_START_TIME_BUFFER_IN_SECS = start_buffer;
 
         INSERT_END_TIME_BUFFER_IN_SECS = end_buffer;
-    }
 
+        ServiceConfig wfsServiceConfig = HarvesterServiceManager.getInstance()
+                .getServiceConfig(ServiceType.WFS);
+
+        int defaultOffset = DEFAULT_OFFSET_MINS;
+        if (wfsServiceConfig != null) {
+            try {
+                String sOffset = wfsServiceConfig
+                        .getConstantValue("DEFAULT_OFFSET");
+                if (sOffset != null) {
+                    defaultOffset = Integer.parseInt(sOffset);
+                }
+            } catch (NumberFormatException e) {
+                // ignore.
+            }
+        }
+        AVAILABILITY_OFFSET = defaultOffset;
+    }
 
     public WfsRegistryCollectorAddon() {
         super();
         baseUrl = getConfiguration().getProvider().getConnection().getUrl();
         if (INSERT_END_TIME_BUFFER_IN_SECS
                 + INSERT_START_TIME_BUFFER_IN_SECS < 300) {
-            logger
-                    .warn("Insert time buffers do not add a minimum of 5 minutes. Start buffer: "
+            logger.warn(
+                    "Insert time buffers do not add a minimum of 5 minutes. Start buffer: "
                             + INSERT_START_TIME_BUFFER_IN_SECS
                             + "; End buffer: "
                             + INSERT_END_TIME_BUFFER_IN_SECS);
@@ -334,6 +361,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
         dataSetMetaData.setDataSetName(dataSet.getDataSetName());
         dataSetMetaData.setDataSetDescription(sb.toString());
         dataSetMetaData.setProviderName(dataSet.getProviderName());
+        dataSetMetaData.setAvailabilityOffset(AVAILABILITY_OFFSET);
     }
 
     /**

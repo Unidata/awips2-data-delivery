@@ -40,4 +40,5 @@
     <constant name="FORWARD_SLASH" value="/" />
     <constant name="DEFAULT_CRS" value="crs:84" />
     <constant name="MAX" value="10000" />
+    <constant name="DEFAULT_OFFSET" value="5" />
 </serviceConfig>

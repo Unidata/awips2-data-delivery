@@ -30,6 +30,8 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
+import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
@@ -84,12 +86,68 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jul 27, 2017  6186     rjpeter   Remove asyncBroker.
  * Aug 02, 2017  6186     rjpeter   Refactored to queueRetrievals directly.
  * Aug 10, 2017  6186     nabowle   Set non-null fields on RetrievalRequestRecord
+ * Sep 25, 2017  6416     nabowle   Deprioritize or cancel retrieval of non-current data.
  *
  * </pre>
  *
  */
 public class SubscriptionRetrievalAgent {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory
+            .getLogger(SubscriptionRetrievalAgent.class);
+
+    private static final String CANCEL_FACTOR_PROP = "retrieval.latency.cancel.factor";
+
+    private static final String LOWER_FACTOR_PROP = "retrieval.latency.lower.factor";
+
+    private static final float DEFAULT_LOWER_FACTOR = 1.5F;
+
+    private static final float LATENCY_LOWER_FACTOR;
+
+    private static final float LATENCY_CANCEL_FACTOR;
+
+    static {
+        float factor = DEFAULT_LOWER_FACTOR;
+        String lowerProp = System.getProperty(LOWER_FACTOR_PROP);
+        if (lowerProp != null) {
+            try {
+                factor = Float.parseFloat(lowerProp);
+                if (factor < 1) {
+                    factor = DEFAULT_LOWER_FACTOR;
+                    logger.warn("The property '" + LOWER_FACTOR_PROP
+                            + "' is incorrectly configured to be less than 1. Using the default value of "
+                            + DEFAULT_LOWER_FACTOR);
+                }
+            } catch (NumberFormatException nfe) {
+                logger.warn("The property '" + LOWER_FACTOR_PROP
+                        + "' is incorrectly configured. Using the default value of "
+                        + DEFAULT_LOWER_FACTOR);
+            }
+        }
+        LATENCY_LOWER_FACTOR = factor;
+
+        // default cancel factor to 2x the lower factor.
+        final float defaultCancelFactor = 2 * LATENCY_LOWER_FACTOR;
+
+        factor = defaultCancelFactor;
+        String cancelProp = System.getProperty(CANCEL_FACTOR_PROP);
+        if (cancelProp != null) {
+            try {
+                factor = Float.parseFloat(cancelProp);
+                if (factor < LATENCY_LOWER_FACTOR) {
+                    factor = defaultCancelFactor;
+                    logger.warn("The property '" + CANCEL_FACTOR_PROP
+                            + "' is incorrectly configured to be less than the lower factor. Using the default value of "
+                            + defaultCancelFactor);
+
+                }
+            } catch (NumberFormatException nfe) {
+                logger.warn("The property '" + CANCEL_FACTOR_PROP
+                        + "' is incorrectly configured. Using the default value of "
+                        + defaultCancelFactor);
+            }
+        }
+        LATENCY_CANCEL_FACTOR = factor;
+    }
 
     private final int defaultPriority;
 
@@ -186,9 +244,10 @@ public class SubscriptionRetrievalAgent {
             }
         }
 
-        int priority = (subscription.getPriority() != null)
-                ? subscription.getPriority().getPriorityValue()
-                : defaultPriority;
+        Integer priority = determinePriority(subscription, dsmd);
+        if (priority == null) {
+            return false;
+        }
         requestRecords = new ArrayList<>(retrievals.size());
 
         ITimer timer = TimeUtil.getTimer();
@@ -256,5 +315,68 @@ public class SubscriptionRetrievalAgent {
         }
 
         return true;
+    }
+
+    /**
+     * Determine the priority of the retrievals.
+     *
+     * @param subscription
+     *            The subscription.
+     * @param dsmd
+     *            The dataset metadata.
+     * @return An Integer priority, which may or may not match one of the
+     *         {@link SubscriptionPriority} values. Null is returned if the
+     *         retrievals should not be run due the latency of the data.
+     */
+    private Integer determinePriority(Subscription<?, ?> subscription,
+            DataSetMetaData<?, ?> dsmd) {
+        Integer priority = (subscription.getPriority() != null)
+                ? subscription.getPriority().getPriorityValue()
+                : defaultPriority;
+        int availabilityOffset = dsmd.getAvailabilityOffset();
+
+        // Only adjust the priority of recurring retrievals.
+        if (availabilityOffset > 0 && SubscriptionType.RECURRING
+                .equals(subscription.getSubscriptionType())) {
+            long now = TimeUtil.currentTimeMillis();
+            long datasetEnd = dsmd.getTime().getEnd().getTime();
+            long datasetStart = dsmd.getTime().getStart().getTime();
+
+            /*
+             * Most data starts at the generation date. Nowcast and some other
+             * data has been observed to end at the generation date with a start
+             * time well in the past. If the end time is prior to now, use that
+             * time when determining latency. This errs in favor of potentially
+             * allowing some outdated data to be retrieved so that historic data
+             * won't always be deprioritized or cancelled.
+             */
+            long endLatency = (now - datasetEnd) / TimeUtil.MILLIS_PER_MINUTE;
+            long startLatency = (now - datasetStart)
+                    / TimeUtil.MILLIS_PER_MINUTE;
+            long latency = endLatency >= 0 ? endLatency : startLatency;
+            latency -= availabilityOffset;
+            if (latency > 0) {
+                float latencyCutoff = LATENCY_CANCEL_FACTOR
+                        * subscription.getLatencyInMinutes();
+                float latencyLower = LATENCY_LOWER_FACTOR
+                        * subscription.getLatencyInMinutes();
+
+                if (latency > latencyCutoff) {
+                    priority = null;
+                    logger.warn(dsmd.getUrl()
+                            + " has exceeded the cancellation latency of "
+                            + String.format("%.1f", latencyCutoff)
+                            + " minutes and will not be retrieved.");
+                } else if (latency > latencyLower) {
+                    priority++;
+                    logger.info(dsmd.getUrl()
+                            + " will be retrieved at a lower priority due to its latency exceeding "
+                            + String.format("%.1f", latencyLower)
+                            + " minutes.");
+                }
+            }
+        }
+
+        return priority;
     }
 }
