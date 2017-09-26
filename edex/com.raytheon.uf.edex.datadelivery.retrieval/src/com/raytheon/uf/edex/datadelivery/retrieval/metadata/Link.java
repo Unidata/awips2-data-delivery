@@ -21,6 +21,8 @@ package com.raytheon.uf.edex.datadelivery.retrieval.metadata;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import opendap.dap.DAS;
 
@@ -34,6 +36,7 @@ import opendap.dap.DAS;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 7, 2017  6178       tgurney     Initial creation
+ * Sep 25, 2017 6178       tgurney     Add getLinkKey()
  *
  * </pre>
  *
@@ -41,6 +44,9 @@ import opendap.dap.DAS;
  */
 
 public class Link {
+
+    private static final Pattern LINK_KEY_PATTERN = Pattern
+            .compile(".*/([^\\.]+)(\\..+)?");
 
     private String url;
 
@@ -73,6 +79,14 @@ public class Link {
 
     public void setMetadata(Map<String, DAS> metadata) {
         this.metadata = metadata;
+    }
+
+    public String getLinkKey() {
+        Matcher m = LINK_KEY_PATTERN.matcher(url);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return url;
     }
 
 }
