@@ -43,6 +43,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.response.AsyncRetrievalRespon
  * Jul 27, 2017  6186     rjpeter   Removed AsyncBroker, record always stored
  *                                  before request sent to provider.
  * Aug 02, 2017  6186     rjpeter   Notify RetrievalHandler.
+ * Sep 27, 2017  6433     tgurney   notifiyRetrieval signature change
  *
  * </pre>
  *
@@ -121,7 +122,7 @@ public class AsyncRetrievalProcessor {
 
                 // notify retrieval
                 if (State.PENDING.equals(rrr.getState())) {
-                    retrievalHandler.notifyRetrieval();
+                    retrievalHandler.notifyRetrieval(rrr.getProvider());
                 }
             } else {
                 logger.error(
