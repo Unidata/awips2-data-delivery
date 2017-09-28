@@ -21,7 +21,6 @@ package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.Status;
@@ -81,7 +80,6 @@ import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.IForceA
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionServiceResult;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.SubsetXML;
 import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
-import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.VerticalXML;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
@@ -185,7 +183,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jul 05, 2016  5683     tjensen   Added checks for null on cancel
  * Nov 08, 2016  5976     bsteffen  Use VizApp for GUI execution.
  * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
- *
+ * Sep 27, 2017  5948     tjensen   Updated saving to and loading from subset xml
  * </pre>
  *
  * @author mpduff
@@ -889,14 +887,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         AreaXML area = spatialTabControls.getSaveInfo();
         subset.setArea(area);
 
-        // TODO Only save this for grid. Once Obs have parameters then this
-        // will need to be saved for obs
-        if (dataSet.getDataSetType() == DataType.GRID) {
-            // next save vertical layer/parameter info
-            List<VerticalXML> vertList = vTab.getSaveInfo();
-            subset.setVerticalList(vertList);
-        }
-
         // finally the date/cycle/forecast data
         TimeXML time = getDataTimeInfo();
         subset.setTime(time);
@@ -924,9 +914,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      *            The subset xml object
      */
     protected void loadFromSubsetXML(SubsetXML subsetXml) {
-        if (this.subsetXml == subsetXml) {
-            // only populate area and name if subsetXml is loading from initial
-            // load, not from the saved subsets tab.
+        if (subsetTab.isLoadSpatialData()) {
             AreaXML area = subsetXml.getArea();
             spatialTabControls.setDataSet(this.dataSet);
             spatialTabControls.populate(area);

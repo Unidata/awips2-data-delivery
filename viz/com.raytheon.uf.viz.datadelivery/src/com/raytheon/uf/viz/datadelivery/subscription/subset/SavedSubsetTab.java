@@ -37,23 +37,24 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * The Saved Subsets tab.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 30, 2012            mpduff      Initial creation.
- * Jun  4, 2012    645     jpiatt      Added tooltips.
- * Nov  1, 2012   1278     mpduff      Formatted to meet coding standard.
- * Apr 10, 2014   2864     mpduff      Changed how saved subset files are stored.
- * Oct 19, 2015   4996     dhladky     Fixed message dialog call for subsets.
- * Oct 20, 2015   4992     dhladky     Added OK button message at tester request.
- * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------------
+ * Mar 30, 2012           mpduff    Initial creation.
+ * Jun 04, 2012  645      jpiatt    Added tooltips.
+ * Nov 01, 2012  1278     mpduff    Formatted to meet coding standard.
+ * Apr 10, 2014  2864     mpduff    Changed how saved subset files are stored.
+ * Oct 19, 2015  4996     dhladky   Fixed message dialog call for subsets.
+ * Oct 20, 2015  4992     dhladky   Added OK button message at tester request.
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
+ * Sep 27, 2017  5948     tjensen   Add checkbox for loading spatial data
  * 
  * </pre>
- * 
+ *
  * @author mpduff
  * @version 1.0
  */
@@ -81,9 +82,11 @@ public class SavedSubsetTab extends SubsetTab {
     /** The type of data loaded in the dialog */
     private final DataType dataType;
 
+    private boolean loadSpatialData = true;
+
     /**
      * Constructor.
-     * 
+     *
      * @param comp
      *            Composite holding these controls
      * @param dataType
@@ -91,7 +94,8 @@ public class SavedSubsetTab extends SubsetTab {
      * @param callback
      *            The class for callbacks
      */
-    public SavedSubsetTab(Composite comp, DataType dataType, ITabAction callback) {
+    public SavedSubsetTab(Composite comp, DataType dataType,
+            ITabAction callback) {
         this.comp = comp;
         this.callback = callback;
         this.dataType = dataType;
@@ -115,6 +119,17 @@ public class SavedSubsetTab extends SubsetTab {
         gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         gd.widthHint = textWidth;
         subsetList.setLayoutData(gd);
+
+        final Button loadSpatialChk = new Button(comp, SWT.CHECK);
+        loadSpatialChk.setText("Load Spatial data");
+        loadSpatialChk.setSelection(true);
+        loadSpatialChk.setToolTipText("Load the Spatial data from the subset");
+        loadSpatialChk.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                loadSpatialData = ((Button) e.getSource()).getSelection();
+            }
+        });
 
         Composite btnComp = new Composite(comp, SWT.NONE);
         gl = new GridLayout(3, true);
@@ -183,8 +198,8 @@ public class SavedSubsetTab extends SubsetTab {
             int response = DataDeliveryUtils.showMessageNonCallback(
                     comp.getShell(), SWT.YES | SWT.NO, "Delete Subset?",
                     "Are you sure you want to delete this subset?");
-            String subsetName = subsetList.getItem(subsetList
-                    .getSelectionIndex());
+            String subsetName = subsetList
+                    .getItem(subsetList.getSelectionIndex());
             subsetName = subsetName + extension;
             if (response == SWT.YES) {
                 SubsetFileManager.getInstance().deleteSubset(subsetName,
@@ -202,8 +217,8 @@ public class SavedSubsetTab extends SubsetTab {
 
     private void handleLoadSubset() {
         if (subsetList.getSelectionCount() > 0) {
-            String subsetName = subsetList.getItem(subsetList
-                    .getSelectionIndex());
+            String subsetName = subsetList
+                    .getItem(subsetList.getSelectionIndex());
             subsetName = subsetName + extension;
             callback.handleLoadSubset(subsetName);
         } else {
@@ -219,7 +234,7 @@ public class SavedSubsetTab extends SubsetTab {
 
     /**
      * Enable buttons.
-     * 
+     *
      * @param name
      *            subset name
      */
@@ -240,5 +255,13 @@ public class SavedSubsetTab extends SubsetTab {
             loadBtn.setEnabled(false);
             deleteBtn.setEnabled(false);
         }
+    }
+
+    public boolean isLoadSpatialData() {
+        return loadSpatialData;
+    }
+
+    public void setLoadSpatialData(boolean loadSpatialData) {
+        this.loadSpatialData = loadSpatialData;
     }
 }

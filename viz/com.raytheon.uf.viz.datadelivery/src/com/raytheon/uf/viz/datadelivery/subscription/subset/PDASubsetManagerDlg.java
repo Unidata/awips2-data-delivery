@@ -86,6 +86,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jun 29, 2017  6130     tjensen   Set coverage before getting specific time.
  * Aug 02, 2017  6186     rjpeter   Removed setting of url.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Sep 27, 2017  5948     tjensen   Added saving to and loading from subset xml
  *
  * </pre>
  *
@@ -406,6 +407,26 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         }
         ArrayList<VerticalXML> vertList = new ArrayList<>(levelMap.values());
         vTab.populate(vertList, dataSet);
+    }
+
+    @Override
+    protected void populateSubsetXML(SubsetXML subset) {
+        super.populateSubsetXML(subset);
+        if (vTab != null) {
+            // next save vertical layer/parameter info
+            List<VerticalXML> vertList = vTab.getSaveInfo();
+            subset.setVerticalList(vertList);
+        }
+    }
+
+    @Override
+    protected void loadFromSubsetXML(SubsetXML subsetXml) {
+        super.loadFromSubsetXML(subsetXml);
+
+        List<VerticalXML> vertList = subsetXml.getVerticalList();
+        vTab.populate(vertList, dataSet);
+
+        updateDataSize();
     }
 
     /**

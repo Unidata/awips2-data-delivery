@@ -120,6 +120,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Aug 02, 2017  6186     rjpeter   Fix adhoc processing.
  * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Sep 27, 2017  5948     tjensen   Update populateSubsetXML to get vertList
  *
  * </pre>
  *
@@ -292,6 +293,11 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         super.populateSubsetXML(subset);
         if (ensembleTab != null) {
             ensembleTab.populateSubsetXML(subset);
+        }
+        if (vTab != null) {
+            // next save vertical layer/parameter info
+            List<VerticalXML> vertList = vTab.getSaveInfo();
+            subset.setVerticalList(vertList);
         }
     }
 
