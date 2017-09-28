@@ -26,7 +26,7 @@
 <retrievalThreadsConfig xmlns:ns2="group">
     <providers>
         <provider>
-            <name>MADIS</name>
+            <name>MADISOGC</name>
             <threads>1</threads>
         </provider>
         <provider>
