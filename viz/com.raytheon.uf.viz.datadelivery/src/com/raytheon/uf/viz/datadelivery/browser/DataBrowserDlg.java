@@ -61,6 +61,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -90,14 +91,14 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ *
  * This is the main dialog for the Data Browser. This holds the menus and the
  * main composites and controls.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 10, 2012           lvenable  Initial creation.
@@ -142,22 +143,23 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jan 29, 2016  5289     tgurney   Add missing minimize/maximize buttons in trim
  * Mar 24, 2016  5482     randerso  Fixed GUI sizing issue. Cleaned up timer code.
  * Aug 17, 2016  5772     rjpeter   Handle errors open Subset Dialog.
+ * Sep 28, 2017  6458     mapeters  Don't block on open()
  * </pre>
- * 
+ *
  * @author lvenable
  */
-public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
-        IDataLoad {
+public class DataBrowserDlg extends CaveSWTDialog
+        implements IDataTableUpdate, IDataLoad {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DataBrowserDlg.class);
 
     /** File containing help text */
-    private final String DATA_BROWSER_HELP_FILE = "help/dataBrowserHelp.xml";
+    private static final String DATA_BROWSER_HELP_FILE = "help/dataBrowserHelp.xml";
 
     /** Window Title string. */
-    private final String WINDOW_TITLE = "Dataset Discovery Browser";
+    private static final String WINDOW_TITLE = "Dataset Discovery Browser";
 
     /** Configuration path string. */
     private static final String CONFIG_PATH = FileUtil.join("dataDelivery",
@@ -166,6 +168,9 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     /** Default browser configuration. */
     private static final String DEFAULT_CONFIG = FileUtil.join(CONFIG_PATH,
             "DefaultBrowserConfig.xml");
+
+    /** Table entries label prefix. */
+    private static final String TABLE_ENTRIES_PREFIX = "Datasets Listed: ";
 
     /** Filter expand bar. */
     private FilterExpandBar filterExpandBar;
@@ -184,9 +189,6 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
     /** Label indicating how many entries are in the table. */
     private Label tableEntriesLabel;
-
-    /** Table entries label prefix. */
-    private final String tableEntriesPrefix = "Datasets Listed: ";
 
     /** Time of last update */
     private long lastUpdate = 0;
@@ -222,7 +224,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     private Button areaBtn = null;
 
     /** Data Types array list. */
-    private ArrayList<String> dataTypes;
+    private List<String> dataTypes;
 
     /** Flag for data type dirty. */
     private boolean dataTypeDirty = false;
@@ -239,31 +241,19 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     /** Timer job. */
     private UIJob timerJob;
 
-    /** Area group. */
-    private Group areaGrp = null;
-
-    /** Data Type group. */
-    private Group dataTypeGrp = null;
-
-    /** Filter group. */
-    private Group filterGroup = null;
-
-    /** Composite for main table. */
-    private Composite mainTableComp = null;
-
     /** Only allow one Subset Manager Dialog for a given set of data. */
     private final Map<DataSet<?, ?>, SubsetManagerDlg> smDialogs = new HashMap<>();
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentShell
      *            Parent shell.
      */
     public DataBrowserDlg(Shell parentShell) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE,
-                CAVE.INDEPENDENT_SHELL
-                | CAVE.PERSPECTIVE_INDEPENDENT);
+                CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT
+                        | CAVE.DO_NOT_BLOCK);
 
         setText(WINDOW_TITLE);
     }
@@ -299,7 +289,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         shell.addShellListener(new ShellAdapter() {
             @Override
             public void shellClosed(ShellEvent event) {
-                if (isDirty() == false) {
+                if (!isDirty()) {
                     close();
                 } else {
                     event.doit = false;
@@ -327,7 +317,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
     /**
      * Create the File menu.
-     * 
+     *
      * @param menuBar
      *            Menu (on the menu bar).
      */
@@ -430,7 +420,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         exitMI.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                if (isDirty() == false) {
+                if (!isDirty()) {
                     close();
                 } else {
                     int answer = DataDeliveryGUIUtils
@@ -445,7 +435,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
     /**
      * Create the Help menu
-     * 
+     *
      * @param menuBar
      *            Menu (on the menu bar).
      */
@@ -481,56 +471,52 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         comp.setLayout(new GridLayout(2, false));
         comp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
-        dataTypeGrp = new Group(comp, SWT.NONE);
+        Group dataTypeGrp = new Group(comp, SWT.NONE);
         dataTypeGrp.setLayout(new GridLayout(1, false));
         dataTypeGrp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         dataTypeGrp.setText(" Data Types: ");
 
         loadDataTypes();
 
-        datatypeList = new org.eclipse.swt.widgets.List(dataTypeGrp, SWT.BORDER
-                | SWT.V_SCROLL);
+        datatypeList = new org.eclipse.swt.widgets.List(dataTypeGrp,
+                SWT.BORDER | SWT.V_SCROLL);
         datatypeList
                 .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         datatypeList.addSelectionListener(new SelectionAdapter() {
 
-            /*
-             * (non-Javadoc)
-             * 
-             * @see
-             * org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse
-             * .swt.events.SelectionEvent)
-             */
             @Override
             public void widgetSelected(SelectionEvent e) {
                 handleDataTypeSelection();
             }
         });
 
-        areaGrp = new Group(comp, SWT.NONE);
+        Group areaGrp = new Group(comp, SWT.NONE);
         areaGrp.setLayout(new GridLayout(1, false));
         areaGrp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         areaGrp.setText(" Areal Coverage: ");
 
         Composite areaComp = new Composite(areaGrp, SWT.NONE);
         areaComp.setLayout(new GridLayout(2, false));
-        areaComp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        areaComp.setLayoutData(
+                new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         Label ulLbl = new Label(areaComp, SWT.NONE);
         ulLbl.setText("Upper Left:");
-        ulLbl.setLayoutData(new GridData(SWT.DEFAULT, SWT.CENTER, false, false));
+        ulLbl.setLayoutData(
+                new GridData(SWT.DEFAULT, SWT.CENTER, false, false));
 
         upperLeftLabel = new Label(areaComp, SWT.BORDER);
-        upperLeftLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
-                true));
+        upperLeftLabel
+                .setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 
         Label lrLbl = new Label(areaComp, SWT.NONE);
         lrLbl.setText("Lower Right:");
-        lrLbl.setLayoutData(new GridData(SWT.DEFAULT, SWT.CENTER, false, false));
+        lrLbl.setLayoutData(
+                new GridData(SWT.DEFAULT, SWT.CENTER, false, false));
 
         lowerRightLabel = new Label(areaComp, SWT.BORDER);
-        lowerRightLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
-                true));
+        lowerRightLabel
+                .setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
 
         Composite comp2 = new Composite(areaGrp, SWT.NONE);
         comp2.setLayout(new GridLayout(2, true));
@@ -539,7 +525,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         clearBtn = new Button(comp2, SWT.PUSH);
         clearBtn.setText("Clear");
         clearBtn.setEnabled(false);
-        clearBtn.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        clearBtn.setLayoutData(
+                new GridData(SWT.FILL, SWT.DEFAULT, true, false));
         clearBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -572,7 +559,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         sashForm.setLayout(new GridLayout(1, false));
         sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         sashForm.SASH_WIDTH = 5;
-        sashForm.setBackground(getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+        sashForm.setBackground(
+                getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
 
         createFilterGroup(sashForm);
 
@@ -583,19 +571,19 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
     /**
      * Create the filter group that will contain the filter expand bar.
-     * 
+     *
      * @param sashForm
      *            The SashForm the controls/containers will be put on.
      */
     private void createFilterGroup(SashForm sashForm) {
-        filterGroup = new Group(sashForm, SWT.NONE);
+        Group filterGroup = new Group(sashForm, SWT.NONE);
         GridLayout gl = new GridLayout(1, false);
         gl.marginHeight = 3;
         gl.marginWidth = 3;
         gl.verticalSpacing = 0;
         filterGroup.setLayout(gl);
-        filterGroup.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
-                true));
+        filterGroup
+                .setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, true));
         filterGroup.setText(" Filters ");
 
         filterExpandBar = new FilterExpandBar(filterGroup);
@@ -604,13 +592,13 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
     /**
      * Create the data table. The table will contain the data sets that are
      * returned by applying the filters to the query.
-     * 
+     *
      * @param sashForm
      *            The SashForm the controls/containers will be put on.
      */
     private void createDataTable(SashForm sashForm) {
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        mainTableComp = new Composite(sashForm, SWT.NONE);
+        Composite mainTableComp = new Composite(sashForm, SWT.NONE);
         GridLayout gl = new GridLayout(1, false);
         gl.marginWidth = 0;
         mainTableComp.setLayout(gl);
@@ -655,8 +643,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
      * Update the label telling the user how many entries are in the table.
      */
     private void updateTableEntriesLabel() {
-        tableEntriesLabel.setText(tableEntriesPrefix
-                + dataTableComp.getTableItemCount() + " ");
+        tableEntriesLabel.setText(
+                TABLE_ENTRIES_PREFIX + dataTableComp.getTableItemCount() + " ");
     }
 
     /**
@@ -695,10 +683,11 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                 DataSet data = dataTableComp.getSelectedDataset();
 
                 if (data == null) {
-                    MessageBox mb = new MessageBox(shell, SWT.ICON_ERROR
-                            | SWT.OK);
+                    MessageBox mb = new MessageBox(shell,
+                            SWT.ICON_ERROR | SWT.OK);
                     mb.setText("Warning");
-                    mb.setMessage("Metadata not available for dataset selection.");
+                    mb.setMessage(
+                            "Metadata not available for dataset selection.");
                     mb.open();
                     return;
                 }
@@ -766,7 +755,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         }
 
         if ((arealDlg.getReturnValue() == null)
-                || ((Boolean) arealDlg.getReturnValue() == false)) {
+                || !((Boolean) arealDlg.getReturnValue())) {
             return;
         }
 
@@ -847,8 +836,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                 @Override
                 public IStatus runInUIThread(IProgressMonitor monitor) {
                     if (lastUpdate != 0) {
-                        long updateMinutes = (System.currentTimeMillis() - lastUpdate)
-                                / TimeUtil.MILLIS_PER_MINUTE;
+                        long updateMinutes = (System.currentTimeMillis()
+                                - lastUpdate) / TimeUtil.MILLIS_PER_MINUTE;
                         StringBuilder sb = new StringBuilder("Last Update: ");
                         sb.append(updateMinutes);
 
@@ -884,8 +873,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
             lastUpdate = 0;
         }
 
-        if ((updateTimeLabel != null)
-                && (updateTimeLabel.isDisposed() == false)) {
+        if (updateTimeLabel != null && !updateTimeLabel.isDisposed()) {
             updateTimeLabel.setText("");
         }
     }
@@ -927,11 +915,12 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
      */
     private void handleNewConfigurationAction() {
         if (isDirty()) {
-            MessageBox mb = new MessageBox(shell, SWT.ICON_QUESTION | SWT.YES
-                    | SWT.NO);
+            MessageBox mb = new MessageBox(shell,
+                    SWT.ICON_QUESTION | SWT.YES | SWT.NO);
             mb.setText("New Configuration");
-            mb.setMessage("Creating a new configuration will discard any changes you have "
-                    + "made to Area, Data Types, and Filters.\n\nDo you wish to continue?");
+            mb.setMessage(
+                    "Creating a new configuration will discard any changes you have "
+                            + "made to Area, Data Types, and Filters.\n\nDo you wish to continue?");
             int result = mb.open();
 
             if (result == SWT.NO) {
@@ -959,7 +948,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
     /**
      * Display the Load/Save configuration dialog.
-     * 
+     *
      * @param type
      *            Dialog type.
      */
@@ -977,9 +966,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                             xml = new FilterSettingsXML();
                             if (datatypeList.getSelectionCount() > 0) {
                                 // Save data type
-                                String dataType = datatypeList
-                                        .getItem(datatypeList
-                                                .getSelectionIndex());
+                                String dataType = datatypeList.getItem(
+                                        datatypeList.getSelectionIndex());
 
                                 FilterTypeXML ftx = new FilterTypeXML();
                                 ftx.setFilterType("Data Type");
@@ -994,8 +982,9 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                                 }
                                 xml.setArea(area);
 
-                                setText(WINDOW_TITLE + " - ("
-                                        + locFile.getFile().getName() + ")");
+                                String fileName = LocalizationUtil
+                                        .extractName(locFile.getPath());
+                                setText(WINDOW_TITLE + " - (" + fileName + ")");
 
                                 // Save filter settings
                                 filterExpandBar.populateFilterSettingsXml(xml);
@@ -1011,12 +1000,14 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
                                         "Must make a selection before saving.");
                             }
                         } else if (type == DialogType.OPEN) {
-                            setText(WINDOW_TITLE + " - ("
-                                    + locFile.getFile().getName() + ")");
+                            String fileName = LocalizationUtil
+                                    .extractName(locFile.getPath());
+                            setText(WINDOW_TITLE + " - (" + fileName + ")");
                             fm.setCurrentFile(locFile);
                             xml = fm.getXml();
                             updateFilters();
-                            selectedFile = locFile.getFile().getName();
+                            selectedFile = LocalizationUtil
+                                    .extractName(locFile.getPath());
                             setClean();
                         } else if (type == DialogType.DELETE) {
                             try {
@@ -1064,7 +1055,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         filterExpandBar.populateFilterSettingsXml(xml);
 
         if (locFile != null) {
-            selectedFile = locFile.getFile().getName();
+            selectedFile = LocalizationUtil.extractName(locFile.getPath());
         }
 
         if (this.selectedFile == null) {
@@ -1101,10 +1092,10 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
         datatypeList.setItems(dataTypes.toArray(new String[dataTypes.size()]));
 
-        ArrayList<FilterTypeXML> filterTypeList = xml.getFilterTypeList();
+        List<FilterTypeXML> filterTypeList = xml.getFilterTypeList();
         for (FilterTypeXML ftx : filterTypeList) {
-            if (ftx.getFilterType().equals("Data Type")) {
-                ArrayList<String> valueList = ftx.getValues();
+            if ("Data Type".equals(ftx.getFilterType())) {
+                List<String> valueList = ftx.getValues();
                 // only one for data type
                 int i = 0;
                 for (String s : dataTypes) {
@@ -1135,8 +1126,8 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         xml = new FilterSettingsXML();
         filterExpandBar.populateFilterSettingsXml(xml);
 
-        String selectedDataType = this.datatypeList.getItem(datatypeList
-                .getSelectionIndex());
+        String selectedDataType = this.datatypeList
+                .getItem(datatypeList.getSelectionIndex());
         xml.addDataSetType(selectedDataType);
 
         final List<DataSet> matchingDataSets = new ArrayList<>();
@@ -1248,7 +1239,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
 
     /**
      * Load the complete list of data types .
-     * 
+     *
      * @param dataTypesList
      *            of strings the list of data Types
      */
@@ -1258,7 +1249,7 @@ public class DataBrowserDlg extends CaveSWTDialog implements IDataTableUpdate,
         VizApp.runSync(new Runnable() {
             @Override
             public void run() {
-                dataTypes = (ArrayList<String>) dataTypesList;
+                dataTypes = dataTypesList;
                 for (String type : dataTypes) {
                     datatypeList.add(type);
                 }
