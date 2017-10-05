@@ -19,7 +19,8 @@
  **/
 package com.raytheon.uf.viz.datadelivery.notification;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -56,20 +57,21 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.ToolTip;
 import org.eclipse.swt.widgets.Tray;
 import org.eclipse.swt.widgets.TrayItem;
+import org.eclipse.ui.plugin.AbstractUIPlugin;
 
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
-import com.raytheon.uf.viz.datadelivery.Activator;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableChange;
 import com.raytheon.uf.viz.datadelivery.common.ui.LoadSaveConfigDlg;
 import com.raytheon.uf.viz.datadelivery.common.ui.LoadSaveConfigDlg.DialogType;
@@ -80,8 +82,8 @@ import com.raytheon.uf.viz.datadelivery.notification.xml.MessageLoadXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationConfigXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.NotificationFilterXML;
 import com.raytheon.uf.viz.datadelivery.notification.xml.PrioritySettingXML;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
+import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
 import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler.INotificationArrivedListener;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
@@ -89,11 +91,11 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
 
 /**
  * Notification Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 30, 2012            mpduff     Initial creation.
@@ -122,42 +124,40 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  * Jun 09, 2015  4047      dhladky    Dialog blocked CAVE at initial startup, fixed.
  * Jul 08, 2015  2805      dhladky    Added boolean check for whether to allow find highlighting, no longer find on update.
  * Feb 01, 2016  5289      tgurney    Add missing maximize button in trim
- * 
+ * Oct 04, 2017  6470      mapeters   Updated for renamed NotificationTableComp.deleteTableDataRowsById(), cleanup
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
-public class NotificationDlg extends CaveSWTDialog implements ITableChange,
-        IMessageLoad, INotificationArrivedListener {
+public class NotificationDlg extends CaveSWTDialog
+        implements ITableChange, IMessageLoad, INotificationArrivedListener {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(NotificationDlg.class);
 
-    private final String TITLE_TEXT = "Notification Center";
+    private static final String TITLE_TEXT = "Notification Center";
+
+    /** Help text file */
+    private static final String NOTIFICATION_HELP_FILE = "help"
+            + IPathManager.SEPARATOR + "notificationHelp.xml";
+
+    /** Path of the Notification Config xml file */
+    private static final String CONFIG_PATH = "dataDelivery"
+            + IPathManager.SEPARATOR + "notificationManagerConfig";
+
+    /** Path of the Default Notification Config xml file */
+    private static final String DEFAULT_CONFIG = "dataDelivery"
+            + IPathManager.SEPARATOR + "DefaultNotificationConfig.xml";
+
+    /** Path of the Default Notification Config xml file */
+    private static final String DEFAULT_CONFIG_XML = "notificationManagerConfig"
+            + IPathManager.SEPARATOR + "DefaultNotificationConfig.xml";
 
     /** Find Dialog */
     private FindDlg fnd = null;
-
-    /** Message load properties */
-    private MessageLoadXML messageLoad;
-
-    /** Help text file */
-    private final String NOTIFICATION_HELP_FILE = "help/notificationHelp.xml";
-
-    /** Path of the Notification Config xml file */
-    private final String CONFIG_PATH = "dataDelivery" + File.separator
-            + "notificationManagerConfig";
-
-    /** Path of the Default Notification Config xml file */
-    private final String DEFAULT_CONFIG = FileUtil.join("dataDelivery",
-            "DefaultNotificationConfig.xml");
-
-    /** Path of the Default Notification Config xml file */
-    private final String DEFAULT_CONFIG_XML = "notificationManagerConfig"
-            + File.separator + "DefaultNotificationConfig.xml";
 
     /** The configuration dialog */
     private NotificationConfigDlg configDlg = null;
@@ -180,9 +180,6 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
     /** Tool tip for the tray item */
     private ToolTip tip;
 
-    /** JAXB context */
-    private JAXBContext jax;
-
     /** Unmarshaller object */
     private Unmarshaller unmarshaller;
 
@@ -204,7 +201,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
     /** Tool tip menu */
     private MenuItem tooltipMI;
 
-    private final Collection<MenuItem> lockableMenuItems = new ArrayList<MenuItem>();
+    private final Collection<MenuItem> lockableMenuItems = new ArrayList<>();
 
     /** Load config dialog */
     private LoadSaveConfigDlg loadDlg;
@@ -216,18 +213,19 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
     private LoadSaveConfigDlg saveAsDlg;
 
     /** Priority -> Priority Menu Item map */
-    private final Map<Priority, MenuItem> priorityMenuMap = new HashMap<Priority, MenuItem>(
+    private final Map<Priority, MenuItem> priorityMenuMap = new HashMap<>(
             Priority.values().length);
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            parent shell
      */
     public NotificationDlg(Shell parent) {
         super(parent, SWT.DIALOG_TRIM | SWT.MIN | SWT.MAX | SWT.RESIZE,
-                CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT | CAVE.DO_NOT_BLOCK);
+                CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT
+                        | CAVE.DO_NOT_BLOCK);
         setText(TITLE_TEXT);
         NotificationHandler.addListener(this);
         handler = new NotificationHandler();
@@ -302,11 +300,6 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
         // Create the main layout for the shell.
@@ -347,13 +340,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         loadConfigMI.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                try {
-                    handleLoadConfig();
-                } catch (JAXBException e) {
-                    statusHandler
-                            .handle(com.raytheon.uf.common.status.UFStatus.Priority.ERROR,
-                                    e.getLocalizedMessage(), e);
-                }
+                handleLoadConfig();
             }
         });
 
@@ -526,7 +513,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
 
     /**
      * Create the priority menu.
-     * 
+     *
      * @param menu
      *            Menu to hold these menu items
      */
@@ -580,8 +567,9 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
             HelpManager.getInstance().displayHelpDialog(shell,
                     NOTIFICATION_HELP_FILE);
         } catch (Exception e) {
-            statusHandler.error("Error loading Help Text file: "
-                    + NOTIFICATION_HELP_FILE, e);
+            statusHandler.error(
+                    "Error loading Help Text file: " + NOTIFICATION_HELP_FILE,
+                    e);
         }
     }
 
@@ -592,11 +580,11 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         Display display = getDisplay();
 
         ImageDescriptor id;
-        id = Activator.imageDescriptorFromPlugin(
+        id = AbstractUIPlugin.imageDescriptorFromPlugin(
                 "com.raytheon.uf.viz.datadelivery", "icons/dd.png");
         trayImg1 = id.createImage();
 
-        id = Activator.imageDescriptorFromPlugin(
+        id = AbstractUIPlugin.imageDescriptorFromPlugin(
                 "com.raytheon.uf.viz.datadelivery", "icons/dd_new.png");
         trayImg2 = id.createImage();
 
@@ -656,27 +644,28 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      * Filter table action.
      */
     private void handleFilterSelection() {
-        
+
         final ITableChange callback = this;
         DataDeliveryGUIUtils.markBusyInUIThread(shell);
-        
+
         Job job = new Job("Requesting Notification Records...") {
             @Override
             protected IStatus run(IProgressMonitor monitor) {
 
                 MessageLoadXML messageLoad = new MessageLoadXML();
                 messageLoad.setLoadAllMessages(true);
-                final List<NotificationRecord> filterNotificationList = handler.intialLoad(
-                        messageLoad, null);
-                
+                final List<NotificationRecord> filterNotificationList = handler
+                        .intialLoad(messageLoad, null);
+
                 VizApp.runAsync(new Runnable() {
                     @Override
                     public void run() {
                         if (isDisposed()) {
                             return;
                         }
-                        
-                        NotificationFilterDlg filter = new NotificationFilterDlg(shell, callback, filterNotificationList);
+
+                        NotificationFilterDlg filter = new NotificationFilterDlg(
+                                shell, callback, filterNotificationList);
                         DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
                         boolean change = false;
                         Object o = filter.open();
@@ -692,7 +681,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
                 return Status.OK_STATUS;
             }
         };
-        
+
         job.schedule();
     }
 
@@ -704,7 +693,8 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         NotificationConfigManager configMan;
         configMan = NotificationConfigManager.getInstance();
 
-        String fileName = "dataDelivery" + File.separator + DEFAULT_CONFIG_XML;
+        String fileName = "dataDelivery" + IPathManager.SEPARATOR
+                + DEFAULT_CONFIG_XML;
 
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationContext context = pm.getContext(
@@ -728,39 +718,44 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
     /**
      * Load configuration action.
      */
-    private void handleLoadConfig() throws JAXBException {
+    private void handleLoadConfig() {
         if (loadDlg == null || loadDlg.isDisposed()) {
             final NotificationConfigManager configMan = NotificationConfigManager
                     .getInstance();
-            loadDlg = new LoadSaveConfigDlg(shell, DialogType.OPEN,
-                    CONFIG_PATH, DEFAULT_CONFIG, true);
+            loadDlg = new LoadSaveConfigDlg(shell, DialogType.OPEN, CONFIG_PATH,
+                    DEFAULT_CONFIG, true);
             loadDlg.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
-                    if (returnValue instanceof LocalizationFile) {
-                        try {
-                            LocalizationFile fileName = (LocalizationFile) returnValue;
-                            // Get the name of the selected file
-                            if (fileName != null && fileName.exists()) {
-                                File file = fileName.getFile();
+                    if (returnValue instanceof ILocalizationFile) {
+                        ILocalizationFile locFile = (ILocalizationFile) returnValue;
+                        // Get the name of the selected file
+                        if (locFile != null && locFile.exists()) {
+                            try (InputStream is = locFile.openInputStream()) {
+                                Object obj = unmarshaller.unmarshal(is);
 
-                                if (file != null) {
-                                    Object obj = unmarshaller.unmarshal(file);
-
-                                    if (obj instanceof NotificationFilterXML) {
-                                        configMan
-                                                .setFilterXml((NotificationFilterXML) obj);
-                                    } else if (obj instanceof NotificationConfigXML) {
-                                        configMan
-                                                .setConfigXml((NotificationConfigXML) obj);
-                                    }
-
-                                    tableComp.tableChangedAfterConfigLoad();
+                                if (obj instanceof NotificationFilterXML) {
+                                    configMan.setFilterXml(
+                                            (NotificationFilterXML) obj);
+                                } else if (obj instanceof NotificationConfigXML) {
+                                    configMan.setConfigXml(
+                                            (NotificationConfigXML) obj);
                                 }
+
+                                tableComp.tableChangedAfterConfigLoad();
+                            } catch (LocalizationException e) {
+                                statusHandler
+                                        .error("Error opening input stream for file: "
+                                                + locFile.getPath(), e);
+                            } catch (JAXBException e) {
+                                statusHandler
+                                        .error("Error unmarshalling input stream for file: "
+                                                + locFile.getPath(), e);
+                            } catch (IOException e) {
+                                // Error closing stream, ignore
                             }
-                        } catch (JAXBException e) {
-                            statusHandler.error(e.getLocalizedMessage(), e);
                         }
+
                     }
                     loadDlg = null;
                 }
@@ -782,7 +777,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
                 NotificationFilterXML.class };
 
         try {
-            jax = JAXBContext.newInstance(classes);
+            JAXBContext jax = JAXBContext.newInstance(classes);
             this.unmarshaller = jax.createUnmarshaller();
         } catch (JAXBException e) {
             statusHandler.handle(
@@ -871,7 +866,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         showHideDialogMI.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                if (showHideDialogMI.getSelection() == true) {
+                if (showHideDialogMI.getSelection()) {
                     if (dialogLocation != null) {
                         shell.setLocation(dialogLocation);
                     }
@@ -889,7 +884,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
 
     /**
      * Retrieves the message load information from the config files.
-     * 
+     *
      * @return MessgeLoadXML
      */
     @Override
@@ -898,9 +893,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
                 .getInstance();
         NotificationConfigXML xml = configMan.getConfigXml();
 
-        messageLoad = xml.getMessageLoad();
-
-        return messageLoad;
+        return xml.getMessageLoad();
     }
 
     @Override
@@ -918,14 +911,14 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      */
     @Override
     public void handleNotification(
-            ArrayList<NotificationRecord> notificationRecords) {
+            final ArrayList<NotificationRecord> notificationRecords) {
 
-        final ArrayList<NotificationRecord> records = notificationRecords;
         VizApp.runAsync(new Runnable() {
             @Override
             public void run() {
-                if (isDisposed() == false && tableComp.passesValueFilter(records)) {
-                    tableComp.populateTableDataRows(records);
+                if (!isDisposed()
+                        && tableComp.passesValueFilter(notificationRecords)) {
+                    tableComp.populateTableDataRows(notificationRecords);
                     tableComp.populateTable();
                     tableComp.handlePageSelection();
                     // update title display......
@@ -933,10 +926,10 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
                         setText(TITLE_TEXT + tableComp.getPauseCountLabel());
                     }
 
-                    if (shellReference.isDisposed() == false
-                            && (shellReference.isVisible() == false || shellReference
-                                    .getMinimized() == true)) {
-                        displayNotificationTip(records);
+                    if (!shellReference.isDisposed()
+                            && (!shellReference.isVisible()
+                                    || shellReference.getMinimized())) {
+                        displayNotificationTip(notificationRecords);
                     }
                 }
             }
@@ -947,13 +940,12 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      * Removes data rows from the table.
      */
     @Override
-    public void deleteNotification(ArrayList<Integer> ids) {
-        final ArrayList<Integer> deleteRecordIds = ids;
+    public void deleteNotification(final ArrayList<Integer> ids) {
         VizApp.runAsync(new Runnable() {
             @Override
             public void run() {
-                if (isDisposed() == false) {
-                    tableComp.deleteTableDataRows(deleteRecordIds);
+                if (!isDisposed()) {
+                    tableComp.deleteTableDataRowsById(ids);
                     tableComp.populateTable();
                 }
             }
@@ -965,8 +957,8 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
      * Displays a tool tip with the message contained in the notification record
      */
     private void displayNotificationTip(
-            ArrayList<NotificationRecord> notificationRecords) {
-        StringBuffer sb = new StringBuffer();
+            List<NotificationRecord> notificationRecords) {
+        StringBuilder sb = new StringBuilder();
         for (NotificationRecord record : notificationRecords) {
             if (sb.length() != 0) {
                 sb.append("\n");
@@ -983,12 +975,6 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.ITableChange#tableChanged()
-     */
     @Override
     public void tableChanged() {
         updatePriorityViewMenus();
@@ -1007,8 +993,8 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
             shell.setBackground(getDisplay().getSystemColor(SWT.COLOR_RED));
         } else {
             setText(TITLE_TEXT);
-            shell.setBackground(getDisplay().getSystemColor(
-                    SWT.COLOR_TITLE_INACTIVE_BACKGROUND));
+            shell.setBackground(getDisplay()
+                    .getSystemColor(SWT.COLOR_TITLE_INACTIVE_BACKGROUND));
         }
         for (MenuItem mItem : lockableMenuItems) {
             mItem.setEnabled(!isLocked);
@@ -1036,7 +1022,7 @@ public class NotificationDlg extends CaveSWTDialog implements ITableChange,
 
     /**
      * Update the priority view items
-     * 
+     *
      * @param priorityMap
      */
     public void updatePriorityView(Map<Priority, MenuItem> priorityMap) {

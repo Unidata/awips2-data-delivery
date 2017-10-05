@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,16 +22,14 @@ package com.raytheon.uf.viz.datadelivery.notification;
 import java.util.Date;
 
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableData;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
-import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 
 /**
  * Data object for a row in the Notification Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 3, 2012            mpduff     Initial creation
@@ -40,18 +38,14 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Sep 16, 2013  2375     mpduff     Change date sort order.
  * Feb 07, 2014  2453     mpduff     Added toString()
  * Dec 03, 2014  3840     ccody      Correct sorting "contract violation" issue
- * 
+ * Oct 04, 2017  6470     mapeters   Remove unused columns field
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class NotificationRowData implements ITableData {
-
-    /** Column string array */
-    private final String[] columns = DataDeliveryUtils
-            .getColumnTitles(TABLE_TYPE.NOTIFICATION);
 
     /** Notification Identification number */
     private int id;
@@ -73,14 +67,14 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Constructor.
-     * 
+     *
      */
     public NotificationRowData() {
     }
 
     /**
      * Get the notification identity.
-     * 
+     *
      * @return the id
      */
     public int getId() {
@@ -89,7 +83,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Set the notification identity.
-     * 
+     *
      * @param id
      *            the notification identity
      */
@@ -99,7 +93,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Get the notification date.
-     * 
+     *
      * @return the date
      */
     public Date getDate() {
@@ -108,7 +102,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Set the notification date.
-     * 
+     *
      * @param date
      *            the notification date
      */
@@ -118,7 +112,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Get the notification priority.
-     * 
+     *
      * @return the priority
      */
     public int getPriority() {
@@ -127,7 +121,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Set the notification priority.
-     * 
+     *
      * @param priority
      *            the notification priority
      */
@@ -137,7 +131,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Get the notification category.
-     * 
+     *
      * @return the category
      */
     public String getCategory() {
@@ -146,7 +140,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Set the notification category.
-     * 
+     *
      * @param category
      *            the notification category
      */
@@ -156,7 +150,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Get the notification user name.
-     * 
+     *
      * @return the user name
      */
     public String getUser() {
@@ -165,7 +159,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Set the notification user.
-     * 
+     *
      * @param user
      *            the notification user
      */
@@ -175,7 +169,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Get the notification message.
-     * 
+     *
      * @return the message
      */
     public String getMessage() {
@@ -184,7 +178,7 @@ public class NotificationRowData implements ITableData {
 
     /**
      * Set the notification message.
-     * 
+     *
      * @param message
      *            the notification message
      */

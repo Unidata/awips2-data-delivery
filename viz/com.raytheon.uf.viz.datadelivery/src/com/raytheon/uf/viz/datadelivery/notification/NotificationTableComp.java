@@ -22,7 +22,6 @@ package com.raytheon.uf.viz.datadelivery.notification;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
@@ -125,6 +124,8 @@ import com.raytheon.uf.viz.datadelivery.utils.NotificationHandler;
  * Apr 26, 2016  5528        dhladky      Prevent null pointer on initial use of
  *                                        find tool.
  * Feb 28, 2017  6121        randerso     Cleanup
+ * Oct 04, 2017  6470        mapeters     Prevent repeated processing of the same
+ *                                        notification records
  *
  * </pre>
  *
@@ -151,20 +152,18 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     /** Filtered Table list object */
     private final List<NotificationRowData> visibleTableList = new ArrayList<>();
 
-    /** Concurrent List applicable here **/
-    private List<NotificationRecord> notificationList = Collections
-            .synchronizedList(new ArrayList<NotificationRecord>());
-
     /** Notification rows */
-    private final String ROWS = "Rows ";
+    private static final String ROWS = "Rows ";
 
-    private final String PAUSE_BUTTON_TEXT = "Pause";
+    private static final String PAUSE_BUTTON_TEXT = "Pause";
 
-    private final String PAUSE_MSG_TEXT = " <Paused>";
+    private static final String PAUSE_MSG_TEXT = " <Paused>";
 
-    private final String PAGE_AMT_FORMAT = "of %d";
+    private static final String PAGE_AMT_FORMAT = "of %d";
 
-    private final int MAX_PAGES = 999;
+    private static final int MAX_PAGES = 999;
+
+    private static final int DEFAULT_ROWS_PER_PAGE = 20;
 
     /** Number row label */
     private Label numRowsLbl;
@@ -179,7 +178,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     private Spinner pageSpin;
 
     /** Configured value per page */
-    private int rowsPerPage = 100;
+    private int rowsPerPage = DEFAULT_ROWS_PER_PAGE;
 
     /** Highlight indices */
     private List<NotificationRowData> highlightRows = null;
@@ -194,7 +193,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     private final NotificationHandler handler;
 
     /** Column List */
-    private ArrayList<ColumnXML> columnList = null;
+    private List<ColumnXML> columnList = null;
 
     /** Scroll/Refresh pause button */
     private Button pauseButton;
@@ -570,7 +569,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
             }
         }
 
-        if (deleteList.size() > 0) {
+        if (!deleteList.isEmpty()) {
             deleteTableDataRows(deleteList);
             populateTable();
         }
@@ -612,9 +611,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
      *            list of notification records
      */
     public void populateTableDataRows(
-            List<NotificationRecord> notificationRecords) {
-
-        final List<NotificationRecord> fnotificationRecords = notificationRecords;
+            final List<NotificationRecord> notificationRecords) {
 
         Job job = new Job("Requesting Notification Records...") {
             @Override
@@ -627,64 +624,62 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
                 MessageLoadXML messageLoad = msgLoadCallback.getMessageLoad();
 
-                if (CollectionUtil.isNullOrEmpty(fnotificationRecords)) {
-
+                List<NotificationRecord> notificationList;
+                if (CollectionUtil.isNullOrEmpty(notificationRecords)) {
                     notificationList = handler.intialLoad(messageLoad, users);
                     masterTableList.clearAll();
                     filteredTableList.clearAll();
                 } else {
-                    for (NotificationRecord rec : fnotificationRecords) {
-                        // prevents duplicates
-                        synchronized (notificationList) {
-                            if (!notificationList.contains(rec)) {
-                                notificationList.add(rec);
-                            }
-                        }
-                    }
+                    notificationList = notificationRecords;
                 }
 
-                synchronized (notificationList) {
+                if (CollectionUtil.isNullOrEmpty(notificationList)) {
+                    return Status.OK_STATUS;
+                }
 
-                    if (CollectionUtil.isNullOrEmpty(notificationList)) {
-                        return Status.OK_STATUS;
+                Iterator<NotificationRecord> itr = notificationList.iterator();
+                while (itr.hasNext()) {
+                    NotificationRecord record = itr.next();
+
+                    if (isNotificationInList(record, masterTableList)) {
+                        /*
+                         * A functionally equivalent notification record has
+                         * already been processed
+                         */
+                        continue;
                     }
 
-                    Iterator<NotificationRecord> i = notificationList
-                            .iterator();
-                    while (i.hasNext()) {
+                    Integer recordId = record.getId();
+                    Calendar recordCalendarDate = record.getDate();
+                    if (recordId == null || recordCalendarDate == null) {
+                        StringBuilder msg = new StringBuilder();
+                        msg.append(
+                                "Error Extracting data from Notification Message:");
+                        msg.append(" One or more mandatory values are null.");
+                        msg.append("\nID: ").append(recordId);
+                        msg.append("  Date: ").append(recordCalendarDate);
+                        msg.append("  Category: ").append(record.getCategory());
+                        msg.append("\nPriority: ").append(record.getPriority());
+                        msg.append("  User: ").append(record.getUsername());
+                        msg.append("\nMessage: ").append(record.getMessage());
+                        statusHandler.error(msg.toString());
+                        continue;
+                    }
 
-                        NotificationRecord record = i.next();
-                        NotificationRowData rd = new NotificationRowData();
-                        Integer recordId = record.getId();
-                        Calendar recordCalendarDate = record.getDate();
-                        if (recordId == null || recordCalendarDate == null) {
-                            statusHandler
-                                    .error("Error Extracting data from Notification Message: One or more mandatory values are null.\n"
-                                            + "ID: " + record.getId()
-                                            + "  Date: " + record.getDate()
-                                            + "  Category: "
-                                            + record.getCategory()
-                                            + "\nPriority: "
-                                            + record.getPriority() + "  User: "
-                                            + record.getUsername()
-                                            + "\nMessage: "
-                                            + record.getMessage());
-                            continue;
-                        }
-                        rd.setId(recordId.intValue());
-                        rd.setDate(recordCalendarDate.getTime());
-                        rd.setCategory(record.getCategory());
-                        rd.setMessage(record.getMessage());
-                        rd.setPriority(record.getPriority());
-                        rd.setUser(record.getUsername());
-                        // Master table list is filtered for user only
-                        masterTableList.addDataRow(rd);
-                        ++messageReceivedWhilePausedCount;
+                    NotificationRowData rd = new NotificationRowData();
+                    rd.setId(recordId.intValue());
+                    rd.setDate(recordCalendarDate.getTime());
+                    rd.setCategory(record.getCategory());
+                    rd.setMessage(record.getMessage());
+                    rd.setPriority(record.getPriority());
+                    rd.setUser(record.getUsername());
+                    // Master table list is filtered for user only
+                    masterTableList.addDataRow(rd);
+                    ++messageReceivedWhilePausedCount;
 
-                        // Apply filter
-                        if (passesFilter(record)) {
-                            filteredTableList.addDataRow(rd);
-                        }
+                    // Apply filter
+                    if (passesFilter(record)) {
+                        filteredTableList.addDataRow(rd);
                     }
                 }
 
@@ -713,7 +708,6 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
                             // Keep only the specified number of rows
                             if (messageLoad.isNumMessages()) {
-                                // int numRecs = filteredTableList.getSize();
                                 int numRecs = masterTableList.getSize();
                                 if (numRecs > loadLast) {
                                     removeList = masterTableList.getDataArray()
@@ -813,7 +807,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         }
 
         if (username != null) {
-            if (users == null || users.isEmpty() || username.equals("")
+            if (users == null || users.isEmpty() || username.isEmpty()
                     || users.contains(username)) {
                 userFlag = true;
             }
@@ -821,7 +815,6 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
         if (subscriptionCategoryList == null
                 || subscriptionCategoryList.isEmpty()
-                || subscriptionCategoryList.equals("")
                 || subscriptionCategoryList.contains(category)) {
             subscriptionFlag = true;
         }
@@ -838,9 +831,6 @@ public class NotificationTableComp extends TableComp implements ITableFind {
     }
 
     private boolean passesFilter(NotificationRecord notificationRecord) {
-
-        boolean filterFlag = false;
-
         if (notificationRecord == null) {
             return false;
         }
@@ -849,35 +839,38 @@ public class NotificationTableComp extends TableComp implements ITableFind {
         Integer nrPriority = notificationRecord.getPriority();
         String nrCategory = notificationRecord.getCategory();
 
-        filterFlag = passesValueFilter(nrUsername, nrPriority, nrCategory);
+        return passesValueFilter(nrUsername, nrPriority, nrCategory);
+    }
 
-        if (filterFlag == true) {
-            // Check to see if we already HAVE this message
-            NotificationRowData rd = null;
-            int filteredTableListSize = this.filteredTableList.getSize();
-            for (int i = 0; i < filteredTableListSize
-                    && filterFlag == true; i++) {
-                rd = this.filteredTableList.getDataRow(i);
-                String rdCategory = rd.getCategory();
-                Integer rdPriority = rd.getPriority();
-                String rdMessage = rd.getMessage();
-                String rdUsername = rd.getUser();
-                Date rdDate = rd.getDate();
-                long rdTimeInMils = 0;
-                if (rdDate != null) {
-                    rdTimeInMils = rdDate.getTime();
-                }
-                boolean areEquivalent = notificationRecord
-                        .areFunctionallyEquivalent(rdCategory, rdPriority,
-                                rdMessage, rdUsername, rdTimeInMils);
-                if (areEquivalent == true) {
-                    filterFlag = false;
-                    break;
-                }
+    /**
+     * Determine if the given notification record is functionally equivalent to
+     * any row in the given tableList.
+     *
+     * @param record
+     * @param tableList
+     * @return true if record is functionally equivalent to any in the list,
+     *         otherwise false
+     */
+    private static boolean isNotificationInList(NotificationRecord record,
+            TableDataManager<NotificationRowData> tableList) {
+        for (NotificationRowData rd : tableList.getDataArray()) {
+            String rdCategory = rd.getCategory();
+            Integer rdPriority = rd.getPriority();
+            String rdMessage = rd.getMessage();
+            String rdUsername = rd.getUser();
+            Date rdDate = rd.getDate();
+            long rdTimeInMils = 0;
+            if (rdDate != null) {
+                rdTimeInMils = rdDate.getTime();
+            }
+            boolean areEquivalent = record.areFunctionallyEquivalent(rdCategory,
+                    rdPriority, rdMessage, rdUsername, rdTimeInMils);
+            if (areEquivalent) {
+                return true;
             }
         }
 
-        return filterFlag;
+        return false;
     }
 
     /**
@@ -890,7 +883,8 @@ public class NotificationTableComp extends TableComp implements ITableFind {
      */
     public boolean passesValueFilter(List<NotificationRecord> records) {
         for (NotificationRecord record : records) {
-            if (passesFilter(record) == false) {
+            if (!passesFilter(record)
+                    || isNotificationInList(record, filteredTableList)) {
                 return false;
             }
         }
@@ -938,8 +932,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
         rowsPerPage = xml.getPaginationSetting();
         if (rowsPerPage < 1) {
-            // default to 20 rows
-            rowsPerPage = 20;
+            rowsPerPage = DEFAULT_ROWS_PER_PAGE;
         }
 
         PrioritySettingXML pri = xml.getPrioritySetting();
@@ -990,7 +983,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
 
                 SortDirection sortDirection = SortDirection.ASCENDING;
                 // Check if any columns set to descending
-                if (column.isSortAsc() == false) {
+                if (!column.isSortAsc()) {
                     sortDirection = SortDirection.DESCENDING;
                 }
 
@@ -1033,16 +1026,17 @@ public class NotificationTableComp extends TableComp implements ITableFind {
                     if (columnXml.isVisible()) {
                         if (column.getText()
                                 .equals(NotifColumnNames.PRIORITY.toString())) {
-                            item.setImage(idx++, pImage.getImage(
+                            item.setImage(idx, pImage.getImage(
                                     Priority.values()[rd.getPriority()]));
                         } else {
                             String text = getCellText(columnXml.getName(), rd);
                             if (text == null) {
-                                item.setText(idx++, "");
+                                item.setText(idx, "");
                             } else {
-                                item.setText(idx++, text);
+                                item.setText(idx, text);
                             }
                         }
+                        ++idx;
                     }
                 }
             }
@@ -1204,7 +1198,7 @@ public class NotificationTableComp extends TableComp implements ITableFind {
      * @param deleteRecordIds
      *            List of ids to delete.
      */
-    public void deleteTableDataRows(ArrayList<Integer> deleteRecordIds) {
+    public void deleteTableDataRowsById(List<Integer> deleteRecordIds) {
         List<NotificationRowData> deleteList = new ArrayList<>(
                 deleteRecordIds.size());
 
