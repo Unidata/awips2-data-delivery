@@ -33,7 +33,6 @@ import com.raytheon.uf.common.datadelivery.registry.DataSetNaming;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
-import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Constant;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -77,6 +76,7 @@ import opendap.dap.PrimitiveVector;
  * Oct 24, 2013  2454     dhladky   NOMADS change to ensemble configuration.
  * Nov 09, 2016  5988     tjensen   Update for Friendly naming for NOMADS
  * May 10, 2017  6135     nabowle   Replace UnitLookup with UnitMapper.
+ * Oct 10, 2017  6465     tjensen   Moved UNIT_MAPPER_NAMESPACE
  *
  * </pre>
  *
@@ -87,6 +87,8 @@ public final class OpenDAPParseUtility {
     private static final Pattern QUOTES_PATTERN = Pattern.compile("\"");
 
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
+
+    private static final String UNIT_MAPPER_NAMESPACE = "datadelivery";
 
     /** Singleton instance of this class */
     private static volatile OpenDAPParseUtility instance = null;
@@ -359,7 +361,7 @@ public final class OpenDAPParseUtility {
 
         // some require no parsing
         String base = UnitMapper.getInstance().lookupBaseNameOrNull(description,
-                LookupManager.UNIT_MAPPER_NAMESPACE);
+                UNIT_MAPPER_NAMESPACE);
         if (base != null) {
             runit = base;
         } else {
@@ -368,7 +370,7 @@ public final class OpenDAPParseUtility {
             if (m.find()) {
                 runit = m.group(2);
                 base = UnitMapper.getInstance().lookupBaseNameOrNull(runit,
-                        LookupManager.UNIT_MAPPER_NAMESPACE);
+                        UNIT_MAPPER_NAMESPACE);
                 if (base != null) {
                     runit = base;
                 }

@@ -1,52 +1,51 @@
-package com.raytheon.uf.common.datadelivery.harvester;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.common.datadelivery.harvester;
 
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * DD Crawler Agent
- * 
+ * Agent for a Harvester that crawls to retrieve data, such as NOMADS. Defined
+ * by a HarvesterConfig. Used for configuration specific to this harvester.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 12 Sept, 2012   1038      dhladky   Initial creation
- * 23 Oct,  2013   2361      njensen   Remove ISerializableObject
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------
+ * Sep 12, 2012  1038     dhladky   Initial creation
+ * Oct 23, 2013  2361     njensen   Remove ISerializableObject
+ * Oct 04, 2017  6465     tjensen   Remove collections
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 
 @XmlRootElement
@@ -79,10 +78,6 @@ public class CrawlAgent extends Agent {
     @DynamicSerializeElement
     private String searchKey;
 
-    @XmlElements({ @XmlElement(name = "collection") })
-    @DynamicSerializeElement
-    private List<Collection> collection;
-
     @XmlElement(name = "ingestNew", required = true)
     @DynamicSerializeElement
     private boolean ingestNew = true;
@@ -105,27 +100,6 @@ public class CrawlAgent extends Agent {
 
     public CrawlAgent() {
 
-    }
-
-    public List<Collection> getCollection() {
-        return collection;
-    }
-
-    /**
-     * Get a collection by it's name
-     * 
-     * @param name
-     * @return
-     */
-    public Collection getCollectionByName(String name) {
-
-        for (Collection collection : getCollection()) {
-            if (collection.getName().equals(name)) {
-                return collection;
-            }
-        }
-
-        return null;
     }
 
     public String getCrawlDir() {
@@ -168,36 +142,8 @@ public class CrawlAgent extends Agent {
         return ingestNew;
     }
 
-    /**
-     * Check to see if it is up to date as far as seed scanning
-     * 
-     * @param collectionName
-     * @return
-     */
-    public boolean isMature(String collectionName) {
-        boolean isMature = true;
-
-        Collection coll = getCollectionByName(collectionName);
-
-        if (coll.getPeriodicity() == null) {
-            isMature = false;
-        }
-        if (coll.getLastDate() == null) {
-            isMature = false;
-        }
-        if (coll.getFirstDate() == null) {
-            isMature = false;
-        }
-
-        return isMature;
-    }
-
     public boolean isUseRobots() {
         return useRobots;
-    }
-
-    public void setCollection(List<Collection> collection) {
-        this.collection = collection;
     }
 
     public void setCrawlDir(String crawlDir) {
@@ -243,5 +189,4 @@ public class CrawlAgent extends Agent {
     public void setUseRobots(boolean useRobots) {
         this.useRobots = useRobots;
     }
-
 }

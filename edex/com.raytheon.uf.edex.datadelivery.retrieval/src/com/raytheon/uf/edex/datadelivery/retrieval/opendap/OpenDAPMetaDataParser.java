@@ -51,6 +51,7 @@ import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
+import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManagerUtils;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLevelRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterMapping;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
@@ -127,6 +128,7 @@ import opendap.dap.NoSuchAttributeException;
  *                                     stored parameters once.
  * Sep 12, 2017  6413        tjensen   Updated to support ParameterGroups
  * Sep 25, 2017  6178        tgurney   parseMetaData generate link key from url
+ * Oct 04, 2017  6465        tjensen   Get gridCoverage from provider
  *
  * </pre>
  *
@@ -148,7 +150,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             GriddedDataSetMetaData gdsmd, Double dz, Float levMin, Float levMax)
             throws Exception {
         List<Double> levelList = null;
-        if (!LookupManager.levelLookupExists(collectionName)) {
+        if (!LookupManagerUtils.levelLookupExists(collectionName)) {
             levelList = OpenDAPParseUtility.getInstance().parseLevels(
                     gdsmd.getUrl(), serviceConfig.getConstantValue("LEV"));
             LookupManager.getInstance().modifyLevelLookups(collectionName, dz,
@@ -171,13 +173,14 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
      * @param link
      * @param collection
      * @param dataDateFormat
+     * @param gridCoverage
      * @return
      * @throws NoSuchAttributeException
      */
     private Map<String, ParameterGroup> getParameters(DAS das,
             GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd,
-            String subName, Collection collection, String dataDateFormat)
-            throws NoSuchAttributeException {
+            String subName, Collection collection, String dataDateFormat,
+            GridCoverage gridCoverage) throws NoSuchAttributeException {
 
         final String collectionName = dataSet.getCollectionName();
         final String url = gdsmd.getUrl();
@@ -189,8 +192,6 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         final GriddedCoverage griddedCoverage = new GriddedCoverage();
         dataSet.setCoverage(griddedCoverage);
 
-        final GridCoverage gridCoverage = collection.getProjection()
-                .getGridCoverage();
         // TODO: haven't figure out how to tell the difference on these from
         // the provider metadata yet
         gridCoverage.setSpacingUnit(serviceConfig.getConstantValue("DEGREE"));
@@ -487,7 +488,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                     + providerName + "' from '" + description + "'. Dataset: '"
                     + collectionName + "'. URL: '" + gdsmd.getUrl()
                     + "'. An entry should be added to "
-                    + LookupManager.getParamFileName() + " for this level.");
+                    + LookupManagerUtils.getParamFileName()
+                    + " for this level.");
         }
 
         LevelGroup lg = pg
@@ -617,6 +619,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         }
         String providerName = provider.getName();
         String collectionName = collection.getName();
+        GridCoverage providerGC = provider.getProjection().get(0).getType()
+                .getGridCoverage();
 
         for (Link link : links) {
 
@@ -648,7 +652,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                     serviceConfig.getConstantValue("BLANK")));
 
             dataSet.setParameterGroups(getParameters(das, dataSet, gdsmd,
-                    link.getSubName(), collection, dataDateFormat));
+                    link.getSubName(), collection, dataDateFormat, providerGC));
 
             // TODO: OBE after all sites are at 18.1.1 or above
             Map<String, Parameter> paramMap = ParameterUtils

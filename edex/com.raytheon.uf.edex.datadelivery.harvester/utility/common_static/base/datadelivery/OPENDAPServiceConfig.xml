@@ -5,11 +5,12 @@
         of the file. 
     -->
 <serviceConfig name="OPENDAP">
-    <!--  Date formats used by OPeNDAP providers -->
+    <!--  Date formats used by OPeNDAP providers. Order from most to least
+          specific. -->
     <dateConfig>
-        <format>yyyyMM</format>
-        <format>yyyyMMdd</format>
         <format>EEE MMM dd hhmmss zzz yyyy</format>
+        <format>yyyyMMdd</format>
+        <format>yyyyMM</format>
     </dateConfig>
     <!--  configure data Set naming convention. 
           This covers a special case where some

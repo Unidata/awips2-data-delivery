@@ -1,5 +1,3 @@
-package com.raytheon.uf.edex.datadelivery.harvester.crawler;
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -19,9 +17,11 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.io.File;
 import java.nio.channels.FileLock;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -30,10 +30,10 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManagerUtils;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
@@ -46,25 +46,35 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 /**
- * Crawl for MetaData
+ * This Crawler finds links that need to be checked for potential metadata to
+ * add to the registry. Uses information from Collections to look for links and
+ * compares them to known links in the crawler_link database to see if they are
+ * new.
  *
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2011    218      dhladky     Initial creation
- * Jun 28, 2012    819      djohnson    Retrieve proxy information,
- *                                      use {@link FileLock}, add logging.
- * Jul 17, 2012    749      djohnson    Break out the use of files to communicate as a strategy.
- * Aug 06, 2012   1022      djohnson    Use ExecutorCommunicationStrategyDecorator.
- * Aug 28, 2012   1022      djohnson    Delete the crawler4j database after each run.
- * Aug 30, 2012   1123      djohnson    Use ThreadFactory that will comply with thread-based logging.
- * Sep 11, 2012   1154      djohnson    Change to create crawl configuration objects,
- *                                      then use them to perform configured crawls that can span days.
- * Oct 2, 2012    1038      dhladky     redesigned
- * 6/18/2014    1712        bphillip    Updated Proxy configuration
- * Jul 12, 2017   6178      tgurney     Updates for database-based link storage
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2011  218      dhladky   Initial creation
+ * Jun 28, 2012  819      djohnson  Retrieve proxy information, use {@link
+ *                                  FileLock}, add logging.
+ * Jul 17, 2012  749      djohnson  Break out the use of files to communicate as
+ *                                  a strategy.
+ * Aug 06, 2012  1022     djohnson  Use ExecutorCommunicationStrategyDecorator.
+ * Aug 28, 2012  1022     djohnson  Delete the crawler4j database after each
+ *                                  run.
+ * Aug 30, 2012  1123     djohnson  Use ThreadFactory that will comply with
+ *                                  thread-based logging.
+ * Sep 11, 2012  1154     djohnson  Change to create crawl configuration
+ *                                  objects, then use them to perform configured
+ *                                  crawls that can span days.
+ * Oct 02, 2012  1038     dhladky   redesigned
+ * Jun 18, 2014  1712     bphillip  Updated Proxy configuration
+ * Jul 12, 2017  6178     tgurney   Updates for database-based link storage
+ * Oct 04, 2017  6465     tjensen   Refactor dates to crawl.
+ *
  * </pre>
  *
  * @author dhladky
@@ -174,17 +184,16 @@ public class MainSequenceCrawler extends Crawler {
         Runnable runWithinLock = () -> {
             statusHandler.info("~~~~~~~~~~~~~~~~~" + providerName
                     + " Main Sequence Crawler~~~~~~~~~~~~~~~~~~~");
-            MainSequenceCrawler crawl = new MainSequenceCrawler(config);
-            crawl.setAgent((CrawlAgent) config.getAgent());
-            crawl.setProviderName(providerName);
+            MainSequenceCrawler crawl = new MainSequenceCrawler(config,
+                    providerName);
             crawl.crawl();
         };
 
         runIfLockCanBeAcquired(runWithinLock, providerName + "-main");
     }
 
-    public MainSequenceCrawler(HarvesterConfig config) {
-        super(config);
+    public MainSequenceCrawler(HarvesterConfig config, String providerName) {
+        super(config, providerName);
     }
 
     /**
@@ -195,7 +204,6 @@ public class MainSequenceCrawler extends Crawler {
      */
     @Override
     public void crawl() {
-
         final List<ModelCrawlConfiguration> modelConfigurations = createModelCrawlConfigurations();
         boolean autoTrigger = false;
 
@@ -226,16 +234,11 @@ public class MainSequenceCrawler extends Crawler {
     public List<ModelCrawlConfiguration> createModelCrawlConfigurations() {
         // The collection of configuration objects
         List<ModelCrawlConfiguration> modelConfigurations = new ArrayList<>();
-
-        final CrawlAgent agent = (CrawlAgent) hconfig.getAgent();
         final Provider provider = hconfig.getProvider();
-        final String providerName = provider.getName();
-        List<Collection> collections = agent.getCollection();
 
         if (collections != null && !collections.isEmpty()) {
-            final Date nonDateCollection = new ImmutableDate(0);
 
-            for (Collection coll : collections) {
+            for (Collection coll : collections.values()) {
                 // only process one's that are set to not be ignored
                 if (!coll.isIgnore()) {
                     List<Date> datesToCrawl = new ArrayList<>();
@@ -244,9 +247,10 @@ public class MainSequenceCrawler extends Crawler {
                             .getPostedFileDelay().getMillis();
 
                     if (postedFileDelayMilliseconds > 0) {
-                        // Check whether the posted file delay would place us in
-                        // a
-                        // new date
+                        /*
+                         * Check whether the posted file delay would place us in
+                         * a new date
+                         */
                         Date delayedDate = new ImmutableDate(
                                 date.getTime() - postedFileDelayMilliseconds);
 
@@ -262,26 +266,38 @@ public class MainSequenceCrawler extends Crawler {
                         }
                     }
 
-                    if (coll.getFirstDate() != null
-                            && coll.getLastDate() != null) {
-                        // adds the most recent day
-                        datesToCrawl.add(date);
+                    // adds the most recent day
+                    datesToCrawl.add(date);
 
-                        // adds the last day according to seed scanning
-                        datesToCrawl.add(coll.getLastDateAsDate());
-                    } else {
-                        // not a collection based on dates, crawl it always
-                        datesToCrawl.add(nonDateCollection);
+                    // Check if we need to add specific days.
+                    try {
+                        List<Date> specificDates = coll.getDatesAsDates();
+                        if (specificDates != null && !specificDates.isEmpty()) {
+                            for (Date sdate : specificDates) {
+                                datesToCrawl.add(sdate);
+                            }
+                            /*
+                             * Now that we've added the dates to be crawled
+                             * once, remove them from the XML to not crawl them
+                             * again.
+                             */
+                            coll.setDates(null);
+                            List<Collection> newCollections = new ArrayList<>(
+                                    2);
+                            newCollections.add(coll);
+                            LookupManagerUtils.writeCollectionUpdates(
+                                    providerName, newCollections);
+                        }
+                    } catch (ParseException e) {
+                        statusHandler.error("Error parsing specific dates for "
+                                + coll.getName() + ". Skipping specific dates.",
+                                e);
                     }
 
                     // sort/dup elim by format string
                     SortedSet<String> urlDates = new TreeSet<>();
                     for (Date dateToCrawl : datesToCrawl) {
-                        if (dateToCrawl.equals(nonDateCollection)) {
-                            urlDates.add("");
-                        } else {
-                            urlDates.add(coll.getUrlDate(dateToCrawl));
-                        }
+                        urlDates.add(coll.getUrlDate(dateToCrawl));
                     }
 
                     for (String urlDate : urlDates) {
@@ -329,7 +345,6 @@ public class MainSequenceCrawler extends Crawler {
     @VisibleForTesting
     private void performCrawls(List<ModelCrawlConfiguration> configurations) {
         CrawlConfig config = getCrawlConfig();
-        CrawlAgent agent = (CrawlAgent) hconfig.getAgent();
         final int totalCount = configurations.size();
 
         for (int i = 0; i < totalCount; i++) {
@@ -392,5 +407,33 @@ public class MainSequenceCrawler extends Crawler {
             crawlcontroller.Shutdown();
             crawlerLinkDao.createLinks(links);
         }
+    }
+
+    /**
+     * Get the model configuration.
+     *
+     * @param pmodelName
+     *            the primary? model name
+     * @param providerUrl
+     *            the provider's url
+     * @param dateFrag
+     *            the date fragment
+     * @param date
+     * @return the model configuration
+     */
+    public static ModelCrawlConfiguration getModelConfiguration(
+            String providerName, Collection collection, String providerUrl,
+            String dateFrag, Date date, String searchKey, int politenessDelay) {
+
+        String searchUrl = getUrl(providerUrl + collection.getSeedUrl(),
+                collection.getUrlKey());
+
+        if (!"".equals(dateFrag)) {
+            searchUrl = searchUrl + dateFrag + '/';
+        }
+
+        return new ModelCrawlConfiguration(providerName, collection.getName(),
+                collection.getName(), searchUrl, dateFrag, date, searchKey,
+                politenessDelay);
     }
 }

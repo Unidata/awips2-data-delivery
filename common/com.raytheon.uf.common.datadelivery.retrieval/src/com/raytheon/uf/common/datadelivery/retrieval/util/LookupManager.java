@@ -19,9 +19,7 @@
  **/
 package com.raytheon.uf.common.datadelivery.retrieval.util;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,8 +33,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 
-import javax.xml.bind.JAXBException;
-
+import com.raytheon.uf.common.datadelivery.registry.Collection;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.CollectionList;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfoMap;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
@@ -52,21 +50,18 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterRegexes;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.SaveableOutputStream;
-import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.CollectionUtil;
-import com.raytheon.uf.common.util.ServiceLoaderUtil;
 
 /**
- * Lookup table manager
+ * Manages information stored in lookup configuration files. This information is
+ * typically not specific to a single class, so is stored here for more general
+ * use.
  *
  * <pre>
  *
@@ -90,6 +85,8 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  * Apr 05, 2017  1045     tjensen   Updated for DataSetConfigInfo
  * May 10, 2017  6135     nabowle   Remove UnitLookup in favor of UnitMapper.
  * May 10, 2017  6130     tjensen   Updated for DataSetVersionInfo
+ * Oct 04, 2017  6465     tjensen   Add CollectionLists. Refactor localization
+ *                                  file retrieval.
  *
  * </pre>
  *
@@ -97,75 +94,11 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  */
 public class LookupManager {
 
-    /**
-     * Implementation of the xml writers that writes to localization files.
-     */
-    private class LocalizationXmlWriter {
-
-        /**
-         * Writes the level lookup to XML
-         *
-         * @param ll
-         * @param modelName
-         * @throws Exception
-         */
-        public void writeLevelXml(LevelLookup ll, String modelName)
-                throws Exception {
-            IPathManager pm = PathManagerFactory.getPathManager();
-            LocalizationContext lc = pm.getContext(
-                    LocalizationType.COMMON_STATIC, LocalizationLevel.SITE);
-            String fileName = getLevelFileName(modelName);
-            ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
-            try (SaveableOutputStream sos = lf.openOutputStream()) {
-                getJaxbManager().marshalToStream(ll, sos);
-                sos.save();
-            }
-        }
-
-        /**
-         * Writes the DataSetInformation lookup to XML
-         *
-         * @param aol
-         * @param modelName
-         * @throws Exception
-         */
-        public void writeDataSetInformationXml(DataSetInformationLookup dsi)
-                throws Exception {
-            IPathManager pm = PathManagerFactory.getPathManager();
-            LocalizationContext lc = pm.getContext(
-                    LocalizationType.COMMON_STATIC, LocalizationLevel.SITE);
-            String fileName = getDataSetInformationFileName();
-            ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
-            try (SaveableOutputStream sos = lf.openOutputStream()) {
-                getJaxbManager().marshalToStream(dsi, sos);
-                sos.save();
-            }
-        }
-    }
-
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(LookupManager.class);
 
     /** Singleton instance of this class */
     private static final LookupManager instance = new LookupManager();
-
-    /** Path to Lookup tables. */
-    private static final String CONFIG_FILE_ROOT = "datadelivery"
-            + File.separatorChar + "lookups" + File.separatorChar;
-
-    private static final String CONFIG_FILE_PARAM = "ParameterLookup.xml";
-
-    private static final String CONFIG_FILE_REGEX = "ParameterRegexes.xml";
-
-    private static final String CONFIG_FILE_DATASETCONFIG = "DataSetConfigInfo.xml";
-
-    private static final String CONFIG_FILE_DATASETINFO = "DataSetInformationLookup.xml";
-
-    private static final String CONFIG_FILE_LEVEL = "LevelLookup.xml";
-
-    public static final String UNIT_MAPPER_NAMESPACE = "datadelivery";
-
-    private static final String CONFIG_FILE_DATASETVERSION = "DataSetVersionInfo.xml";
 
     /**
      * Get an instance of this singleton.
@@ -189,18 +122,19 @@ public class LookupManager {
     private Map<String, ParameterLevelRegex> paramLevelRegexes = new LinkedHashMap<>(
             2);
 
+    private final Map<String, Map<String, Collection>> collectionMap = new LinkedHashMap<>(
+            2);
+
     private final Map<String, LevelLookup> levels = new HashMap<>(2);
 
     private Map<String, DataSetInformation> dataSetInformations = new HashMap<>(
             2);
 
-    private final LocalizationXmlWriter localizationXmlWriter = ServiceLoaderUtil
-            .load(LookupManager.class, LocalizationXmlWriter.class,
-                    new LocalizationXmlWriter());
-
     private Date regexFileTime;
 
     private Date paramFileTime;
+
+    private final Map<String, Date> collectionFileTimes = new HashMap<>(2);
 
     private final Map<String, Map<String, DataSetConfigInfo>> dataSetConfigInfos = new HashMap<>(
             2);
@@ -208,33 +142,9 @@ public class LookupManager {
     private final Map<String, Map<String, DataSetVersionInfo>> dataSetVersionInfos = new HashMap<>(
             2);
 
-    private static JAXBManager jaxb;
-
-    private static synchronized JAXBManager getJaxbManager()
-            throws JAXBException {
-        if (jaxb == null) {
-            jaxb = new JAXBManager(LevelLookup.class, ParameterLookup.class,
-                    ParameterRegexes.class, DataSetInformationLookup.class,
-                    DataSetInformation.class, DataSetConfigInfoMap.class,
-                    DataSetVersionInfoMap.class);
-        }
-
-        return jaxb;
-    }
-
     /* Private Constructor */
     private LookupManager() {
 
-    }
-
-    /**
-     * Level file name
-     *
-     * @param modelName
-     * @return
-     */
-    private static String getLevelFileName(String modelName) {
-        return CONFIG_FILE_ROOT + modelName + CONFIG_FILE_LEVEL;
     }
 
     /**
@@ -250,66 +160,11 @@ public class LookupManager {
             modelLevels = levels.get(modelName);
         } else {
 
-            modelLevels = getLevelsFromFile(modelName);
+            modelLevels = LookupManagerUtils.getLevelsFromFile(modelName);
             levels.put(modelName, modelLevels);
         }
 
         return modelLevels;
-    }
-
-    private static LevelLookup getLevelsFromFile(String modelName) {
-        LevelLookup levelLoookup = null;
-        ILocalizationFile file = null;
-        String fileName = getLevelFileName(modelName);
-
-        try {
-            file = getLocalizationFile(fileName);
-        } catch (Exception e) {
-            statusHandler.error(" Failed to Level Lookup table: " + fileName,
-                    e);
-        }
-
-        if (file != null) {
-            try {
-                levelLoookup = readLevelXml(file);
-            } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Failed to Read Level Lookup from file: "
-                                + file.getPath(),
-                        e);
-            }
-        }
-
-        return levelLoookup;
-    }
-
-    /**
-     * Gets the localized file
-     *
-     * @param fileName
-     * @return
-     */
-    private static ILocalizationFile getLocalizationFile(String fileName) {
-        ILocalizationFile lf = null;
-        Map<LocalizationLevel, LocalizationFile> files = getLocalizationFiles(
-                fileName);
-
-        if (files.containsKey(LocalizationLevel.SITE)) {
-            lf = files.get(LocalizationLevel.SITE);
-        } else {
-            lf = files.get(LocalizationLevel.BASE);
-        }
-
-        return lf;
-    }
-
-    private static Map<LocalizationLevel, LocalizationFile> getLocalizationFiles(
-            String fileName) {
-        IPathManager pm = PathManagerFactory.getPathManager();
-        Map<LocalizationLevel, LocalizationFile> files = pm
-                .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
-                        fileName);
-        return files;
     }
 
     /**
@@ -320,10 +175,11 @@ public class LookupManager {
     @SuppressWarnings("unchecked")
     public void loadParameterRegexes() {
         ILocalizationFile file = null;
-        String fileName = getRegexFileName();
+        String fileName = LookupManagerUtils.getRegexFileName();
 
         try {
-            file = getLocalizationFile(fileName);
+            IPathManager pm = PathManagerFactory.getPathManager();
+            file = pm.getStaticLocalizationFile(fileName);
         } catch (Exception e) {
             statusHandler.error(
                     " Failed to find Parameter Lookup table: " + fileName, e);
@@ -338,25 +194,21 @@ public class LookupManager {
                 if (paramNameRegexes.isEmpty()
                         || !file.getTimeStamp().equals(regexFileTime)) {
                     ParameterRegexes tmpRegex = null;
-                    Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
-                            fileName);
+                    Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
+                            .getLocalizationFiles(fileName);
 
-                    // TODO: Come back to and model after PDAMetaDataUtil that
-                    // uses a SortedMap for auto iteration order
                     Map<String, ParameterNameRegex> newParamNameRegexes = new LinkedHashMap<>(
                             2);
                     Map<String, ParameterLevelRegex> newParamLevelRegexes = new LinkedHashMap<>(
                             2);
 
-                    for (LocalizationLevel locLevel : new LocalizationLevel[] {
-                            LocalizationLevel.BASE, LocalizationLevel.SITE }) {
-                        if (locFiles.containsKey(locLevel)) {
-                            tmpRegex = readParameterRegexes(
-                                    locFiles.get(locLevel));
-                            populateParameterRegexes(tmpRegex,
-                                    newParamNameRegexes, newParamLevelRegexes);
-                        }
+                    for (LocalizationFile locfile : locFiles.values()) {
+                        tmpRegex = LookupManagerUtils
+                                .readParameterRegexes(locfile);
+                        LookupManagerUtils.populateParameterRegexes(tmpRegex,
+                                newParamNameRegexes, newParamLevelRegexes);
                     }
+
                     paramNameRegexes = sortByValue(newParamNameRegexes);
                     paramLevelRegexes = sortByValue(newParamLevelRegexes);
                     regexFileTime = file.getTimeStamp();
@@ -370,7 +222,7 @@ public class LookupManager {
         }
     }
 
-    public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(
+    public <K, V extends Comparable<? super V>> Map<K, V> sortByValue(
             Map<K, V> map) {
         List<Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
         Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
@@ -387,17 +239,6 @@ public class LookupManager {
         return result;
     }
 
-    private static void populateParameterRegexes(ParameterRegexes tmpRegex,
-            Map<String, ParameterNameRegex> newParamNameRegexes,
-            Map<String, ParameterLevelRegex> newParamLevelRegexes) {
-        for (ParameterNameRegex nameRegex : tmpRegex.getNameRegexes()) {
-            newParamNameRegexes.put(nameRegex.getId(), nameRegex);
-        }
-        for (ParameterLevelRegex levelRegex : tmpRegex.getLevelRegexes()) {
-            newParamLevelRegexes.put(levelRegex.getId(), levelRegex);
-        }
-    }
-
     public Map<String, ParameterNameRegex> getParamNameRegexes() {
         loadParameterRegexes();
         return paramNameRegexes;
@@ -410,10 +251,11 @@ public class LookupManager {
 
     private void loadParameters() {
         ILocalizationFile file = null;
-        String fileName = getParamFileName();
+        String fileName = LookupManagerUtils.getParamFileName();
 
         try {
-            file = getLocalizationFile(fileName);
+            IPathManager pm = PathManagerFactory.getPathManager();
+            file = pm.getStaticLocalizationFile(fileName);
         } catch (Exception e) {
             statusHandler
                     .error(" Failed to Parameter Lookup table: " + fileName, e);
@@ -465,12 +307,13 @@ public class LookupManager {
 
         Map<String, Map<String, ParameterMapping>> newDataSetParameters = new HashMap<>(
                 2);
-        Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
-                fileName);
+        Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
+                .getLocalizationFiles(fileName);
         for (LocalizationLevel locLevel : new LocalizationLevel[] {
                 LocalizationLevel.BASE, LocalizationLevel.SITE }) {
             if (locFiles.containsKey(locLevel)) {
-                tmpLookup = readParameterXml(locFiles.get(locLevel));
+                tmpLookup = LookupManagerUtils
+                        .readParameterXml(locFiles.get(locLevel));
                 for (ParameterMapping mapping : tmpLookup
                         .getParameterMappings()) {
                     List<String> dataSets = mapping.getDataSets();
@@ -509,21 +352,20 @@ public class LookupManager {
             try {
                 Map<String, DataSetInformation> newDSI = new HashMap<>(2);
                 DataSetInformationLookup tmpSetInformationLookup = null;
-                String fileName = getDataSetInformationFileName();
-                Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
-                        fileName);
+                String fileName = LookupManagerUtils
+                        .getDataSetInformationFileName();
+                Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
+                        .getLocalizationFiles(fileName);
 
-                for (LocalizationLevel locLevel : new LocalizationLevel[] {
-                        LocalizationLevel.BASE, LocalizationLevel.SITE }) {
-                    if (locFiles.containsKey(locLevel)) {
-                        tmpSetInformationLookup = readDataSetInformationXml(
-                                locFiles.get(locLevel));
-                        for (DataSetInformation dataSetinfo : tmpSetInformationLookup
-                                .getDataSetInformations()) {
-                            newDSI.put(dataSetinfo.getModelName(), dataSetinfo);
-                        }
+                for (LocalizationFile locfile : locFiles.values()) {
+                    tmpSetInformationLookup = LookupManagerUtils
+                            .readDataSetInformationXml(locfile);
+                    for (DataSetInformation dataSetinfo : tmpSetInformationLookup
+                            .getDataSetInformations()) {
+                        newDSI.put(dataSetinfo.getModelName(), dataSetinfo);
                     }
                 }
+
                 dataSetInformations = newDSI;
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
@@ -536,85 +378,6 @@ public class LookupManager {
         }
 
         return dsi;
-    }
-
-    private static DataSetInformationLookup getDataSetInformationLookupFromFile() {
-        DataSetInformationLookup dataSetInformationLookup = null;
-        ILocalizationFile file = null;
-        String fileName = getDataSetInformationFileName();
-
-        try {
-            file = getLocalizationFile(fileName);
-        } catch (Exception e) {
-            statusHandler.error(
-                    " Failed to read Data Set Information Lookup: " + fileName,
-                    e);
-        }
-
-        if (file != null) {
-            try {
-                dataSetInformationLookup = readDataSetInformationXml(file);
-            } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Failed to Read Data Set Information Lookup from file: "
-                                + file.getPath(),
-                        e);
-            }
-        }
-
-        return dataSetInformationLookup;
-    }
-
-    /**
-     * Availability Offset file name
-     *
-     * @param modelName
-     * @return
-     */
-    private static String getDataSetInformationFileName() {
-        return CONFIG_FILE_ROOT + CONFIG_FILE_DATASETINFO;
-    }
-
-    /**
-     * Read Data Set Information lookup
-     *
-     * @param file
-     * @return
-     * @throws Exception
-     */
-    private static DataSetInformationLookup readDataSetInformationXml(
-            ILocalizationFile file) throws Exception {
-        DataSetInformationLookup dsi = null;
-
-        if (file != null && file.exists()) {
-            try (InputStream is = file.openInputStream()) {
-                dsi = (DataSetInformationLookup) getJaxbManager()
-                        .unmarshalFromInputStream(is);
-            }
-        }
-
-        return dsi;
-    }
-
-    /**
-     * Read Data Set Information lookup
-     *
-     * @param file
-     * @return
-     * @throws Exception
-     */
-    private static DataSetConfigInfoMap readDataSetConfigInfoXml(
-            ILocalizationFile file) throws Exception {
-        DataSetConfigInfoMap dscim = null;
-
-        if (file != null && file.exists()) {
-            try (InputStream is = file.openInputStream()) {
-                dscim = (DataSetConfigInfoMap) getJaxbManager()
-                        .unmarshalFromInputStream(is);
-            }
-        }
-
-        return dscim;
     }
 
     /**
@@ -630,7 +393,8 @@ public class LookupManager {
             synchronized (dataSetInformations) {
 
                 dataSetInformations.put(dsi.getModelName(), dsi);
-                dataSetInformationLookup = getDataSetInformationLookupFromFile();
+                dataSetInformationLookup = LookupManagerUtils
+                        .getDataSetInformationLookupFromFile();
 
                 if (dataSetInformationLookup == null) {
                     dataSetInformationLookup = new DataSetInformationLookup();
@@ -651,7 +415,7 @@ public class LookupManager {
                 }
             }
 
-            localizationXmlWriter
+            LookupManagerUtils
                     .writeDataSetInformationXml(dataSetInformationLookup);
 
             statusHandler.info("Updated/Created Data Set Information lookup! "
@@ -661,73 +425,6 @@ public class LookupManager {
             statusHandler.error(
                     "Couldn't create/update Data Set Information lookup! ", e);
         }
-    }
-
-    /**
-     * Does a availability offset lookup exist?
-     *
-     * @return
-     */
-    public static boolean dataSetInformationLookupExists() {
-        ILocalizationFile file = null;
-        String fileName = getDataSetInformationFileName();
-        try {
-            file = getLocalizationFile(fileName);
-        } catch (Exception fnfe) {
-            statusHandler
-                    .error("Failed to lookup Data Set Information localization file: "
-                            + fileName, fnfe);
-        }
-        if (file != null) {
-            return file.exists();
-        }
-
-        return false;
-    }
-
-    /**
-     * param file name
-     *
-     * @param modelName
-     * @return
-     */
-    public static String getParamFileName() {
-        return CONFIG_FILE_ROOT + CONFIG_FILE_PARAM;
-    }
-
-    /**
-     * regex file name
-     *
-     * @param modelName
-     * @return
-     */
-    private static String getRegexFileName() {
-        return CONFIG_FILE_ROOT + CONFIG_FILE_REGEX;
-    }
-
-    /**
-     * Does a a particular lookup exist?
-     *
-     * @param modelName
-     * @return
-     */
-    public static boolean levelLookupExists(String modelName) {
-        ILocalizationFile file = null;
-        String fileName = getLevelFileName(modelName);
-
-        try {
-            file = getLocalizationFile(fileName);
-        } catch (Exception fnfe) {
-            statusHandler
-                    .error("Failed to lookup Level Lookup localization file: "
-                            + fileName, fnfe);
-        }
-
-        if (file != null) {
-            return file.exists();
-        }
-
-        return false;
     }
 
     /**
@@ -748,8 +445,8 @@ public class LookupManager {
 
         LevelLookup ll = null;
 
-        if (levelLookupExists(modelName)) {
-            ll = getLevelsFromFile(modelName);
+        if (LookupManagerUtils.levelLookupExists(modelName)) {
+            ll = LookupManagerUtils.getLevelsFromFile(modelName);
             if (ll.getLevelXml() != null) {
                 levs = ll.getLevelXml();
             }
@@ -788,73 +485,10 @@ public class LookupManager {
             }
         }
 
-        localizationXmlWriter.writeLevelXml(ll, modelName);
+        LookupManagerUtils.writeLevelXml(ll, modelName);
 
         levels.put(modelName, ll);
         statusHandler.info("Updated/Created level lookup! " + modelName);
-    }
-
-    /**
-     * Read levels out of file
-     *
-     * @param file
-     * @return
-     * @throws Exception
-     */
-    private static LevelLookup readLevelXml(ILocalizationFile file)
-            throws Exception {
-        LevelLookup levelXml = null;
-
-        if (file != null && file.exists()) {
-            try (InputStream is = file.openInputStream()) {
-                levelXml = (LevelLookup) getJaxbManager()
-                        .unmarshalFromInputStream(is);
-            }
-        }
-
-        return levelXml;
-    }
-
-    /**
-     * Read parameter lookup
-     *
-     * @param file
-     * @return
-     * @throws Exception
-     */
-    private static ParameterLookup readParameterXml(ILocalizationFile file)
-            throws Exception {
-        ParameterLookup paramXml = null;
-
-        if (file != null && file.exists()) {
-            try (InputStream is = file.openInputStream()) {
-                paramXml = (ParameterLookup) getJaxbManager()
-                        .unmarshalFromInputStream(is);
-            }
-        }
-
-        return paramXml;
-    }
-
-    /**
-     * Read parameter regexes
-     *
-     * @param file
-     * @return
-     * @throws Exception
-     */
-    private static ParameterRegexes readParameterRegexes(ILocalizationFile file)
-            throws Exception {
-        ParameterRegexes regexXml = null;
-
-        if (file != null && file.exists()) {
-            try (InputStream is = file.openInputStream()) {
-                regexXml = (ParameterRegexes) getJaxbManager()
-                        .unmarshalFromInputStream(is);
-            }
-        }
-
-        return regexXml;
     }
 
     public DataSetConfigInfo getDataSetConfigInfo(String dataSetName,
@@ -867,29 +501,27 @@ public class LookupManager {
             try {
                 Map<String, DataSetConfigInfo> newDSCI = new HashMap<>(2);
                 DataSetConfigInfoMap tmpSetConfigInfoMap = null;
-                String fileName = getDataSetConfigInfoFileName(providerName);
-                Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
-                        fileName);
+                String fileName = LookupManagerUtils
+                        .getDataSetConfigInfoFileName(providerName);
+                Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
+                        .getLocalizationFiles(fileName);
 
-                for (LocalizationLevel locLevel : new LocalizationLevel[] {
-                        LocalizationLevel.BASE, LocalizationLevel.SITE }) {
-                    if (locFiles.containsKey(locLevel)) {
-                        tmpSetConfigInfoMap = readDataSetConfigInfoXml(
-                                locFiles.get(locLevel));
-                        if (tmpSetConfigInfoMap != null
-                                && tmpSetConfigInfoMap
-                                        .getDataSetConfigInfoList() != null
-                                && !tmpSetConfigInfoMap
-                                        .getDataSetConfigInfoList().isEmpty()) {
-                            for (DataSetConfigInfo dataSetConfigInfo : tmpSetConfigInfoMap
-                                    .getDataSetConfigInfoList()) {
-                                newDSCI.put(
-                                        dataSetConfigInfo.getDataSetNameRegex(),
-                                        dataSetConfigInfo);
-                            }
+                for (LocalizationFile locfile : locFiles.values()) {
+                    tmpSetConfigInfoMap = LookupManagerUtils
+                            .readDataSetConfigInfoXml(locfile);
+                    if (tmpSetConfigInfoMap != null
+                            && tmpSetConfigInfoMap
+                                    .getDataSetConfigInfoList() != null
+                            && !tmpSetConfigInfoMap.getDataSetConfigInfoList()
+                                    .isEmpty()) {
+                        for (DataSetConfigInfo dataSetConfigInfo : tmpSetConfigInfoMap
+                                .getDataSetConfigInfoList()) {
+                            newDSCI.put(dataSetConfigInfo.getDataSetNameRegex(),
+                                    dataSetConfigInfo);
                         }
                     }
                 }
+
                 dataSetConfigInfos.put(providerName, newDSCI);
                 providerMap = newDSCI;
             } catch (Exception e) {
@@ -912,37 +544,6 @@ public class LookupManager {
         return dsci;
     }
 
-    private static String getDataSetConfigInfoFileName(String providerName) {
-        return CONFIG_FILE_ROOT + providerName + "_"
-                + CONFIG_FILE_DATASETCONFIG;
-    }
-
-    /**
-     * Read Data Set Version Info
-     *
-     * @param file
-     * @return
-     * @throws Exception
-     */
-    private static DataSetVersionInfoMap readDataSetVersionInfoXml(
-            ILocalizationFile file) throws Exception {
-        DataSetVersionInfoMap dscim = null;
-
-        if (file != null && file.exists()) {
-            try (InputStream is = file.openInputStream()) {
-                dscim = (DataSetVersionInfoMap) getJaxbManager()
-                        .unmarshalFromInputStream(is);
-            }
-        }
-
-        return dscim;
-    }
-
-    private static String getDataSetVersionInfoFileName(String providerName) {
-        return CONFIG_FILE_ROOT + providerName + "_"
-                + CONFIG_FILE_DATASETVERSION;
-    }
-
     public DataSetVersionInfo getDataSetVersionInfo(String dataSetName,
             String providerName) throws IOException {
         DataSetVersionInfo dsvi = null;
@@ -953,32 +554,29 @@ public class LookupManager {
             try {
                 Map<String, DataSetVersionInfo> newDSVI = new HashMap<>(2);
                 DataSetVersionInfoMap tmpSetVersionInfoMap = null;
-                String fileName = getDataSetVersionInfoFileName(providerName);
-                Map<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
-                        fileName);
+                String fileName = LookupManagerUtils
+                        .getDataSetVersionInfoFileName(providerName);
+                Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
+                        .getLocalizationFiles(fileName);
 
-                for (LocalizationLevel locLevel : new LocalizationLevel[] {
-                        LocalizationLevel.BASE, LocalizationLevel.SITE }) {
-                    if (locFiles.containsKey(locLevel)) {
-                        tmpSetVersionInfoMap = readDataSetVersionInfoXml(
-                                locFiles.get(locLevel));
-                        String validateErrors = tmpSetVersionInfoMap.validate();
-                        if ("".equals(validateErrors)) {
-                            for (DataSetVersionInfo dataSetVersionInfo : tmpSetVersionInfoMap
-                                    .getDsviList()) {
+                for (LocalizationFile locfile : locFiles.values()) {
+                    tmpSetVersionInfoMap = LookupManagerUtils
+                            .readDataSetVersionInfoXml(locfile);
+                    String validateErrors = tmpSetVersionInfoMap.validate();
+                    if ("".equals(validateErrors)) {
+                        for (DataSetVersionInfo dataSetVersionInfo : tmpSetVersionInfoMap
+                                .getDsviList()) {
 
-                                newDSVI.put(dataSetVersionInfo.getId(),
-                                        dataSetVersionInfo);
-                            }
-                        } else {
-                            throw new ParseException(
-                                    "Errors detected in file '" + fileName
-                                            + "' at localization level '"
-                                            + locLevel + "': " + validateErrors,
-                                    0);
+                            newDSVI.put(dataSetVersionInfo.getId(),
+                                    dataSetVersionInfo);
                         }
+                    } else {
+                        throw new ParseException("Errors detected in file '"
+                                + locfile.getPath() + "': " + validateErrors,
+                                0);
                     }
                 }
+
                 dataSetVersionInfos.put(providerName, newDSVI);
                 providerMap = newDSVI;
             } catch (Exception e) {
@@ -994,19 +592,79 @@ public class LookupManager {
          * multiple valid matches, the first version info that matches will be
          * used.
          */
-        if (providerMap != null) {
-            for (DataSetVersionInfo tmpDsci : providerMap.values()) {
-                DataSetNamePattern dataSetNamePattern = tmpDsci
-                        .getDataSetNamePattern();
+        for (DataSetVersionInfo tmpDsci : providerMap.values()) {
+            DataSetNamePattern dataSetNamePattern = tmpDsci
+                    .getDataSetNamePattern();
 
-                if (dataSetNamePattern != null
-                        && dataSetNamePattern.checkName(dataSetName)) {
-                    dsvi = tmpDsci;
-                    break;
-                }
+            if (dataSetNamePattern != null
+                    && dataSetNamePattern.checkName(dataSetName)) {
+                dsvi = tmpDsci;
+                break;
             }
         }
 
         return dsvi;
+    }
+
+    public Map<String, Collection> getCollectionsForProvider(
+            String providerName) {
+        loadCollectionMap(providerName);
+        return collectionMap.get(providerName);
+    }
+
+    /**
+     * Gets the Collections Map
+     *
+     * @return
+     */
+    public void loadCollectionMap(String providerName) {
+        ILocalizationFile file = null;
+        String fileName = LookupManagerUtils
+                .getCollectionsFileName(providerName);
+
+        try {
+            IPathManager pm = PathManagerFactory.getPathManager();
+            file = pm.getStaticLocalizationFile(fileName);
+        } catch (Exception e) {
+            statusHandler.error(
+                    " Failed to find Parameter Lookup table: " + fileName, e);
+        }
+
+        if (file != null) {
+            try {
+                /*
+                 * If map for the provider is null or the timestamp on the file
+                 * has changed since we last read it, read the collections from
+                 * the file.
+                 */
+                if (collectionMap.get(providerName) == null
+                        || !file.getTimeStamp().equals(
+                                collectionFileTimes.get(providerName))) {
+                    CollectionList tmpCollections = null;
+                    Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
+                            .getLocalizationFiles(fileName);
+
+                    Map<String, Collection> newCollectionMap = new LinkedHashMap<>(
+                            2);
+
+                    for (LocalizationFile locfile : locFiles.values()) {
+                        tmpCollections = LookupManagerUtils
+                                .readCollectionsXml(locfile);
+                        for (Collection tmpColl : tmpCollections
+                                .getCollectionList()) {
+                            newCollectionMap.put(tmpColl.getName(), tmpColl);
+                        }
+                    }
+
+                    collectionMap.put(providerName, newCollectionMap);
+                    collectionFileTimes.put(providerName, file.getTimeStamp());
+                }
+            } catch (Exception e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Failed to Collection List from file: "
+                                + file.getPath(),
+                        e);
+            }
+        }
     }
 }

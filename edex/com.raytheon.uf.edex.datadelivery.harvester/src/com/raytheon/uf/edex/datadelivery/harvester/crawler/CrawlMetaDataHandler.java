@@ -28,6 +28,7 @@ import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
+import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
@@ -43,7 +44,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapServiceFactory
 import opendap.dap.DAS;
 
 /**
- * Harvest MetaData
+ * Processes links that have been found for known Collections by the crawler and
+ * parses them for metadata to add to the registry.
  *
  * <pre>
  *
@@ -74,6 +76,7 @@ import opendap.dap.DAS;
  * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * Jul 12, 2017  6178     tgurney   Change link storage from file system to database
  * Aug 31, 2017  6430     rjpeter   Added timing information.
+ * Oct 04, 2017  6465     tjensen   Get collections from config file
  *
  * </pre>
  *
@@ -121,8 +124,9 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
             if (hconfigs != null) {
                 HarvesterConfig hc = hconfigs.get(providerName);
                 CrawlAgent agent = (CrawlAgent) hc.getAgent();
-                Collection collection = agent
-                        .getCollectionByName(collectionName);
+                Collection collection = LookupManager.getInstance()
+                        .getCollectionsForProvider(providerName)
+                        .get(collectionName);
 
                 if (collection != null) {
                     Provider provider = hc.getProvider();
@@ -153,9 +157,9 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                              */
                             removes.add(link);
                         }
-                        crawlerLinks.removeAll(removes);
-                        crawlerLinkDao.setAllProcessed(removes);
                     }
+                    crawlerLinks.removeAll(removes);
+                    crawlerLinkDao.setAllProcessed(removes);
 
                     if (!crawlerLinks.isEmpty()) {
                         // now start parsing the metadata objects
