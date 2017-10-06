@@ -19,9 +19,9 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -45,6 +46,7 @@ import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
+import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.PDADataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
@@ -87,6 +89,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Aug 02, 2017  6186     rjpeter   Removed setting of url.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Sep 27, 2017  5948     tjensen   Added saving to and loading from subset xml
+ * Oct 13, 2017  6461     tgurney   Allow creating queries with a time range
  *
  * </pre>
  *
@@ -100,17 +103,11 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
     private static final String TIMING_TAB_TEXT = "Retrieval Times";
 
-    private static final String NO_DATA_FOR_DATE = "No data is available for the specified time.";
-
     /** Point data size utility */
     private PDADataSizeUtils dataSize;
 
     /** The point subset tab */
     private PDATimingSubsetTab timingTabControls;
-
-    private final DateFormat dateFormat;
-
-    private DataSetMetaData metaData;
 
     /**
      * Constructor.
@@ -126,7 +123,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     public PDASubsetManagerDlg(Shell shell, boolean loadDataSet,
             Subscription subscription) {
         super(shell, loadDataSet, subscription);
-        dateFormat = createDateFormatter();
+        this.adhocCallback = new PDACreateAdhocCallback();
         setTitle();
     }
 
@@ -145,9 +142,9 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
     public PDASubsetManagerDlg(Shell shell, PDADataSet dataSet,
             boolean loadDataSet, SubsetXML subsetXml) {
         super(shell, loadDataSet, dataSet);
-        dateFormat = createDateFormatter();
         this.dataSet = dataSet;
         this.subsetXml = subsetXml;
+        this.adhocCallback = new PDACreateAdhocCallback();
         setTitle();
     }
 
@@ -161,8 +158,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      */
     public PDASubsetManagerDlg(Shell shell, PDADataSet dataSet) {
         super(shell, dataSet);
-        dateFormat = createDateFormatter();
         this.dataSet = dataSet;
+        this.adhocCallback = new PDACreateAdhocCallback();
         setTitle();
     }
 
@@ -230,85 +227,127 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
                 + SizeUtil.prettyByteSize(dataSize.getFullSizeInBytes()));
     }
 
-    @SuppressWarnings({ "rawtypes" })
-    @Override
-    protected Time setupDataSpecificTime(Time newTime, Subscription sub) {
-        if (sub instanceof AdhocSubscription) {
-            return handleAdhocDataSpecificTime(sub);
+    /**
+     * @return Only the metadatas that satisfy the subscription. If the
+     *         subscription is null then get all metadatas in the subset
+     */
+    private List<PDADataSetMetaData> getFilteredMetaDatas(Subscription sub) {
+        List<DataSetMetaData> metaDatas = null;
+        try {
+            metaDatas = DataDeliveryHandlers.getDataSetMetaDataHandler()
+                    .getDataSetMetaDataByIntersection(dataSet.getDataSetName(),
+                            dataSet.getProviderName(),
+                            dataSet.getCoverage().getEnvelope(), 0);
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error when retrieving metadata for dataset "
+                            + dataSet.getDataSetName(),
+                    e);
+            return Collections.emptyList();
         }
 
-        return handleRecurringDataSpecificTime(sub);
+        List<PDADataSetMetaData> filteredMetaDatas;
+        if (sub != null) {
+            filteredMetaDatas = metaDatas.stream()
+                    .map(m -> (PDADataSetMetaData) m).filter(m -> {
+                        try {
+                            return m.satisfiesSubscription(sub) == null;
+                        } catch (Exception e) {
+                            statusHandler.handle(Priority.PROBLEM,
+                                    "Failed to check metadata "
+                                            + m.getMetaDataID()
+                                            + " against subscription "
+                                            + sub.getName(),
+                                    e);
+                            return false;
+                        }
+                    }).collect(Collectors.toList());
+        } else {
+            filteredMetaDatas = metaDatas.stream()
+                    .map(m -> (PDADataSetMetaData) m)
+                    .collect(Collectors.toList());
+        }
+        return filteredMetaDatas;
     }
 
-    protected Time handleAdhocDataSpecificTime(Subscription sub) {
+    @SuppressWarnings({ "rawtypes" })
+    @Override
+    protected void handleQuery() {
+        if (!validated() || querySubExists()) {
+            return;
+        }
 
-        SortedSet<ImmutableDate> newestToOldest = retrieveDatesForDataSet(sub);
+        AdhocSubscription tmpSub = createSubscription(new AdhocSubscription(),
+                Network.OPSNET);
 
-        if ((newestToOldest == null) || newestToOldest.isEmpty()) {
+        List<PDADataSetMetaData> pdaMetaDatas = getFilteredMetaDatas(tmpSub);
+
+        if (pdaMetaDatas.isEmpty()) {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
-                    "No data is available for this Data Set");
-            return null;
+                    "No data available for this subset.");
+            return;
         }
 
-        List<String> asString = new ArrayList<>(newestToOldest.size());
-        Map<String, ImmutableDate> dateStringToDateMap = new HashMap<>(
-                newestToOldest.size(), 1);
-
-        for (ImmutableDate date : newestToOldest) {
-            String displayString = dateFormat.format(date);
-
-            if (!asString.contains(displayString)) {
-                asString.add(displayString);
-                dateStringToDateMap.put(displayString, date);
-            }
-        }
+        SortedSet<Date> availableDates = pdaMetaDatas.stream()
+                .map(m -> m.getDate())
+                .collect(Collectors.toCollection(TreeSet::new));
 
         PDATimingSelectionDlg dlg = new PDATimingSelectionDlg(getShell(),
-                (PDADataSet) dataSet, sub, asString);
+                availableDates, tmpSub);
 
         PDATimeSelection selection = dlg.openDlg();
 
         if (selection.isCancel()) {
-            return null;
+            return;
         }
 
-        Date selectedDate = dateStringToDateMap.get(selection.getDate());
-        metaData = retrieveFilteredDataSetMetaData(selectedDate);
-        if (metaData == null) {
+        List<Time> times = pdaMetaDatas.stream()
+                .filter(m -> selection.getTimeRange().contains(m.getDate()))
+                .map(m -> m.getTime()).collect(Collectors.toList());
+
+        if (times == null || times.isEmpty()) {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
-                    NO_DATA_FOR_DATE);
-            return null;
+                    "No data were found in the selected time range.");
+            return;
         }
 
-        Time time = metaData.getTime();
+        int result = DataDeliveryUtils.showYesNoMessage(getShell(),
+                "Confirm Query Creation",
+                times.size() + " product(s) found for dataset "
+                        + dataSet.getDataSetName()
+                        + " in specified time range. Continue?");
 
-        if (time == null) {
-            DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
-                    NO_DATA_FOR_DATE);
+        if (result != SWT.YES) {
+            return;
         }
 
-        return time;
+        /*
+         * Subs will be named name-1, name-2, ... Make sure these names are not
+         * already being used
+         */
+        for (int i = 0; i < times.size(); i++) {
+            if (querySubExists(getNameText() + "-" + i)) {
+                return;
+            }
+        }
 
+        for (int i = 0; i < times.size(); i++) {
+            AdhocSubscription as = createSubscription(new AdhocSubscription(),
+                    Network.OPSNET);
+            as.setName(getNameText() + "-" + i);
+            as.setTime(times.get(i));
+            storeQuerySub(as);
+        }
     }
 
-    /**
-     * Return the {@link Time} object that should be associated with this
-     * subscription. It will either be null for a reoccurring subscription, or
-     * the {@link DataSetMetaData} url if an adhoc query is being performed for
-     * a non-latest date.
-     *
-     * @return the url to use
-     */
-    public String getSubscriptionUrl() {
-        return (this.metaData == null) ? null : this.metaData.getUrl();
-    }
-
+    @SuppressWarnings({ "rawtypes" })
     protected Time handleRecurringDataSpecificTime(Subscription sub) {
         Time time = null;
         SortedSet<ImmutableDate> newestToOldest = retrieveDatesForDataSet(sub);
 
         if ((newestToOldest != null) && newestToOldest.isEmpty()) {
-            metaData = retrieveFilteredDataSetMetaData(newestToOldest.first());
+            DataSetMetaData metaData = retrieveFilteredDataSetMetaData(
+                    newestToOldest.first());
             if (metaData != null) {
                 time = metaData.getTime();
             }
@@ -344,16 +383,17 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         cov.setEnvelope(dataSet.getCoverage().getEnvelope());
         setCoverage(sub, cov);
 
-        Time newTime = new Time();
-        newTime = setupDataSpecificTime(newTime, sub);
-        if (newTime == null) {
-            return null;
-        }
-        sub.setTime(newTime);
-
         Map<String, ParameterGroup> selectedParameterObjs = vTab
                 .getParameters();
         sub.setParameterGroups(selectedParameterObjs);
+
+        if (!(sub instanceof AdhocSubscription)) {
+            Time newTime = handleRecurringDataSpecificTime(sub);
+            if (newTime == null) {
+                return null;
+            }
+            sub.setTime(newTime);
+        }
 
         // TODO: OBE after all sites are 18.1.1 or beyond
         List<Parameter> paramList = new ArrayList<>(
@@ -429,9 +469,6 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         updateDataSize();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected TimeXML getDataTimeInfo() {
         return timingTabControls.getSaveInfo();
@@ -463,30 +500,26 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      *
      * @return the Set<ImmutableDate> that apply, or null if none
      */
-    protected SortedSet<ImmutableDate> retrieveDatesForDataSet(
-            Subscription sub) {
-        SortedSet<ImmutableDate> newestToOldest = new TreeSet<>(
-                Ordering.natural().reverse());
-        try {
-            if (dataSet.isMoving() && sub != null) {
-                newestToOldest.addAll(DataDeliveryHandlers
-                        .getDataSetMetaDataHandler()
-                        .getDatesForDataSetByIntersection(
-                                dataSet.getDataSetName(),
-                                dataSet.getProviderName(),
-                                sub.getCoverage().getRequestEnvelope()));
-            } else {
-                newestToOldest
-                        .addAll(DataDeliveryHandlers.getDataSetMetaDataHandler()
-                                .getDatesForDataSet(dataSet.getDataSetName(),
-                                        dataSet.getProviderName()));
-            }
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error retrieving applicable Dates.", e);
+    private SortedSet<ImmutableDate> retrieveDatesForDataSet(Subscription sub) {
+
+        SortedSet<ImmutableDate> rval = null;
+
+        List<PDADataSetMetaData> pdaMetaDatas = getFilteredMetaDatas(sub);
+
+        if (pdaMetaDatas.isEmpty()) {
             return null;
         }
-        return newestToOldest;
+
+        rval = new TreeSet<>(Ordering.natural().reverse());
+        for (PDADataSetMetaData m : pdaMetaDatas) {
+            rval.add(m.getDate());
+        }
+
+        if (rval.isEmpty()) {
+            return null;
+        }
+        return rval;
 
     }
+
 }

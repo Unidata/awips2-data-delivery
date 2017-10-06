@@ -57,7 +57,6 @@ import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
-import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
@@ -74,6 +73,7 @@ import com.raytheon.uf.viz.datadelivery.filter.MetaDataManager;
 import com.raytheon.uf.viz.datadelivery.handlers.VizSubscriptionHandler;
 import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
 import com.raytheon.uf.viz.datadelivery.subscription.CreateSubscriptionDlg;
+import com.raytheon.uf.viz.datadelivery.subscription.CreateSubscriptionDlg.ICreateAdhocCallback;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.ForceApplyPromptResponse;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.IForceApplyPromptDisplayText;
@@ -184,6 +184,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Nov 08, 2016  5976     bsteffen  Use VizApp for GUI execution.
  * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
  * Sep 27, 2017  5948     tjensen   Updated saving to and loading from subset xml
+ * Oct 13, 2017  6461     tgurney   Split up handleQuery()
  * </pre>
  *
  * @author mpduff
@@ -247,6 +248,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     /** The dataset */
     protected DataSet dataSet;
 
+    protected ICreateAdhocCallback adhocCallback;
+
     /**
      * Constructor
      *
@@ -262,6 +265,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         this.loadDataSet = loadDataSet;
         this.dataSet = dataSet;
+        this.adhocCallback = new CreateAdhocCallback();
     }
 
     /**
@@ -298,6 +302,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         this.dataSet = MetaDataManager.getInstance().getDataSet(
                 subscription.getDataSetName(), subscription.getProvider());
         this.subscription = subscription;
+        this.adhocCallback = new CreateAdhocCallback();
         setText(DD_SUBSET_MANAGER + "Edit: " + subscription.getName());
     }
 
@@ -311,12 +316,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     /** Populate the subscription object */
     protected abstract <T extends Subscription> T populateSubscription(T sub,
             boolean create);
-
-    /**
-     * Setup the timing information specific to the data type.
-     */
-    protected abstract Time setupDataSpecificTime(Time newTime,
-            Subscription sub);
 
     /**
      * Get the Time object.
@@ -451,7 +450,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         subscribeBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-
                 /*
                  * Need to disable the Subscription button as it takes time to
                  * do all of the validation. Once the subscription dialog
@@ -531,7 +529,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             if (subDlg != null && !subDlg.isDisposed()) {
                 subDlg.bringToTop();
             } else {
-                subDlg = new CreateSubscriptionDlg(shell, create, dataSet);
+                subDlg = new CreateSubscriptionDlg(shell, create, dataSet,
+                        adhocCallback);
                 subDlg.setSubscription(sub);
                 subDlg.open();
             }
@@ -541,89 +540,96 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         return false;
     }
 
-    /**
-     * * u Query button action handler.
-     */
-    private void handleQuery() {
-        boolean valid = this.validated();
+    protected boolean querySubExists() {
+        String name = nameText.getText();
+        return querySubExists(nameText.getText());
+    }
 
-        if (valid) {
-            // Check for existing subscription
-            VizSubscriptionHandler handler = (VizSubscriptionHandler) RegistryObjectHandlers
-                    .get(SubscriptionHandler.class);
-            String name = nameText.getText();
+    protected boolean querySubExists(String name) {
+        // Check for existing subscription
+        VizSubscriptionHandler handler = (VizSubscriptionHandler) RegistryObjectHandlers
+                .get(SubscriptionHandler.class);
+        try {
+            if (handler.doesNameExist(name, SiteSubscription.class,
+                    SharedSubscription.class, AdhocSubscription.class)) {
+                String message = "A query with this name already exists.\n\nPlease enter a different query name.";
+                DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
+                        "Duplicate Query Name", message);
+                return true;
+            }
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to check for an existing subscription by name.", e);
+        }
+        return false;
+    }
 
+    protected void handleQuery() {
+        if (!this.validated() || querySubExists()) {
+            return;
+        }
+
+        AdhocSubscription as = createSubscription(new AdhocSubscription(),
+                Network.OPSNET);
+        // null means the user hit cancel on the date/cycle selection dialog
+        if (as == null) {
+            return;
+        }
+
+        // if no URL set, default to most recent dataSetMetaData
+        if (as.getUrl() == null) {
             try {
-                if (handler.doesNameExist(name, SiteSubscription.class,
-                        SharedSubscription.class, AdhocSubscription.class)) {
-                    String message = "A query with this name already exists.\n\nPlease enter a different query name.";
-                    DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
-                            "Duplicate Query Name", message);
+                DataSetMetaData dataSetMetaData = null;
+                if (dataSet.isMoving()) {
+                    dataSetMetaData = DataDeliveryHandlers
+                            .getDataSetMetaDataHandler()
+                            .getMostRecentDataSetMetaDataByIntersection(
+                                    as.getDataSetName(), as.getProvider(),
+                                    as.getCoverage().getRequestEnvelope());
+                } else {
+                    dataSetMetaData = DataDeliveryHandlers
+                            .getDataSetMetaDataHandler()
+                            .getMostRecentDataSetMetaData(as.getDataSetName(),
+                                    as.getProvider());
+                }
+
+                if (dataSetMetaData != null) {
+                    as.setUrl(dataSetMetaData.getUrl());
+                } else {
+                    statusHandler
+                            .error("No DataSetMetaData exist for dataSet! DataSetName: "
+                                    + as.getDataSetName() + " Provider: "
+                                    + as.getProvider());
                     return;
                 }
             } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
-                        "Unable to check for an existing subscription by name.",
+                        "No DataSetMetaData matching query! DataSetName: "
+                                + as.getDataSetName() + " Provider: "
+                                + as.getProvider(),
                         e);
             }
+        }
 
-            AdhocSubscription as = createSubscription(new AdhocSubscription(),
-                    Network.OPSNET);
-            // null means the user hit cancel on the date/cycle selection dialog
-            if (as == null) {
-                return;
+        storeQuerySub(as);
+
+    }
+
+    public void storeQuerySub(AdhocSubscription as) {
+        try {
+            String currentUser = LocalizationManager.getInstance()
+                    .getCurrentUser();
+            as.setSubscriptionType(SubscriptionType.QUERY);
+            SubscriptionServiceResult result = subscriptionService
+                    .store(currentUser, as, this);
+
+            if (result.hasMessageToDisplay()) {
+                DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                        "Query Scheduled", result.getMessage());
             }
-
-            // if no URL set, default to most recent dataSetMetaData
-            if (as.getUrl() == null) {
-                try {
-                    DataSetMetaData dataSetMetaData = null;
-                    if (dataSet.isMoving()) {
-                        dataSetMetaData = DataDeliveryHandlers
-                                .getDataSetMetaDataHandler()
-                                .getMostRecentDataSetMetaDataByIntersection(
-                                        as.getDataSetName(), as.getProvider(),
-                                        as.getCoverage().getRequestEnvelope());
-                    } else {
-                        dataSetMetaData = DataDeliveryHandlers
-                                .getDataSetMetaDataHandler()
-                                .getMostRecentDataSetMetaData(
-                                        as.getDataSetName(), as.getProvider());
-                    }
-
-                    if (dataSetMetaData != null) {
-                        as.setUrl(dataSetMetaData.getUrl());
-                    } else {
-                        statusHandler
-                                .error("No DataSetMetaData exist for dataSet! DataSetName: "
-                                        + as.getDataSetName() + " Provider: "
-                                        + as.getProvider());
-                        return;
-                    }
-                } catch (RegistryHandlerException e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "No DataSetMetaData matching query! DataSetName: "
-                                    + as.getDataSetName() + " Provider: "
-                                    + as.getProvider(),
-                            e);
-                }
-            }
-
-            try {
-                String currentUser = LocalizationManager.getInstance()
-                        .getCurrentUser();
-                as.setSubscriptionType(SubscriptionType.QUERY);
-                SubscriptionServiceResult result = subscriptionService
-                        .store(currentUser, as, this);
-
-                if (result.hasMessageToDisplay()) {
-                    DataDeliveryUtils.showMessage(getShell(), SWT.OK,
-                            "Query Scheduled", result.getMessage());
-                }
-            } catch (RegistryHandlerException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Error requesting adhoc data.", e);
-            }
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error requesting adhoc data.", e);
         }
     }
 
@@ -747,7 +753,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      *            true for subscription, false for adhoc query
      * @return true if filled out correctly
      */
-    private boolean validated() {
+    protected boolean validated() {
         String name = nameText.getText();
 
         // Is Subset Name entered
@@ -1086,9 +1092,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     protected String getNameText() {
         return nameText.getText();
     }

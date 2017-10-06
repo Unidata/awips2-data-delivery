@@ -19,7 +19,9 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
-import static com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.getMaxLatency;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.SortedSet;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -28,55 +30,52 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
-import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
 
-import com.raytheon.uf.common.datadelivery.registry.PDADataSet;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
+import com.raytheon.uf.common.time.TimeRange;
 import com.raytheon.uf.viz.datadelivery.common.ui.PriorityComp;
 import com.raytheon.uf.viz.datadelivery.system.SystemRuleManager;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
+import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
+import com.raytheon.viz.ui.widgets.DateTimeEntry;
 
 /**
  * PDA data selection dialog for adhoc queries (choose time).
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------------------------------
  * Aug 12, 2014  3121     dhladky   Initial creation.
  * May 17, 2015  4047     dhladky   Verified non-blocking.
- * Jan 19, 2016  5054     randerso  Fixed dialog to display with title bar  
+ * Jan 19, 2016  5054     randerso  Fixed dialog to display with title bar
  *                                     and in correct location.
  * Feb 09, 2016  5324     randerso  Remove CAVE.DO_NOT_BLOCK until DR #5327 is worked
- * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues 
+ * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
  * Jun 16, 2016  5683     tjensen   Change Cancel to return PDATimeSelection
  * Aug 17, 2016  5772     rjpeter   Always return selected time.
- * 
+ * Oct 13, 2017  6461     tgurney   Replace single time with time range
+ *
  * </pre>
- * 
+ *
  * @author dhladky
- * @version 1.0
  */
 
 public class PDATimingSelectionDlg extends CaveSWTDialog {
 
-    /** The Main Composite */
-    private Composite dateComp;
+    private DateTimeEntry startTimeEntry;
+
+    private DateTimeEntry endTimeEntry;
 
     /** Use latest data check button */
     private Button useLatestChk;
-
-    /** OK button */
-    private Button okBtn;
-
-    /** Cancel button */
-    private Button cancelBtn;
 
     /** Priority Composite */
     private PriorityComp priorityComp;
@@ -85,36 +84,34 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     @SuppressWarnings("rawtypes")
     private final Subscription subscription;
 
-    private final java.util.List<String> dateList;
-
     /** List of dates/cycles */
-    private List dateCycleList;
+    private SortedSet<Date> dateCycleList;
 
     /**
      * Constructor
-     * 
+     *
      * @param parentShell
      * @param dataset
      * @param subscription
      * @param dateStringToDateMap
      */
-    public PDATimingSelectionDlg(Shell parentShell, PDADataSet dataset,
-            @SuppressWarnings("rawtypes") Subscription subscription,
-            java.util.List<String> dateList) {
+    public PDATimingSelectionDlg(Shell parentShell,
+            SortedSet<Date> newestToOldest,
+            @SuppressWarnings("rawtypes") Subscription subscription) {
         super(parentShell, SWT.DIALOG_TRIM);
-        setText("Select Date");
+        setText("Select Time Range");
         this.subscription = subscription;
-        this.dateList = dateList;
 
-        if (dateList == null || dateList.isEmpty()) {
+        if (newestToOldest == null || newestToOldest.isEmpty()) {
             throw new IllegalArgumentException(
                     "No data is available for data set.");
         }
+        this.dateCycleList = newestToOldest;
     }
 
     /**
      * Open the dialog.
-     * 
+     *
      * @return the selection
      */
     public PDATimeSelection openDlg() {
@@ -126,14 +123,16 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
      */
     @Override
     protected void initializeComponents(Shell shell) {
+        GridLayout gl = new GridLayout(2, false);
         GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
-        GridLayout gl = new GridLayout(1, false);
+        Composite dateComp = new Composite(shell, SWT.NONE);
 
-        dateComp = new Composite(shell, SWT.NONE);
         dateComp.setLayout(gl);
         dateComp.setLayoutData(gd);
 
         useLatestChk = new Button(dateComp, SWT.CHECK);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, true);
+        gd.horizontalSpan = 2;
         useLatestChk.setLayoutData(gd);
         useLatestChk.setText("Get Latest Data");
         useLatestChk.setSelection(true);
@@ -141,16 +140,30 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         useLatestChk.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                dateCycleList.setEnabled(!useLatestChk.getSelection());
+                startTimeEntry.setEnabled(!useLatestChk.getSelection());
+                endTimeEntry.setEnabled(!useLatestChk.getSelection());
             }
         });
+        Label startTimeLabel = new Label(dateComp, SWT.CENTER);
+        startTimeLabel.setText("Start Time: ");
+        this.startTimeEntry = new DateTimeEntry(dateComp, "yyyy-MM-dd HH:mm");
+        startTimeEntry.setEnabled(false);
 
-        this.dateCycleList = new List(dateComp, SWT.SINGLE | SWT.BORDER
-                | SWT.V_SCROLL);
-        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        gd.heightHint = dateCycleList.getItemHeight() * 8;
-        dateCycleList.setLayoutData(gd);
-        dateCycleList.setEnabled(false);
+        Label endTimeLabel = new Label(dateComp, SWT.CENTER);
+        endTimeLabel.setText("End Time: ");
+        this.endTimeEntry = new DateTimeEntry(dateComp, "yyyy-MM-dd HH:mm");
+        endTimeEntry.setEnabled(false);
+
+        Calendar startDate = Calendar.getInstance();
+        startDate.setTime(dateCycleList.first());
+        startDate.add(Calendar.HOUR_OF_DAY, -1);
+        startTimeEntry.setDate(startDate.getTime());
+
+        Calendar endDate = Calendar.getInstance();
+        endDate.setTime(dateCycleList.first());
+        // Round up to the next minute
+        endDate.add(Calendar.SECOND, 60 - endDate.get(Calendar.SECOND));
+        endTimeEntry.setDate(endDate.getTime());
 
         // Get latency value
         SystemRuleManager ruleManager = SystemRuleManager.getInstance();
@@ -168,8 +181,8 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
 
         int btnWidth = buttonComp.getDisplay().getDPI().x;
         gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
-        gd.minimumWidth=btnWidth;
-        okBtn = new Button(buttonComp, SWT.PUSH);
+        gd.minimumWidth = btnWidth;
+        Button okBtn = new Button(buttonComp, SWT.PUSH);
         okBtn.setLayoutData(gd);
         okBtn.setText("OK");
         okBtn.addSelectionListener(new SelectionAdapter() {
@@ -181,8 +194,8 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         });
 
         gd = new GridData(SWT.DEFAULT, SWT.DEFAULT, true, false);
-        gd.minimumWidth=btnWidth;
-        cancelBtn = new Button(buttonComp, SWT.PUSH);
+        gd.minimumWidth = btnWidth;
+        Button cancelBtn = new Button(buttonComp, SWT.PUSH);
         cancelBtn.setLayoutData(gd);
         cancelBtn.setText("Cancel");
         cancelBtn.addSelectionListener(new SelectionAdapter() {
@@ -196,9 +209,6 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected Layout constructShellLayout() {
         // Create the main layout for the shell.
@@ -209,36 +219,10 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         return mainLayout;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void preOpened() {
-        populate();
         shell.layout();
         shell.pack();
-    }
-
-    /**
-     * Check if the latest data checkbox is enabled.
-     * 
-     * @return true if enabled.
-     */
-    public boolean isLatestDataEnabled() {
-        return useLatestChk.getSelection();
-    }
-
-    /**
-     * Set the date/cycle list enabled.
-     */
-    public void setDateCycleListEnabled() {
-        this.dateCycleList.setEnabled(!this.useLatestChk.getSelection());
-    }
-
-    private void populate() {
-        for (String date : this.dateList) {
-            dateCycleList.add(date);
-        }
     }
 
     /**
@@ -247,18 +231,21 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     @SuppressWarnings("unchecked")
     private void handleOk() {
         PDATimeSelection data = new PDATimeSelection();
-        if (!isLatestDataEnabled()) {
-            String selection = dateCycleList.getItem(dateCycleList
-                    .getSelectionIndex());
-            DataDeliveryGUIUtils
-                    .latencyValidChk(priorityComp.getLatencyValue(),
-                            getMaxLatency(subscription));
-            data.setDate(selection);
-        } else {
+        if (useLatestChk.getEnabled()) {
             data.setLatest(true);
-            data.setDate(dateCycleList.getItem(0));
+            startTimeEntry.setDate(dateCycleList.first());
+            Calendar endDateCal = Calendar.getInstance();
+            endDateCal.setTime(dateCycleList.first());
+            // Round up to the next minute
+            endDateCal.add(Calendar.SECOND,
+                    60 - endDateCal.get(Calendar.SECOND));
+            endTimeEntry.setDate(endDateCal.getTime());
+        } else {
+            DataDeliveryGUIUtils.latencyValidChk(priorityComp.getLatencyValue(),
+                    DataDeliveryUtils.getMaxLatency(subscription));
         }
-
+        data.setTimeRange(new TimeRange(startTimeEntry.getDate(),
+                endTimeEntry.getDate()));
         setReturnValue(data);
     }
 }

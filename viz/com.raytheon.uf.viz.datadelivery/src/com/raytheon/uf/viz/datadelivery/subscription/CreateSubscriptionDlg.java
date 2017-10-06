@@ -61,10 +61,8 @@ import com.raytheon.uf.common.auth.req.IPermissionsService;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionStatusSummary;
 import com.raytheon.uf.common.datadelivery.bandwidth.datasetlatency.DataSetLatencyService;
-import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
-import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
@@ -72,12 +70,10 @@ import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSet;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
-import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SiteSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
-import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetQuery;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
@@ -187,6 +183,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  *                                  creating a recurring subscription
  * Jun 09, 2017  746      bsteffen  Handle group conflicts with duration and period.
  * Aug 31, 2017  6396     nabowle   Fix SharedSubscription creation.
+ * Oct 26, 2017  6461     tgurney   Add ICreateAdhocCallback
  *
  * </pre>
  *
@@ -263,6 +260,13 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     /** The dataset object */
     private final DataSet dataSet;
 
+    private ICreateAdhocCallback adhocCallback;
+
+    public static interface ICreateAdhocCallback {
+        public String storeAdhocFromRecurring(
+                CreateSubscriptionDlg subscriptionDlg);
+    }
+
     /**
      * Constructor.
      *
@@ -275,13 +279,14 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      * @param guiThreadTaskExecutor
      *            The task executor thread
      */
-    public CreateSubscriptionDlg(Shell parent, boolean create,
-            DataSet dataSet) {
+    public CreateSubscriptionDlg(Shell parent, boolean create, DataSet dataSet,
+            ICreateAdhocCallback adhocCallback) {
         // Make blocking so parent shell stays busy until the dialog closes.
         super(parent, SWT.DIALOG_TRIM | SWT.MIN,
                 CAVE.INDEPENDENT_SHELL | CAVE.PERSPECTIVE_INDEPENDENT);
         this.create = create;
         this.dataSet = dataSet;
+        this.adhocCallback = adhocCallback;
 
         if (create) {
             setText("Create Subscription");
@@ -1108,8 +1113,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                             exchanger.add(sum);
 
                             // Also schedule an immediate adhoc for the latest
-                            String queryStatus = storeAdhocFromRecurring(
-                                    currentUser);
+                            String queryStatus = adhocCallback
+                                    .storeAdhocFromRecurring(
+                                            CreateSubscriptionDlg.this);
 
                             return new Status(Status.OK,
                                     CreateSubscriptionDlg.class.getName(),
@@ -1279,77 +1285,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         return true;
-    }
-
-    private String storeAdhocFromRecurring(String currentUser) {
-        AdhocSubscription adhoc = new AdhocSubscription(
-                (RecurringSubscription) subscription);
-        DataSetMetaData dataSetMetaData = null;
-        String status = "";
-
-        try {
-            if (dataSet.isMoving()) {
-                dataSetMetaData = DataDeliveryHandlers
-                        .getDataSetMetaDataHandler()
-                        .getMostRecentDataSetMetaDataByIntersection(
-                                adhoc.getDataSetName(), adhoc.getProvider(),
-                                adhoc.getCoverage().getRequestEnvelope());
-            } else {
-                dataSetMetaData = DataDeliveryHandlers
-                        .getDataSetMetaDataHandler()
-                        .getMostRecentDataSetMetaData(adhoc.getDataSetName(),
-                                adhoc.getProvider());
-            }
-        } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "No DataSetMetaData matching query! DataSetName: "
-                            + adhoc.getDataSetName() + " Provider: "
-                            + adhoc.getProvider(),
-                    e);
-        }
-        if (dataSetMetaData == null) {
-            statusHandler.info(String.format(
-                    "No dataset metadata for dataset[%s] intersect subscription area for subscription [%s].",
-                    adhoc.getDataSetName(), adhoc.getName()));
-        } else {
-            statusHandler.info(String.format(
-                    "Found most recent metadata for adhoc subscription [%s], using url [%s]",
-                    adhoc.getName(), dataSetMetaData.getUrl()));
-            adhoc.setUrl(dataSetMetaData.getUrl());
-
-            /*
-             * Time for recurring subscription was previously set by
-             * SubsetManagerDlg, so we have the right type of Time object
-             * created. Just need to change start and end times.
-             */
-            adhoc.getTime().setStart(dataSetMetaData.getDate());
-            if (adhoc.getTime().getEnd() == null) {
-                adhoc.getTime().setEnd(dataSetMetaData.getDate());
-            }
-            try {
-                adhoc.setSubscriptionType(SubscriptionType.QUERY);
-                SubscriptionServiceResult result = subscriptionService.store(
-                        currentUser, adhoc,
-                        new CancelForceApplyAndIncreaseLatencyDisplayText(
-                                "create", getShell()));
-
-                if (result.hasMessageToDisplay()) {
-                    status = result.getMessage();
-
-                    /*
-                     * Log the results, but don't need a dialog notice since
-                     * there already is a dialog confirming the creation of the
-                     * recurring subscription
-                     */
-                    statusHandler
-                            .info("Query Scheduled: " + result.getMessage());
-                }
-            } catch (RegistryHandlerException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Error requesting adhoc data.", e);
-            }
-        }
-        return status;
     }
 
     private boolean checkApprovalPermisssions(IUser user) {
@@ -1970,6 +1905,14 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         return;
+    }
+
+    public Subscription<Time, Coverage> getSubscription() {
+        return subscription;
+    }
+
+    public DataSet getDataSet() {
+        return dataSet;
     }
 
 }
