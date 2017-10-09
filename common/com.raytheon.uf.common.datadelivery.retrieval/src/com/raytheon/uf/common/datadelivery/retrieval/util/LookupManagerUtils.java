@@ -72,6 +72,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * Oct 10, 2017 6465       tjensen     Initial creation
  * Oct 12, 2017 6413       tjensen     Added ConfigLayer lookups
+ * Oct 12, 2017 6440       bsteffen    Refresh level lookups.
  *
  * </pre>
  *
@@ -192,23 +193,8 @@ public class LookupManagerUtils {
      * @return
      */
     public static boolean levelLookupExists(String modelName) {
-        ILocalizationFile file = null;
-        String fileName = getLevelFileName(modelName);
-
-        try {
-            IPathManager pm = PathManagerFactory.getPathManager();
-            file = pm.getStaticLocalizationFile(fileName);
-        } catch (Exception fnfe) {
-            statusHandler
-                    .error("Failed to lookup Level Lookup localization file: "
-                            + fileName, fnfe);
-        }
-
-        if (file != null) {
-            return file.exists();
-        }
-
-        return false;
+        LevelLookup lookup = LookupManager.getInstance().getLevels(modelName);
+        return lookup != null && lookup.isCurrent();
     }
 
     /**

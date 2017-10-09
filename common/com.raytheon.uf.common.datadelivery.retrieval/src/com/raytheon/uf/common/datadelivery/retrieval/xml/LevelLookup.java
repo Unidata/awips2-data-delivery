@@ -19,38 +19,50 @@
  **/
 package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
+import java.util.Date;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
- * Level Lookup XML Object.
+ * Object that stores information about provider levels for a single data
+ * collection. Information is also saved to a configuration file. Updated
+ * periodically to remain in sync with the provider.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 1, 2012             jpiatt      Initial creation.
- * 07 Nov, 2013   2361     njensen      Remove ISerializableObject
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Mar 01, 2012           jpiatt    Initial creation.
+ * Nov 07, 2013  2361     njensen   Remove ISerializableObject
+ * Oct 12, 2017  6440     bsteffen  Refresh level lookups.
  * 
  * </pre>
  * 
  * @author jpiatt
- * @version 1.0
  */
-
 @XmlRootElement(name = "LevelLookup")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class LevelLookup {
+
+    private static final long EXPIRE_INTERVAL = Long
+            .getLong("datadelivery.levellookup.refresh.hours", 24)
+            * TimeUtil.MILLIS_PER_HOUR;
+
+    @XmlAttribute
+    @DynamicSerializeElement
+    protected Date lastChecked;
 
     @XmlElement(name = "Level", type = Double.class)
     @DynamicSerializeElement
@@ -62,6 +74,23 @@ public class LevelLookup {
 
     public void setLevelXml(List<Double> levelXml) {
         this.levelXml = levelXml;
+    }
+
+    public Date getLastChecked() {
+        return lastChecked;
+    }
+
+    public void setLastChecked(Date lastChecked) {
+        this.lastChecked = lastChecked;
+
+    }
+
+    public boolean isCurrent() {
+        if (lastChecked == null) {
+            return false;
+        }
+        long expireTime = lastChecked.getTime() + EXPIRE_INTERVAL;
+        return expireTime > System.currentTimeMillis();
     }
 
 }

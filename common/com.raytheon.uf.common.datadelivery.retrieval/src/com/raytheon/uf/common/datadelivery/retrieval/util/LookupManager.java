@@ -90,6 +90,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Oct 04, 2017  6465     tjensen   Add CollectionLists. Refactor localization
  *                                  file retrieval.
  * Oct 12, 2017  6413     tjensen   Added ConfigLayer lookups
+ * Oct 12, 2017  6440     bsteffen  Refresh level lookups.
  *
  * </pre>
  *
@@ -451,18 +452,7 @@ public class LookupManager {
     public void modifyLevelLookups(String modelName, double dz, float min,
             float max, List<Double> levs) throws Exception {
 
-        LevelLookup ll = null;
-
-        if (LookupManagerUtils.levelLookupExists(modelName)) {
-            ll = LookupManagerUtils.getLevelsFromFile(modelName);
-            if (ll.getLevelXml() != null) {
-                levs = ll.getLevelXml();
-            }
-        }
-
-        if (ll == null) {
-            ll = new LevelLookup();
-        }
+        LevelLookup ll = new LevelLookup();
 
         boolean gen = false;
 
@@ -492,6 +482,7 @@ public class LookupManager {
                 }
             }
         }
+        ll.setLastChecked(new Date());
 
         LookupManagerUtils.writeLevelXml(ll, modelName);
 
