@@ -27,7 +27,7 @@
     <metaDataPattern name="RECORD_TITLE">
         <!-- These are used for parsing the PDA data set metadata from a title -->
         <!-- Example: OR_ABI-L2-DMWF-M4C07_G16_s20161932020192_e20161932025000_c20161932032500.nc -->
-        <regex>([A-Z0-9]+_[A-Z0-9]+-[A-Z0-9]+)-(([A-Z0-9]{3,5}?)(C|F|M1|M2)?)(-(M[34](C\d\d)?))?_([A-Z0-9]+)_s([\d]{14})_e([\d]{14})_c([\d]{14})\.[a-zA-Z0-9]+</regex>
+        <regex>([A-Z0-9]+_[A-Z0-9]+-[A-Z0-9]+)-(([A-Z0-9]{3,5}?)(C|F|M1|M2)?)(-(M[\d](C\d\d)?))?_([A-Z0-9]+)_s([\d]{14})_e([\d]{14})_c([\d]{14})\.[a-zA-Z0-9]+</regex>
         <!-- Ex:    20141231606593 -->
         <dateFormat>yyyyDDDHHmmsss</dateFormat>
         <group name="PARAM_FORMAT" value="$3" />
