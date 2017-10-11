@@ -82,15 +82,15 @@ public class ParameterLevelRegex implements Comparable<ParameterLevelRegex> {
 
     @XmlAttribute(name = "providerLevels")
     @DynamicSerializeElement
-    private Boolean providerLevels;
+    private boolean providerLevels;
 
     @XmlAttribute(name = "reverseOrder")
     @DynamicSerializeElement
-    private Boolean reverseOrder;
+    private boolean reverseOrder;
 
     @XmlAttribute(name = "matchAnywhere")
     @DynamicSerializeElement
-    private Boolean matchAnywhere;
+    private boolean matchAnywhere;
 
     private Pattern pattern;
 
@@ -163,24 +163,18 @@ public class ParameterLevelRegex implements Comparable<ParameterLevelRegex> {
     }
 
     public boolean hasProviderLevels() {
-        if (providerLevels != null) {
-            return providerLevels.booleanValue();
-        }
-        return false;
+        return providerLevels;
     }
 
-    public void setProviderLevels(Boolean providerLevels) {
+    public void setProviderLevels(boolean providerLevels) {
         this.providerLevels = providerLevels;
     }
 
     public boolean getReverseOrder() {
-        if (reverseOrder == null) {
-            return false;
-        }
         return reverseOrder;
     }
 
-    public void setReverseOrder(Boolean reverseOrder) {
+    public void setReverseOrder(boolean reverseOrder) {
         this.reverseOrder = reverseOrder;
     }
 
@@ -192,11 +186,11 @@ public class ParameterLevelRegex implements Comparable<ParameterLevelRegex> {
         this.masterKey = masterKey;
     }
 
-    public Boolean getMatchAnywhere() {
+    public boolean getMatchAnywhere() {
         return matchAnywhere;
     }
 
-    public void setMatchAnywhere(Boolean matchAnywhere) {
+    public void setMatchAnywhere(boolean matchAnywhere) {
         this.matchAnywhere = matchAnywhere;
     }
 }
