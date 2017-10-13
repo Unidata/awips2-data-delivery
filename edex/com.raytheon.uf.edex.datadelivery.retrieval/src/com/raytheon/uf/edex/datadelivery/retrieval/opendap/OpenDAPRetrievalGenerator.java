@@ -82,6 +82,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.adapters.RetrievalAdapter;
  * Aug 10, 2017  6186     nabowle   Set retrieval datasetname.
  * Sep 12, 2017  6413     tjensen   Simplified logic. Always retrieve one
  *                                  param/level at a time
+ * Oct 10, 2017  6415     nabowle   Use dsmd time to generate the retrieval time.
  *
  * </pre>
  *
@@ -158,7 +159,7 @@ class OpenDAPRetrievalGenerator
             // Only process one provider parameter at a time
             List<ParameterGroup> paramList = ParameterUtils
                     .createSingleParameterLevelList(sub.getParameterGroups());
-            List<GriddedTime> times = processTime(timeSequence, sub.getTime());
+            List<GriddedTime> times = processTime(timeSequence, dsmd.getTime());
             for (ParameterGroup param : paramList) {
                 // make all requests single level and time
                 for (GriddedTime time : times) {
@@ -263,21 +264,21 @@ class OpenDAPRetrievalGenerator
      * Process sequences of hours for separate retrieval
      *
      * @param timeSequence
-     * @param subTime
+     * @param dsmdTime
      * @return
      */
     private List<GriddedTime> processTime(List<Integer> timeSequence,
-            GriddedTime subTime) {
+            GriddedTime dsmdTime) {
 
         List<GriddedTime> times = new ArrayList<>(timeSequence.size());
         for (Integer timeSeq : timeSequence) {
             GriddedTime time = new GriddedTime();
-            time.setEnd(subTime.getEnd());
-            time.setStart(subTime.getStart());
-            time.setNumTimes(subTime.getNumTimes());
-            time.setFormat(subTime.getFormat());
-            time.setStep(subTime.getStep());
-            time.setStepUnit(subTime.getStepUnit());
+            time.setEnd(dsmdTime.getEnd());
+            time.setStart(dsmdTime.getStart());
+            time.setNumTimes(dsmdTime.getNumTimes());
+            time.setFormat(dsmdTime.getFormat());
+            time.setStep(dsmdTime.getStep());
+            time.setStepUnit(dsmdTime.getStepUnit());
             List<Integer> indicies = new ArrayList<>(1);
             indicies.add(timeSeq);
             time.setSelectedTimeIndices(indicies);

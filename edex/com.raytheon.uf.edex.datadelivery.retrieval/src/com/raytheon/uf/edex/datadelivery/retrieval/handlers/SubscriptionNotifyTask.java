@@ -74,6 +74,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * Jul 27, 2017  6186     rjpeter   Removed unused fields.
  * Aug 02, 2017  6186     rjpeter   Removed RetrievalManagerNotifyEvent.
  * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
+ * Oct 09, 2017  6415     nabowle   Fix argument order in call to getSubscriptionStateCounts(),
+ *                                  and check for WAITING_RESPONSE.
  *
  * </pre>
  *
@@ -313,13 +315,17 @@ public class SubscriptionNotifyTask implements Runnable {
             while (subToCheck != null) {
                 Map<RetrievalRequestRecord.State, Integer> stateCounts = dao
                         .getSubscriptionStateCounts(subToCheck.subName,
-                                subToCheck.dsmdUrl, subToCheck.owner);
+                                subToCheck.owner, subToCheck.dsmdUrl);
                 Integer numPending = stateCounts
                         .get(RetrievalRequestRecord.State.PENDING);
                 Integer numRunning = stateCounts
                         .get(RetrievalRequestRecord.State.RUNNING);
+                Integer numWaitingResponse = stateCounts
+                        .get(RetrievalRequestRecord.State.WAITING_RESPONSE);
                 if ((numPending == null || numPending.intValue() == 0)
-                        && (numRunning == null || numRunning.intValue() == 0)) {
+                        && (numRunning == null || numRunning.intValue() == 0)
+                        && (numWaitingResponse == null
+                                || numWaitingResponse.intValue() == 0)) {
                     SubscriptionRetrievalEvent event = new SubscriptionRetrievalEvent();
                     event.setId(subToCheck.subName);
                     event.setOwner(subToCheck.owner);

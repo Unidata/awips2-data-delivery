@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.SessionManagedDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord.State;
@@ -45,6 +46,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.handlers.SubscriptionNotifyTa
  * Aug 02, 2017  6186     rjpeter   Removed IRetrievalDao.
  * Aug 10, 2017  6186     nabowle   Exit loop when a Pending retrieval is found.
  * Sep 21, 2017  6433     tgurney   Add provider arg to activateNextRetrievalRequest
+ * Oct 10, 2017  6415     nabowle   Add getExpiredSubscriptionRetrievals(). Don't
+ *                                  notify on PENDING retrievals.
  *
  * </pre>
  *
@@ -75,14 +78,16 @@ public class RetrievalDao
         this.notifyTask = notifyTask;
     }
 
-    /*
+    /**
      * Returns the next PENDING retrieval request, puts it into a RUNNING state,
      * based on current time. Based on priority and expire time.
      *
-     * @param provider the provider to constrain requests to
+     * @param provider
+     *            the provider to constrain requests to
      *
-     * @param syncObj synchronize on this object for the entire length of this
-     * method
+     * @param syncObj
+     *            synchronize on this object for the entire length of this
+     *            method
      *
      * @return
      */
@@ -314,6 +319,31 @@ public class RetrievalDao
     }
 
     /**
+     * Retrieve all expired Subscription Retrievals.
+     *
+     * @return The expired Subscription Retrievals, if any.
+     * @throws DataAccessLayerException
+     *             if an error occurs.
+     */
+    public List<RetrievalRequestRecord> getExpiredSubscriptionRetrievals()
+            throws DataAccessLayerException {
+        try {
+            Criteria query = getCurrentSession()
+                    .createCriteria(RetrievalRequestRecord.class);
+            query.add(Restrictions.eq("state", State.PENDING));
+            query.add(Restrictions.le("latencyExpireTime",
+                    TimeUtil.newGmtCalendar().getTime()));
+
+            List<RetrievalRequestRecord> rval = query.list();
+
+            return rval;
+        } catch (Exception e) {
+            throw new DataAccessLayerException(
+                    "Failed to retrieve expired subscription retrievals.", e);
+        }
+    }
+
+    /**
      * Get all requests for the subscription name, owner, and url.
      *
      * @param subName
@@ -343,19 +373,26 @@ public class RetrievalDao
     @Override
     public void create(RetrievalRequestRecord obj) {
         super.create(obj);
-        notifyTask.checkNotify(obj);
+        notify(obj);
     }
 
     @Override
     public void update(RetrievalRequestRecord obj) {
         super.update(obj);
-        notifyTask.checkNotify(obj);
+        notify(obj);
     }
 
     @Override
     public void createOrUpdate(RetrievalRequestRecord obj) {
         super.createOrUpdate(obj);
-        notifyTask.checkNotify(obj);
+        notify(obj);
+    }
+
+    private void notify(RetrievalRequestRecord rec) {
+        if (State.FAILED.equals(rec.getState())
+                || State.COMPLETED.equals(rec.getState())) {
+            notifyTask.checkNotify(rec);
+        }
     }
 
     @Override

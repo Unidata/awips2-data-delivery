@@ -22,10 +22,13 @@ package com.raytheon.uf.edex.datadelivery.bandwidth;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
@@ -33,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.event.retrieval.GenericNotifyEvent;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
@@ -44,6 +48,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
@@ -53,6 +58,8 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao;
+import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 
 /**
  *
@@ -75,6 +82,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Sep 19, 2017  6415     rjpeter   Fixed calculateNewSleepTime to always be
  *                                  positive
+ * Oct 10, 2017  6415     nabowle   Add retrieval latency check. Fix extendedDelayTimeFactor.
  *
  * </pre>
  *
@@ -83,11 +91,28 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
     /** Status handler (logger) */
-    protected final IUFStatusHandler statusHandler = UFStatus
+    protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SubscriptionLatencyCheck.class);
 
-    /** Default extension at 25% (percentage as integer) */
-    protected static final int DEFAULT_EXTENDED_DELAY_FACTOR = 25;
+    /** Default extension at 25% */
+    protected static final float DEFAULT_EXTENDED_DELAY_FACTOR = .25F;
+
+    protected static final float DEFAULT_RETRIEVAL_EXTENSION = 0.5F;
+
+    protected static float retrievalExtensionFactor = DEFAULT_RETRIEVAL_EXTENSION;
+
+    static {
+        String val = System.getProperty(
+                "datadelivery.bandwidth.retrieval.expiration.factor");
+        if (val != null) {
+            try {
+                retrievalExtensionFactor = Float.parseFloat(val);
+            } catch (NumberFormatException nfe) {
+                statusHandler.warn(
+                        "datadelivery.bandwidth.retrieval.expiration.factor has been incorrectly configured. Using the default value.");
+            }
+        }
+    }
 
     /**
      * Subscription Latency Check processing time window. This is how long
@@ -106,6 +131,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
     /** Bandwidth Dao */
     protected final IBandwidthDao<T, C> bandwidthDao;
+
+    protected final RetrievalDao retrievalDao;
 
     /** Subscription Handler Object */
     protected final SubscriptionHandler subscriptionHandler;
@@ -129,11 +156,12 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
     /**
      * Value to use for Subscription Extended Latency Factor. Loaded from
-     * "datadelivery/bandwidthmap.xml" or defaulted to 25 (25% = 0.25)
-     * Calculated as <Original Latency> + (<Original Latency> *
+     * "datadelivery/bandwidthmap.xml" as an integer percentage and divided by
+     * 100.0 (25->0.25), or defaulted to 0.25. The new latency will be
+     * calculated as <Original Latency> + (<Original Latency> *
      * extendedDelayTimeFactor)
      */
-    protected int extendedDelayTimeFactor = DEFAULT_EXTENDED_DELAY_FACTOR;
+    protected float extendedDelayTimeFactor = DEFAULT_EXTENDED_DELAY_FACTOR;
 
     public enum SubAllocationStatus {
 
@@ -163,15 +191,20 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
      *            Active instance of IDataSetHandler
      * @param dataSetLatencyHandler
      *            Active instance of IDataSetLatencyHandler
+     * @param retrievalDao
+     *            Active RetrievalDao instance
+     * @param network
+     *            The network.
      *
      */
     public SubscriptionLatencyCheck(IBandwidthBucketDao bucketsDao,
             IBandwidthDao<T, C> bandwidthDao,
             SubscriptionHandler subscriptionHandler,
             DataSetHandler dataSetHandler, DataSetLatencyDao dataSetLatencyDao,
-            Network network) {
+            RetrievalDao retrievalDao, Network network) {
         this.bucketsDao = bucketsDao;
         this.bandwidthDao = bandwidthDao;
+        this.retrievalDao = retrievalDao;
         this.subscriptionHandler = subscriptionHandler;
         this.dataSetHandler = dataSetHandler;
         this.dataSetLatencyDao = dataSetLatencyDao;
@@ -458,6 +491,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             // been extended or expired.
             generateAndSendExtendedNotification(subscriptionLatencyList);
             generateAndSendExpiredNotification(subscriptionLatencyList);
+
+            checkRetrievalLatency();
 
             return calculateNewSleepTime(scheduledNextBandwidthBucketTime);
         }
@@ -806,7 +841,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             int oldLatencyMils = (int) oldLatencyMilsL;
 
             int additionalWaitMils = Math
-                    .round(oldLatencyMils * (extendedDelayTimeFactor / 100));
+                    .round(oldLatencyMils * extendedDelayTimeFactor);
             int newLatencyMils = oldLatencyMils + additionalWaitMils;
             long newLatencyMinL = newLatencyMils / TimeUtil.MILLIS_PER_MINUTE;
             int newLatencyMin = (int) newLatencyMinL;
@@ -922,6 +957,108 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
         }
 
         /**
+         * Check for pending Retrievals that have exceeded their
+         * latencyExpireTime, updating their priority or failing them, as
+         * appropriate.
+         */
+        private void checkRetrievalLatency() {
+            List<RetrievalRequestRecord> expiredRetrievals;
+            try {
+                expiredRetrievals = retrievalDao
+                        .getExpiredSubscriptionRetrievals();
+                List<RetrievalRequestRecord> extensions = new ArrayList<>();
+                List<RetrievalRequestRecord> failures = new ArrayList<>();
+                for (RetrievalRequestRecord rrr : expiredRetrievals) {
+                    /*
+                     * If the retrieval has expired, lower its priority. If the
+                     * priority drops too low, mark the retrieval as failed.
+                     * Otherwise, increase the expiration time and update the
+                     * retrieval with the new priority and time.
+                     *
+                     * The priorities are extended beyond the normal priority
+                     * levels so that even the lowest priority retrievals have a
+                     * second window of opportunity to be fulfilled.
+                     */
+                    int priority = rrr.getPriority() + 1;
+                    boolean extend = priority <= SubscriptionPriority
+                            .values().length + 1;
+
+                    if (extend) {
+                        int expireTimeout = rrr.getLatencyMinutes();
+                        expireTimeout *= retrievalExtensionFactor;
+                        Calendar expireCal = TimeUtil
+                                .newGmtCalendar(rrr.getLatencyExpireTime());
+                        expireCal.add(Calendar.MINUTE, expireTimeout);
+                        rrr.setLatencyExpireTime(expireCal.getTime());
+                        rrr.setPriority(priority);
+                    } else {
+                        rrr.setState(RetrievalRequestRecord.State.FAILED);
+                    }
+                    try {
+                        retrievalDao.update(rrr);
+                        if (extend) {
+                            extensions.add(rrr);
+                        } else {
+                            failures.add(rrr);
+                        }
+                    } catch (Exception e) {
+                        statusHandler.warn(
+                                "Unable to update an expired retrieval.", e);
+                    }
+                }
+
+                sendRetrievalNotifications(true, extensions);
+                sendRetrievalNotifications(false, failures);
+            } catch (DataAccessLayerException e) {
+                statusHandler.warn("Unable to check for expired retrievals.",
+                        e);
+            }
+        }
+
+        private void sendRetrievalNotifications(boolean extended,
+                List<RetrievalRequestRecord> retrievals) {
+            if (retrievals == null || retrievals.isEmpty()) {
+                return;
+            }
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm zzz");
+
+            /*
+             * Specific retrieval url's aren't known until the provider-specific
+             * request is built. This causes retrievals for different parameters
+             * for the same DSMD url to generate the same notification message.
+             * Only one of each duplicative message will be included in the
+             * notification.
+             */
+            StringBuilder sb = new StringBuilder()
+                    .append("The following Subscription Retrievals have ")
+                    .append(extended ? "been extended" : "expired").append(":");
+            Set<String> retrievalSet = new HashSet<>();
+            for (RetrievalRequestRecord rrr : retrievals) {
+                StringBuilder rsb = new StringBuilder().append("\n\t")
+                        .append(rrr.getSubscriptionName())
+                        .append(" Data Set Name: ").append(rrr.getDataSetName())
+                        .append(" Provider: ").append(rrr.getProvider());
+                if (extended) {
+                    rsb.append(" New Expiration Time: ")
+                            .append(sdf.format(rrr.getLatencyExpireTime()))
+                            .append(" New Priority: ")
+                            .append(rrr.getPriority());
+                } else {
+                    rsb.append(" Expired At: ")
+                            .append(sdf.format(rrr.getLatencyExpireTime()));
+                }
+                retrievalSet.add(rsb.toString());
+            }
+            for (String s : retrievalSet) {
+                sb.append(s);
+            }
+            sendNotification(
+                    extended ? "RetrievalExtended" : "RetrievalExpired",
+                    sb.toString());
+        }
+
+        /**
          * Retrieve BandwidthMap file data.
          *
          * Retrieve Bandwidth Bucket Size and Subscription Latency Extend factor
@@ -938,7 +1075,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             long bucketSizeMinutes = 0;
 
             // Default extension at 25%
-            int extendedDelayFactor = DEFAULT_EXTENDED_DELAY_FACTOR;
+            float extendedDelayFactor = DEFAULT_EXTENDED_DELAY_FACTOR;
 
             IPathManager pm = PathManagerFactory.getPathManager();
             File bandwidthFile = pm
@@ -964,7 +1101,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     int tempExtendedDelayFactor = copyOfBandwidthMap
                             .getExtendedLatencyFactor();
                     if (tempExtendedDelayFactor > 0) {
-                        extendedDelayFactor = tempExtendedDelayFactor;
+                        extendedDelayFactor = tempExtendedDelayFactor / 100.0F;
                     }
                     extendedDelayTimeFactor = extendedDelayFactor;
                 }

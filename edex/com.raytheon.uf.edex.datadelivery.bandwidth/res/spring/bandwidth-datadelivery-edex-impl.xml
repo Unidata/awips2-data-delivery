@@ -72,6 +72,7 @@
         <constructor-arg ref="SubscriptionHandler" />
         <constructor-arg ref="DataSetHandler" />
         <constructor-arg ref="dataSetLatencyDao" />
+        <constructor-arg ref="retrievalDao" />
         <constructor-arg ref="network" />
     </bean>
 

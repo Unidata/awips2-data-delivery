@@ -58,6 +58,8 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * May 22, 2017  6130     tjensen   Add DataSetName
  * Jul 31, 2017  6186     rjpeter   Refactored to be auto id.
  * Aug 02, 2017  6186     rjpeter   Added latencyExpireTime
+ * Oct 23, 2017  6415     nabowle   Added latencyMinutes.
+ *
  *
  * </pre>
  *
@@ -104,13 +106,11 @@ public class RetrievalRequestRecord implements IPersistableDataObject<Integer> {
     @Column(nullable = false)
     private Date latencyExpireTime;
 
+    @Column(nullable = false)
+    private int latencyMinutes;
+
     @Column(nullable = false, length = 100_000)
     private byte[] retrieval;
-
-    /*
-     * TODO: Add latency field so that we do not get overwhelmed if a provider
-     * is down for a period time processing old data
-     */
 
     @Transient
     private Retrieval retrievalObj;
@@ -256,6 +256,14 @@ public class RetrievalRequestRecord implements IPersistableDataObject<Integer> {
 
     public void setLatencyExpireTime(Date latencyExpireTime) {
         this.latencyExpireTime = latencyExpireTime;
+    }
+
+    public int getLatencyMinutes() {
+        return latencyMinutes;
+    }
+
+    public void setLatencyMinutes(int latencyMinutes) {
+        this.latencyMinutes = latencyMinutes;
     }
 
 }

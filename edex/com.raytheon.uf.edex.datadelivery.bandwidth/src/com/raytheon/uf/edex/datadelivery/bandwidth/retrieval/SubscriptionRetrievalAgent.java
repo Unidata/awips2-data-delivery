@@ -87,6 +87,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Aug 02, 2017  6186     rjpeter   Refactored to queueRetrievals directly.
  * Aug 10, 2017  6186     nabowle   Set non-null fields on RetrievalRequestRecord
  * Sep 25, 2017  6416     nabowle   Deprioritize or cancel retrieval of non-current data.
+ * Oct 23, 2017  6415     nabowle   Change latencyExpireTime calculation, set setLatencyMinutes.
  *
  * </pre>
  *
@@ -264,11 +265,15 @@ public class SubscriptionRetrievalAgent {
                     dsmd.getUrl(), retrievalState, priority);
             rec.setDataSetName(subscription.getDataSetName());
 
-            // TODO: Best Guessing at intent. Not currently used.
-            Date date = new Date(System.currentTimeMillis()
-                    + subscription.getLatencyInMinutes()
-                            * TimeUtil.MILLIS_PER_MINUTE);
+            long latencyExpireTime = dsmd.getTime().getStart().getTime();
+            latencyExpireTime += dsmd.getAvailabilityOffset()
+                    * TimeUtil.MILLIS_PER_MINUTE;
+            latencyExpireTime += subscription.getLatencyInMinutes()
+                    * TimeUtil.MILLIS_PER_MINUTE;
+
+            Date date = new Date(latencyExpireTime);
             rec.setLatencyExpireTime(date);
+            rec.setLatencyMinutes(subscription.getLatencyInMinutes());
 
             try {
                 rec.setRetrievalObj(retrieval);
