@@ -30,7 +30,11 @@ import java.util.TreeMap;
 import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
+import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.CollectionList;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayerList;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfoMap;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformationLookup;
@@ -67,6 +71,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 10, 2017 6465       tjensen     Initial creation
+ * Oct 12, 2017 6413       tjensen     Added ConfigLayer lookups
  *
  * </pre>
  *
@@ -95,6 +100,8 @@ public class LookupManagerUtils {
 
     private static final String CONFIG_FILE_COLLECTIONS = "Collections.xml";
 
+    private static final String CONFIG_FILE_CONFIG_LAYERS = "Layers.xml";
+
     private static JAXBManager jaxb;
 
     private static synchronized JAXBManager getJaxbManager()
@@ -103,7 +110,9 @@ public class LookupManagerUtils {
             jaxb = new JAXBManager(LevelLookup.class, ParameterLookup.class,
                     ParameterRegexes.class, DataSetInformationLookup.class,
                     DataSetInformation.class, DataSetConfigInfoMap.class,
-                    DataSetVersionInfoMap.class, CollectionList.class);
+                    DataSetVersionInfoMap.class, CollectionList.class,
+                    ParameterGroup.class, LevelGroup.class,
+                    ParameterLevelEntry.class, ConfigLayerList.class);
         }
 
         return jaxb;
@@ -530,5 +539,37 @@ public class LookupManagerUtils {
                             + " configuration! Save of new collections failed",
                     e);
         }
+    }
+
+    /**
+     * Config Layer file name
+     *
+     * @param modelName
+     * @return
+     */
+    public static String getLayerFileName(String providerName) {
+        return CONFIG_FILE_ROOT + providerName + "_"
+                + CONFIG_FILE_CONFIG_LAYERS;
+    }
+
+    /**
+     * Read Data Set Information lookup
+     *
+     * @param file
+     * @return
+     * @throws Exception
+     */
+    public static ConfigLayerList readLayersXml(ILocalizationFile file)
+            throws Exception {
+        ConfigLayerList layerList = null;
+
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                layerList = (ConfigLayerList) getJaxbManager()
+                        .unmarshalFromInputStream(is);
+            }
+        }
+
+        return layerList;
     }
 }

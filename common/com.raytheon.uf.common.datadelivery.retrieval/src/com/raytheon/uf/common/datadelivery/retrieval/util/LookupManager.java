@@ -35,6 +35,8 @@ import java.util.regex.Matcher;
 
 import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.CollectionList;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayer;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayerList;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfoMap;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
@@ -87,6 +89,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * May 10, 2017  6130     tjensen   Updated for DataSetVersionInfo
  * Oct 04, 2017  6465     tjensen   Add CollectionLists. Refactor localization
  *                                  file retrieval.
+ * Oct 12, 2017  6413     tjensen   Added ConfigLayer lookups
  *
  * </pre>
  *
@@ -125,6 +128,9 @@ public class LookupManager {
     private final Map<String, Map<String, Collection>> collectionMap = new LinkedHashMap<>(
             2);
 
+    private final Map<String, Map<String, ConfigLayer>> layersMap = new LinkedHashMap<>(
+            2);
+
     private final Map<String, LevelLookup> levels = new HashMap<>(2);
 
     private Map<String, DataSetInformation> dataSetInformations = new HashMap<>(
@@ -135,6 +141,8 @@ public class LookupManager {
     private Date paramFileTime;
 
     private final Map<String, Date> collectionFileTimes = new HashMap<>(2);
+
+    private final Map<String, Date> layerFileTimes = new HashMap<>(2);
 
     private final Map<String, Map<String, DataSetConfigInfo>> dataSetConfigInfos = new HashMap<>(
             2);
@@ -667,4 +675,63 @@ public class LookupManager {
             }
         }
     }
+
+    public Map<String, ConfigLayer> getLayersForProvider(String providerName) {
+        loadLayers(providerName);
+        return layersMap.get(providerName);
+    }
+
+    /**
+     * Gets the Model parameters
+     *
+     * @return
+     */
+    public void loadLayers(String providerName) {
+        ILocalizationFile file = null;
+        String fileName = LookupManagerUtils.getLayerFileName(providerName);
+
+        try {
+            IPathManager pm = PathManagerFactory.getPathManager();
+            file = pm.getStaticLocalizationFile(fileName);
+        } catch (Exception e) {
+            statusHandler
+                    .error(" Failed to find Config Layer file: " + fileName, e);
+        }
+
+        if (file != null) {
+            try {
+                /*
+                 * If map for the provider is null or the timestamp on the file
+                 * has changed since we last read it, read the config layers
+                 * from the file.
+                 */
+                if (layersMap.get(providerName) == null || !file.getTimeStamp()
+                        .equals(layerFileTimes.get(providerName))) {
+                    ConfigLayerList tmpLayers = null;
+                    Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
+                            .getLocalizationFiles(fileName);
+
+                    Map<String, ConfigLayer> newLayerMap = new LinkedHashMap<>(
+                            2);
+
+                    for (LocalizationFile locfile : locFiles.values()) {
+                        tmpLayers = LookupManagerUtils.readLayersXml(locfile);
+                        for (ConfigLayer tmpLayer : tmpLayers.getLayerList()) {
+                            newLayerMap.put(tmpLayer.getName(), tmpLayer);
+                        }
+                    }
+
+                    layersMap.put(providerName, newLayerMap);
+                    layerFileTimes.put(providerName, file.getTimeStamp());
+                }
+
+            } catch (Exception e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Failed to ConfigLayer List from file: "
+                                + file.getPath(),
+                        e);
+            }
+        }
+    }
+
 }

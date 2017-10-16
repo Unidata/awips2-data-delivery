@@ -39,6 +39,7 @@ import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.EnvelopeUtils;
 import com.raytheon.uf.common.datadelivery.registry.Levels;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.PointDataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
@@ -187,7 +188,7 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
 
     public WfsRegistryCollectorAddon() {
         super();
-        baseUrl = getConfiguration().getProvider().getConnection().getUrl();
+        baseUrl = getConfig().getProvider().getConnection().getUrl();
         if (INSERT_END_TIME_BUFFER_IN_SECS
                 + INSERT_START_TIME_BUFFER_IN_SECS < 300) {
             logger.warn(
@@ -339,16 +340,17 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
         Coverage coverage = generateCoverage(layer);
         wpds.setCoverage(coverage);
         wpds.setDataSetName(layer.getName());
-        wpds.setProviderName(getConfiguration().getProvider().getName());
+        wpds.setProviderName(getProviderName());
         wpds.setCollectionName(layer.getName());
 
-        Map<String, Parameter> parameters = getParameters(layer);
-        wpds.setParameterGroups(ParameterUtils
-                .generateParameterGroupsFromParameters(parameters.values()));
+        Map<String, ParameterGroup> paramGroups = getParameters(
+                layer.getName());
+        wpds.setParameterGroups(paramGroups);
 
         // TODO: OBE after all sites are 18.1.1 or beyond
-        wpds.setParameters(parameters);
-        for (Parameter parm : parameters.values()) {
+        wpds.setParameters(ParameterUtils.generateParametersFromGroups(
+                paramGroups, DataType.POINT, null));
+        for (Parameter parm : wpds.getParameters().values()) {
             storeParameter(parm);
         }
 

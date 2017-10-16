@@ -21,7 +21,6 @@ package com.raytheon.uf.edex.ogc.registry;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -40,11 +39,14 @@ import com.raytheon.uf.common.datadelivery.registry.DataSetName;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Levels;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
+import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayer;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.localization.ILocalizationFile;
@@ -64,7 +66,7 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleDimension;
 import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
 
 /**
- * Collector Used to gather data with DPA, used for AWIPS registry data feeds
+ * Collector used to gather data with DPA. Used for AWIPS registry data feeds
  * from providers.
  *
  * <pre>
@@ -84,7 +86,8 @@ import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 25, 2017  6186     rjpeter   Updated abstract method naming.
  * Aug 04, 2017  6356     tjensen   Add support for DPA failover
- * Sep 12, 2017  6413     tjensen   Removed parameters from DataSetName
+ * Sep 12, 2017  6413     tjensen   Removed parameters from DataSetName. Get
+ *                                  ConfigLayers from configuration files
  *
  * </pre>
  *
@@ -99,7 +102,7 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
     protected OGCAgent agent = null;
 
-    protected Map<String, Map<String, Parameter>> parametersByLayer = new HashMap<>();
+    protected Map<String, Map<String, ParameterGroup>> parametersByLayer = new HashMap<>();
 
     protected String[] packageNames = null;
 
@@ -165,6 +168,11 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
 
     }
 
+    /**
+     * Find the DPA config
+     *
+     * @return
+     */
     public HarvesterConfig getConfig() {
         return config;
     }
@@ -173,13 +181,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         this.config = config;
     }
 
-    /**
-     * Find the DPA config
-     *
-     * @return
-     */
-    public HarvesterConfig getConfiguration() {
-        return config;
+    public String getProviderName() {
+        return config.getProvider().getName();
     }
 
     /**
@@ -331,33 +334,29 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
         }
     }
 
-    /**
-     * Get me my level types for this param
-     *
-     * @param cp
-     * @return
-     */
-    public List<DataLevelType> getDataLevelTypes(Parameter cp) {
-        return cp.getLevelType();
-    }
-
     protected abstract Coverage getCoverage(String layerName);
 
-    public Map<String, Parameter> getParameters(L layer) {
-        Map<String, Parameter> rval = null;
+    public Map<String, ParameterGroup> getParameters(String layerName) {
+        Map<String, ParameterGroup> rval = null;
 
         synchronized (parametersByLayer) {
-            rval = parametersByLayer.get(layer.getName());
+            rval = parametersByLayer.get(layerName);
 
             if (rval == null) {
                 rval = new HashMap<>();
-                for (Parameter parm : agent.getLayer(layer.getName())
-                        .getParameters()) {
-                    // place in map
-                    rval.put(parm.getName(), parm);
-                }
 
-                parametersByLayer.put(layer.getName(), rval);
+                String providerName = getProviderName();
+                Map<String, ConfigLayer> providerLayers = LookupManager
+                        .getInstance().getLayersForProvider(providerName);
+                if (providerLayers != null) {
+                    ConfigLayer configLayer = providerLayers.get(layerName);
+                    for (ParameterGroup parm : configLayer
+                            .getParameterGroups()) {
+                        // place in map
+                        rval.put(parm.getAbbrev(), parm);
+                    }
+                }
+                parametersByLayer.put(layerName, rval);
             }
         }
 

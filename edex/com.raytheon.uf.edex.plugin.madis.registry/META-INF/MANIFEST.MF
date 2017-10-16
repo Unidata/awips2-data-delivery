@@ -17,5 +17,6 @@ Require-Bundle: com.raytheon.uf.common.dataplugin.madis,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.datadelivery.harvester,
  com.raytheon.uf.common.localization,
- org.slf4j;bundle-version="1.7.21"
+ org.slf4j;bundle-version="1.7.21",
+ com.raytheon.uf.common.datadelivery.retrieval
 Export-Package: com.raytheon.uf.edex.plugin.madis.registry

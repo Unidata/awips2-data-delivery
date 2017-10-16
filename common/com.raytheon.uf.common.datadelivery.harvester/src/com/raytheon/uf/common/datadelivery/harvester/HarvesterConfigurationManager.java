@@ -40,7 +40,8 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
- * Manages harvester configurations
+ * Reads and stores configuration from localization files related to DD
+ * harvesters.
  *
  * <pre>
  *
@@ -52,6 +53,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 28, 2013 2361       dhladky     Fixed up JAXBManager.
  * Jun 14, 2014 3120       dhladky     PDA
  * Jan 31, 2017 5684       tgurney     Add connection URL log message
+ * Oct 12, 2017 6413       tjensen     Remove ConfigLayer from classes
  *
  * </pre>
  *
@@ -65,10 +67,9 @@ public class HarvesterConfigurationManager {
     private static final Class<?>[] clazzess = new Class<?>[] {
             HarvesterConfig.class, Provider.class, Connection.class,
             ProviderType.class, ServiceType.class, Agent.class,
-            CrawlAgent.class, OGCAgent.class, PDAAgent.class,
-            ConfigLayer.class };
+            CrawlAgent.class, OGCAgent.class, PDAAgent.class };
 
-    private static JAXBManager jaxb = null;
+    private static volatile JAXBManager jaxb = null;
 
     /**
      * marshall and unmarshall harvester objects

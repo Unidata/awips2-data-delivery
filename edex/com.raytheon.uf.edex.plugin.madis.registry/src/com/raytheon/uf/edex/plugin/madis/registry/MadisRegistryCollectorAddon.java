@@ -25,8 +25,8 @@ import java.util.TreeSet;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
-import com.raytheon.uf.common.datadelivery.harvester.ConfigLayer;
-import com.raytheon.uf.common.datadelivery.harvester.OGCAgent;
+import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayer;
 import com.raytheon.uf.common.dataplugin.madis.MadisRecord;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.pointdata.spatial.SurfaceObsLocation;
@@ -37,6 +37,9 @@ import com.raytheon.uf.edex.plugin.madis.ogc.MadisLayer;
 import com.vividsolutions.jts.geom.Envelope;
 
 /**
+ *
+ * WFS Registry collector for specifically for collecting and sending MADIS
+ * data.
  *
  * <pre>
  *
@@ -55,6 +58,7 @@ import com.vividsolutions.jts.geom.Envelope;
  * Jan 22, 2014  2713     dhladky   Calendar conversion.
  * Feb 16, 2017  6111     njensen   Replaced tabs with spaces
  * May 25, 2017  6186     rjpeter   Added createLayer
+ * Oct 12, 2017  6413     tjensen   Get ConfigLayers from configuration files
  *
  * </pre>
  *
@@ -69,9 +73,9 @@ public class MadisRegistryCollectorAddon extends
      */
     public MadisRegistryCollectorAddon() {
         super();
-        OGCAgent agent = getAgent();
-
-        for (ConfigLayer clayer : agent.getLayers()) {
+        String providerName = getProviderName();
+        for (ConfigLayer clayer : LookupManager.getInstance()
+                .getLayersForProvider(providerName).values()) {
             initializeLayerInfo(createLayer(clayer));
         }
     }

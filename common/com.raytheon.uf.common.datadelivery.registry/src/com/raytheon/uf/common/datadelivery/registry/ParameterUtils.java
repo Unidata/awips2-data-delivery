@@ -37,7 +37,10 @@ import com.raytheon.uf.common.parameter.lookup.ParameterLookup;
 
 /**
  *
- * Utilities for Parameters
+ * Utilities for Parameters and ParameterGroups
+ *
+ * Contains various methods for converting, comparing, or extracting specific
+ * data from Parameters and ParameterGroups.
  *
  * <pre>
  *
@@ -83,6 +86,9 @@ public class ParameterUtils {
         for (Parameter param : parameters) {
 
             String awipsName = param.getAwipsName();
+            if (awipsName == null) {
+                awipsName = param.getName();
+            }
             String units = param.getUnits();
             ParameterGroup pg = pgs.get(buildKey(awipsName, units));
             if (pg == null) {
@@ -99,14 +105,23 @@ public class ParameterUtils {
                         ParameterUtils.buildKey(type.getDescription(), null));
                 if (lg == null) {
                     lg = new LevelGroup(type.getDescription(), null);
-                    lg.setMasterKey(type.getType().toString());
+                    if (type.getType() != null) {
+                        lg.setMasterKey(type.getType().toString());
+                    }
                     pg.putLevelGroup(lg);
                 }
                 /*
-                 * GRID data stores its level information in Levels objects
+                 * GRID data is the only type that stores its level information
+                 * in Levels objects, so if it has Levels, assume it's Grid.
                  */
                 Levels levels = param.getLevels();
                 if (levels != null) {
+                    boolean providerLevels = false;
+                    if (param.getLevelType().get(0).getType() == LevelType.MB
+                            || param.getLevelType().get(0)
+                                    .getType() == LevelType.SEAB) {
+                        providerLevels = true;
+                    }
                     /*
                      * If we have selected indices, we need to just create
                      * entries for the ones selected. Otherwise create an entry
@@ -117,17 +132,25 @@ public class ParameterUtils {
                     if (selectedLevelIndices != null
                             && !selectedLevelIndices.isEmpty()) {
                         for (Integer index : selectedLevelIndices) {
-                            ParameterLevelEntry ple = new ParameterLevelEntry(
+                            GriddedParameterLevelEntry ple = new GriddedParameterLevelEntry(
                                     param.getProviderName(),
                                     param.getDefinition(),
                                     levels.getLevelAt(index).toString());
+                            ple.setMissingValue(param.getMissingValue());
+                            ple.setUseProviderLevel(providerLevels);
                             lg.addLevel(ple);
                         }
                     } else {
                         for (Double level : levels.getLevel()) {
-                            ParameterLevelEntry ple = new ParameterLevelEntry(
+                            String levelStr = null;
+                            if (level != Double.NaN) {
+                                levelStr = level.toString();
+                            }
+                            GriddedParameterLevelEntry ple = new GriddedParameterLevelEntry(
                                     param.getProviderName(),
-                                    param.getDefinition(), level.toString());
+                                    param.getDefinition(), levelStr);
+                            ple.setMissingValue(param.getMissingValue());
+                            ple.setUseProviderLevel(providerLevels);
                             lg.addLevel(ple);
                         }
                     }

@@ -1,0 +1,2298 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
+        pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
+        
+        U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
+        This_software_product_contains_export-restricted_data_whose
+        export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
+        to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
+        an_export_license_or_other_authorization.
+        
+        Contractor_Name:________Raytheon_Company
+        Contractor_Address:_____6825_Pine_Street,_Suite_340
+        ________________________Mail_Stop_B8
+        ________________________Omaha,_NE_68106
+        ________________________402.291.0100
+        
+        See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
+        further_licensing_information.
+    -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+        
+        Note that layers are not merged between localization levels, so if you
+        wish to modify a layer, such as to add/remove a parameter, all 
+        information for that layer must be copied.
+    -->
+<layerList xmlns:ns2="com.raytheon.uf.common.datadelivery.registry">
+    <layer name="madis-conus" namespace="http://madis.edex.uf.raytheon.com">
+        <minx>-130.0</minx>
+        <maxx>-65.0</maxx>
+        <miny>20.0</miny>
+        <maxy>50.0</maxy>
+        <crs>crs:84</crs>
+        <parameterGroup abbrev="dewpoint_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCA" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCA" description="Precipital Water Vapor QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCR" description="Temperature QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCD" description="Precipital Water Vapor QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCD" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="obsLocation" units="Degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="obsLocation" description="Location of Observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCA" description="Altimeter Setting QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCD" description="Altimeter Setting QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T" description="Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P" description="Pressure"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCR" description="Precipital Water Vapor QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCR" description="Dewpoint QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV" description="Elevation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCA" description="Precipitation Rate QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCA" description="Temperature QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCD" description="Temperature QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCD" description="Precipitation Rate QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater" units="in">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV" description="Precipital Water Vapor"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCA" description="Wind Speed QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate" units="in/hr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE" description="Precipitation Rate"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCR" description="Precipitation Rate QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh" units="%">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH" description="Relative Humidity"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCR" description="Latitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="restriction">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RES" description="Restriction Level"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCD" description="Wind Speed QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE" description="Altimeter Setting"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCD" description="Latitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCR" description="Wind Speed QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCR" description="Pressure QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PVDR" description="Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCA" description="Latitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCD" description="longitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="timeObs">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="OBSTIME" description="Time of observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCA" description="Longitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust" units="kts">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST" description="Wind Gust"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCA" description="Wind Gust QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCA" description="Wind Direction QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCD" description="Relative Humidity QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF" description="Wind Speed"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCA" description="Relative Humidity QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCD" description="Wind Direction QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="sub_provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="SUBPVDR" description="Sub Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD" description="Wind Direction"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCR" description="Longitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD" description="Dewpoint Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCA" description="Elevation QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCD" description="Wind Gust QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCD" description="Elevation QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCD" description="Pressure QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCR" description="Relative Humidity QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCA" description="Pressure QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCR" description="Wind Direction QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCR" description="Altimeter Setting QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCR" description="Wind Gust QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dataset">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DS" description="Dataset"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCR" description="Elevation QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+    </layer>
+    <layer name="madis-alaska" namespace="http://madis.edex.uf.raytheon.com">
+        <minx>-180.0</minx>
+        <maxx>-114.0</maxx>
+        <miny>55.0</miny>
+        <maxy>85.0</maxy>
+        <crs>crs:84</crs>
+        <parameterGroup abbrev="dewpoint_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCA" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCA" description="Precipital Water Vapor QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCR" description="Temperature QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCD" description="Precipital Water Vapor QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCD" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="obsLocation" units="Degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="obsLocation" description="Location of Observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCA" description="Altimeter Setting QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCD" description="Altimeter Setting QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T" description="Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P" description="Pressure"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCR" description="Precipital Water Vapor QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCR" description="Dewpoint QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV" description="Elevation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCA" description="Precipitation Rate QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCA" description="Temperature QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCD" description="Temperature QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCD" description="Precipitation Rate QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater" units="in">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV" description="Precipital Water Vapor"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCA" description="Wind Speed QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate" units="in/hr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE" description="Precipitation Rate"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCR" description="Precipitation Rate QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh" units="%">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH" description="Relative Humidity"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCR" description="Latitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="restriction">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RES" description="Restriction Level"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCD" description="Wind Speed QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE" description="Altimeter Setting"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCD" description="Latitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCR" description="Wind Speed QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCR" description="Pressure QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PVDR" description="Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCA" description="Latitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCD" description="longitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="timeObs">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="OBSTIME" description="Time of observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCA" description="Longitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust" units="kts">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST" description="Wind Gust"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCA" description="Wind Gust QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCA" description="Wind Direction QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCD" description="Relative Humidity QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF" description="Wind Speed"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCA" description="Relative Humidity QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCD" description="Wind Direction QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="sub_provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="SUBPVDR" description="Sub Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD" description="Wind Direction"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCR" description="Longitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD" description="Dewpoint Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCA" description="Elevation QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCD" description="Wind Gust QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCD" description="Elevation QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCD" description="Pressure QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCR" description="Relative Humidity QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCA" description="Pressure QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCR" description="Wind Direction QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCR" description="Altimeter Setting QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCR" description="Wind Gust QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dataset">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DS" description="Dataset"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCR" description="Elevation QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+    </layer>
+    <layer name="madis-hawaii" namespace="http://madis.edex.uf.raytheon.com">
+        <minx>-162.0</minx>
+        <maxx>-152.0</maxx>
+        <miny>16.0</miny>
+        <maxy>24.0</maxy>
+        <crs>crs:84</crs>
+        <parameterGroup abbrev="dewpoint_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCA" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCA" description="Precipital Water Vapor QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCR" description="Temperature QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCD" description="Precipital Water Vapor QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCD" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="obsLocation" units="Degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="obsLocation" description="Location of Observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCA" description="Altimeter Setting QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCD" description="Altimeter Setting QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T" description="Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P" description="Pressure"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCR" description="Precipital Water Vapor QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCR" description="Dewpoint QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV" description="Elevation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCA" description="Precipitation Rate QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCA" description="Temperature QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCD" description="Temperature QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCD" description="Precipitation Rate QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater" units="in">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV" description="Precipital Water Vapor"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCA" description="Wind Speed QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate" units="in/hr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE" description="Precipitation Rate"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCR" description="Precipitation Rate QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh" units="%">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH" description="Relative Humidity"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCR" description="Latitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="restriction">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RES" description="Restriction Level"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCD" description="Wind Speed QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE" description="Altimeter Setting"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCD" description="Latitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCR" description="Wind Speed QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCR" description="Pressure QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PVDR" description="Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCA" description="Latitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCD" description="longitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="timeObs">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="OBSTIME" description="Time of observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCA" description="Longitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust" units="kts">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST" description="Wind Gust"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCA" description="Wind Gust QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCA" description="Wind Direction QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCD" description="Relative Humidity QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF" description="Wind Speed"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCA" description="Relative Humidity QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCD" description="Wind Direction QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="sub_provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="SUBPVDR" description="Sub Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD" description="Wind Direction"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCR" description="Longitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD" description="Dewpoint Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCA" description="Elevation QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCD" description="Wind Gust QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCD" description="Elevation QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCD" description="Pressure QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCR" description="Relative Humidity QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCA" description="Pressure QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCR" description="Wind Direction QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCR" description="Altimeter Setting QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCR" description="Wind Gust QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dataset">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DS" description="Dataset"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCR" description="Elevation QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+    </layer>
+    <layer name="madis-puertorico" namespace="http://madis.edex.uf.raytheon.com">
+        <minx>-63.8</minx>
+        <maxx>-68.5</maxx>
+        <miny>16.5</miny>
+        <maxy>19.8</maxy>
+        <crs>crs:84</crs>
+        <parameterGroup abbrev="dewpoint_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCA" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCA" description="Precipital Water Vapor QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCR" description="Temperature QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCD" description="Precipital Water Vapor QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCD" description="Dewpoint QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="obsLocation" units="Degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="obsLocation" description="Location of Observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCA" description="Altimeter Setting QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCD" description="Altimeter Setting QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T" description="Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P" description="Pressure"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV_QCR" description="Precipital Water Vapor QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD_QCR" description="Dewpoint QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV" description="Elevation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCA" description="Precipitation Rate QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCA" description="Temperature QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="temperature_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="T_QCD" description="Temperature QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCD" description="Precipitation Rate QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipitalWater" units="in">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PWV" description="Precipital Water Vapor"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCA" description="Wind Speed QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate" units="in/hr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE" description="Precipitation Rate"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="precipRate_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PCPRATE_QCR" description="Precipitation Rate QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh" units="%">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH" description="Relative Humidity"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCR" description="Latitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="restriction">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RES" description="Restriction Level"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCD" description="Wind Speed QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter" units="Pa">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE" description="Altimeter Setting"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCD" description="Latitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF_QCR" description="Wind Speed QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCR" description="Pressure QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="PVDR" description="Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lat_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LAT_QCA" description="Latitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCD" description="longitude QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="timeObs">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="OBSTIME" description="Time of observation"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCA" description="Longitude QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust" units="kts">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST" description="Wind Gust"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCA" description="Wind Gust QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCA" description="Wind Direction QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCD" description="Relative Humidity QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windSpeed" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FF" description="Wind Speed"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCA" description="Relative Humidity QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCD" description="Wind Direction QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="sub_provider">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="SUBPVDR" description="Sub Provider Network"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection" units="degrees">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD" description="Wind Direction"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="lon_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="LON_QCR" description="Longitude QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dewpoint" units="K">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="TD" description="Dewpoint Temperature"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCA" description="Elevation QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCD" description="Wind Gust QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCD" description="Elevation QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qcd">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCD" description="Pressure QCD"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="rh_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="RH_QCR" description="Relative Humidity QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="pressure_qca">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="P_QCA" description="Pressure QCA"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windDirection_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DD_QCR" description="Wind Direction QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="altimeter_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ALTSE_QCR" description="Altimeter Setting QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="windGust_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="FFGUST_QCR" description="Wind Gust QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="dataset">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="DS" description="Dataset"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+        <parameterGroup abbrev="elevation_qcr">
+            <groupedLevels>
+                <entry>
+                    <key xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xsi:type="xs:string">Surface</key>
+                    <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="levelGroup" name="Surface" masterKey="SFC" reverseOrder="false">
+                        <levels providerName="ELEV_QCR" description="Elevation QCR"/>
+                    </value>
+                </entry>
+            </groupedLevels>
+        </parameterGroup>
+    </layer>
+</layerList>

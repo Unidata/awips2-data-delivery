@@ -1,4 +1,4 @@
-package com.raytheon.uf.common.datadelivery.harvester;
+package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
 /**
  * This software was developed and / or modified by Raytheon Company,
@@ -29,7 +29,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.datadelivery.registry.Parameter;
+import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 
 /**
  *
@@ -37,14 +37,16 @@ import com.raytheon.uf.common.datadelivery.registry.Parameter;
  *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 08/21/2012   754        dhladky     Initial creation
- * 10/232013    2361       njensen     Remove ISerializableObject
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------
+ * Aug 21, 2012  754      dhladky   Initial creation
+ * Oct 23, 2013  2361     njensen   Remove ISerializableObject
+ * Oct 12, 2017  6413     tjensen   Switch Parameters to ParameterGroups
+ *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 @XmlRootElement(name = "layer")
@@ -75,8 +77,8 @@ public class ConfigLayer {
     private String crs;
 
     @XmlElements({
-            @XmlElement(name = "parameter", type = Parameter.class, required = true) })
-    private List<Parameter> parameters;
+            @XmlElement(name = "parameterGroup", type = ParameterGroup.class, required = true) })
+    private List<ParameterGroup> parameterGroups;
 
     public String getName() {
         return name;
@@ -118,25 +120,6 @@ public class ConfigLayer {
         this.maxy = maxy;
     }
 
-    public void setParameters(List<Parameter> parameters) {
-        this.parameters = parameters;
-    }
-
-    public List<Parameter> getParameters() {
-        return parameters;
-    }
-
-    public Parameter getParameter(String name) {
-        Parameter parm = null;
-        for (Parameter lparm : getParameters()) {
-            if (lparm.getName().equals(name)) {
-                parm = lparm;
-                break;
-            }
-        }
-        return parm;
-    }
-
     public void setCrs(String crs) {
         this.crs = crs;
     }
@@ -151,5 +134,13 @@ public class ConfigLayer {
 
     public String getNamespace() {
         return namespace;
+    }
+
+    public List<ParameterGroup> getParameterGroups() {
+        return parameterGroups;
+    }
+
+    public void setParameterGroups(List<ParameterGroup> parameterGroups) {
+        this.parameterGroups = parameterGroups;
     }
 }
