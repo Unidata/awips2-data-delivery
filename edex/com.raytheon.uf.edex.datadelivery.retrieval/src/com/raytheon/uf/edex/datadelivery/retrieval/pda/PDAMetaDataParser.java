@@ -31,7 +31,6 @@ import javax.xml.bind.JAXBElement;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.TransformException;
 
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
@@ -45,6 +44,7 @@ import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
@@ -86,6 +86,7 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  *                                  routing to ingest
  * Aug 02, 2017  6186     rjpeter   Optionally combine PDA DataSetMetaData
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Oct 19, 2017  6465     tjensen   Rename Collections to URLParserInfo
  *
  * </pre>
  *
@@ -121,7 +122,7 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
      */
     @Override
     public List<DataSetMetaData<?, ?>> parseMetaData(Provider provider,
-            BriefRecordType record, Collection collection,
+            BriefRecordType record, URLParserInfo urlParserInfo,
             String dataDateFormat) {
         throw new UnsupportedOperationException(
                 "Not implemented for this type");

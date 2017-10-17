@@ -28,10 +28,10 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.DataSetNaming;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Constant;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
@@ -76,7 +76,8 @@ import opendap.dap.PrimitiveVector;
  * Oct 24, 2013  2454     dhladky   NOMADS change to ensemble configuration.
  * Nov 09, 2016  5988     tjensen   Update for Friendly naming for NOMADS
  * May 10, 2017  6135     nabowle   Replace UnitLookup with UnitMapper.
- * Oct 10, 2017  6465     tjensen   Moved UNIT_MAPPER_NAMESPACE
+ * Oct 10, 2017  6465     tjensen   Moved UNIT_MAPPER_NAMESPACE. Rename
+ *                                  Collections to URLParserInfo
  *
  * </pre>
  *
@@ -124,12 +125,12 @@ public final class OpenDAPParseUtility {
      *
      * @param linkKey
      *            the linkKey
-     * @param collection
-     *            the collection name
+     * @param urlParserInfo
+     *            the urlParserInfo
      * @return the dataset name and cycle
      */
     public List<String> getDataSetNameAndCycle(String linkKey,
-            Collection collection) throws Exception {
+            URLParserInfo urlParserInfo) throws Exception {
         String datasetName = null;
         String cycle = null;
         String numCycle = null;
@@ -139,8 +140,8 @@ public final class OpenDAPParseUtility {
             cycle = serviceConfig.getConstantValue("NONE");
 
             // special processing
-            if (collection.getPattern() != null) {
-                com.raytheon.uf.common.datadelivery.registry.Pattern pat = collection
+            if (urlParserInfo.getPattern() != null) {
+                com.raytheon.uf.common.datadelivery.registry.Pattern pat = urlParserInfo
                         .getPattern();
                 Pattern innerPattern = Pattern.compile(pat.getRegex());
                 String[] chunks = innerPattern.split(linkKey);
@@ -203,15 +204,11 @@ public final class OpenDAPParseUtility {
 
             // Fall back to the default, collectionName
             if (datasetName == null) {
-                datasetName = collection.getName();
+                datasetName = urlParserInfo.getName();
             }
 
-            /*
-             * The dataset names are the same for the following related
-             * collections, so prepend with the collection name.
-             */
-            if (collection.getDataSetNaming() != null) {
-                DataSetNaming dsn = collection.getDataSetNaming();
+            if (urlParserInfo.getDataSetNaming() != null) {
+                DataSetNaming dsn = urlParserInfo.getDataSetNaming();
 
                 if (dsn != null) {
 
@@ -222,17 +219,17 @@ public final class OpenDAPParseUtility {
                         if (dsn.getExpression()
                                 .equals(serviceConfig.getConstantValue(
                                         "ALTERNATE_NAMING_SCHEMA1"))) {
-                            datasetName = collection.getName()
+                            datasetName = urlParserInfo.getName()
                                     + dsn.getSeparator() + datasetName;
                         } else if (dsn.getExpression()
                                 .equals(serviceConfig.getConstantValue(
                                         "ALTERNATE_NAMING_SCHEMA2"))) {
-                            datasetName = collection.getName();
+                            datasetName = urlParserInfo.getName();
                         } else {
                             statusHandler.handle(Priority.INFO,
                                     dsn.getExpression()
                                             + "Is not a known OPENDAP Alternate naming schema. "
-                                            + collection);
+                                            + urlParserInfo);
                         }
                     }
                 }

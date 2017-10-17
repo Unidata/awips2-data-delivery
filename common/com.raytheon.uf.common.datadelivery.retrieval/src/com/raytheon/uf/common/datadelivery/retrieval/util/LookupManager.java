@@ -33,8 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 
-import com.raytheon.uf.common.datadelivery.registry.Collection;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.CollectionList;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayer;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayerList;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfo;
@@ -50,6 +49,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterMapping;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterRegexes;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.URLParserInfoList;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -91,6 +91,8 @@ import com.raytheon.uf.common.util.CollectionUtil;
  *                                  file retrieval.
  * Oct 12, 2017  6413     tjensen   Added ConfigLayer lookups
  * Oct 12, 2017  6440     bsteffen  Refresh level lookups.
+ * Oct 19, 2017  6465     tjensen   Rename Collections to URLParserInfo. Add
+ *                                  CrawlerDates
  *
  * </pre>
  *
@@ -126,7 +128,7 @@ public class LookupManager {
     private Map<String, ParameterLevelRegex> paramLevelRegexes = new LinkedHashMap<>(
             2);
 
-    private final Map<String, Map<String, Collection>> collectionMap = new LinkedHashMap<>(
+    private final Map<String, Map<String, URLParserInfo>> urlParserInfoMap = new LinkedHashMap<>(
             2);
 
     private final Map<String, Map<String, ConfigLayer>> layersMap = new LinkedHashMap<>(
@@ -141,7 +143,7 @@ public class LookupManager {
 
     private Date paramFileTime;
 
-    private final Map<String, Date> collectionFileTimes = new HashMap<>(2);
+    private final Map<String, Date> urlParserInfoFileTimes = new HashMap<>(2);
 
     private final Map<String, Date> layerFileTimes = new HashMap<>(2);
 
@@ -605,21 +607,21 @@ public class LookupManager {
         return dsvi;
     }
 
-    public Map<String, Collection> getCollectionsForProvider(
+    public Map<String, URLParserInfo> getURLParserInfoForProvider(
             String providerName) {
-        loadCollectionMap(providerName);
-        return collectionMap.get(providerName);
+        loadURLParserInfoMap(providerName);
+        return urlParserInfoMap.get(providerName);
     }
 
     /**
-     * Gets the Collections Map
+     * Gets the URLParserInfo Map
      *
      * @return
      */
-    public void loadCollectionMap(String providerName) {
+    public void loadURLParserInfoMap(String providerName) {
         ILocalizationFile file = null;
         String fileName = LookupManagerUtils
-                .getCollectionsFileName(providerName);
+                .getURLParserInfoFileName(providerName);
 
         try {
             IPathManager pm = PathManagerFactory.getPathManager();
@@ -633,34 +635,35 @@ public class LookupManager {
             try {
                 /*
                  * If map for the provider is null or the timestamp on the file
-                 * has changed since we last read it, read the collections from
-                 * the file.
+                 * has changed since we last read it, read the URLParserInfo
+                 * from the file.
                  */
-                if (collectionMap.get(providerName) == null
+                if (urlParserInfoMap.get(providerName) == null
                         || !file.getTimeStamp().equals(
-                                collectionFileTimes.get(providerName))) {
-                    CollectionList tmpCollections = null;
+                                urlParserInfoFileTimes.get(providerName))) {
+                    URLParserInfoList tmpURLParserInfo = null;
                     Map<LocalizationLevel, LocalizationFile> locFiles = LookupManagerUtils
                             .getLocalizationFiles(fileName);
 
-                    Map<String, Collection> newCollectionMap = new LinkedHashMap<>(
+                    Map<String, URLParserInfo> newURLParserInfoMap = new LinkedHashMap<>(
                             2);
 
                     for (LocalizationFile locfile : locFiles.values()) {
-                        tmpCollections = LookupManagerUtils
-                                .readCollectionsXml(locfile);
-                        for (Collection tmpColl : tmpCollections
-                                .getCollectionList()) {
-                            newCollectionMap.put(tmpColl.getName(), tmpColl);
+                        tmpURLParserInfo = LookupManagerUtils
+                                .readURLParserInfosXml(locfile);
+                        for (URLParserInfo tmpUPI : tmpURLParserInfo
+                                .getUrlParserInfoList()) {
+                            newURLParserInfoMap.put(tmpUPI.getName(), tmpUPI);
                         }
                     }
 
-                    collectionMap.put(providerName, newCollectionMap);
-                    collectionFileTimes.put(providerName, file.getTimeStamp());
+                    urlParserInfoMap.put(providerName, newURLParserInfoMap);
+                    urlParserInfoFileTimes.put(providerName,
+                            file.getTimeStamp());
                 }
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
-                        "Failed to Collection List from file: "
+                        "Failed to load URLParserInfo List from file: "
                                 + file.getPath(),
                         e);
             }

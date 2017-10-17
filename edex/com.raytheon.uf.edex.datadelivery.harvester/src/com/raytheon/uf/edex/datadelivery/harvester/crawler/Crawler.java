@@ -30,7 +30,7 @@ import com.raytheon.uf.common.comm.ProxyConfiguration;
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfigurationManager;
-import com.raytheon.uf.common.datadelivery.registry.Collection;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -55,7 +55,7 @@ import edu.uci.ics.crawler4j.crawler.CrawlConfig;
  * Jun 18, 2014  1712     bphillip  Updated Proxy configuration
  * Jul 14, 2017  6178     tgurney   Remove communication strategy
  * Jul 19, 2017  6178     tgurney   Remove file locking mechanism
- * Oct 04, 2017  6465     tjensen   Add collection. Remove redundancy.
+ * Oct 04, 2017  6465     tjensen   Add URLParserInfo. Remove redundancy.
  *
  * </pre>
  *
@@ -73,7 +73,7 @@ public abstract class Crawler {
 
     protected final HarvesterConfig hconfig;
 
-    protected Map<String, Collection> collections;
+    protected Map<String, URLParserInfo> urlParserInfoMap;
 
     private static final Map<String, Lock> lockMap = new HashMap<>();
 
@@ -152,8 +152,8 @@ public abstract class Crawler {
         this.agent = (CrawlAgent) hconfig.getAgent();
         this.providerName = providerName;
 
-        this.collections = LookupManager.getInstance()
-                .getCollectionsForProvider(providerName);
+        this.urlParserInfoMap = LookupManager.getInstance()
+                .getURLParserInfoForProvider(providerName);
 
     }
 
@@ -265,15 +265,16 @@ public abstract class Crawler {
         this.providerName = providerName;
     }
 
-    public Map<String, Collection> getCollections() {
-        return collections;
+    public void addURLParserInfo(Map<String, URLParserInfo> newURLParserInfo) {
+        this.urlParserInfoMap.putAll(newURLParserInfo);
     }
 
-    public void setCollections(Map<String, Collection> collections) {
-        this.collections = collections;
+    public Map<String, URLParserInfo> getUrlParserInfoMap() {
+        return urlParserInfoMap;
     }
 
-    public void addCollections(Map<String, Collection> newCollections) {
-        this.collections.putAll(newCollections);
+    public void setUrlParserInfoMap(
+            Map<String, URLParserInfo> urlParserInfoMap) {
+        this.urlParserInfoMap = urlParserInfoMap;
     }
 }

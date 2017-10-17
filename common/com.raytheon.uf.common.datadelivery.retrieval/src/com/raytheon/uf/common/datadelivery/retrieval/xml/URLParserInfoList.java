@@ -27,11 +27,11 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.datadelivery.registry.Collection;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 
 /**
  *
- * List of collections for XML.
+ * List of URLParserInfo objects for XML.
  *
  * <pre>
  *
@@ -45,18 +45,20 @@ import com.raytheon.uf.common.datadelivery.registry.Collection;
  *
  * @author tjensen
  */
-@XmlRootElement(name = "collectionList")
+@XmlRootElement(name = "urlParserInfoList")
 @XmlAccessorType(XmlAccessType.NONE)
-public class CollectionList {
+public class URLParserInfoList {
 
-    @XmlElements({ @XmlElement(name = "collection", type = Collection.class) })
-    private List<Collection> collectionList;
+    @XmlElements({
+            @XmlElement(name = "urlParserInfo", type = URLParserInfo.class) })
+    private List<URLParserInfo> urlParserInfoList;
 
-    public List<Collection> getCollectionList() {
-        return collectionList;
+    public List<URLParserInfo> getUrlParserInfoList() {
+        return urlParserInfoList;
     }
 
-    public void setCollectionList(List<Collection> collectionList) {
-        this.collectionList = collectionList;
+    public void setUrlParserInfoList(List<URLParserInfo> urlParserInfoList) {
+        this.urlParserInfoList = urlParserInfoList;
     }
+
 }

@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
 
 import com.raytheon.uf.common.datadelivery.harvester.CrawlAgent;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -44,8 +44,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapServiceFactory
 import opendap.dap.DAS;
 
 /**
- * Processes links that have been found for known Collections by the crawler and
- * parses them for metadata to add to the registry.
+ * Processes links that have been found for known URLParserInfos by the crawler
+ * and parses them for metadata to add to the registry.
  *
  * <pre>
  *
@@ -76,7 +76,7 @@ import opendap.dap.DAS;
  * Dec 14, 2016  5988     tjensen   Clean up error handling for crawler
  * Jul 12, 2017  6178     tgurney   Change link storage from file system to database
  * Aug 31, 2017  6430     rjpeter   Added timing information.
- * Oct 04, 2017  6465     tjensen   Get collections from config file
+ * Oct 04, 2017  6465     tjensen   Get URLParserInfos from config file
  *
  * </pre>
  *
@@ -124,11 +124,11 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
             if (hconfigs != null) {
                 HarvesterConfig hc = hconfigs.get(providerName);
                 CrawlAgent agent = (CrawlAgent) hc.getAgent();
-                Collection collection = LookupManager.getInstance()
-                        .getCollectionsForProvider(providerName)
+                URLParserInfo urlParserInfo = LookupManager.getInstance()
+                        .getURLParserInfoForProvider(providerName)
                         .get(collectionName);
 
-                if (collection != null) {
+                if (urlParserInfo != null) {
                     Provider provider = hc.getProvider();
                     OpenDapServiceFactory serviceFactory = (OpenDapServiceFactory) ServiceTypeFactory
                             .retrieveServiceFactory(provider.getServiceType());
@@ -173,7 +173,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                             List<Link> links = crawlerLinks.stream()
                                     .map(CrawlerLink::asLink)
                                     .collect(Collectors.toList());
-                            mdp.parseMetaData(provider, links, collection,
+                            mdp.parseMetaData(provider, links, urlParserInfo,
                                     dataDateFormat);
                             crawlerLinkDao.setAllProcessed(crawlerLinks);
                             statusHandler.info("Successfully processed "
@@ -187,8 +187,8 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                         }
                         timer.stop();
                         statusHandler.info("Parsed and stored metadata from ["
-                                + providerName + "] for collection ["
-                                + collection.getName() + "] in [" + TimeUtil
+                                + providerName + "] for model ["
+                                + urlParserInfo.getName() + "] in [" + TimeUtil
                                         .prettyDuration(timer.getElapsedTime())
                                 + "]");
                     } else {
@@ -197,7 +197,7 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
                     }
                 } else {
                     statusHandler.handle(Priority.ERROR,
-                            "Collection is null, please check your configuration!");
+                            "URLParserInfo is null, please check your configuration!");
                 }
             } else {
                 statusHandler.handle(Priority.ERROR,

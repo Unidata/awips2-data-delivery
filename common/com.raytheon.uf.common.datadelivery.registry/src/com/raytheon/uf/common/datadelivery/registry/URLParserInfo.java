@@ -19,27 +19,21 @@
  **/
 package com.raytheon.uf.common.datadelivery.registry;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Object used to store information about a data collection. This information is
- * then used when parsing metadata of that collection type.
+ * Object used to store URL parsing information for a given model. This
+ * information is then used when parsing metadata of that model.
  *
  * <pre>
  *
@@ -54,17 +48,17 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jan 07, 2013  1451     djohnson  Use TimeUtil.newGmtCalendar().
  * Nov 09, 2016  5988     tjensen   Add pattern and dataSetNaming overrides to
  *                                  collection
- * Oct 04, 2017  6465     tjensen   Remove unneeded fields
+ * Oct 04, 2017  6465     tjensen   Remove unneeded fields. Renamed from Collection
  *
  * </pre>
  *
  * @author dhladky
  */
 
-@XmlRootElement(name = "collection")
+@XmlRootElement(name = "urlParserInfo")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class Collection {
+public class URLParserInfo {
 
     @XmlAttribute(name = "name", required = true)
     @DynamicSerializeElement
@@ -94,28 +88,19 @@ public class Collection {
     @DynamicSerializeElement
     private DataSetNaming dataSetNaming;
 
-    /**
-     * A list of specific dates to be crawled. Used to allow users to force a
-     * crawl of an older date. Also populated by seed crawler when new
-     * collections are found to force all available date to be scanned once.
-     * Once a date has been crawled, it is removed from this list.
-     */
-    @XmlElements({ @XmlElement(name = "date") })
-    @DynamicSerializeElement
-    private List<String> dates;
-
-    public Collection() {
+    public URLParserInfo() {
 
     }
 
     /**
-     * Used in proto-collection creation from seed scans
+     * Created from seed scans. Used to parse URLs when crawling for DataSet
+     * metadata.
      *
      * @param name
      * @param seedUrl
      * @param dateFormat
      */
-    public Collection(String name, String seedUrl, String dateFormat) {
+    public URLParserInfo(String name, String seedUrl, String dateFormat) {
         this.name = name;
         this.seedUrl = seedUrl;
         this.dateFormat = dateFormat;
@@ -194,31 +179,5 @@ public class Collection {
 
     public void setDataSetNaming(DataSetNaming dataSetNaming) {
         this.dataSetNaming = dataSetNaming;
-    }
-
-    public List<String> getDates() {
-        return dates;
-    }
-
-    public void setDates(List<String> dates) {
-        this.dates = dates;
-    }
-
-    public void addDate(String date) {
-        this.dates.add(date);
-    }
-
-    public List<Date> getDatesAsDates() throws ParseException {
-        if (dates == null) {
-            return Collections.emptyList();
-        }
-        SimpleDateFormat sdf = new SimpleDateFormat();
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        sdf.applyLocalizedPattern(getDateFormat());
-        List<Date> dateDates = new ArrayList<>(dates.size());
-        for (String dateString : dates) {
-            dateDates.add(sdf.parse(dateString));
-        }
-        return dateDates;
     }
 }

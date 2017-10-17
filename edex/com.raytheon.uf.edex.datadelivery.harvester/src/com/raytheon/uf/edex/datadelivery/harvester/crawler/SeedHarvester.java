@@ -22,12 +22,13 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import com.raytheon.uf.common.datadelivery.harvester.ProtoCollection;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -39,8 +40,8 @@ import edu.uci.ics.crawler4j.parser.HtmlParseData;
 import edu.uci.ics.crawler4j.url.WebURL;
 
 /**
- * A WebCrawler that specifically crawls for data Collection information. The
- * information is stored in ProtoCollections.
+ * A WebCrawler that specifically crawls for data URLParserInfo and date
+ * information. Information is returned to Seed Crawler to be processed.
  *
  * <pre>
  *
@@ -50,7 +51,7 @@ import edu.uci.ics.crawler4j.url.WebURL;
  * ------------- -------- --------- -----------------
  * Oct 04, 2012  1038     dhladky   Initial creation
  * Feb 28, 2017  5988     tjensen   Improve logging
- * Oct 04, 2017  6465     tjensen   Change ArrayLists to Lists
+ * Oct 04, 2017  6465     tjensen   Refactor to process URLParserInfo
  *
  * </pre>
  *
@@ -68,13 +69,16 @@ public class SeedHarvester extends WebCrawler {
 
     private List<Pattern> IGNORE_FILTERS = null;
 
-    private final Map<String, ProtoCollection> links;
+    private final Map<String, URLParserInfo> links;
+
+    private final Map<String, Set<Date>> dates;
 
     private final String topurl;
 
     public SeedHarvester(String topurl, String pageKey,
-            Map<String, ProtoCollection> links, List<String> knowns,
-            List<String> ignores) {
+            Map<String, URLParserInfo> links, Map<String, Set<Date>> dates,
+            List<String> knowns, List<String> ignores) {
+        this.dates = dates;
         this.links = links;
         this.topurl = topurl;
         /*
@@ -105,7 +109,7 @@ public class SeedHarvester extends WebCrawler {
     }
 
     /**
-     * Creates a new collection
+     * Creates a new URLParserInfo
      *
      * @param seedUrl
      * @param slimurl
@@ -115,11 +119,15 @@ public class SeedHarvester extends WebCrawler {
      * @param depth
      * @return
      */
-    private ProtoCollection createNewCollection(String seedUrl, String slimurl,
-            SimpleDateFormat sdf, String dateParse, String[] chunks,
-            int depth) {
-        // brand new collection, we need to find urlKey here too...
-        ProtoCollection coll = new ProtoCollection(seedUrl, slimurl);
+    private void createNewURLParserInfo(String seedUrl, String slimurl,
+            SimpleDateFormat sdf, String dateParse, String url) {
+        String dateFormat = null;
+        if (sdf != null) {
+            dateFormat = sdf.toPattern();
+        }
+        // brand new URLParserInfo, we need to find urlKey here too...
+        URLParserInfo coll = new URLParserInfo(seedUrl.replaceAll("/", "_"),
+                seedUrl, dateFormat);
         String urlKey = null;
 
         if (sdf != null && dateParse != null) {
@@ -129,22 +137,19 @@ public class SeedHarvester extends WebCrawler {
              * some don't have dates handle them differently
              */
             String fdate = sdf.format(idate);
-            urlKey = chunks[depth].replaceAll(fdate, "");
+            urlKey = url.replaceAll(fdate, "");
+            coll.setDateFormat(sdf.toPattern());
 
-            LinkedHashMap<Integer, SimpleDateFormat> formats = new LinkedHashMap<>();
-            formats.put(depth, sdf);
-            coll.setFormats(formats);
-            LinkedHashMap<Integer, List<Date>> dates = new LinkedHashMap<>();
-            List<Date> idates = new ArrayList<>();
-            idates.add(idate);
-            dates.put(depth, idates);
-            coll.setDates(dates);
+            Set<Date> collDates = new TreeSet<>();
+            dates.put(seedUrl, collDates);
+            collDates.add(OpenDapSeedScanUtilities.getDate(sdf, dateParse));
+
         } else {
             urlKey = "";
         }
         coll.setUrlKey(urlKey);
-        statusHandler.info("Added new Collection: " + seedUrl);
-        return coll;
+        statusHandler.info("Added new URLParserInfo: " + seedUrl);
+        links.put(seedUrl, coll);
     }
 
     /**
@@ -156,11 +161,11 @@ public class SeedHarvester extends WebCrawler {
         String href = url.getURL();
         statusHandler.info("Checking url: " + href);
 
-        // Compare with Collections we know about
+        // Compare with URLParserInfos we know about
         if (KNOWN_FILTERS != null && !KNOWN_FILTERS.isEmpty()) {
             for (Pattern pat : KNOWN_FILTERS) {
                 if (pat.matcher(href).find()) {
-                    // URL contains a Collection we already know of
+                    // URL contains a URLParserInfo we already know of
                     if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                         statusHandler
                                 .info("Refusing to traverse, KNOWN pattern: "
@@ -171,11 +176,11 @@ public class SeedHarvester extends WebCrawler {
             }
         }
 
-        // Collections we don't care about
+        // URLParserInfos we don't want to crawl
         if (IGNORE_FILTERS != null && !IGNORE_FILTERS.isEmpty()) {
             for (Pattern pat : IGNORE_FILTERS) {
                 if (pat.matcher(href).find()) {
-                    // URL contains a (name)collection we wish to ignore
+                    // URL contains a name we wish to ignore
                     if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                         statusHandler
                                 .info("Refusing to traverse, IGNORE pattern: "
@@ -198,37 +203,34 @@ public class SeedHarvester extends WebCrawler {
     }
 
     /**
-     * Update the dates in the collection
+     * Update the dates for the URLParserInfo
      *
      * @param seedUrl
-     * @param depth
      * @param sdf
      * @param dateParse
      */
-    private void updateCollection(String seedUrl, int depth,
-            SimpleDateFormat sdf, String dateParse) {
+    private void updateURLParserInfo(String seedUrl, SimpleDateFormat sdf,
+            String dateParse) {
         // we have one already
-        ProtoCollection coll = links.get(seedUrl);
+        URLParserInfo coll = links.get(seedUrl);
 
-        // only one format can exist within a collection at a given depth
-        if (!coll.getFormats().containsKey(depth)) {
-            coll.getFormats().put(depth, sdf);
+        // only one format can exist within a URLParserInfo at a given depth
+
+        if (!sdf.toPattern().equals(coll.getDateFormat())) {
+            statusHandler
+                    .error("Crawler detected multiple date formats for the URLParserInfo: "
+                            + coll.getName());
         }
 
         /*
-         * collect all dates, we'll use this to determine first and last date
-         * available
+         * collect all dates to ensure all date is read at least once
          */
-        if (!coll.getDates().containsKey(depth)) {
-            List<Date> idates = new ArrayList<>();
-            idates.add(OpenDapSeedScanUtilities.getDate(sdf, dateParse));
-            coll.getDates().put(depth, idates);
-        } else {
-            Date sdate = OpenDapSeedScanUtilities.getDate(sdf, dateParse);
-            if (!coll.getDates().get(depth).contains(sdate)) {
-                coll.getDates().get(depth).add(sdate);
-            }
+        Set<Date> collDates = dates.get(seedUrl);
+        if (collDates == null) {
+            collDates = new TreeSet<>();
+            dates.put(seedUrl, collDates);
         }
+        collDates.add(OpenDapSeedScanUtilities.getDate(sdf, dateParse));
     }
 
     /**
@@ -256,7 +258,7 @@ public class SeedHarvester extends WebCrawler {
                 // parse it piece by piece
                 for (int depth = 0; depth < chunks.length - 1; depth++) {
                     /*
-                     * We're looking for dates. Remove any collection matches
+                     * We're looking for dates. Remove any URLParserInfo matches
                      * that might popup. These cause problems especially when
                      * there is a number in the name. It throws the regex
                      * parsing off.
@@ -273,24 +275,24 @@ public class SeedHarvester extends WebCrawler {
                          * Once you find the date portion of the URL, the
                          * collection name portions are the previous chunks of
                          * the URL. check to see if we already have a
-                         * ProtoCollection
+                         * URLParserInfo
                          */
-                        if (seedUrl == null) {
-                            seedUrl = OpenDapSeedScanUtilities
-                                    .getUrlAtDepth(depth - 1, slimurl);
-                        }
+                        seedUrl = OpenDapSeedScanUtilities
+                                .getUrlAtDepth(depth - 1, slimurl);
 
                         synchronized (links) {
 
                             if (links.containsKey(seedUrl)) {
-                                updateCollection(seedUrl, depth, sdf,
-                                        dateParse);
+                                updateURLParserInfo(seedUrl, sdf, dateParse);
                             } else {
-                                ProtoCollection coll = createNewCollection(
-                                        seedUrl, slimurl, sdf, dateParse,
-                                        chunks, depth);
-                                links.put(seedUrl, coll);
+                                createNewURLParserInfo(seedUrl, slimurl, sdf,
+                                        dateParse, chunks[depth]);
                             }
+                            /*
+                             * Once we find a date, we can stop processing
+                             * chunks
+                             */
+                            break;
                         }
                     }
                 }
@@ -313,10 +315,8 @@ public class SeedHarvester extends WebCrawler {
                              */
                         } else {
                             // brand new sub-directory with no date formatting.
-                            int depth = 0;
-                            ProtoCollection coll = createNewCollection(seedUrl,
-                                    slimurl, null, null, chunks, depth);
-                            links.put(seedUrl, coll);
+                            createNewURLParserInfo(seedUrl, slimurl, null, null,
+                                    chunks[0]);
                         }
                     }
                 }

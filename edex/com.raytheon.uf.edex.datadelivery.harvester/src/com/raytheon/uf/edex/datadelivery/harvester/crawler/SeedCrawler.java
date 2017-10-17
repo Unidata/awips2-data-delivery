@@ -20,17 +20,21 @@
 package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.comm.ProxyConfiguration;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
-import com.raytheon.uf.common.datadelivery.harvester.ProtoCollection;
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManagerUtils;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.datadelivery.harvester.crawler.MainSequenceCrawler.ModelCrawlConfiguration;
@@ -43,10 +47,10 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 /**
- * This Crawler looks for new data Collections and stores the information about
- * the Collection in a configuration file. This information is then used by the
- * MainSequence Crawler to look for links to process. Uses a seed harvester to
- * gather the ProtoCollections and then converts them to Collections.
+ * This Crawler looks for new data URLParserInfo and stores the information
+ * about the URLParserInfo in a configuration file. This information is then
+ * used by the MainSequence Crawler to look for links to process. Uses a seed
+ * harvester to gather the information and then converts them to URLParserInfos.
  *
  * <pre>
  *
@@ -57,7 +61,7 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
  * Oct 04, 2012  1038     dhladky   Initial creation
  * Jun 18, 2014  1712     bphillip  Updated Proxy configuration
  * Jul 14, 2017  6178     tgurney   Clean up unneeded code
- * Oct 04, 2017  6465     tjensen   Refactor for collections cleanup
+ * Oct 04, 2017  6465     tjensen   Refactor for URLParserInfos cleanup
  *
  * </pre>
  *
@@ -128,40 +132,24 @@ public class SeedCrawler extends Crawler {
         return getAgent().getMaxSeedPages();
     }
 
-    private void processCollections(
-            Map<String, ProtoCollection> protoCollections, Provider provider) {
+    private void processURLParserInfo(
+            Map<String, URLParserInfo> newURLParserInfo) {
 
-        ArrayList<Collection> newCollections = new ArrayList<>();
-        // start processing the proto collections into real collections
-        for (ProtoCollection pc : protoCollections.values()) {
-            try {
-                // make first date, find greatest depth dates
-                Collection coll = new Collection(pc.getCollectionName(),
-                        pc.getSeedUrl(), pc.getDateFormatString());
-                coll.setUrlKey(pc.getUrlKey());
-                coll.setDates(pc.getSortedDateStrings());
-                // if we ingestNew this will be true
-                if (agent.isIngestNew()) {
-                    coll.setIgnore(false);
-                }
-                newCollections.add(coll);
-                statusHandler.info(
-                        "adding new Collection: " + pc.getCollectionName());
-                // announce
-            } catch (Exception e) {
-                statusHandler.error("Error parsing proto-collection '"
-                        + pc.getCollectionName() + "' from "
-                        + provider.getName(), e);
-            }
+        // start processing the URLParserInfo
+        for (URLParserInfo upi : newURLParserInfo.values()) {
+
+            // if we ingestNew this will be true
+            upi.setIgnore(!agent.isIngestNew());
+            statusHandler.info("adding new URLParserInfo: " + upi.getName());
+
         }
 
-        statusHandler.info("Processing complete: " + newCollections.size()
-                + " new collections, " + protoCollections.size()
-                + " total collections found");
+        statusHandler.info("Processing complete: " + newURLParserInfo.size()
+                + " new URLParserInfo found");
 
-        if (!newCollections.isEmpty()) {
-            LookupManagerUtils.writeCollectionUpdates(providerName,
-                    newCollections);
+        if (!newURLParserInfo.isEmpty()) {
+            LookupManagerUtils.writeURLParserInfoUpdates(providerName,
+                    newURLParserInfo);
         }
     }
 
@@ -204,7 +192,10 @@ public class SeedCrawler extends Crawler {
             crawlcontroller = new CrawlController(config, pageFetcher,
                     robotstxtServer);
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
+            statusHandler.error(
+                    "Error instantiating CrawlController. Seed crawl aborted.",
+                    e);
+            return;
         }
 
         /*
@@ -214,21 +205,25 @@ public class SeedCrawler extends Crawler {
          */
         crawlcontroller.addSeed(searchUrl);
 
-        // if collections already exist for provider, we'll add those seed URL's
-        // as ignores
-        List<String> knownCollections = new ArrayList<>();
-        if (collections != null) {
-            for (Collection coll : collections.values()) {
-                knownCollections.add(coll.getSeedUrl());
+        /*
+         * if URLParserInfos already exist for provider, we'll add those seed
+         * URL's as ignores
+         */
+        List<String> knownURLParserInfo = new ArrayList<>();
+        if (urlParserInfoMap != null) {
+            for (URLParserInfo upi : urlParserInfoMap.values()) {
+                knownURLParserInfo.add(upi.getSeedUrl());
             }
         }
 
-        // SeedLinkStore seedLinks = new SeedLinkStore();
-        Map<String, ProtoCollection> protoCollections = new HashMap<>();
+        // Key for both maps will be the URLParserInfo name
+        Map<String, URLParserInfo> newURLParserInfo = new HashMap<>();
+        Map<String, Set<Date>> dates = new HashMap<>();
 
         ArrayList<WebCrawler> webCrawlers = new ArrayList<>(1);
         webCrawlers.add(new SeedHarvester(searchUrl, agent.getSearchKey(),
-                protoCollections, knownCollections, agent.getIgnore()));
+                newURLParserInfo, dates, knownURLParserInfo,
+                agent.getIgnore()));
 
         statusHandler.info("Starting crawl...");
         // start the crawling, blocks thread till finished
@@ -236,6 +231,25 @@ public class SeedCrawler extends Crawler {
         crawlcontroller.Shutdown();
         statusHandler.info("Finished crawl...");
 
-        processCollections(protoCollections, provider);
+        processURLParserInfo(newURLParserInfo);
+        processDates(dates, newURLParserInfo);
+    }
+
+    private void processDates(Map<String, Set<Date>> dates,
+            Map<String, URLParserInfo> newURLParserInfo) {
+        for (Entry<String, Set<Date>> entry : dates.entrySet()) {
+            String key = entry.getKey();
+            Set<Date> dateList = entry.getValue();
+
+            URLParserInfo upi = newURLParserInfo.get(key);
+            SimpleDateFormat sdf = new SimpleDateFormat();
+            sdf.applyLocalizedPattern(upi.getDateFormat());
+            Set<String> dateStrings = new TreeSet<>();
+
+            for (Date date : dateList) {
+                dateStrings.add(sdf.format(date));
+            }
+            LookupManagerUtils.writeCrawlerDates(key, dateStrings);
+        }
     }
 }

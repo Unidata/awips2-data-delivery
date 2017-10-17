@@ -21,7 +21,6 @@ package com.raytheon.uf.edex.datadelivery.harvester.crawler;
 
 import java.io.File;
 import java.nio.channels.FileLock;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,8 +30,8 @@ import java.util.TreeSet;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManagerUtils;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ImmutableDate;
@@ -47,9 +46,9 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 /**
  * This Crawler finds links that need to be checked for potential metadata to
- * add to the registry. Uses information from Collections to look for links and
- * compares them to known links in the crawler_link database to see if they are
- * new.
+ * add to the registry. Uses information from URLParserInfos to look for links
+ * and compares them to known links in the crawler_link database to see if they
+ * are new.
  *
  * <pre>
  *
@@ -94,8 +93,6 @@ public class MainSequenceCrawler extends Crawler {
 
         private final String modelName;
 
-        private final String modelSubName;
-
         private final String searchUrl;
 
         private final String dateFrag;
@@ -107,11 +104,10 @@ public class MainSequenceCrawler extends Crawler {
         private final int politenessDelay;
 
         public ModelCrawlConfiguration(String providerName, String modelName,
-                String modelSubName, String searchUrl, String dateFrag,
-                Date date, String searchKey, int politenessDelay) {
+                String searchUrl, String dateFrag, Date date, String searchKey,
+                int politenessDelay) {
             this.providerName = providerName;
             this.modelName = modelName;
-            this.modelSubName = modelSubName;
             this.searchUrl = searchUrl;
             this.dateFrag = dateFrag;
             this.date = new ImmutableDate(date);
@@ -138,13 +134,6 @@ public class MainSequenceCrawler extends Crawler {
          */
         public String getModelName() {
             return modelName;
-        }
-
-        /**
-         * @return the modelSubName
-         */
-        public String getModelSubName() {
-            return modelSubName;
         }
 
         /**
@@ -211,7 +200,7 @@ public class MainSequenceCrawler extends Crawler {
             performCrawls(modelConfigurations);
         } else {
             statusHandler
-                    .warn("Configuration for this provider contains no Collections. "
+                    .warn("Configuration for this provider contains no URLParserInfos. "
                             + hconfig.getProvider().getName());
             autoTrigger = true;
         }
@@ -236,9 +225,9 @@ public class MainSequenceCrawler extends Crawler {
         List<ModelCrawlConfiguration> modelConfigurations = new ArrayList<>();
         final Provider provider = hconfig.getProvider();
 
-        if (collections != null && !collections.isEmpty()) {
+        if (urlParserInfoMap != null && !urlParserInfoMap.isEmpty()) {
 
-            for (Collection coll : collections.values()) {
+            for (URLParserInfo coll : urlParserInfoMap.values()) {
                 // only process one's that are set to not be ignored
                 if (!coll.isIgnore()) {
                     List<Date> datesToCrawl = new ArrayList<>();
@@ -270,28 +259,13 @@ public class MainSequenceCrawler extends Crawler {
                     datesToCrawl.add(date);
 
                     // Check if we need to add specific days.
-                    try {
-                        List<Date> specificDates = coll.getDatesAsDates();
-                        if (specificDates != null && !specificDates.isEmpty()) {
-                            for (Date sdate : specificDates) {
-                                datesToCrawl.add(sdate);
-                            }
-                            /*
-                             * Now that we've added the dates to be crawled
-                             * once, remove them from the XML to not crawl them
-                             * again.
-                             */
-                            coll.setDates(null);
-                            List<Collection> newCollections = new ArrayList<>(
-                                    2);
-                            newCollections.add(coll);
-                            LookupManagerUtils.writeCollectionUpdates(
-                                    providerName, newCollections);
+                    List<Date> specificDates = LookupManagerUtils
+                            .getCrawlerDates(coll.getName(),
+                                    coll.getDateFormat());
+                    if (specificDates != null && !specificDates.isEmpty()) {
+                        for (Date sdate : specificDates) {
+                            datesToCrawl.add(sdate);
                         }
-                    } catch (ParseException e) {
-                        statusHandler.error("Error parsing specific dates for "
-                                + coll.getName() + ". Skipping specific dates.",
-                                e);
                     }
 
                     // sort/dup elim by format string
@@ -357,9 +331,8 @@ public class MainSequenceCrawler extends Crawler {
             config.setPolitenessDelay(politenessDelay);
 
             statusHandler.info(String.format(
-                    "Starting crawl [%s/%s], provider [%s], collection [%s], model [%s], date [%s], politeness delay [%s]",
-                    i + 1, totalCount, providerName, modelName,
-                    modelConfiguration.getModelSubName(), dateFrag,
+                    "Starting crawl [%s/%s], provider [%s], model [%s], date [%s], politeness delay [%s]",
+                    i + 1, totalCount, providerName, modelName, dateFrag,
                     politenessDelay));
 
             List<CrawlerLink> links = new ArrayList<>();
@@ -397,7 +370,7 @@ public class MainSequenceCrawler extends Crawler {
             CrawlerLink linkTemplate = new CrawlerLink();
             linkTemplate.setProviderName(providerName);
             linkTemplate.setCollectionName(modelName);
-            linkTemplate.setSubName(modelConfiguration.getModelSubName());
+            linkTemplate.setSubName(modelName);
             webCrawlers.add(new MainSequenceHarvester(searchUrl,
                     modelConfiguration.getSearchKey(), links, agent.getIgnore(),
                     linkTemplate));
@@ -422,18 +395,19 @@ public class MainSequenceCrawler extends Crawler {
      * @return the model configuration
      */
     public static ModelCrawlConfiguration getModelConfiguration(
-            String providerName, Collection collection, String providerUrl,
-            String dateFrag, Date date, String searchKey, int politenessDelay) {
+            String providerName, URLParserInfo urlParserInfo,
+            String providerUrl, String dateFrag, Date date, String searchKey,
+            int politenessDelay) {
 
-        String searchUrl = getUrl(providerUrl + collection.getSeedUrl(),
-                collection.getUrlKey());
+        String searchUrl = getUrl(providerUrl + urlParserInfo.getSeedUrl(),
+                urlParserInfo.getUrlKey());
 
         if (!"".equals(dateFrag)) {
             searchUrl = searchUrl + dateFrag + '/';
         }
 
-        return new ModelCrawlConfiguration(providerName, collection.getName(),
-                collection.getName(), searchUrl, dateFrag, date, searchKey,
+        return new ModelCrawlConfiguration(providerName,
+                urlParserInfo.getName(), searchUrl, dateFrag, date, searchKey,
                 politenessDelay);
     }
 }

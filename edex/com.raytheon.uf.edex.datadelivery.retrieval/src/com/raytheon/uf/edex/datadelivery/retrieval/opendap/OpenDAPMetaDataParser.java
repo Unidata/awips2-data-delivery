@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.TransformException;
 
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
@@ -49,6 +48,7 @@ import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManager;
 import com.raytheon.uf.common.datadelivery.retrieval.util.LookupManagerUtils;
@@ -128,7 +128,8 @@ import opendap.dap.NoSuchAttributeException;
  *                                     stored parameters once.
  * Sep 12, 2017  6413        tjensen   Updated to support ParameterGroups
  * Sep 25, 2017  6178        tgurney   parseMetaData generate link key from url
- * Oct 04, 2017  6465        tjensen   Get gridCoverage from provider
+ * Oct 04, 2017  6465        tjensen   Get gridCoverage from provider. Rename
+ *                                     Collections to URLParserInfo
  *
  * </pre>
  *
@@ -171,7 +172,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
      * @param dataSet
      * @param gdsmd
      * @param link
-     * @param collection
+     * @param urlParserInfo
      * @param dataDateFormat
      * @param gridCoverage
      * @return
@@ -179,7 +180,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
      */
     private Map<String, ParameterGroup> getParameters(DAS das,
             GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd,
-            String subName, Collection collection, String dataDateFormat,
+            String subName, URLParserInfo urlParserInfo, String dataDateFormat,
             GridCoverage gridCoverage) throws NoSuchAttributeException {
 
         final String collectionName = dataSet.getCollectionName();
@@ -607,8 +608,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
     @Override
     public List<DataSetMetaData<?, ?>> parseMetaData(Provider provider,
-            List<Link> links, Collection collection, String dataDateFormat)
-            throws NoSuchAttributeException {
+            List<Link> links, URLParserInfo urlParserInfo,
+            String dataDateFormat) throws NoSuchAttributeException {
 
         Map<String, Parameter> parameters = new HashMap<>();
         Map<String, OpenDapGriddedDataSet> dataSets = new HashMap<>();
@@ -618,7 +619,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             return null;
         }
         String providerName = provider.getName();
-        String collectionName = collection.getName();
+        String collectionName = urlParserInfo.getName();
         GridCoverage providerGC = provider.getProjection().get(0).getType()
                 .getGridCoverage();
 
@@ -626,8 +627,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
             List<String> vals = null;
             try {
-                vals = OpenDAPParseUtility.getInstance()
-                        .getDataSetNameAndCycle(link.getLinkKey(), collection);
+                vals = OpenDAPParseUtility.getInstance().getDataSetNameAndCycle(
+                        link.getLinkKey(), urlParserInfo);
             } catch (Exception e1) {
                 logger.error("Failed to get cycle and dataset name set...", e1);
                 continue;
@@ -651,8 +652,9 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
                     serviceConfig.getConstantValue("META_DATA_SUFFIX"),
                     serviceConfig.getConstantValue("BLANK")));
 
-            dataSet.setParameterGroups(getParameters(das, dataSet, gdsmd,
-                    link.getSubName(), collection, dataDateFormat, providerGC));
+            dataSet.setParameterGroups(
+                    getParameters(das, dataSet, gdsmd, link.getSubName(),
+                            urlParserInfo, dataDateFormat, providerGC));
 
             // TODO: OBE after all sites are at 18.1.1 or above
             Map<String, Parameter> paramMap = ParameterUtils
@@ -785,7 +787,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         List<DataSetMetaData<?, ?>> parsedMetadatas = new ArrayList<>();
 
         logger.info("Processing [" + parameters.size()
-                + "] parameters for Collection [" + collection.getName()
+                + "] parameters for Collection [" + urlParserInfo.getName()
                 + "] ...");
         // Store the Parameters
         for (Parameter parm : parameters.values()) {

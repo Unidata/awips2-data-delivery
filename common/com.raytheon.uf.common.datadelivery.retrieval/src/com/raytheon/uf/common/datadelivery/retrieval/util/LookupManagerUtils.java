@@ -20,21 +20,29 @@
 package com.raytheon.uf.common.datadelivery.retrieval.util;
 
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
+import java.util.TimeZone;
 import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.xml.bind.JAXBException;
 
-import com.raytheon.uf.common.datadelivery.registry.Collection;
 import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.CollectionList;
+import com.raytheon.uf.common.datadelivery.registry.URLParserInfo;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ConfigLayerList;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.CrawlerDates;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetConfigInfoMap;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformation;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.DataSetInformationLookup;
@@ -44,6 +52,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLevelRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterLookup;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterNameRegex;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ParameterRegexes;
+import com.raytheon.uf.common.datadelivery.retrieval.xml.URLParserInfoList;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
@@ -52,6 +61,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.SaveableOutputStream;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -68,11 +78,13 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 10, 2017 6465       tjensen     Initial creation
- * Oct 12, 2017 6413       tjensen     Added ConfigLayer lookups
- * Oct 12, 2017 6440       bsteffen    Refresh level lookups.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 10, 2017  6465     tjensen   Initial creation
+ * Oct 12, 2017  6413     tjensen   Added ConfigLayer lookups
+ * Oct 12, 2017  6440     bsteffen  Refresh level lookups.
+ * Oct 17, 2017  6465     tjensen   Rename Collections to URLParserInfo. Add
+ *                                  CrawlerDates. Improved Locking
  *
  * </pre>
  *
@@ -99,9 +111,19 @@ public class LookupManagerUtils {
 
     private static final String CONFIG_FILE_DATASETVERSION = "DataSetVersionInfo.xml";
 
-    private static final String CONFIG_FILE_COLLECTIONS = "Collections.xml";
+    private static final String CONFIG_FILE_URL_PARSER_INFO = "UrlParser.xml";
 
     private static final String CONFIG_FILE_CONFIG_LAYERS = "Layers.xml";
+
+    private static final String CONFIG_FILE_CRAWLER_DATES = "CrawlerDates.xml";
+
+    private static final ReadWriteLock crawlerDatesLock = new ReentrantReadWriteLock();
+
+    private static final ReadWriteLock upiLock = new ReentrantReadWriteLock();
+
+    private static final ReadWriteLock dsiLock = new ReentrantReadWriteLock();
+
+    private static final ReadWriteLock levelLock = new ReentrantReadWriteLock();
 
     private static JAXBManager jaxb;
 
@@ -111,9 +133,10 @@ public class LookupManagerUtils {
             jaxb = new JAXBManager(LevelLookup.class, ParameterLookup.class,
                     ParameterRegexes.class, DataSetInformationLookup.class,
                     DataSetInformation.class, DataSetConfigInfoMap.class,
-                    DataSetVersionInfoMap.class, CollectionList.class,
+                    DataSetVersionInfoMap.class, URLParserInfoList.class,
                     ParameterGroup.class, LevelGroup.class,
-                    ParameterLevelEntry.class, ConfigLayerList.class);
+                    ParameterLevelEntry.class, ConfigLayerList.class,
+                    CrawlerDates.class);
         }
 
         return jaxb;
@@ -150,9 +173,12 @@ public class LookupManagerUtils {
         LevelLookup levelXml = null;
 
         if (file != null && file.exists()) {
+            levelLock.readLock().lock();
             try (InputStream is = file.openInputStream()) {
                 levelXml = (LevelLookup) getJaxbManager()
                         .unmarshalFromInputStream(is);
+            } finally {
+                levelLock.readLock().unlock();
             }
         }
 
@@ -211,9 +237,12 @@ public class LookupManagerUtils {
                 LocalizationLevel.SITE);
         String fileName = getLevelFileName(modelName);
         ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
+        levelLock.writeLock().lock();
         try (SaveableOutputStream sos = lf.openOutputStream()) {
             getJaxbManager().marshalToStream(ll, sos);
             sos.save();
+        } finally {
+            levelLock.writeLock().unlock();
         }
     }
 
@@ -302,9 +331,12 @@ public class LookupManagerUtils {
         DataSetInformationLookup dsi = null;
 
         if (file != null && file.exists()) {
+            dsiLock.readLock().lock();
             try (InputStream is = file.openInputStream()) {
                 dsi = (DataSetInformationLookup) getJaxbManager()
                         .unmarshalFromInputStream(is);
+            } finally {
+                dsiLock.readLock().unlock();
             }
         }
 
@@ -325,9 +357,12 @@ public class LookupManagerUtils {
                 LocalizationLevel.SITE);
         String fileName = getDataSetInformationFileName();
         ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
+        dsiLock.writeLock().lock();
         try (SaveableOutputStream sos = lf.openOutputStream()) {
             getJaxbManager().marshalToStream(dsi, sos);
             sos.save();
+        } finally {
+            dsiLock.writeLock().unlock();
         }
     }
 
@@ -446,30 +481,34 @@ public class LookupManagerUtils {
     }
 
     /**
-     * Collections file name
+     * URLParserInfos file name
      *
      * @param modelName
      * @return
      */
-    public static String getCollectionsFileName(String providerName) {
-        return CONFIG_FILE_ROOT + providerName + "_" + CONFIG_FILE_COLLECTIONS;
+    public static String getURLParserInfoFileName(String providerName) {
+        return CONFIG_FILE_ROOT + providerName + "_"
+                + CONFIG_FILE_URL_PARSER_INFO;
     }
 
     /**
-     * Read Collections List
+     * Read URLParserInfos List
      *
      * @param file
      * @return
      * @throws Exception
      */
-    public static CollectionList readCollectionsXml(ILocalizationFile file)
-            throws Exception {
-        CollectionList collList = null;
+    public static URLParserInfoList readURLParserInfosXml(
+            ILocalizationFile file) throws Exception {
+        URLParserInfoList collList = null;
 
         if (file != null && file.exists()) {
+            upiLock.readLock().lock();
             try (InputStream is = file.openInputStream()) {
-                collList = (CollectionList) getJaxbManager()
+                collList = (URLParserInfoList) getJaxbManager()
                         .unmarshalFromInputStream(is);
+            } finally {
+                upiLock.readLock().unlock();
             }
         }
 
@@ -477,53 +516,64 @@ public class LookupManagerUtils {
     }
 
     /**
-     * Write Collections to site localization file.
+     * Write URLParserInfo to site localization file.
      *
      * @param providerName
-     * @param newCollections
+     * @param newURLParserInfos
      */
-    public static synchronized void writeCollectionUpdates(String providerName,
-            List<Collection> newCollections) {
+    public static void writeURLParserInfoUpdates(String providerName,
+            Map<String, URLParserInfo> newURLParserInfos) {
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationContext lc = pm.getContext(LocalizationType.COMMON_STATIC,
                 LocalizationLevel.SITE);
-        String fileName = getCollectionsFileName(providerName);
+        String fileName = getURLParserInfoFileName(providerName);
         ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
-        Map<String, Collection> newCollectionMap = new HashMap<>(2);
+        Map<String, URLParserInfo> newURLParserInfoMap = new HashMap<>(2);
 
-        // Load the collections currently in the file
-        if (lf.exists()) {
-            try {
-                CollectionList tmpCollections = readCollectionsXml(lf);
-                for (Collection tmpColl : tmpCollections.getCollectionList()) {
-                    newCollectionMap.put(tmpColl.getName(), tmpColl);
+        upiLock.writeLock().lock();
+        try {
+            // Load the URLParserInfos currently in the file
+            if (lf.exists()) {
+                try {
+                    /*
+                     * This will create a read lock, but since this is a
+                     * reentrant lock and in the same thread, it won't block.
+                     */
+                    URLParserInfoList tmpURLParserInfo = readURLParserInfosXml(
+                            lf);
+                    for (URLParserInfo tmpUPI : tmpURLParserInfo
+                            .getUrlParserInfoList()) {
+                        newURLParserInfoMap.put(tmpUPI.getName(), tmpUPI);
+                    }
+                } catch (Exception e) {
+                    statusHandler.error(
+                            "Unable to read the " + lf.getPath()
+                                    + " configuration! Save of new URLParserInfo failed",
+                            e);
+                    return;
                 }
+            }
+            try (SaveableOutputStream sos = lf.openOutputStream()) {
+
+                // Load the new ones, updating any that already were there.
+                for (URLParserInfo tmpUPI : newURLParserInfos.values()) {
+                    newURLParserInfoMap.put(tmpUPI.getName(), tmpUPI);
+                }
+
+                // Build URLParserInfoList
+                URLParserInfoList upiList = new URLParserInfoList();
+                upiList.setUrlParserInfoList(
+                        new ArrayList<>(newURLParserInfoMap.values()));
+                getJaxbManager().marshalToStream(upiList, sos);
+                sos.save();
             } catch (Exception e) {
                 statusHandler.error(
-                        "Unable to read the " + lf.getPath()
-                                + " configuration! Save of new collections failed",
+                        "Unable to recreate the " + lf.getPath()
+                                + " configuration! Save of new URLParserInfo failed",
                         e);
-                return;
             }
-        }
-        try (SaveableOutputStream sos = lf.openOutputStream()) {
-
-            // Load the new ones, updating any that already were there.
-            for (Collection tmpColl : newCollections) {
-                newCollectionMap.put(tmpColl.getName(), tmpColl);
-            }
-
-            // Build CollectionList
-            CollectionList collList = new CollectionList();
-            collList.setCollectionList(
-                    new ArrayList<>(newCollectionMap.values()));
-            getJaxbManager().marshalToStream(collList, sos);
-            sos.save();
-        } catch (Exception e) {
-            statusHandler.error(
-                    "Unable to recreate the " + lf.getPath()
-                            + " configuration! Save of new collections failed",
-                    e);
+        } finally {
+            upiLock.writeLock().unlock();
         }
     }
 
@@ -539,7 +589,7 @@ public class LookupManagerUtils {
     }
 
     /**
-     * Read Data Set Information lookup
+     * Read Config Layer lookup
      *
      * @param file
      * @return
@@ -557,5 +607,151 @@ public class LookupManagerUtils {
         }
 
         return layerList;
+    }
+
+    /**
+     * Get CrawlerDates file name for a collection.
+     *
+     * @param collectionName
+     * @return
+     */
+    public static String getCrawlerDatesFileName(String collectionName) {
+        return CONFIG_FILE_ROOT + collectionName + CONFIG_FILE_CRAWLER_DATES;
+    }
+
+    /**
+     * Read in the CrawlerDates from a localization file. After the file has
+     * been read, delete it.
+     *
+     * @param file
+     * @return
+     * @throws Exception
+     */
+    private static CrawlerDates readAndDeleteCrawlerDatesXml(
+            ILocalizationFile file) throws Exception {
+        CrawlerDates crawlerDates = null;
+
+        if (file != null && file.exists()) {
+            try (InputStream is = file.openInputStream()) {
+                crawlerDates = (CrawlerDates) getJaxbManager()
+                        .unmarshalFromInputStream(is);
+
+                file.delete();
+            } catch (LocalizationException e) {
+                statusHandler.error(
+                        "Unable to delete crawler dates file " + file.getPath(),
+                        e);
+            }
+        }
+
+        return crawlerDates;
+    }
+
+    /**
+     * Writes out dates found during a seed scan to a localization file. Used
+     * during the main scan to add these dates to be processed.
+     *
+     * @param collectionName
+     * @param newDates
+     */
+    public static void writeCrawlerDates(String collectionName,
+            Set<String> newDates) {
+        IPathManager pm = PathManagerFactory.getPathManager();
+        LocalizationContext lc = pm.getContext(LocalizationType.COMMON_STATIC,
+                LocalizationLevel.SITE);
+        String fileName = getCrawlerDatesFileName(collectionName);
+        ILocalizationFile lf = pm.getLocalizationFile(lc, fileName);
+        Set<String> datesToWrite = new TreeSet<>();
+
+        crawlerDatesLock.writeLock().lock();
+        try {
+            // Load the URLParserInfos currently in the file
+            if (lf.exists()) {
+                try {
+                    CrawlerDates tmpCrawlDates = readAndDeleteCrawlerDatesXml(
+                            lf);
+                    datesToWrite.addAll(tmpCrawlDates.getDates());
+                } catch (Exception e) {
+                    statusHandler.error(
+                            "Unable to read the " + lf.getPath()
+                                    + " configuration! Save of new Crawler Dates failed",
+                            e);
+                    return;
+                }
+            }
+            try (SaveableOutputStream sos = lf.openOutputStream()) {
+
+                // Load the new ones
+                datesToWrite.addAll(newDates);
+
+                // Builder CrawlerDates
+                CrawlerDates newCrawlDates = new CrawlerDates();
+                newCrawlDates.setDates(new ArrayList<>(datesToWrite));
+                getJaxbManager().marshalToStream(newCrawlDates, sos);
+                sos.save();
+            } catch (Exception e) {
+                statusHandler.error(
+                        "Unable to recreate the " + lf.getPath()
+                                + " configuration! Save of new Crawler Dates failed",
+                        e);
+            }
+        } finally {
+            crawlerDatesLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Parses out the dates from a CrawlerDates file and returns them as list.
+     *
+     * @param collectionName
+     * @param dateFormat
+     * @return
+     */
+    public static List<Date> getCrawlerDates(String collectionName,
+            String dateFormat) {
+        List<Date> crawlDates = Collections.emptyList();
+        ILocalizationFile file = null;
+        String fileName = getCrawlerDatesFileName(collectionName);
+
+        try {
+            IPathManager pm = PathManagerFactory.getPathManager();
+            file = pm.getStaticLocalizationFile(fileName);
+        } catch (Exception fnfe) {
+            statusHandler
+                    .error("Failed to lookup Crawler Dates localization file: "
+                            + fileName, fnfe);
+        }
+        if (file != null) {
+            /*
+             * Acquiring a write lock here because the file is deleted after
+             * it's read
+             */
+            crawlerDatesLock.writeLock().lock();
+            try {
+                CrawlerDates cd = readAndDeleteCrawlerDatesXml(file);
+                SimpleDateFormat sdf = new SimpleDateFormat();
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                sdf.applyLocalizedPattern(dateFormat);
+                List<String> dates = cd.getDates();
+                if (dates != null) {
+                    List<Date> dateDates = new ArrayList<>(dates.size());
+                    for (String dateString : dates) {
+                        dateString = dateString.trim();
+                        if (!dateString.isEmpty()) {
+                            dateDates.add(sdf.parse(dateString));
+                        }
+                    }
+                    crawlDates = dateDates;
+                }
+            } catch (Exception e) {
+                statusHandler.error(
+                        "Failed to read Crawler Dates from file " + fileName,
+                        e);
+            } finally {
+                crawlerDatesLock.writeLock().unlock();
+            }
+        }
+
+        return crawlDates;
     }
 }

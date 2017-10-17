@@ -23,19 +23,19 @@
         at different localization levels will be combined. 
     -->
 <!--
-    Sample collection describing the various options.
+    Sample urlParserInfo describing the various options.
     
-    <collection ignore="true" name="test">  // ignore: skip crawling this collection (default: false)
-                                            // name: name of the collection
-        <seedUrl>test</seedUrl>             // seedUrl: Base link in the URL after the provider URL
-        <urlKey>test</urlKey>               // urlKey: Section of URL link applied after seedUrl. 
-                                            //         Usually in the form of 'urlKey+date'.
-        <dateFormat>yyMMdd</dateFormat>     // dateFormat: Format of the dates in the URL
-                                            //             (default: yyyyMMdd)
+    <urlParserInfo ignore="true" name="test"> // ignore: skip crawling this urlParserInfo (default: false)
+                                              // name: name of the urlParserInfo
+        <seedUrl>test</seedUrl>               // seedUrl: Base link in the URL after the provider URL
+        <urlKey>test</urlKey>                 // urlKey: Section of URL link applied after seedUrl. 
+                                              //         Usually in the form of 'urlKey+date'.
+        <dateFormat>yyMMdd</dateFormat>       // dateFormat: Format of the dates in the URL
+                                              //             (default: yyyyMMdd)
         // pattern: allows for processing of unusually formed URLs. Splits the section of the URL using
         //          the provided 'regex'. Can specify the index containing the 'dataSet' and 'cycle'.
         <pattern dataSetLocation="0" cycleLocation="1" regex="\." />
-        // dataSetNaming: Some collections have multiple datasets, so this allows the alternative 
+        // dataSetNaming: Some urlParserInfo are for multiple datasets, so this allows the alternative 
         //                naming conventions to be specified.
         //    alternate 1 - 'collectionName+dataSetName': 
         //       Joins the collectionName and datasetName using the specified separator.
@@ -43,232 +43,227 @@
         //       Names the dataSet after the collection name. This will merge data from different
         //       collections into a single dataset.
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
-        <date>20170107</date>  // Specify dates that need to be scanned for data. Once these dates
-        <date>20170123</date>  // have been scanned by the crawler, the site version of this file 
-        <date>20171111</date>  // will be updated removing these dates. This can be used to crawl 
-        <date>20171231</date>  // data from olderdates or newly added collections.
-        
-    </collection>
+    </urlParserInfo>
 -->
-<collectionList>
-    <collection name="narre">
+<urlParserInfoList>
+    <urlParserInfo name="narre">
         <seedUrl>narre</seedUrl>
         <urlKey>narre</urlKey>
-    </collection>
-    <collection name="wave_nah">
+    </urlParserInfo>
+    <urlParserInfo name="wave_nah">
         <seedUrl>wave/nah</seedUrl>
         <urlKey>nah</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="wave_akw">
+    </urlParserInfo>
+    <urlParserInfo name="wave_akw">
         <seedUrl>wave/akw</seedUrl>
         <urlKey>akw</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="gfs">
+    </urlParserInfo>
+    <urlParserInfo name="gfs">
         <seedUrl>gfs</seedUrl>
         <urlKey>gfs</urlKey>
-    </collection>
-    <collection name="gfs_0p25">
+    </urlParserInfo>
+    <urlParserInfo name="gfs_0p25">
         <seedUrl>gfs_0p25</seedUrl>
         <urlKey>gfs</urlKey>
-    </collection>
-    <collection name="gfs_0p50">
+    </urlParserInfo>
+    <urlParserInfo name="gfs_0p50">
         <seedUrl>gfs_0p50</seedUrl>
         <urlKey>gfs</urlKey>
-    </collection>
-    <collection name="gfs_1p00">
+    </urlParserInfo>
+    <urlParserInfo name="gfs_1p00">
         <seedUrl>gfs_1p00</seedUrl>
         <urlKey>gfs</urlKey>
-    </collection>
-    <collection name="wave_wna">
+    </urlParserInfo>
+    <urlParserInfo name="wave_wna">
         <seedUrl>wave/wna</seedUrl>
         <urlKey>wna</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="wave_nfcens">
+    </urlParserInfo>
+    <urlParserInfo name="wave_nfcens">
         <seedUrl>wave/nfcens</seedUrl>
         <urlKey></urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="wave_mww3">
+    </urlParserInfo>
+    <urlParserInfo name="wave_mww3">
         <seedUrl>wave/mww3</seedUrl>
         <urlKey></urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="wave_nph">
+    </urlParserInfo>
+    <urlParserInfo name="wave_nph">
         <seedUrl>wave/nph</seedUrl>
         <urlKey>nph</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="wave_nww3">
+    </urlParserInfo>
+    <urlParserInfo name="wave_nww3">
         <seedUrl>wave/nww3</seedUrl>
         <urlKey>nww3</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="gfs_hd">
+    </urlParserInfo>
+    <urlParserInfo name="gfs_hd">
         <seedUrl>gfs_hd</seedUrl>
         <urlKey>gfs_hd</urlKey>
-    </collection>
-    <collection name="wave_glw">
+    </urlParserInfo>
+    <urlParserInfo name="wave_glw">
         <seedUrl>wave/glw</seedUrl>
         <urlKey>glw</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="wave_enp">
+    </urlParserInfo>
+    <urlParserInfo name="wave_enp">
         <seedUrl>wave/enp</seedUrl>
         <urlKey>enp</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
-    </collection>
-    <collection name="gfs_2p5">
+    </urlParserInfo>
+    <urlParserInfo name="gfs_2p5">
         <seedUrl>gfs_2p5</seedUrl>
         <urlKey>gfs_2p5</urlKey>
-    </collection>
-    <collection name="hiresw">
+    </urlParserInfo>
+    <urlParserInfo name="hiresw">
         <seedUrl>hiresw</seedUrl>
         <urlKey>hiresw</urlKey>
-    </collection>
-    <collection name="cmcens">
+    </urlParserInfo>
+    <urlParserInfo name="cmcens">
         <seedUrl>cmcens</seedUrl>
         <urlKey>cmcens</urlKey>
-    </collection>
-    <collection name="nam">
+    </urlParserInfo>
+    <urlParserInfo name="nam">
         <seedUrl>nam</seedUrl>
         <urlKey>nam</urlKey>
-    </collection>
-    <collection name="sref">
+    </urlParserInfo>
+    <urlParserInfo name="sref">
         <seedUrl>sref</seedUrl>
         <urlKey>sref</urlKey>
-    </collection>
-    <collection name="sref_bc">
+    </urlParserInfo>
+    <urlParserInfo name="sref_bc">
         <seedUrl>sref_bc</seedUrl>
         <urlKey>sref</urlKey>
-    </collection>
-    <collection name="ofs_hires">
+    </urlParserInfo>
+    <urlParserInfo name="ofs_hires">
         <seedUrl>ofs/hires</seedUrl>
         <urlKey>ofs</urlKey>
         <pattern dataSetLocation="0" cycleLocation="1" regex="\." />
-    </collection>
-    <collection name="ofs">
+    </urlParserInfo>
+    <urlParserInfo name="ofs">
         <seedUrl>ofs</seedUrl>
         <urlKey>ofs</urlKey>
         <pattern dataSetLocation="-1" regex="_" />
-    </collection>
-    <collection name="akrtma">
+    </urlParserInfo>
+    <urlParserInfo name="akrtma">
         <seedUrl>akrtma</seedUrl>
         <urlKey>akrtma</urlKey>
-    </collection>
-    <collection name="fens">
+    </urlParserInfo>
+    <urlParserInfo name="fens">
         <seedUrl>fens</seedUrl>
         <urlKey>fens</urlKey>
-    </collection>
-    <collection name="rtofs">
+    </urlParserInfo>
+    <urlParserInfo name="rtofs">
         <seedUrl>rtofs</seedUrl>
         <urlKey>rtofs_global</urlKey>
         <pattern dataSetLocation="-1" regex="_" />
-    </collection>
-    <collection name="ice">
+    </urlParserInfo>
+    <urlParserInfo name="ice">
         <seedUrl>ice</seedUrl>
         <urlKey>ice</urlKey>
         <pattern dataSetLocation="0" cycleLocation="1" regex="\." />
-    </collection>
-    <collection name="rtma2p5">
+    </urlParserInfo>
+    <urlParserInfo name="rtma2p5">
         <seedUrl>rtma2p5</seedUrl>
         <urlKey>rtma2p5</urlKey>
-    </collection>
-    <collection name="gurtma">
+    </urlParserInfo>
+    <urlParserInfo name="gurtma">
         <seedUrl>gurtma</seedUrl>
         <urlKey>gurtma</urlKey>
-    </collection>
-    <collection name="naefs_bc">
+    </urlParserInfo>
+    <urlParserInfo name="naefs_bc">
         <seedUrl>naefs_bc</seedUrl>
         <urlKey>naefs</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
-    </collection>
-    <collection name="rap">
+    </urlParserInfo>
+    <urlParserInfo name="rap">
         <seedUrl>rap</seedUrl>
         <urlKey>rap</urlKey>
-    </collection>
-    <collection name="naefs_ndgd">
+    </urlParserInfo>
+    <urlParserInfo name="naefs_ndgd">
         <seedUrl>naefs_ndgd</seedUrl>
         <urlKey>naefs</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
-    </collection>
-    <collection name="rtma">
+    </urlParserInfo>
+    <urlParserInfo name="rtma">
         <seedUrl>rtma</seedUrl>
         <urlKey>rtma</urlKey>
-    </collection>
-    <collection name="aqm">
+    </urlParserInfo>
+    <urlParserInfo name="aqm">
         <seedUrl>aqm</seedUrl>
         <urlKey>aqm</urlKey>
-    </collection>
-    <collection name="ncom">
+    </urlParserInfo>
+    <urlParserInfo name="ncom">
         <seedUrl>ncom</seedUrl>
         <urlKey>ncom</urlKey>
         <pattern dataSetLocation="1" regex="_" />
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
-    </collection>
-    <collection name="estofs">
+    </urlParserInfo>
+    <urlParserInfo name="estofs">
         <seedUrl>estofs</seedUrl>
         <urlKey></urlKey>
-    </collection>
-    <collection name="fnl">
+    </urlParserInfo>
+    <urlParserInfo name="fnl">
         <seedUrl>fnl</seedUrl>
         <urlKey>fnl</urlKey>
-    </collection>
-    <collection name="hirtma">
+    </urlParserInfo>
+    <urlParserInfo name="hirtma">
         <seedUrl>hirtma</seedUrl>
         <urlKey>hirtma</urlKey>
-    </collection>
-    <collection name="prrtma">
+    </urlParserInfo>
+    <urlParserInfo name="prrtma">
         <seedUrl>prrtma</seedUrl>
         <urlKey>prrtma</urlKey>
-    </collection>
-    <collection name="gens_bc">
+    </urlParserInfo>
+    <urlParserInfo name="gens_bc">
         <seedUrl>gens_bc</seedUrl>
         <urlKey>gens</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
-    </collection>
-    <collection name="gens">
+    </urlParserInfo>
+    <urlParserInfo name="gens">
         <seedUrl>gens</seedUrl>
         <urlKey>gens</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
-    </collection>
-    <collection name="gens_ndgd">
+    </urlParserInfo>
+    <urlParserInfo name="gens_ndgd">
         <seedUrl>gens_ndgd</seedUrl>
         <urlKey>gens</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
-    </collection>
-    <collection name="hrrr">
+    </urlParserInfo>
+    <urlParserInfo name="hrrr">
         <seedUrl>hrrr</seedUrl>
         <urlKey>hrrr</urlKey>
-    </collection>
-    <collection name="estofs_atl" ignore="false">
+    </urlParserInfo>
+    <urlParserInfo name="estofs_atl">
         <seedUrl>estofs_atl</seedUrl>
         <urlKey></urlKey>
-    </collection>
-    <collection name="blend" ignore="false">
+    </urlParserInfo>
+    <urlParserInfo name="blend">
         <seedUrl>blend</seedUrl>
         <urlKey>blend</urlKey>
-    </collection>
-    <collection name="gdas_0p25" ignore="false">
+    </urlParserInfo>
+    <urlParserInfo name="gdas_0p25">
         <seedUrl>gdas_0p25</seedUrl>
         <urlKey>gdas</urlKey>
-    </collection>
-    <collection name="estofs_pac" ignore="false">
+    </urlParserInfo>
+    <urlParserInfo name="estofs_pac">
         <seedUrl>estofs_pac</seedUrl>
         <urlKey></urlKey>
-    </collection>
-    <collection name="wave_glwu" ignore="false">
+    </urlParserInfo>
+    <urlParserInfo name="wave_glwu">
         <seedUrl>wave/glwu</seedUrl>
         <urlKey>glwu</urlKey>
-    </collection>
-    <collection name="gfs_0p25_1hr" ignore="false">
+    </urlParserInfo>
+    <urlParserInfo name="gfs_0p25_1hr">
         <seedUrl>gfs_0p25_1hr</seedUrl>
         <urlKey>gfs</urlKey>
-    </collection>
-    <collection name="gfs_test" ignore="false">
+    </urlParserInfo>
+    <urlParserInfo name="gfs_test">
         <seedUrl>gfs_test</seedUrl>
         <urlKey>gfs</urlKey>
-    </collection>
-</collectionList>
+    </urlParserInfo>
+</urlParserInfoList>
