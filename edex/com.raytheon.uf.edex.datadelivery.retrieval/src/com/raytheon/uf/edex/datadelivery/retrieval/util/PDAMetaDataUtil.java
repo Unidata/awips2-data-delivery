@@ -37,17 +37,21 @@ import java.util.regex.Pattern;
 
 import javax.xml.bind.JAXBException;
 
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datadelivery.harvester.HarvesterConfig;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.MetaDataPattern;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.PDAMetaDataConfig;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
@@ -65,6 +69,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDAPipeDelimitedMetaDataE
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Mar 31, 2017  6186     rjpeter   Initial creation
+ * Oct 23, 2017  6185     bsteffen  Use area and resolution to get sat provider.
  *
  * </pre>
  *
@@ -108,20 +113,19 @@ public class PDAMetaDataUtil {
 
     private final Map<String, Object> lockMap = new HashMap<>(8);
 
-    private Map<String, String> satelliteMapping = new HashMap<>(1);
+    private PDADescriptionMapSet satelliteMapping = null;
 
-    private Map<String, String> parameterMapping = new HashMap<>(1);
+    private Map<String, String> parameterMapping = new HashMap<>();
 
-    private Map<String, String> resolutionMapping = new HashMap<>(1);
+    private Map<String, String> resolutionMapping = new HashMap<>();
 
-    private Map<String, PDAShortNameMap> shortNameMapping = new HashMap<>(1);
+    private Map<String, PDAShortNameMap> shortNameMapping = new HashMap<>();
 
-    private Set<String> excludes = new HashSet<>(1);
+    private Set<String> excludes = new HashSet<>();
 
-    private static Map<String, MetaDataPattern> metaDataPatterns = new HashMap<>(
-            1);
+    private static Map<String, MetaDataPattern> metaDataPatterns = new HashMap<>();
 
-    private static Map<String, String> providerRetention = new HashMap<>(1);
+    private static Map<String, String> providerRetention = new HashMap<>();
 
     public static PDAMetaDataUtil getInstance() {
         return instance;
@@ -146,9 +150,55 @@ public class PDAMetaDataUtil {
         return rval != null ? rval : providerRes;
     }
 
-    public String getSatName(String providerSat) {
-        String rval = getSatMapping().get(providerSat);
-        return rval != null ? rval : providerSat;
+    public String getSatName(String providerSat, String providerRes,
+            ReferencedEnvelope envelope) {
+        PDADescriptionMapSet mapping = getSatMapping();
+        String rval = mapping.doDynamicMapping(providerSat, providerRes,
+                envelope);
+        if (rval == null) {
+            rval = mapping.doMapping(providerSat);
+            if (rval == null) {
+                rval = providerSat;
+            }
+        } else if (mapping.setMapping(providerSat, rval)) {
+            /*
+             * When a dynamic mapping matches, save the mapping of key to
+             * description at the configured level. This supports the ability of
+             * GOES satellites to shift between east, west, and center. When a
+             * new full disk arrives at the new location then the configured
+             * mapping is updated and all resolutions will register the new
+             * position.
+             */
+            synchronized (lockMap.get(SATELLITE_PATH)) {
+                try {
+                    IPathManager pm = PathManagerFactory.getPathManager();
+                    JAXBManager jaxb = new JAXBManager(
+                            PDADescriptionMapSet.class);
+                    LocalizationContext context = pm.getContext(
+                            LocalizationType.COMMON_STATIC,
+                            LocalizationLevel.CONFIGURED);
+                    ILocalizationFile lf = pm.getLocalizationFile(context,
+                            SATELLITE_PATH);
+                    PDADescriptionMapSet mapSet;
+                    if (lf.exists()) {
+                        mapSet = loadFile(jaxb, lf, PDADescriptionMapSet.class);
+                    } else {
+                        mapSet = new PDADescriptionMapSet();
+                    }
+                    if (mapSet.setMapping(providerSat, rval)) {
+                        try (SaveableOutputStream os = lf.openOutputStream()) {
+                            jaxb.marshalToStream(mapSet, os);
+                            os.save();
+                        }
+                    }
+                } catch (JAXBException | SerializationException | IOException
+                        | LocalizationException e) {
+                    logger.error("Unable to update satellite mapping", e);
+                }
+            }
+
+        }
+        return rval;
     }
 
     public boolean isExcluded(String paramShortName) {
@@ -262,7 +312,7 @@ public class PDAMetaDataUtil {
                         PDADescriptionMapSet fileSet = loadFile(jaxb, file,
                                 PDADescriptionMapSet.class);
                         if (fileSet != null) {
-                            mapSet.addMaps(fileSet.getMaps());
+                            mapSet.extend(fileSet);
                         }
                     }
                     Map<String, String> newMap = new HashMap<>(1);
@@ -281,12 +331,12 @@ public class PDAMetaDataUtil {
         return resolutionMapping;
     }
 
-    private Map<String, String> getSatMapping() {
+    private PDADescriptionMapSet getSatMapping() {
         String fileName = SATELLITE_PATH;
         SortedMap<LocalizationLevel, LocalizationFile> locFiles = getLocalizationFiles(
                 fileName);
 
-        if (satelliteMapping.isEmpty() || shouldUpdate(locFiles.values())) {
+        if (satelliteMapping == null || shouldUpdate(locFiles.values())) {
             logger.info("Initializing Satellite mappings...");
             PDADescriptionMapSet mapSet = new PDADescriptionMapSet();
             synchronized (lockMap.get(SATELLITE_PATH)) {
@@ -297,14 +347,10 @@ public class PDAMetaDataUtil {
                         PDADescriptionMapSet fileSet = loadFile(jaxb, file,
                                 PDADescriptionMapSet.class);
                         if (fileSet != null) {
-                            mapSet.addMaps(fileSet.getMaps());
+                            mapSet.extend(fileSet);
                         }
                     }
-                    Map<String, String> newMap = new HashMap<>(1);
-                    for (PDADescriptionMap map : mapSet.getMaps()) {
-                        newMap.put(map.getKey(), map.getDescription());
-                    }
-                    satelliteMapping = newMap;
+                    satelliteMapping = mapSet;
                     updateTimes(locFiles.values());
                 } catch (JAXBException | SerializationException | IOException
                         | LocalizationException e) {
@@ -510,7 +556,7 @@ public class PDAMetaDataUtil {
         return update;
     }
 
-    private <K> K loadFile(JAXBManager jaxb, LocalizationFile file,
+    private <K> K loadFile(JAXBManager jaxb, ILocalizationFile file,
             Class<K> clazz)
             throws IOException, LocalizationException, SerializationException {
         K rval = null;

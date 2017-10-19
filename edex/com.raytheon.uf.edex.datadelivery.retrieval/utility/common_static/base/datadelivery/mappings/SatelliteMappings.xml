@@ -24,12 +24,40 @@
         Note: Only base and site level files are read in.
     -->
 <pdaDescriptionMapSet>
+    <!-- Assume that each satellite starts at the test position, the dynamic
+        mappings will take over when the satellite moves. When a satellite 
+        moves to a more permanent location then these entries can be updated so the 
+        mapping will be correct if any data comes in before the dynamic mappings 
+        match. -->
     <pdaDescriptionMap>
-        <key>G16</key>
-        <description>GOES-16</description>
+        <key>GOES-16</key>
+        <description>GOES-Center</description>
     </pdaDescriptionMap>
     <pdaDescriptionMap>
-        <key>G17</key>
-        <description>GOES-17</description>
+        <key>GOES-17</key>
+        <description>GOES-Center</description>
     </pdaDescriptionMap>
+    <pdaDescriptionMap>
+        <key>GOES-18</key>
+        <description>GOES-Center</description>
+    </pdaDescriptionMap>
+
+    <pdaDynDescMap>
+        <key>GOES-\d\d</key>
+        <resolution>F</resolution>
+        <area>-156.2995,6.2995,-81.3282,81.3282</area>
+        <description>GOES-East</description>
+    </pdaDynDescMap>
+    <pdaDynDescMap>
+        <key>GOES-\d\d</key>
+        <resolution>F</resolution>
+        <area>-181.2995,-18.7005,-81.3282,81.3282</area>
+        <description>GOES-Center</description>
+    </pdaDynDescMap>
+    <pdaDynDescMap>
+        <key>GOES-\d\d</key>
+        <resolution>F</resolution>
+        <area>-216.2995,-53.7005,-81.3282,81.3282</area>
+        <description>GOES-West</description>
+    </pdaDynDescMap>
 </pdaDescriptionMapSet>

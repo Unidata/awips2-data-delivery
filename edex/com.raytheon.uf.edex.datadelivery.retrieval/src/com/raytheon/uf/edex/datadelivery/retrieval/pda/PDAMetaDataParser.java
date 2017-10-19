@@ -87,6 +87,7 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * Aug 02, 2017  6186     rjpeter   Optionally combine PDA DataSetMetaData
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Oct 19, 2017  6465     tjensen   Rename Collections to URLParserInfo
+ * Oct 23, 2017  6185     bsteffen  Use area and resolution to get sat provider.
  *
  * </pre>
  *
@@ -177,6 +178,7 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                     .getExtractor(metadataId, title, boundingBox);
             Map<String, String> paramMap = extractor.extractMetaData(record);
             Time time = extractor.getTime();
+            Coverage coverage = extractor.getCoverage();
             ImmutableDate idate = new ImmutableDate(time.getStart());
 
             String providerMetadataId = paramMap
@@ -187,7 +189,8 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
             String providerSat = paramMap.get(PDAMetaDataExtractor.SAT_NAME);
             String awipsParam = metadataUtil.getParameterName(providerParam);
             String awipsRes = metadataUtil.getResName(providerRes);
-            String awipsSat = metadataUtil.getSatName(providerSat);
+            String awipsSat = metadataUtil.getSatName(providerSat, providerRes,
+                    coverage.getEnvelope());
             String dataSetName = createDataSetName(awipsParam, awipsRes,
                     awipsSat);
             String collectionName = awipsSat;
@@ -210,8 +213,6 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
             String providerName = provider.getName();
             boolean isMoving = getIsMovingFromConfig(dataSetName, providerName);
 
-            Coverage coverage = null;
-
             Map<String, ParameterGroup> parameterGroups = getParameters(
                     providerParam, awipsParam, collectionName,
                     provider.getName());
@@ -232,7 +233,6 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 pdaDataSet.setParameterGroups(parameterGroups);
 
                 // set the coverage
-                coverage = extractor.getCoverage();
                 pdaDataSet.setCoverage(coverage);
 
                 // TODO: OBE after all sites are 18.1.1 or beyond
