@@ -32,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.raytheon.uf.edex.database.init.DbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes;
 
 /**
  * The DbInit class is responsible for ensuring that the appropriate tables are
@@ -59,6 +58,9 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttr
  *                                  recreate tables. Updated init to truncate
  *                                  tables on start.
  * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations. Removed
+ *                                  bandwidth_subscription_retrieval_attributes
  *
  * </pre>
  *
@@ -91,15 +93,9 @@ public class HibernateBandwidthDbInit extends DbInit
         aConfig.addAnnotatedClass(
                 com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket.class);
         aConfig.addAnnotatedClass(
-                com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription.class);
-        aConfig.addAnnotatedClass(
-                com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval.class);
-        aConfig.addAnnotatedClass(
                 com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation.class);
         aConfig.addAnnotatedClass(
                 com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency.class);
-        aConfig.addAnnotatedClass(
-                com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes.class);
         aConfig.addAnnotatedClass(
                 com.raytheon.uf.edex.datadelivery.bandwidth.registry.RegistryBandwidthRecord.class);
         return aConfig;
@@ -114,7 +110,7 @@ public class HibernateBandwidthDbInit extends DbInit
             public void execute(Connection connection) throws SQLException {
                 try (Statement stmt = connection.createStatement()) {
                     stmt.execute(
-                            "truncate bandwidth_bucket, bandwidth_subscription_retrieval_attributes, bandwidth_allocation, bandwidth_subscription, datadeliveryregistrybandwidth");
+                            "truncate bandwidth_bucket, bandwidth_allocation, datadeliveryregistrybandwidth");
                     connection.commit();
                 }
             }

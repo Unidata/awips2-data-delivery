@@ -36,6 +36,7 @@ import com.raytheon.uf.common.datadelivery.event.retrieval.GenericNotifyEvent;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPriority;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
@@ -51,11 +52,9 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.DataSetLatency;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.DataSetLatencyDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalDao;
@@ -83,6 +82,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
  * Sep 19, 2017  6415     rjpeter   Fixed calculateNewSleepTime to always be
  *                                  positive
  * Oct 10, 2017  6415     nabowle   Add retrieval latency check. Fix extendedDelayTimeFactor.
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations
  *
  * </pre>
  *
@@ -176,7 +177,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
         public String getStatus() {
             return statusName;
         }
-    };
+    }
 
     /**
      * Create Spring persistent Bean class.
@@ -366,6 +367,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                                 + nextWindow + " (next Bucket) and Network "
                                 + this.threadNetwork
                                 + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
+                return;
             }
             long nextBandwidthBucketTime = nextBandwidthBucket
                     .getBucketStartTime();
@@ -562,25 +564,21 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             for (BandwidthAllocation bandwidthAllocation : allBandwidthAllocationList) {
                 RetrievalStatus retrievalStatus = bandwidthAllocation
                         .getStatus();
-                if ((bandwidthAllocation instanceof SubscriptionRetrieval)
-                        && (RetrievalStatus.SCHEDULED == retrievalStatus)) {
+                if (RetrievalStatus.SCHEDULED == retrievalStatus) {
                     Long baId = bandwidthAllocation.getIdentifier();
                     long baBandwidthBucket = bandwidthAllocation
                             .getBandwidthBucket();
-                    SubscriptionRetrieval subscriptionRetrieval = (SubscriptionRetrieval) bandwidthAllocation;
-                    BandwidthSubscription bandwidthSubscription = subscriptionRetrieval
-                            .getBandwidthSubscription();
-                    String subscriptionName = bandwidthSubscription.getName();
+                    String subscriptionId = bandwidthAllocation.getSubscriptionId();
 
                     if ((baBandwidthBucket >= currentBandwidthBucketTime)
                             && (baBandwidthBucket < nextBandwidthBucketTime)) {
                         // Allocation is in the current Bandwidth Bucket
-                        currentBwBktBandwidthAllocationMap.put(subscriptionName,
+                        currentBwBktBandwidthAllocationMap.put(subscriptionId,
                                 bandwidthAllocation);
                     } else if ((baBandwidthBucket >= nextBandwidthBucketTime)
                             && (baBandwidthBucket < oneMoreBandwidthBucketTime)) {
                         // Allocation is in the next Bandwidth Bucket
-                        nextBwBktBandwidthAllocationMap.put(subscriptionName,
+                        nextBwBktBandwidthAllocationMap.put(subscriptionId,
                                 bandwidthAllocation);
                     } else if (baBandwidthBucket < currentBandwidthBucketTime) {
                         // This allocation should have been removed.
@@ -592,10 +590,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                                         + sdf.format(bandwidthAllocation
                                                 .getBandwidthBucket())
                                         + "  for Subscription: "
-                                        + bandwidthSubscription.getRegistryId()
-                                        + "  for Data Set Name: "
-                                        + bandwidthSubscription
-                                                .getDataSetName());
+                                        + subscriptionId);
                     } else {
                         // Outside of range. Do nothing.
                     }
@@ -644,52 +639,48 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
             for (BandwidthAllocation bandwidthAllocation : rescheduleBandwidthAllocationList) {
 
-                if (bandwidthAllocation instanceof SubscriptionRetrieval) {
-                    SubscriptionRetrieval subRetrieval = (SubscriptionRetrieval) bandwidthAllocation;
-                    SubscriptionLatencyData subscriptionLatencyData = new SubscriptionLatencyData();
-                    subLatencyDataList.add(subscriptionLatencyData);
+                SubscriptionLatencyData subscriptionLatencyData = new SubscriptionLatencyData();
+                subLatencyDataList.add(subscriptionLatencyData);
 
-                    BandwidthSubscription bandwidthSubscription = subRetrieval
-                            .getBandwidthSubscription();
+                subscriptionLatencyData.setSubscriptionLatency(
+                        bandwidthAllocation.getSubscriptionLatency());
 
-                    subscriptionLatencyData.setSubscriptionLatency(
-                            subRetrieval.getSubscriptionLatency());
-                    subscriptionLatencyData.setSubscriptionName(
-                            bandwidthSubscription.getName());
-                    long baseRefTimeLong = bandwidthSubscription
-                            .getBaseReferenceTime().getTime();
-                    subscriptionLatencyData
-                            .setBaseRefTimestamp(baseRefTimeLong);
+                long baseRefTimeLong = bandwidthAllocation
+                        .getBaseReferenceTime().getTime();
+                subscriptionLatencyData.setBaseRefTimestamp(baseRefTimeLong);
 
-                    String dataSetName = bandwidthSubscription.getDataSetName();
-                    String dataSetProviderName = bandwidthSubscription
-                            .getProvider();
-                    subscriptionLatencyData.setDataSetName(dataSetName);
-                    subscriptionLatencyData
-                            .setDataSetProviderName(dataSetProviderName);
-                    DataSet<T, C> dataSet = null;
-                    try {
-                        dataSet = dataSetHandler.getByNameAndProvider(
-                                dataSetName, dataSetProviderName);
-                    } catch (RegistryHandlerException rhe) {
-                        statusHandler.error(
-                                "Unable to query DataSet Name: " + dataSetName
-                                        + " Provider: " + dataSetProviderName,
-                                rhe);
-                    }
-                    if (dataSet != null) {
-                        subscriptionLatencyData.availabilityOffset = dataSet
-                                .getAvailabilityOffset();
-                        DataSetLatency dataSetLatency = null;
-                        dataSetLatency = dataSetLatencyDao
-                                .getByDataSetNameAndProvider(dataSetName,
-                                        dataSetProviderName);
-                        subscriptionLatencyData
-                                .setDataSetLatency(dataSetLatency);
-                    } else {
-                        // We have a data set name but NO actual data set.
-                        // Treat as having no Data Set
-                    }
+                String dataSetName = null;
+                String dataSetProviderName = null;
+                String subscriptionName = null;
+                try {
+                    Subscription sub = subscriptionHandler
+                            .getById(bandwidthAllocation.getSubscriptionId());
+                    subscriptionName = sub.getName();
+                    dataSetName = sub.getDataSetName();
+                    dataSetProviderName = sub.getProvider();
+                } catch (RegistryHandlerException e) {
+                    statusHandler.error("Unable to query Subscription with id: "
+                            + bandwidthAllocation.getSubscriptionId(), e);
+                    continue;
+                }
+                subscriptionLatencyData.setSubscriptionName(subscriptionName);
+                subscriptionLatencyData.setDataSetName(dataSetName);
+                subscriptionLatencyData
+                        .setDataSetProviderName(dataSetProviderName);
+                try {
+                    DataSet<T, C> dataSet = dataSetHandler.getByNameAndProvider(
+                            dataSetName, dataSetProviderName);
+                    subscriptionLatencyData.availabilityOffset = dataSet
+                            .getAvailabilityOffset();
+                    DataSetLatency dataSetLatency = null;
+                    dataSetLatency = dataSetLatencyDao
+                            .getByDataSetNameAndProvider(dataSetName,
+                                    dataSetProviderName);
+                    subscriptionLatencyData.setDataSetLatency(dataSetLatency);
+                } catch (RegistryHandlerException rhe) {
+                    statusHandler.error("Unable to query DataSet Name: "
+                            + dataSetName + " Provider: " + dataSetProviderName,
+                            rhe);
                 }
             }
 

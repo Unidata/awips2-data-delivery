@@ -38,7 +38,6 @@ import java.util.regex.Pattern;
 
 import org.springframework.util.CollectionUtils;
 
-import com.google.common.collect.Lists;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.Subscribe;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthRequest;
@@ -59,6 +58,7 @@ import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
 import com.raytheon.uf.common.datadelivery.registry.SharedSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
@@ -82,8 +82,6 @@ import com.raytheon.uf.common.util.IFileModifiedWatcher;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes;
 import com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.ISubscriptionFinder;
 import com.raytheon.uf.edex.datadelivery.bandwidth.notification.BandwidthEventBus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
@@ -170,6 +168,8 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Apr 05, 2017  1045     tjensen   Update for moving datasets
  * Aug 02, 2017  6186     rjpeter   Moved intersection logic to DataSetMetaData,
  *                                  refactored dataSetMetaData processing
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations
  *
  * </pre>
  *
@@ -533,7 +533,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         .info("Received Subscription removal notification for Subscription ["
                                 + event.getId() + "]");
 
-                removeBandwidthSubscriptions(event.getId());
+                remove(bandwidthDao
+                        .getBandwidthAllocationsByRegistryId(event.getId()));
 
                 try {
                     /*
@@ -1098,26 +1099,18 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @Override
     protected void unscheduleSubscriptionsForAllocations(
             List<BandwidthAllocation> unscheduled) {
-        List<SubscriptionRetrieval> retrievals = Lists.newArrayList();
-        for (BandwidthAllocation unscheduledAllocation : unscheduled) {
-            if (unscheduledAllocation instanceof SubscriptionRetrieval) {
-                SubscriptionRetrieval retrieval = (SubscriptionRetrieval) unscheduledAllocation;
-                retrievals.add(retrieval);
-            }
-        }
-
         Set<Subscription<T, C>> subscriptions = new HashSet<>();
-        for (SubscriptionRetrieval retrieval : retrievals) {
+
+        for (BandwidthAllocation unscheduledAllocation : unscheduled) {
+
             try {
-                final SubscriptionRetrievalAttributes<T, C> sra = bandwidthDao
-                        .getSubscriptionRetrievalAttributes(retrieval);
-                if (sra != null) {
-                    Subscription<T, C> sub = sra.getSubscription();
-                    if (sub != null) {
-                        subscriptions.add(sub);
-                    }
+                Subscription<T, C> sub = DataDeliveryHandlers
+                        .getSubscriptionHandler()
+                        .getById(unscheduledAllocation.getSubscriptionId());
+                if (sub != null) {
+                    subscriptions.add(sub);
                 }
-            } catch (SerializationException e) {
+            } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Unable to deserialize a subscription", e);
                 continue;

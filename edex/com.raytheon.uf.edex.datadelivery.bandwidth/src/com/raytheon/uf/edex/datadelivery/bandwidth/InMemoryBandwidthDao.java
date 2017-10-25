@@ -20,18 +20,12 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionStatusSummary;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Network;
@@ -40,10 +34,7 @@ import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.dataplugin.persist.IPersistableDataObject;
 import com.raytheon.uf.common.util.ReflectionUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrievalAttributes;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
@@ -78,6 +69,8 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Aug 02, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate and added
  *                                  purgeAllocations.
  * Sep 18, 2017  6415     rjpeter   Purge SubscriptionRetrieval
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations
  *
  * </pre>
  *
@@ -93,24 +86,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
      * type to be concurrently safe
      */
     private final ConcurrentLinkedQueue<BandwidthAllocation> bandwidthAllocations = new ConcurrentLinkedQueue<>();
-
-    private final ConcurrentLinkedQueue<BandwidthSubscription> bandwidthSubscriptions = new ConcurrentLinkedQueue<>();
-
-    @Override
-    public List<BandwidthAllocation> getBandwidthAllocations(
-            Long subscriptionId) {
-        List<BandwidthAllocation> allocations = new ArrayList<>();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if ((current instanceof SubscriptionRetrieval)
-                    && subscriptionId.equals(((SubscriptionRetrieval) current)
-                            .getBandwidthSubscription().getId())) {
-                allocations.add(current.copy());
-            }
-        }
-
-        return allocations;
-    }
 
     @Override
     public List<BandwidthAllocation> getBandwidthAllocations(Network network) {
@@ -178,42 +153,13 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
     }
 
     @Override
-    public BandwidthSubscription getBandwidthSubscription(long identifier) {
-        for (BandwidthSubscription dao : bandwidthSubscriptions) {
-            if (dao.getIdentifier() == identifier) {
-                return dao.copy();
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public BandwidthSubscription getBandwidthSubscription(String registryId,
-            Date baseReferenceTime) {
-        List<BandwidthSubscription> bandwidthSubscriptions = getBandwidthSubscriptionByRegistryId(
-                registryId);
-        for (BandwidthSubscription bandwidthSubscription : bandwidthSubscriptions) {
-            if (bandwidthSubscription.getBaseReferenceTime()
-                    .equals(baseReferenceTime)) {
-                return bandwidthSubscription;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public List<BandwidthSubscription> getBandwidthSubscription(
-            Subscription<T, C> subscription) {
-        return getBandwidthSubscriptionByRegistryId(subscription.getId());
-    }
-
-    @Override
-    public List<BandwidthSubscription> getBandwidthSubscriptionByRegistryId(
+    public List<BandwidthAllocation> getBandwidthAllocationsByRegistryId(
             String registryId) {
-        final List<BandwidthSubscription> results = Lists.newArrayList();
 
-        for (BandwidthSubscription current : bandwidthSubscriptions) {
-            if (registryId.equals(current.getRegistryId())) {
+        final List<BandwidthAllocation> results = new ArrayList<>(2);
+
+        for (BandwidthAllocation current : bandwidthAllocations) {
+            if (registryId.equals(current.getSubscriptionId())) {
                 results.add(current.copy());
             }
         }
@@ -221,125 +167,10 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
     }
 
     @Override
-    public SubscriptionRetrieval getSubscriptionRetrieval(long identifier) {
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current.getId() == identifier
-                    && current instanceof SubscriptionRetrieval) {
-                return ((SubscriptionRetrieval) current).copy();
-            }
+    public void store(List<BandwidthAllocation> retrievals) {
+        for (BandwidthAllocation retrieval : retrievals) {
+            update(retrieval);
         }
-        return null;
-    }
-
-    @Override
-    public List<SubscriptionRetrieval> getSubscriptionRetrievals(
-            String provider, String dataSetName, Date baseReferenceTime) {
-        List<SubscriptionRetrieval> results = Lists.newArrayList();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current instanceof SubscriptionRetrieval) {
-                BandwidthSubscription subscription;
-                final SubscriptionRetrieval subscriptionRetrieval = (SubscriptionRetrieval) current;
-                subscription = subscriptionRetrieval.getBandwidthSubscription();
-                if (provider.equals(subscription.getProvider())
-                        && dataSetName.equals(subscription.getDataSetName())
-                        && baseReferenceTime.getTime() == subscriptionRetrieval
-                                .getBandwidthSubscription()
-                                .getBaseReferenceTime().getTime()) {
-                    results.add(subscriptionRetrieval.copy());
-                }
-            }
-        }
-
-        return results;
-    }
-
-    @Override
-    public List<SubscriptionRetrieval> getSubscriptionRetrievals(
-            String provider, String dataSetName) {
-        List<SubscriptionRetrieval> results = Lists.newArrayList();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current instanceof SubscriptionRetrieval) {
-                BandwidthSubscription subscription;
-                final SubscriptionRetrieval subscriptionRetrieval = (SubscriptionRetrieval) current;
-                subscription = subscriptionRetrieval.getBandwidthSubscription();
-                if (provider.equals(subscription.getProvider())
-                        && dataSetName.equals(subscription.getDataSetName())) {
-                    results.add(subscriptionRetrieval.copy());
-                }
-            }
-        }
-
-        return results;
-    }
-
-    @Override
-    public List<BandwidthSubscription> getBandwidthSubscriptions() {
-        List<BandwidthSubscription> results = Lists.newArrayList();
-        for (BandwidthSubscription subscription : bandwidthSubscriptions) {
-            results.add(subscription.copy());
-        }
-        return results;
-    }
-
-    @Override
-    public List<BandwidthSubscription> getBandwidthSubscriptions(
-            String provider, String dataSetName, Date baseReferenceTime) {
-        List<BandwidthSubscription> bandwidthSubscriptions = Lists
-                .newArrayList();
-
-        for (BandwidthSubscription current : this.bandwidthSubscriptions) {
-            if (provider.equals(current.getProvider())
-                    && dataSetName.equals(current.getDataSetName())
-                    && baseReferenceTime.getTime() == current
-                            .getBaseReferenceTime().getTime()) {
-                bandwidthSubscriptions.add(current.copy());
-            }
-        }
-
-        return bandwidthSubscriptions;
-    }
-
-    @Override
-    public BandwidthSubscription newBandwidthSubscription(
-            Subscription<T, C> subscription, Date baseReferenceTime) {
-        BandwidthSubscription entity = BandwidthUtil
-                .getSubscriptionDaoForSubscription(subscription,
-                        baseReferenceTime);
-
-        update(entity);
-
-        return entity;
-    }
-
-    @Override
-    public List<SubscriptionRetrieval> querySubscriptionRetrievals(
-            long subscriptionId) {
-        List<SubscriptionRetrieval> results = new ArrayList<>();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current instanceof SubscriptionRetrieval) {
-                final SubscriptionRetrieval subscriptionRetrieval = (SubscriptionRetrieval) current;
-                if (subscriptionRetrieval.getBandwidthSubscription()
-                        .getId() == subscriptionId) {
-                    results.add(subscriptionRetrieval.copy());
-                }
-            }
-        }
-
-        return results;
-    }
-
-    @Override
-    public List<SubscriptionRetrieval> querySubscriptionRetrievals(
-            BandwidthSubscription dao) {
-        return querySubscriptionRetrievals(dao.getId());
-    }
-
-    @Override
-    public void remove(BandwidthSubscription subscriptionDao) {
-        removeFromCollection(bandwidthSubscriptions, subscriptionDao);
     }
 
     @Override
@@ -348,15 +179,47 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
     }
 
     @Override
-    public void store(BandwidthSubscription subscriptionDao) {
-        replaceOldOrAddToCollection(bandwidthSubscriptions, subscriptionDao);
+    public void createOrUpdate(BandwidthAllocation allocation) {
+        replaceOldOrAddToCollection(bandwidthAllocations, allocation);
     }
 
     @Override
-    public void storeBandwidthSubscriptions(
-            Collection<BandwidthSubscription> newSubscriptions) {
-        for (BandwidthSubscription newSubscription : newSubscriptions) {
-            store(newSubscription);
+    public void update(BandwidthAllocation allocation) {
+        replaceOldOrAddToCollection(bandwidthAllocations, allocation);
+    }
+
+    @Override
+    public List<BandwidthAllocation> getBandwidthAllocations() {
+        return new ArrayList<>(bandwidthAllocations);
+    }
+
+    @Override
+    public SubscriptionStatusSummary getSubscriptionStatusSummary(
+            Subscription<T, C> sub) {
+        // Does nothing
+        return null;
+    }
+
+    @Override
+    public BandwidthAllocation getBandwidthAllocation(long id) {
+        BandwidthAllocation ba = null;
+        for (BandwidthAllocation current : bandwidthAllocations) {
+            if (current.getId() == id) {
+                ba = current;
+                break;
+            }
+        }
+        return ba;
+    }
+
+    @Override
+    public void purgeBandwidthAllocationsBeforeDate(Date threshold) {
+        Iterator<BandwidthAllocation> iter = bandwidthAllocations.iterator();
+        while (iter.hasNext()) {
+            BandwidthAllocation alloc = iter.next();
+            if (threshold.after(alloc.getEndTime())) {
+                iter.remove();
+            }
         }
     }
 
@@ -365,28 +228,6 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
      */
     private static long getNextId() {
         return idSequence.getAndIncrement();
-    }
-
-    @Override
-    public void store(List<SubscriptionRetrieval> retrievals) {
-        for (SubscriptionRetrieval retrieval : retrievals) {
-            update(retrieval);
-        }
-    }
-
-    @Override
-    public void createOrUpdate(BandwidthAllocation allocation) {
-        replaceOldOrAddToCollection(bandwidthAllocations, allocation);
-    }
-
-    @Override
-    public void update(BandwidthSubscription dao) {
-        replaceOldOrAddToCollection(bandwidthSubscriptions, dao);
-    }
-
-    @Override
-    public void update(BandwidthAllocation allocation) {
-        replaceOldOrAddToCollection(bandwidthAllocations, allocation);
     }
 
     private <M extends IPersistableDataObject<Long>> void replaceOldOrAddToCollection(
@@ -419,157 +260,7 @@ class InMemoryBandwidthDao<T extends Time, C extends Coverage>
     }
 
     @Override
-    public SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(
-            String provider, String dataSetName, RetrievalStatus status) {
-
-        List<SubscriptionRetrieval> results = Lists.newArrayList();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current instanceof SubscriptionRetrieval) {
-                BandwidthSubscription subscription;
-                final SubscriptionRetrieval subscriptionRetrieval = (SubscriptionRetrieval) current;
-                subscription = subscriptionRetrieval.getBandwidthSubscription();
-                if (provider.equals(subscription.getProvider())
-                        && dataSetName.equals(subscription.getDataSetName())
-                        && status.equals(subscriptionRetrieval.getStatus())) {
-                    results.add(subscriptionRetrieval.copy());
-                }
-            }
-        }
-
-        final TreeSet<SubscriptionRetrieval> treeSet = Sets
-                .newTreeSet(new Comparator<SubscriptionRetrieval>() {
-                    @Override
-                    public int compare(SubscriptionRetrieval o1,
-                            SubscriptionRetrieval o2) {
-                        return o1.getStartTime().compareTo(o2.getStartTime());
-                    }
-                });
-
-        treeSet.addAll(results);
-
-        return treeSet;
-    }
-
-    @Override
-    public SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(
-            String provider, String dataSetName, RetrievalStatus status,
-            Date earliestDate, Date latestDate) {
-
-        List<SubscriptionRetrieval> results = Lists.newArrayList();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current instanceof SubscriptionRetrieval) {
-                BandwidthSubscription subscription;
-                final SubscriptionRetrieval subscriptionRetrieval = (SubscriptionRetrieval) current;
-                subscription = subscriptionRetrieval.getBandwidthSubscription();
-
-                final Date subRetrievalStartTime = subscriptionRetrieval
-                        .getStartTime();
-                final boolean withinTimeLimits = !(earliestDate
-                        .after(subRetrievalStartTime)
-                        || latestDate.before(subRetrievalStartTime));
-
-                if (provider.equals(subscription.getProvider())
-                        && dataSetName.equals(subscription.getDataSetName())
-                        && status.equals(subscriptionRetrieval.getStatus())
-                        && withinTimeLimits) {
-                    results.add(subscriptionRetrieval.copy());
-                }
-            }
-        }
-
-        final TreeSet<SubscriptionRetrieval> treeSet = Sets
-                .newTreeSet(new Comparator<SubscriptionRetrieval>() {
-                    @Override
-                    public int compare(SubscriptionRetrieval o1,
-                            SubscriptionRetrieval o2) {
-                        return o1.getStartTime().compareTo(o2.getStartTime());
-                    }
-                });
-
-        treeSet.addAll(results);
-
-        return treeSet;
-    }
-
-    @Override
-    public List<SubscriptionRetrieval> getSubscriptionRetrievals() {
-        List<SubscriptionRetrieval> results = new ArrayList<>();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current instanceof SubscriptionRetrieval) {
-                results.add(((SubscriptionRetrieval) current).copy());
-            }
-        }
-        return results;
-    }
-
-    @Override
-    public List<BandwidthAllocation> getBandwidthAllocationsForNetworkAndBucketStartTime(
-            Network network, long bucketStartTime) {
-
-        List<BandwidthAllocation> allocations = new ArrayList<>();
-
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current.getNetwork() == network
-                    && current.getBandwidthBucket() == bucketStartTime) {
-                allocations.add(current.copy());
-            }
-        }
-
-        return allocations;
-    }
-
-    @Override
-    public void store(SubscriptionRetrievalAttributes<T, C> attributes) {
-        // Does nothing
-    }
-
-    @Override
-    public void storeSubscriptionRetrievalAttributes(
-            List<SubscriptionRetrievalAttributes<T, C>> retrievalAttributes) {
-        // Does nothing
-    }
-
-    @Override
-    public void update(SubscriptionRetrievalAttributes<T, C> attributes) {
-        // Does nothing
-    }
-
-    @Override
-    public SubscriptionRetrievalAttributes<T, C> getSubscriptionRetrievalAttributes(
-            SubscriptionRetrieval retrieval) {
-        return null;
-    }
-
-    @Override
-    public SubscriptionStatusSummary getSubscriptionStatusSummary(
-            Subscription<T, C> sub) {
-        // Does nothing
-        return null;
-    }
-
-    @Override
-    public BandwidthAllocation getBandwidthAllocation(long id) {
-        for (BandwidthAllocation current : bandwidthAllocations) {
-            if (current.getId() == id) {
-                return current;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public void purgeSubscriptionRetrievalsBeforeDate(Date purgeThreshold) {
-        Iterator<BandwidthAllocation> iter = bandwidthAllocations.iterator();
-        while (iter.hasNext()) {
-            BandwidthAllocation alloc = iter.next();
-            if (alloc instanceof SubscriptionRetrieval) {
-                if (purgeThreshold.after(alloc.getEndTime())) {
-                    iter.remove();
-                }
-            }
-        }
+    public void remove(List<BandwidthAllocation> bas) {
+        this.bandwidthAllocations.removeAll(bas);
     }
 }

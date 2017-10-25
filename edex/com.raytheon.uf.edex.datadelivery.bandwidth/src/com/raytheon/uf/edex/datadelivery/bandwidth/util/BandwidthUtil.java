@@ -30,13 +30,11 @@ import java.util.regex.Pattern;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
-import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.JarUtil;
 import com.raytheon.uf.edex.core.modes.EDEXModesUtil;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 
 /**
  * Bandwidth Manager utility methods.
@@ -74,7 +72,9 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
  * Feb 16, 2017  5899     rjpeter   Removed excessive logging.
  * Apr 05, 2017  1045     tjensen   Add Coverage generics for DataSetMetaData
  * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate
- * Aug 02, 2017  6186     rjpeter   Moved cycle and dataset logic to datasetMetaData.
+ * Aug 02, 2017  6186     rjpeter   Moved cycle and dataset logic to
+ *                                  datasetMetaData.
+ * Oct 25, 2017  6484     tjensen   Remove getSubscriptionDaoForSubscription
  *
  * </pre>
  *
@@ -169,36 +169,6 @@ public class BandwidthUtil {
     public static int minuteOfDay(Calendar calendar) {
         return calendar.get(Calendar.HOUR_OF_DAY) * 60
                 + calendar.get(Calendar.MINUTE);
-    }
-
-    /**
-     * Create a new {@link BandwidthSubscription} Object based on the
-     * {@link Subscription} and {@link Calendar} Objects provided.
-     *
-     * @param subscription
-     *            the subscription
-     * @param baseReferenceTime
-     *            the base reference time
-     * @return the {@link BandwidthSubscription}
-     * @throws SerializationException
-     *             on error serializing the subscription
-     */
-    public static BandwidthSubscription getSubscriptionDaoForSubscription(
-            Subscription<?, ?> subscription, Date baseReferenceTime) {
-        BandwidthSubscription dao = new BandwidthSubscription();
-
-        dao.setDataSetName(subscription.getDataSetName());
-        dao.setProvider(subscription.getProvider());
-        dao.setOwner(subscription.getOwner());
-        dao.setName(subscription.getName());
-        dao.setEstimatedSize(subscription.getDataSetSize());
-        dao.setRoute(subscription.getRoute());
-        dao.setBaseReferenceTime(baseReferenceTime);
-        dao.setCycle(TimeUtil.newGmtCalendar(baseReferenceTime)
-                .get(Calendar.HOUR_OF_DAY));
-        dao.setPriority(subscription.getPriority());
-        dao.setRegistryId(subscription.getId());
-        return dao;
     }
 
     /**

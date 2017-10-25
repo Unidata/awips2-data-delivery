@@ -19,10 +19,8 @@
  **/
 package com.raytheon.uf.edex.datadelivery.bandwidth.dao;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.SortedSet;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.SubscriptionStatusSummary;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
@@ -58,25 +56,14 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  * May 26, 2017  6186     rjpeter   Remove BandwidthDataSetUpdate and added
  *                                  purgeAllocations
  * Sep 18, 2017  6415     rjpeter   Purge SubscriptionRetrieval
- *
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations
  * </pre>
  *
  * @author djohnson
  */
 
 public interface IBandwidthDao<T extends Time, C extends Coverage> {
-
-    /**
-     * Get BandwidthAllocations.
-     *
-     * @param subscriptionId
-     *            Retrieve BandwidthAllocations with the specified subscription
-     *            Id.
-     *
-     * @return A List of BandwidthAllocations that have the specified
-     *         subscription Id.
-     */
-    List<BandwidthAllocation> getBandwidthAllocations(Long subscriptionId);
 
     /**
      * Get BandwidthAllocations.
@@ -113,229 +100,25 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
     List<BandwidthAllocation> getDeferred(Network network, Date endTime);
 
     /**
-     * Get a BandwidthSubscription.
-     *
-     * @param identifier
-     *            Retrieve the BandwidthSubscription with the specified
-     *            identifier.
-     *
-     * @return The BandwidthSubscription that has the specified identifier or
-     *         null if no such BandwidthSubscription exists.
-     */
-    BandwidthSubscription getBandwidthSubscription(long identifier);
-
-    /**
-     * Get a BandwidthSubscription.
+     * Get a BandwidthAllocations.
      *
      * @param registryId
-     *            Retrieve the BandwidthSubscription with the specified
-     *            registryId.
-     * @param baseReferenceTime
-     *            Retrieve the BandwidthSubscription with the specified
-     *            baseReferenceTime.
-     *
-     * @return The BandwidthSubscription that has the specified identifier and
-     *         baseReferenceTime or null if no such BandwidthSubscription
-     *         exists.
-     */
-    BandwidthSubscription getBandwidthSubscription(String registryId,
-            Date baseReferenceTime);
-
-    /**
-     * Get BandwidthSubscriptions.
-     *
-     * @param subscription
-     *            Retrieve BandwidthSubscriptions that match the specified
-     *            subscription's owner, provider, name and dataSetName.
-     *
-     * @return A List of BandwidthSubscriptions that have the same owner,
-     *         provider, name and dataSetName and the specified subscription.
-     */
-    List<BandwidthSubscription> getBandwidthSubscription(
-            Subscription<T, C> subscription);
-
-    /**
-     * Get a BandwidthSubscriptions.
-     *
-     * @param registryId
-     *            Retrieve the BandwidthSubscriptions with the specified
+     *            Retrieve the BandwidthAllocations with the specified
      *            registryId.
      *
-     * @return A List of BandwidthSubscriptions that has the specified
-     *         registryId or null if no such BandwidthSubscription exists.
+     * @return A List of BandwidthAllocations that has the specified registryId
+     *         or null if no such BandwidthAllocation exists.
      */
-    List<BandwidthSubscription> getBandwidthSubscriptionByRegistryId(
+    List<BandwidthAllocation> getBandwidthAllocationsByRegistryId(
             String registryId);
 
     /**
-     * Retrieve a SubscriptionRetrieval Object from the database given an
-     * identifier.
+     * Remove a BandwidthAllocation from the database.
      *
-     * @param identifier
-     *            The identifier for the SubscriptionRetrieval record to return.
-     *
-     * @return The SubscriptionRetrieval Object with the specified identifier or
-     *         null if no Object has the specified identifier.
+     * @param bandwidthAllocation
+     *            The bandwidthAllocation to remove.
      */
-    SubscriptionRetrieval getSubscriptionRetrieval(long identifier);
-
-    /**
-     * Get all the subscription retrievals for the specified dataset and base
-     * reference time.
-     *
-     * @param provider
-     *            The provider name.
-     *
-     * @param dataSetName
-     *            The dataset name.
-     *
-     * @param baseReferenceTime
-     *            The base reference time.
-     *
-     * @return All the SubscriptionRetrievals that are scheduled for the
-     *         specified time.
-     */
-    List<SubscriptionRetrieval> getSubscriptionRetrievals(String provider,
-            String dataSetName, Date baseReferenceTime);
-
-    /**
-     * Get all the subscription retrievals for the specified dataset, with the
-     * specified status, and ordered by date.
-     *
-     * @param provider
-     *            The provider name.
-     *
-     * @param dataSetName
-     *            The dataset name.
-     *
-     * @param status
-     *            The status
-     *
-     * @return the subscription retrievals
-     */
-    SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(String provider,
-            String dataSetName, RetrievalStatus status);
-
-    /**
-     * Get all the subscription retrievals for the specified dataset, with the
-     * specified status, ordered by date, with a start date between the two
-     * specified dates (inclusive).
-     *
-     * @param provider
-     *            The provider name.
-     *
-     * @param dataSetName
-     *            The dataset name.
-     *
-     * @param status
-     *            The status
-     *
-     * @param earliestDate
-     *            the earliest date
-     *
-     * @param latestDate
-     *            the latest date
-     *
-     * @return the subscription retrievals
-     */
-    SortedSet<SubscriptionRetrieval> getSubscriptionRetrievals(String provider,
-            String dataSetName, RetrievalStatus status, Date earliestDate,
-            Date latestDate);
-
-    /**
-     * Get all the subscription retrievals for the specified dataset and base
-     * reference time.
-     *
-     * @param provider
-     *            The provider name.
-     *
-     * @param dataSetName
-     *            The dataset name.
-     *
-     * @param baseReferenceTime
-     *            The base reference time.
-     *
-     * @return All the SubscriptionRetrievals that are scheduled for the
-     *         specified time.
-     */
-    List<SubscriptionRetrieval> getSubscriptionRetrievals(String provider,
-            String dataSetName);
-
-    /**
-     * Return all the BandwidthSubscription Objects in the database in ascending
-     * order based on the BandwidthSubscription's baseReferenceTime attribute.
-     *
-     * @return A List of BandwidthSubscription Objects.
-     */
-    List<BandwidthSubscription> getBandwidthSubscriptions();
-
-    /**
-     * Get all the subscription retrievals for the specified dataset and base
-     * reference time.
-     *
-     * @param provider
-     *            The provider name.
-     *
-     * @param dataSetName
-     *            The dataset name.
-     *
-     * @param baseReferenceTime
-     *            The base reference time.
-     *
-     * @return All the SubscriptionRetrievals that are scheduled for the
-     *         specified time.
-     */
-    List<BandwidthSubscription> getBandwidthSubscriptions(String provider,
-            String dataSetName, Date baseReferenceTime);
-
-    /**
-     * Create a new BandwidthSubscription Object based on the Subscription and
-     * Calendar Objects provided.
-     *
-     * @param Subscription
-     *            The Subscription Object to create the BandwidthSubscription
-     *            Object from.
-     *
-     * @param baseReferenceTime
-     *            The base reference time to set on the newly created
-     *            BandwidthSubscription Object.
-     *
-     * @return A newly created and persisted BandwidthSubscription Object.
-     */
-    BandwidthSubscription newBandwidthSubscription(
-            Subscription<T, C> subscription, Date baseReferenceTime);
-
-    /**
-     * Get a SubscriptionRetrievals.
-     *
-     * @param subscriptionId
-     *            Retrieve the SubscriptionRetrievals with the specified
-     *            subscriptionId.
-     *
-     * @return A List of SubscriptionRetrievals that has the specified
-     *         subscriptionId.
-     */
-    List<SubscriptionRetrieval> querySubscriptionRetrievals(
-            long subscriptionId);
-
-    /**
-     * Get {@link SubscriptionRetrieval}s for the specific
-     * {@link BandwidthSubscription}.
-     *
-     * @param subscriptionDao
-     *            the dao
-     * @return the retrievals
-     */
-    List<SubscriptionRetrieval> querySubscriptionRetrievals(
-            BandwidthSubscription subscriptionDao);
-
-    /**
-     * Remove a BandwidthSubscription from the database.
-     *
-     * @param subscriptionDao
-     *            The subscriptionDao to remove.
-     */
-    void remove(BandwidthSubscription subscriptionDao);
+    void remove(List<BandwidthAllocation> bandwidthAllocation);
 
     /**
      * Persist a BandwidthAllocation to the database.
@@ -346,47 +129,12 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
     void store(BandwidthAllocation bandwidthAllocation);
 
     /**
-     * Persist a SubscriptionRetrievalAttributes to the database.
+     * Persist a list of BandwidthAllocations to the database.
      *
-     * @param attributes
-     *            The SubscriptionRetrievalAttributes to store.
+     * @param bandwidthAllocations
+     *            The BandwidthAllocations to store.
      */
-    void store(SubscriptionRetrievalAttributes<T, C> attributes);
-
-    /**
-     * Persist a List of SubscriptionRetrievals to the database.
-     *
-     * @param retrievals
-     *            The SubscriptionRetrievals to store.
-     */
-    void store(List<SubscriptionRetrieval> retrievals);
-
-    /**
-     * Persist a list of objects to the database.
-     *
-     * @param entities
-     *            The entities to store.
-     */
-    void storeSubscriptionRetrievalAttributes(
-            List<SubscriptionRetrievalAttributes<T, C>> list);
-
-    /**
-     * Persist a {@link BandwidthSubscription} to the database.
-     *
-     * @param subscriptionDao
-     *            The {@link BandwidthSubscription} to store.
-     */
-    void store(BandwidthSubscription subscriptionDao);
-
-    /**
-     * Persist a {@link Collection} of {@link BandwidthSubscription}s to the
-     * database.
-     *
-     * @param newSubscriptions
-     *            the subscriptions to persist
-     */
-    void storeBandwidthSubscriptions(
-            Collection<BandwidthSubscription> newSubscriptions);
+    void store(List<BandwidthAllocation> bandwidthAllocations);
 
     /**
      * Update a BandwidthAllocation in the database.
@@ -395,14 +143,6 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
      *            The BandwidthAllocation to store.
      */
     void createOrUpdate(BandwidthAllocation allocation);
-
-    /**
-     * Update a BandwidthSubscription in the database.
-     *
-     * @param dao
-     *            The BandwidthSubscription to store.
-     */
-    void update(BandwidthSubscription dao);
 
     /**
      * Update a BandwidthAllocation in the database.
@@ -422,39 +162,11 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
             RetrievalStatus state);
 
     /**
-     * Get all {@link SubscriptionRetrieval} instances.
+     * Get all {@link BandwidthAllocation} instances.
      *
      * @return the retrievals
      */
-    List<SubscriptionRetrieval> getSubscriptionRetrievals();
-
-    /**
-     * Get {@link BandwidthAllocation}s for the specified network and start
-     * time.
-     *
-     * @param network
-     *            the network
-     * @param bucketStartTime
-     *            the bucket start time
-     * @return the allocations
-     */
-    List<BandwidthAllocation> getBandwidthAllocationsForNetworkAndBucketStartTime(
-            Network network, long bucketStartTime);
-
-    /**
-     * @param attributes
-     */
-    void update(SubscriptionRetrievalAttributes<T, C> attributes);
-
-    /**
-     * Get the {@link SubscriptionRetrievalAttributes} for the
-     * {@link SubscriptionRetrieval}.
-     *
-     * @param retrieval
-     * @return the attributes
-     */
-    SubscriptionRetrievalAttributes<T, C> getSubscriptionRetrievalAttributes(
-            SubscriptionRetrieval retrieval);
+    List<BandwidthAllocation> getBandwidthAllocations();
 
     /**
      * Get the subscription status summary.
@@ -475,10 +187,10 @@ public interface IBandwidthDao<T extends Time, C extends Coverage> {
     BandwidthAllocation getBandwidthAllocation(long id);
 
     /**
-     * Purge all subscription retrievals prior to the threshold.
+     * Purge all bandwidth allocation prior to the threshold.
      *
      * @param purgeThreshold
      */
-    void purgeSubscriptionRetrievalsBeforeDate(Date purgeThreshold)
+    void purgeBandwidthAllocationsBeforeDate(Date purgeThreshold)
             throws DataAccessLayerException;
 }

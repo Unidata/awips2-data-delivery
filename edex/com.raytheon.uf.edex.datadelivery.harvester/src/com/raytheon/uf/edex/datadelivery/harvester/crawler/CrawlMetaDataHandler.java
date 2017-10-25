@@ -77,6 +77,7 @@ import opendap.dap.DAS;
  * Jul 12, 2017  6178     tgurney   Change link storage from file system to database
  * Aug 31, 2017  6430     rjpeter   Added timing information.
  * Oct 04, 2017  6465     tjensen   Get URLParserInfos from config file
+ * Oct 31, 2017  6484     tjensen   Added retries on extractMetadata
  *
  * </pre>
  *
@@ -84,6 +85,20 @@ import opendap.dap.DAS;
  */
 
 public class CrawlMetaDataHandler extends MetaDataHandler {
+
+    /**
+     * Number of times to retry extracting metadata after a failed attempt. So
+     * will make a maximum of 1 + MAX_RETRIES attempts before moving on.
+     */
+    private static final int MAX_RETRIES = Integer
+            .getInteger("retrieval.retry.count", 3);
+
+    /**
+     * Amount of time to wait after a failed attempt to extract metadata before
+     * retrying.
+     */
+    private static final long RETRY_INTERVAL_MS = Long
+            .getLong("retrieval.retry.millis", 5000);
 
     private final CrawlerLinkDao crawlerLinkDao = new CrawlerLinkDao();
 
@@ -142,20 +157,36 @@ public class CrawlMetaDataHandler extends MetaDataHandler {
 
                         String url = link.getUrl();
 
-                        try {
-                            link.setMetadata(mde.extractMetaData(url));
-                            mde.setDataDate();
-                        } catch (Exception e) {
-                            final String userFriendly = String.format(
-                                    "Unable to retrieve metadata for dataset group %s: %s",
-                                    collectionName, url);
-                            statusHandler.error(userFriendly, e);
-
-                            /*
-                             * If we can't extract it, we can't parse it, so
-                             * remove
-                             */
-                            removes.add(link);
+                        int retries = 0;
+                        while (retries <= MAX_RETRIES) {
+                            try {
+                                link.setMetadata(mde.extractMetaData(url));
+                                mde.setDataDate();
+                                break;
+                            } catch (Exception e) {
+                                statusHandler
+                                        .error("Error while extracting metadata for dataset group "
+                                                + collectionName + " from "
+                                                + url + " on attempt "
+                                                + (retries + 1), e);
+                            }
+                            retries += 1;
+                            if (retries > MAX_RETRIES) {
+                                statusHandler
+                                        .error("Unable to retrieve metadata for dataset group "
+                                                + collectionName + ": " + url);
+                                /*
+                                 * If we can't extract it, we can't parse it, so
+                                 * remove
+                                 */
+                                removes.add(link);
+                            } else {
+                                try {
+                                    Thread.sleep(RETRY_INTERVAL_MS);
+                                } catch (InterruptedException e2) {
+                                    break;
+                                }
+                            }
                         }
                     }
                     crawlerLinks.removeAll(removes);

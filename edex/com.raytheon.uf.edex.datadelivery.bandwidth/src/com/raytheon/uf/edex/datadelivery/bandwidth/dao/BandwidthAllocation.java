@@ -44,6 +44,8 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Apr 02, 2014  2810     dhladky   Priority sorting of allocations.
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Aug 02, 2017  6186     rjpeter   Removed agentType.
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations
  *
  * </pre>
  *
@@ -56,20 +58,11 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 @DiscriminatorValue("BandwidthAllocation")
 @DynamicSerialize
 @SequenceGenerator(name = "BANDWIDTH_SEQ", sequenceName = "bandwidth_seq", allocationSize = 1, initialValue = 1)
-// TODO: This should be merged with SubscriptionRetrieval
 public class BandwidthAllocation
         implements IPersistableDataObject<Long>, Serializable,
         IDeepCopyable<BandwidthAllocation>, Comparable<BandwidthAllocation> {
 
     private static final long serialVersionUID = 743702044231376839L;
-
-    @Column(nullable = true)
-    @DynamicSerializeElement
-    private Date actualEnd;
-
-    @Column(nullable = true)
-    @DynamicSerializeElement
-    private Date actualStart;
 
     @Column(nullable = true)
     @DynamicSerializeElement
@@ -108,18 +101,28 @@ public class BandwidthAllocation
     @Enumerated(EnumType.STRING)
     private RetrievalStatus status;
 
+    @Column
+    @DynamicSerializeElement
+    private int dataSetAvailablityDelay;
+
+    @Column
+    @DynamicSerializeElement
+    private int subscriptionLatency;
+
+    @Column
+    @DynamicSerializeElement
+    private String subName;
+
+    @DynamicSerializeElement
+    @Column(nullable = false)
+    private Date baseReferenceTime;
+
+    @DynamicSerializeElement
+    @Column(nullable = false)
+    private String subscriptionId;
+
     public BandwidthAllocation() {
         // Constructor for bean interface.
-    }
-
-    public BandwidthAllocation(BandwidthAllocation request, long size) {
-        this.id = request.getId();
-        this.startTime = request.getStartTime();
-        this.endTime = request.getEndTime();
-        this.priority = request.getPriority();
-        this.network = request.getNetwork();
-        this.estimatedSize = size;
-        this.bandwidthBucket = request.getBandwidthBucket();
     }
 
     /**
@@ -128,14 +131,6 @@ public class BandwidthAllocation
      * @param from
      */
     public BandwidthAllocation(BandwidthAllocation from) {
-        final Date fromActualEnd = from.getActualEnd();
-        if (fromActualEnd != null) {
-            this.setActualEnd(fromActualEnd);
-        }
-        final Date fromActualStart = from.getActualStart();
-        if (fromActualStart != null) {
-            this.setActualStart(fromActualStart);
-        }
         final Date fromStartTime = from.getStartTime();
         if (fromStartTime != null) {
             this.setStartTime(fromStartTime);
@@ -148,24 +143,14 @@ public class BandwidthAllocation
         this.setBandwidthBucket(from.getBandwidthBucket());
         this.setEstimatedSize(from.getEstimatedSize());
         this.setId(from.getId());
-        this.setIdentifier(from.getIdentifier());
         this.setNetwork(from.getNetwork());
         this.setPriority(from.getPriority());
         this.setStatus(from.getStatus());
-    }
-
-    /**
-     * @return the actualEnd
-     */
-    public Date getActualEnd() {
-        return actualEnd;
-    }
-
-    /**
-     * @return the actualStart
-     */
-    public Date getActualStart() {
-        return actualStart;
+        this.setDataSetAvailablityDelay(from.getDataSetAvailablityDelay());
+        this.setSubscriptionLatency(from.getSubscriptionLatency());
+        this.setSubName(from.getSubName());
+        this.setBaseReferenceTime(from.getBaseReferenceTime());
+        this.setSubscriptionId(from.getSubscriptionId());
     }
 
     public long getBandwidthBucket() {
@@ -214,22 +199,6 @@ public class BandwidthAllocation
         return status;
     }
 
-    /**
-     * @param actualEnd
-     *            the actualEnd to set
-     */
-    public void setActualEnd(Date actualEnd) {
-        this.actualEnd = actualEnd;
-    }
-
-    /**
-     * @param actualStart
-     *            the actualStart to set
-     */
-    public void setActualStart(Date actualStart) {
-        this.actualStart = actualStart;
-    }
-
     public void setBandwidthBucket(long bandwidthBucket) {
         this.bandwidthBucket = bandwidthBucket;
     }
@@ -276,38 +245,6 @@ public class BandwidthAllocation
         this.status = status;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (id ^ (id >>> 32));
-        return result;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        BandwidthAllocation other = (BandwidthAllocation) obj;
-        if (id != other.id) {
-            return false;
-        }
-        return true;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -341,4 +278,54 @@ public class BandwidthAllocation
         return myPriority.compareTo(oPriority);
     }
 
+    /**
+     * @return the dataSetAvailablityDelay
+     */
+    public int getDataSetAvailablityDelay() {
+        return dataSetAvailablityDelay;
+    }
+
+    /**
+     * @return the subscriptionLatency
+     */
+    public int getSubscriptionLatency() {
+        return subscriptionLatency;
+    }
+
+    public void setDataSetAvailablityDelay(int dataSetAvailablityDelay) {
+        this.dataSetAvailablityDelay = dataSetAvailablityDelay;
+
+    }
+
+    /**
+     * @param subscriptionLatency
+     *            the subscriptionLatency to set
+     */
+    public void setSubscriptionLatency(int subscriptionLatency) {
+        this.subscriptionLatency = subscriptionLatency;
+    }
+
+    public String getSubName() {
+        return subName;
+    }
+
+    public void setSubName(String subName) {
+        this.subName = subName;
+    }
+
+    public Date getBaseReferenceTime() {
+        return baseReferenceTime;
+    }
+
+    public void setBaseReferenceTime(Date baseReferenceTime) {
+        this.baseReferenceTime = baseReferenceTime;
+    }
+
+    public String getSubscriptionId() {
+        return subscriptionId;
+    }
+
+    public void setSubscriptionId(String registryId) {
+        this.subscriptionId = registryId;
+    }
 }

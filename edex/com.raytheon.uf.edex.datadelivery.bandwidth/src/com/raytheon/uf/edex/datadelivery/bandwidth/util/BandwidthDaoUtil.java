@@ -25,7 +25,6 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalPlan;
@@ -87,6 +86,8 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
  *                                  object.
  * Apr 20, 2017  1045     tjensen   Update for moving datasets
  * Aug 02, 2017  6186     rjpeter   Removed setAdhocMostRecentUrlAndTime.
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations
  *
  * </pre>
  *
@@ -113,23 +114,20 @@ public class BandwidthDaoUtil<T extends Time, C extends Coverage> {
         this.retrievalManager = retrievalManager;
     }
 
-    public void remove(BandwidthSubscription dao) {
-        List<BandwidthAllocation> reservations = bandwidthDao
-                .getBandwidthAllocations(dao.getIdentifier());
+    public void remove(List<BandwidthAllocation> bandwidthAllocations) {
 
-        // Unschedule all the BandwidthReservations for the subscription..
-        for (BandwidthAllocation reservation : reservations) {
+        for (BandwidthAllocation reservation : bandwidthAllocations) {
             final RetrievalStatus reservationStatus = reservation.getStatus();
-            // Allocations with these statuses are not actively managed by
-            // the retrieval manager
-            if (RetrievalStatus.UNSCHEDULED == reservationStatus
-                    || RetrievalStatus.FULFILLED == reservationStatus) {
-                continue;
+            /*
+             * Allocations with these statuses are not actively managed by the
+             * retrieval manager
+             */
+            if (RetrievalStatus.UNSCHEDULED != reservationStatus
+                    && RetrievalStatus.FULFILLED != reservationStatus) {
+                retrievalManager.remove(reservation);
             }
-            retrievalManager.remove(reservation);
         }
-
-        bandwidthDao.remove(dao);
+        bandwidthDao.remove(bandwidthAllocations);
     }
 
     /**

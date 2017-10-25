@@ -20,7 +20,9 @@
 package com.raytheon.uf.edex.datadelivery.bandwidth.processing;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.SortedSet;
 
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.SubscriptionUtil;
@@ -28,9 +30,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthSubscription;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
-import com.raytheon.uf.edex.datadelivery.bandwidth.dao.SubscriptionRetrieval;
+import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
@@ -61,6 +61,9 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 09, 2016  5771     rjpeter   Get latency for subscription once
  * Aug 02, 2017  6186     rjpeter   Removed RetrievalAgent.
+ * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
+ *                                  BandwidthAllocations. Remove
+ *                                  BandwidthSubscriptionContainer.
  *
  * </pre>
  *
@@ -71,120 +74,67 @@ public class SimpleSubscriptionAggregator {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SimpleSubscriptionAggregator.class);
 
-    private final IBandwidthDao bandwidthDao;
-
-    public SimpleSubscriptionAggregator(IBandwidthDao bandwidthDao) {
-        this.bandwidthDao = bandwidthDao;
+    public SimpleSubscriptionAggregator() {
     }
 
     /**
-     * Generate a List of SubscriptionRetrieval Object for the provided
-     * BandwidthSubscription Objects.
-     *
-     * @param container
-     *            A container with a List of BandwidthSubscription Objects which
-     *            were just added, and their subscription
-     *
-     * @return The SubscriptionRetrieval Objects used to fulfill the
-     *         BandwidthSubscription Objects provided.
+     * Generate a List of Bandwidth Allocation Object for the provided
+     * subscription and times.
+     * 
+     * @param sub
+     *            The subscription to get allocations for
+     * @param baseReferenceTimes
+     *            The times of the allocations
+     * @return A list of all bandwidthAllocations for the subscription at the
+     *         provided times
      */
-    public List<SubscriptionRetrieval> aggregate(
-            BandwidthSubscriptionContainer container) {
+    public List<BandwidthAllocation> aggregate(Subscription sub,
+            SortedSet<Date> baseReferenceTimes) {
 
-        List<SubscriptionRetrieval> subscriptionRetrievals = new ArrayList<>();
+        List<BandwidthAllocation> subscriptionRetrievals = new ArrayList<>();
 
         /*
          * No aggregation or decomposition of subscriptions, simply create the
          * necessary retrievals without regards to 'sharing' retrievals across
          * subscriptions.
          */
-        Subscription sub = container.subscription;
         int latency = BandwidthUtil.getSubscriptionLatency(sub);
 
-        for (BandwidthSubscription subDao : container.newSubscriptions) {
+        for (Date baseRefTime : baseReferenceTimes) {
 
             /*
-             * First check to see if the Object already was scheduled (i.e. has
-             * SubscriptionRetrievals associated with it) if not, create a
-             * SubscriptionRetrieval for the subscription
+             * Create a BandwidthAllocation for the subscription each reference
+             * time.
              */
-
-            /*
-             * Do NOT confuse this with an actual SubscriptionRetrieval. This
-             * SubscriptionRetrieval object is a BandwidthAllocation object
-             */
-            SubscriptionRetrieval subscriptionRetrieval = new SubscriptionRetrieval();
-            // Link this SubscriptionRetrieval with the subscription.
-            subscriptionRetrieval.setBandwidthSubscription(subDao);
-            subscriptionRetrieval.setNetwork(subDao.getRoute());
-            subscriptionRetrieval.setStatus(RetrievalStatus.PROCESSING);
-            subscriptionRetrieval.setPriority(subDao.getPriority());
-            subscriptionRetrieval.setEstimatedSize(subDao.getEstimatedSize());
-
-            // Create a Retrieval Object for the Subscription
-            subscriptionRetrieval.setSubscriptionLatency(latency);
+            BandwidthAllocation bandwidthAllocation = new BandwidthAllocation();
+            bandwidthAllocation.setNetwork(sub.getRoute());
+            bandwidthAllocation.setStatus(RetrievalStatus.PROCESSING);
+            bandwidthAllocation.setPriority(sub.getPriority());
+            bandwidthAllocation.setEstimatedSize(sub.getDataSetSize());
+            bandwidthAllocation.setSubName(sub.getName());
+            bandwidthAllocation.setSubscriptionId(sub.getId());
+            bandwidthAllocation.setBaseReferenceTime(baseRefTime);
+            bandwidthAllocation.setSubscriptionLatency(latency);
 
             int offset = 0;
             try {
                 offset = SubscriptionUtil.getInstance()
-                        .getDataSetAvailablityOffset(sub,
-                                subDao.getBaseReferenceTime());
+                        .getDataSetAvailablityOffset(sub, baseRefTime);
             } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Unable to retrieve data availability offset, using 0 for the offset.",
                         e);
             }
 
-            subscriptionRetrieval.setDataSetAvailablityDelay(offset);
-            subscriptionRetrievals.add(subscriptionRetrieval);
-
-            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug("Created [" + subscriptionRetrievals.size()
-                        + "] SubscriptionRetrieval Objects for BandwidthSubscription ["
-                        + subDao.getIdentifier() + "]");
-            }
+            bandwidthAllocation.setDataSetAvailablityDelay(offset);
+            subscriptionRetrievals.add(bandwidthAllocation);
+        }
+        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+            statusHandler.debug("Created [" + subscriptionRetrievals.size()
+                    + "] BandwidthAllocations Objects for Subscription ["
+                    + sub.getName() + "]");
         }
 
         return subscriptionRetrievals;
-    }
-
-    /**
-     * This method is called once all the SubscriptionRetrievals for a
-     * subscription are fulfilled and allows the ISubscriptionAggregator to
-     * "assemble" the finished subscription(s). This method will be called once
-     * for each Subscription who's SubscriptionRetrieval Objects are all in the
-     * "FULFILLED" state.
-     *
-     * @param retrievals
-     *            A List of SubscriptionRetrieval(s) that make were produced
-     *            from calling aggregate for a particular subscription.
-     *
-     * @return A List of completed subscriptions, ready for notification to the
-     *         user.
-     */
-    public List<BandwidthSubscription> completeRetrieval(
-            List<SubscriptionRetrieval> retrievals) {
-
-        List<BandwidthSubscription> daos = new ArrayList<>();
-        /*
-         * We know that only one SubscriptionRetrieval was created for each
-         * Subscription so there will not be any duplication of subscription
-         * ids.
-         */
-        for (SubscriptionRetrieval retrieval : retrievals) {
-            daos.add(bandwidthDao.getBandwidthSubscription(
-                    retrieval.getBandwidthSubscription().getId()));
-        }
-
-        StringBuilder sb = new StringBuilder();
-        for (BandwidthSubscription dao : daos) {
-            sb.append("Fulfilled subscription [").append(dao.getIdentifier());
-            sb.append("][").append(dao.getRegistryId()).append("]\n");
-        }
-        if (sb.length() > 0) {
-            statusHandler.info(sb.toString());
-        }
-
-        return daos;
     }
 }

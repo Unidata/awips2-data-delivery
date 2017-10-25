@@ -81,7 +81,6 @@
 
     <bean id="aggregator"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.processing.SimpleSubscriptionAggregator">
-        <constructor-arg ref="bandwidthDao" />
     </bean>
 
     <bean id="retrievalManager"
