@@ -483,9 +483,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
                 + SizeUtil.prettyByteSize(dataSize.getFullSizeInBytes()));
     }
 
-    @Override
-    protected GriddedTime setupDataSpecificTime(Time subTime,
-            Subscription sub) {
+    private GriddedTime setupDataSpecificTime(Time subTime, Subscription sub) {
         GriddedTime newTime = (GriddedTime) subTime;
         GriddedDataSet griddedDataSet = (GriddedDataSet) dataSet;
 

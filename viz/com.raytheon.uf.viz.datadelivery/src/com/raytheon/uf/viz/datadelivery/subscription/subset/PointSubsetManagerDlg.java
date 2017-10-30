@@ -183,11 +183,7 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
                 .prettyByteSize(dataSize.getDataSetSizeInBytes(env, interval)));
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Time setupDataSpecificTime(Time newTime, Subscription sub) {
+    private Time setupDataSpecificTime(Time newTime, Subscription sub) {
         PointTime newTimePoint = (PointTime) newTime;
 
         // Format must be set before setting the dates.
