@@ -173,11 +173,11 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 16, 2016  3919      tjensen    Cleanup unneeded interfaces
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * Jan 10, 2017  746       bsteffen    Avoid dialog spam when activating/deactivating many subscriptions
+ * Oct 27, 2017  6467      tgurney     Update "not authorized" message text
  *
  * </pre>
  *
  * @author mpduff
- * @version 1.0
  */
 
 public class SubscriptionManagerDlg extends CaveSWTDialog
@@ -324,12 +324,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         setText("Data Delivery Subscription Manager");
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayoutData()
-     */
     @Override
     protected Object constructShellLayoutData() {
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
@@ -727,7 +721,8 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
                 .toString();
         IUser user = UserController.getUserObject();
         String msg = user.uniqueId()
-                + " is not authorized to create subscriptions";
+                + " is not authorized to create subscriptions.\nPermission: "
+                + permission;
         try {
             if (DataDeliveryServices.getPermissionsService()
                     .checkPermission(user, msg, permission).isAuthorized()) {
@@ -1506,7 +1501,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         IUser user = UserController.getUserObject();
         try {
             String msg = user.uniqueId()
-                    + " is not authorized to access Subscription Approval";
+                    + " is not authorized to access Subscription Approval\nPermission: "
+                    + DataDeliveryPermission.SUBSCRIPTION_APPROVE_VIEW
+                            .toString();
 
             return DataDeliveryServices.getPermissionsService()
                     .checkPermissions(user, msg,

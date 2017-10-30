@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -39,11 +39,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 
 /**
  * Subscription Manager Dialog Action class.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 10, 2012            mpduff       Initial creation
@@ -52,13 +52,13 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jul 26, 2031 2232       mpduff       Refactored Data Delivery permissions.
  * Sep 04, 2013 2330       bgonzale     execute now filters subscriptions by current site id.
  * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
- * Sep 22, 2014 3607       ccody        Handle uncaught Exception objects 
- * 
- * 
+ * Sep 22, 2014 3607       ccody        Handle uncaught Exception objects
+ * Oct 27, 2017 6467       tgurney      Update "not authorized" message text
+ *
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class SubscriptionManagerAction extends AbstractHandler {
@@ -85,19 +85,20 @@ public class SubscriptionManagerAction extends AbstractHandler {
 
         try {
             String dataDeliveryId = DataDeliveryUtils.getDataDeliveryId();
-            ISubscriptionManagerFilter subManagerFilter  = SubscriptionManagerFilters.getBySiteId(dataDeliveryId);
-            return(loadSubscriptionManager(subManagerFilter) );
+            ISubscriptionManagerFilter subManagerFilter = SubscriptionManagerFilters
+                    .getBySiteId(dataDeliveryId);
+            return (loadSubscriptionManager(subManagerFilter));
+        } catch (Exception ex) {
+            statusHandler.handle(Priority.ERROR,
+                    "Unable to start Subscription Manager", ex);
         }
-        catch(Exception ex) {
-            statusHandler.handle(Priority.ERROR, "Unable to start Subscription Manager", ex);
-        }
-        
-        return(null);
+
+        return (null);
     }
 
     /**
      * Load the SubscriptionManager dialog with the specified filter.
-     * 
+     *
      * @param filter
      *            the filter
      */
@@ -106,12 +107,12 @@ public class SubscriptionManagerAction extends AbstractHandler {
             // check if user is authorized
             IUser user = UserController.getUserObject();
             String msg = user.uniqueId()
-                    + " is not authorized to access Data Delivery\nPermission: "
+                    + " is not authorized to access the Subscription Manager\nPermission: "
                     + permission;
 
             if (DataDeliveryServices.getPermissionsService()
                     .checkPermission(user, msg, permission).isAuthorized()) {
-                if ((dlg == null) || (dlg.isDisposed() == true)) {
+                if (dlg == null || dlg.isDisposed()) {
                     Shell shell = PlatformUI.getWorkbench()
                             .getActiveWorkbenchWindow().getShell();
                     dlg = new SubscriptionManagerDlg(shell, filter);
@@ -121,7 +122,8 @@ public class SubscriptionManagerAction extends AbstractHandler {
                 }
             }
         } catch (AuthException e) {
-            statusHandler.handle(Priority.PROBLEM, "Error checking permissions", e);
+            statusHandler.handle(Priority.PROBLEM, "Error checking permissions",
+                    e);
         }
 
         return null;

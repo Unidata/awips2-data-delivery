@@ -116,11 +116,11 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Feb 01, 2016  5289     tgurney   Add missing maximize button in trim
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Apr 25, 2017  1045     tjensen   Cleanup more unneeded interfaces
+ * Oct 27, 2017  6467     tgurney   Update "not authorized" message text
  *
  * </pre>
  *
  * @author mpduff
- * @version 1.0
  */
 
 public class SubscriptionApprovalDlg extends CaveSWTDialog implements
@@ -409,7 +409,9 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
     private IAuthorizedPermissionResponse allowed(IUser user) {
         try {
             String msg = user.uniqueId()
-                    + " is not authorized to Approve/Deny subscriptions.";
+                    + " is not authorized to Approve/Deny subscriptions.\nPermission: "
+                    + DataDeliveryPermission.SUBSCRIPTION_APPROVE_USER
+                            .toString();
 
             return permissionsService.checkPermissions(user, msg,
                     DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE.toString(),
