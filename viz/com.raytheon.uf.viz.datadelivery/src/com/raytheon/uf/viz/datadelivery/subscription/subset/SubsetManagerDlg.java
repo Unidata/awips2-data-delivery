@@ -185,6 +185,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
  * Sep 27, 2017  5948     tjensen   Updated saving to and loading from subset xml
  * Oct 13, 2017  6461     tgurney   Split up handleQuery()
+ * Nov 02, 2017  6461     tgurney   storeQuerySub() add showMessageBox flag
  * </pre>
  *
  * @author mpduff
@@ -615,7 +616,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     }
 
-    public void storeQuerySub(AdhocSubscription as) {
+    public String storeQuerySub(AdhocSubscription as, boolean showMessageBox) {
+        String message = null;
         try {
             String currentUser = LocalizationManager.getInstance()
                     .getCurrentUser();
@@ -624,13 +626,21 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                     .store(currentUser, as, this);
 
             if (result.hasMessageToDisplay()) {
-                DataDeliveryUtils.showMessage(getShell(), SWT.OK,
-                        "Query Scheduled", result.getMessage());
+                message = result.getMessage();
+                if (showMessageBox) {
+                    DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                            "Query Scheduled", message);
+                }
             }
         } catch (RegistryHandlerException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error requesting adhoc data.", e);
         }
+        return message;
+    }
+
+    public String storeQuerySub(AdhocSubscription as) {
+        return storeQuerySub(as, true);
     }
 
     /**
