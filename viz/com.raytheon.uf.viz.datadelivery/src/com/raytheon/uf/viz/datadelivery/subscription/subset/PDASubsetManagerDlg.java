@@ -90,6 +90,8 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Sep 27, 2017  5948     tjensen   Added saving to and loading from subset xml
  * Oct 13, 2017  6461     tgurney   Allow creating queries with a time range
+ * Nov 02, 2017  6461     tgurney   Use a single message box for multiple adhoc
+ *                                  subs created
  *
  * </pre>
  *
@@ -330,14 +332,25 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
                 return;
             }
         }
-
+        StringBuilder subListMessage = new StringBuilder();
+        int subsCreated = 0;
         for (int i = 0; i < times.size(); i++) {
             AdhocSubscription as = createSubscription(new AdhocSubscription(),
                     Network.OPSNET);
-            as.setName(getNameText() + "-" + i);
+            as.setName(getNameText() + "-" + (i + 1));
             as.setTime(times.get(i));
-            storeQuerySub(as);
+            String thisMessage = storeQuerySub(as, false);
+            subListMessage.append("\n" + as.getName() + ": ");
+            if (thisMessage != null) {
+                subsCreated += 1;
+                subListMessage.append(thisMessage);
+            } else {
+                subListMessage.append("Failed to create");
+            }
         }
+        DataDeliveryUtils.showMessage(getShell(), SWT.OK, "Query Scheduled",
+                subsCreated + "/" + times.size()
+                        + " queries successfully created." + subListMessage);
     }
 
     @SuppressWarnings({ "rawtypes" })
