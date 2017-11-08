@@ -54,7 +54,7 @@ public class BandwidthAllocationDao
 
     private static final String DELETE_SUBSCRIPTIONRETRIEVAL_BEFORE_DATE = "delete from BandwidthAllocation sr where sr.endTime <= :endDate";
 
-    private static final String GET_BANDWIDTH_ALLOCATIONS_BY_SUBSCRIPTION_ID = "from BandwidthAllocation res where res.registryId = :subscriptionId";
+    private static final String GET_BANDWIDTH_ALLOCATIONS_BY_SUBSCRIPTION_ID = "from BandwidthAllocation res where res.subscriptionId = :subscriptionId";
 
     private static final String GET_BANDWIDTH_ALLOCATIONS_BY_NETWORK = "from BandwidthAllocation res where res.network = :network";
 
