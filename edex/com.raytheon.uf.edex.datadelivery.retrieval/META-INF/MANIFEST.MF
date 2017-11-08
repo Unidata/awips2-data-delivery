@@ -26,6 +26,7 @@ Require-Bundle: com.raytheon.uf.common.status,
  com.raytheon.uf.edex.gridcoverage,
  com.raytheon.uf.common.dataplugin.grid,
  com.raytheon.uf.common.parameter,
+ com.raytheon.uf.common.pointdata,
  com.raytheon.uf.edex.event,
  com.raytheon.uf.common.stats,
  com.raytheon.uf.edex.decodertools,
@@ -44,7 +45,11 @@ Require-Bundle: com.raytheon.uf.common.status,
  org.apache.commons.net,
  org.slf4j;bundle-version="1.7.21",
  com.raytheon.uf.common.units,
- com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist
+ com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist,
+ com.raytheon.uf.edex.plugin.madis.ogc,
+ com.raytheon.uf.common.dataplugin.madis,
+ com.raytheon.uf.edex.wfs;bundle-version="1.0.0",
+ com.raytheon.uf.edex.plugin.madis
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval,
@@ -62,5 +67,6 @@ Export-Package: com.raytheon.uf.edex.datadelivery.retrieval,
  com.raytheon.uf.edex.datadelivery.retrieval.request,
  com.raytheon.uf.edex.datadelivery.retrieval.response,
  com.raytheon.uf.edex.datadelivery.retrieval.util,
- com.raytheon.uf.edex.datadelivery.retrieval.wfs
+ com.raytheon.uf.edex.datadelivery.retrieval.wfs,
+ com.raytheon.uf.edex.datadelivery.retrieval.wfs.metadata
 Import-Package: com.raytheon.uf.common.wmo
