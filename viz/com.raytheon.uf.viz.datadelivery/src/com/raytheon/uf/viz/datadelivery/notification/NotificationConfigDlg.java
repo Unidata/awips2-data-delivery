@@ -71,6 +71,7 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Feb 01, 2016  5289     tgurney   Add missing minimize button in trim
  * Mar 28, 2016  5482     randerso  Fixed GUI sizing issues
  * Feb 28, 2017  6121     randerso  Update DualListConfig settings
+ * Nov 07, 2017  6485     tgurney   Set the Load Last value to minimum 1
  *
  * </pre>
  *
@@ -87,9 +88,6 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
     /** Sort Ascending Radio Button */
     private Button sortAscRdo;
-
-    /** Sort Decending Radio Button */
-    private Button sortDescRdo;
 
     /** Priority Display Color Radio Button */
     private Button colorRdo;
@@ -128,7 +126,8 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
     private DualList dualList;
 
     /** Dual List Object */
-    private final String[] rows = { "20", "50", "100", "500", "1000", "5000" };
+    private static final String[] rows = { "20", "50", "100", "500", "1000",
+            "5000" };
 
     /** Sort Ascending flag */
     private boolean sortAsc = false;
@@ -225,7 +224,7 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
 
         // Message/Hour Number spinner
         spinner = new Spinner(msgComp, SWT.BORDER);
-        spinner.setMinimum(0);
+        spinner.setMinimum(1);
         spinner.setMaximum(9999);
         spinner.setSelection(48);
         spinner.setIncrement(1);
@@ -294,7 +293,7 @@ public class NotificationConfigDlg extends CaveSWTDialog implements IUpdate {
         sortAscRdo.setToolTipText("Sort column from A-Z");
 
         // Sort Descending radio button
-        sortDescRdo = new Button(sortDirComp, SWT.RADIO);
+        Button sortDescRdo = new Button(sortDirComp, SWT.RADIO);
         sortDescRdo.setText("Sort Descending");
         sortDescRdo.setToolTipText("Sort the column from Z-A");
 
