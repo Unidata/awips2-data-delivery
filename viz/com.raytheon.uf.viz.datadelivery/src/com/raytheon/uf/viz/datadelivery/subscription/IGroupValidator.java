@@ -17,10 +17,10 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.viz.datadelivery.common.ui;
+package com.raytheon.uf.viz.datadelivery.subscription;
 
 /**
- * Action to update group dialog.
+ * Validates a group definition
  *
  * <pre>
  *
@@ -28,31 +28,16 @@ package com.raytheon.uf.viz.datadelivery.common.ui;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jul 19, 2012   702      jpiatt     Initial creation.
- * Nov 17, 2017  6343      tgurney    Remove unused groupSelectionUpdate()
+ * Nov 17, 2017 6343       tgurney     Initial creation
  *
  * </pre>
  *
- * @author jpiatt
+ * @author tgurney
  */
 
-public interface IGroupAction {
-
+public interface IGroupValidator {
     /**
-     * Reload the group names.
+     * @return Error message if the new group fails validation. null otherwise
      */
-    void loadGroupNames();
-
-    /**
-     * Refresh the table
-     */
-    void handleRefresh();
-
-    /**
-     * Get the group name
-     *
-     * @return group name
-     */
-    String getGroupNameTxt();
-
+    public String validate(IGroupValidationData data);
 }

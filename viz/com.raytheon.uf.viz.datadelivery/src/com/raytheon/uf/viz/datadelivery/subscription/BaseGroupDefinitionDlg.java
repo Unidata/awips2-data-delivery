@@ -1,26 +1,29 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.viz.datadelivery.subscription;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -33,6 +36,7 @@ import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
+import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.ebxml.DataSetQuery;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
@@ -46,17 +50,18 @@ import com.raytheon.uf.viz.datadelivery.common.ui.DurationComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.IGroupAction;
 import com.raytheon.uf.viz.datadelivery.common.ui.UserSelectComp;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
+import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
 import com.raytheon.viz.ui.presenter.components.WidgetConf;
 
 /**
  * The Data Delivery Create and Edit Subscription Group Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- -------------------------
  * Jul 2, 2012    702      jpiatt       Initial creation.
@@ -73,21 +78,21 @@ import com.raytheon.viz.ui.presenter.components.WidgetConf;
  * Apr 08, 2013 1826       djohnson     Remove delivery options.
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
  * Feb 01, 2016 5289       tgurney      Add missing minimize button in trim
- * 
+ * Nov 16, 2017 6343       tgurney      Validate group before saving
+ *
  * </pre>
- * 
+ *
  * @author jpiatt
- * @version 1.0
  */
-public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
-        IGroupAction {
+public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog
+        implements IGroupValidationData {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BaseGroupDefinitionDlg.class);
 
     /** Delivery options strings */
-    protected final String[] DELIVERY_OPTIONS = new String[] {
+    protected static final String[] DELIVERY_OPTIONS = new String[] {
             "Deliver data when available", "Notify when data are available" };
 
     /** Delivery combo config object */
@@ -112,9 +117,22 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
     /** IGroupAction callback */
     private final IGroupAction callback;
 
+    /** The new group definition. Not populated until OK button is pressed */
+    private GroupDefinition newGroupDefinition;
+
+    /**
+     * Validators that will run on any new or updated group definition before it
+     * is saved
+     */
+    private static final List<IGroupValidator> validators = new ArrayList<>();
+
+    static {
+        validators.add(new MadisGroupValidator());
+    }
+
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            The parent shell
      * @param create
@@ -123,19 +141,11 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
      */
     public BaseGroupDefinitionDlg(Shell parent, IGroupAction callback) {
         super(parent, SWT.DIALOG_TRIM | SWT.MIN,
-                CAVE.INDEPENDENT_SHELL
-                | CAVE.DO_NOT_BLOCK);
+                CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText(getDialogTitle());
         this.callback = callback;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
         GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
@@ -144,9 +154,7 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
         mainComp.setLayout(gl);
         mainComp.setLayoutData(gd);
 
-
-            createGroupInfo();
-
+        createGroupInfo();
 
         durComp = new DurationComp(mainComp);
         activePeriodComp = new ActivePeriodComp(mainComp);
@@ -156,11 +164,6 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
         createButtons();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#constructShellLayout()
-     */
     @Override
     protected Layout constructShellLayout() {
         // Create the main layout for the shell.
@@ -212,17 +215,16 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
 
     /**
      * Event handler for the OK button.
-     * 
+     *
      * @return true if data are valid
      */
     private boolean handleOK() {
 
-        boolean valid = false;
         boolean datesValid = false;
         boolean activeDatesValid = false;
 
         String groupName = getGroupName();
-        
+
         if (!validateGroupName(groupName)) {
             return false;
         }
@@ -231,21 +233,16 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
         datesValid = durComp.isValidChk();
         activeDatesValid = activePeriodComp.isValidChk();
 
-        if (datesValid && activeDatesValid) {
-            valid = true;
-        }
-
-        // If data is valid is not set to true for any of the composites return
-        if (!valid) {
-            return valid;
+        if (!datesValid || !activeDatesValid) {
+            return false;
         }
 
         try {
 
             GroupDefinition groupDefinition = new GroupDefinition();
 
-            groupDefinition.setOwner(LocalizationManager.getInstance()
-                    .getCurrentUser());
+            groupDefinition.setOwner(
+                    LocalizationManager.getInstance().getCurrentUser());
             groupDefinition.setGroupName(groupName);
 
             // Set Duration
@@ -292,9 +289,21 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
                 groupDefinition.setEnvelope(areaControlComp.getEnvelope());
             }
 
+            newGroupDefinition = groupDefinition;
+
+            // Validate the new group definition
+            for (IGroupValidator validator : validators) {
+                String errorMessage = validator.validate(this);
+                if (errorMessage != null) {
+                    DataDeliveryUtils.showMessage(shell, SWT.ERROR | SWT.OK,
+                            "Invalid Group Definition", errorMessage);
+                    return false;
+                }
+            }
             try {
-                saveGroupDefinition(LocalizationManager.getInstance()
-                        .getCurrentUser(), groupDefinition);
+                saveGroupDefinition(
+                        LocalizationManager.getInstance().getCurrentUser(),
+                        groupDefinition);
             } catch (RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Unable to save Group object", e);
@@ -321,17 +330,8 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
 
     }
 
-    /**
-     * Populate the dlg with the group properties.
-     * 
-     * @param groupName
-     *            Group name
-     */
-    public void populate(String groupName) {
-
-        // access the registry object for the group name
-        GroupDefinition groupDefinition = GroupDefinitionManager
-                .getGroup(groupName);
+    /** Populate the dlg with the group properties. */
+    public void populate(GroupDefinition groupDefinition) {
 
         // Set duration info
         Date sDate = groupDefinition.getSubscriptionStart();
@@ -383,37 +383,34 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
         }
 
         // populate user info properties
-        userSelectComp.selectSubscriptionsInGroup(groupName);
+        userSelectComp
+                .selectSubscriptionsInGroup(groupDefinition.getGroupName());
 
     }
 
     @Override
-    public void groupSelectionUpdate(String fileName) {
-        populate(fileName);
+    public Set<Subscription> getOldSubscriptions() {
+        return userSelectComp.getInitiallySelectedSubscriptions();
     }
 
     @Override
-    public void loadGroupNames() {
-        // unused
-
+    public Set<Subscription> getNewSubscriptions() {
+        return userSelectComp.getSelectedSubscriptions();
     }
 
     @Override
-    public void handleRefresh() {
-        // unused
-
-    }
-
-    @Override
-    public String getGroupNameTxt() {
-        // //unused
+    public GroupDefinition getOldGroupDefinition() {
+        /* No old group definition unless editing an existing group */
         return null;
     }
 
+    @Override
+    public GroupDefinition getNewGroupDefinition() {
+        return newGroupDefinition;
+    }
+
     /**
-     * Get the dialog title.
-     * 
-     * @return
+     * @return the dialog title
      */
     protected abstract String getDialogTitle();
 
@@ -423,28 +420,26 @@ public abstract class BaseGroupDefinitionDlg extends CaveSWTDialog implements
     protected abstract void createGroupInfo();
 
     /**
-     * Return the group name.
-     * 
-     * @return
+     * @return the group name
      */
     protected abstract String getGroupName();
 
     /**
      * Save the group definition.
-     * 
+     *
      * @param groupDefinition
      *            the group definition
      * @throws RegistryHandlerException
      */
-    protected abstract void saveGroupDefinition(String username, GroupDefinition groupDefinition)
-            throws RegistryHandlerException;
+    protected abstract void saveGroupDefinition(String username,
+            GroupDefinition groupDefinition) throws RegistryHandlerException;
 
     /**
      * Validate the group name.
-     * 
+     *
      * @param groupName
      *            the group name
-     * @return
+     * @return true if validated
      */
     protected abstract boolean validateGroupName(String groupName);
 }

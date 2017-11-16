@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,11 +34,11 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
 
 /**
  * The Data Delivery Create and Edit Subscription Group Dialog.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- -------------------------
  * Jul 2, 2012    702      jpiatt       Initial creation.
@@ -53,20 +53,23 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Jan 02, 2013 1441       djohnson     Access GroupDefinitionManager in a static fashion.
  * Jan 08, 2013 1453       djohnson     Split creation and edit dialogs.
  * Mar 31, 2014 2889       dhladky      Added username for notification center tracking.
- * 
+ * Nov 16, 2017 6343       tgurney      Add getOldGroupDefinition(). + cleanup
+ *
  * </pre>
- * 
+ *
  * @author jpiatt
- * @version 1.0
  */
 public class EditGroupDefinitionDlg extends BaseGroupDefinitionDlg {
 
     /** The Subscription Group Information Composite */
     private GroupSelectComp groupSelectComp;
 
+    /** The selected group definition before any changes are made */
+    private GroupDefinition selectedGroupDefinition;
+
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            The parent shell
      * @param create
@@ -77,11 +80,6 @@ public class EditGroupDefinitionDlg extends BaseGroupDefinitionDlg {
         super(parent, callback);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.CaveSWTDialog#preOpened()
-     */
     @Override
     protected void preOpened() {
         super.preOpened();
@@ -89,51 +87,43 @@ public class EditGroupDefinitionDlg extends BaseGroupDefinitionDlg {
         Runnable populate = new Runnable() {
             @Override
             public void run() {
-                populate(groupSelectComp.getGroupName());
+                selectedGroupDefinition = GroupDefinitionManager
+                        .getGroup(groupSelectComp.getGroupName());
+                populate(selectedGroupDefinition);
             }
         };
-        ComboBoxConf groupComboConf = new ComboBoxConf(true,
-                "Select a Group", populate);
+        ComboBoxConf groupComboConf = new ComboBoxConf(true, "Select a Group",
+                populate);
         groupSelectComp.setGroupNameComboConf(groupComboConf);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    public GroupDefinition getOldGroupDefinition() {
+        return selectedGroupDefinition;
+    }
+
     @Override
     protected String getGroupName() {
         return groupSelectComp.getGroupName();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected String getDialogTitle() {
         return "Edit Group";
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void createGroupInfo() {
         groupSelectComp = new GroupSelectComp(mainComp, true);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void saveGroupDefinition(String username, GroupDefinition groupDefinition)
-            throws RegistryHandlerException {
-        DataDeliveryHandlers.getGroupDefinitionHandler()
-                .update(username, groupDefinition);
+    protected void saveGroupDefinition(String username,
+            GroupDefinition groupDefinition) throws RegistryHandlerException {
+        DataDeliveryHandlers.getGroupDefinitionHandler().update(username,
+                groupDefinition);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected boolean validateGroupName(String groupName) {
         // Check for a group name
