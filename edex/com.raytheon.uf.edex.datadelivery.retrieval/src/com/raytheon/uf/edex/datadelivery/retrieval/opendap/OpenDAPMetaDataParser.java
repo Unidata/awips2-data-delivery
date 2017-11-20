@@ -464,7 +464,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         String levelInfo = "";
         boolean providerLevels = false;
         boolean reverseOrder = false;
-        String masterKey = "";
+        String masterKey = "UNKNOWN";
         Map<String, ParameterLevelRegex> plr = LookupManager.getInstance()
                 .getParamLevelRegexes();
 

@@ -38,6 +38,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 27, 2017  6186     rjpeter   Initial creation.
+ * Nov 15, 2017  6498     tjensen   Deprecated. Use SbnRetrievalInfoXml once all
+ *                                  sites are 18.1.1 or beyond.
  *
  * </pre>
  *
@@ -45,6 +47,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
+@Deprecated
 public class SbnRetrievalResponseXml {
     @XmlElement
     private SbnRetrievalRequestRecordPkXml requestRecord;
@@ -52,8 +55,10 @@ public class SbnRetrievalResponseXml {
     @XmlAttribute
     private boolean success;
 
-    // previous versions support multple records per response, but impls only
-    // had a single entry
+    /*
+     * previous versions support multiple records per response, but impls only
+     * had a single entry
+     */
     @XmlElement
     private SbnRetrievalRequestRecordXml retrievalRequestRecord;
 

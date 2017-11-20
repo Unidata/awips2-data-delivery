@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.datadelivery.retrieval.xml;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
+import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
@@ -48,6 +50,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Nov 07, 2013  2361     njensen   Remove ISerializableObject
  * Jul 20, 2017  6186     rjpeter   Removed redundant fields with retrieval.
  * Sep 20, 2017  6413     tjensen   Updated for ParameterGroups
+ * Nov 15, 2017  6498     tjensen   Updated to build ParameterGroups from
+ *                                  Parameters if not available.
  *
  * </pre>
  *
@@ -106,6 +110,13 @@ public class RetrievalAttribute<T extends Time, C extends Coverage> {
     }
 
     public ParameterGroup getParameterGroup() {
+        if (parameterGroup == null) {
+            List<Parameter> parameters = new ArrayList<>();
+            parameters.add(parameter);
+            Map<String, ParameterGroup> parameterGroupMap = ParameterUtils
+                    .generateParameterGroupsFromParameters(parameters);
+            parameterGroup = parameterGroupMap.values().iterator().next();
+        }
         return parameterGroup;
     }
 
@@ -145,9 +156,9 @@ public class RetrievalAttribute<T extends Time, C extends Coverage> {
                 return levels.get(0);
             }
         }
-        throw new IllegalStateException(
-                "Retrieval Attribute for parameter '" + parameterGroup.getAbbrev()
-                        + "' contains multiple level entries.");
+        throw new IllegalStateException("Retrieval Attribute for parameter '"
+                + parameterGroup.getAbbrev()
+                + "' contains multiple level entries.");
     }
 
 }

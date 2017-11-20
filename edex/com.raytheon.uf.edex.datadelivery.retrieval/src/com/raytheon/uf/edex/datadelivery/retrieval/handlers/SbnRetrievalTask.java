@@ -26,16 +26,20 @@ import java.util.UUID;
 
 import javax.xml.bind.JAXBException;
 
+import com.google.common.io.Files;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
+import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.common.util.rate.TokenBucket;
 import com.raytheon.uf.edex.datadelivery.retrieval.interfaces.IRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.opendap.OpenDapRetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.pda.PDARetrievalResponse;
 import com.raytheon.uf.edex.datadelivery.retrieval.wfs.WFSRetrievalResponse;
+import com.raytheon.uf.edex.datadelivery.retrieval.xml.SbnRetrievalInfoXml;
 import com.raytheon.uf.edex.datadelivery.retrieval.xml.legacy.SbnRetrievalResponseXml;
 
 /**
@@ -58,6 +62,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.xml.legacy.SbnRetrievalRespon
  *                                  inject IRetrievalDao.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Mar 20, 2017  6089     tjensen   Add PDARetrievalResponse to JAXBManager
+ * Nov 15, 2017  6498     tjensen   Added configurable option to send
+ *                                  SbnRetreivalInfoXml instead of
+ *                                  SbnRetrievalResponseXml
  *
  * </pre>
  *
@@ -71,6 +78,9 @@ public class SbnRetrievalTask extends RetrievalTask {
 
     private final IWmoHeaderApplier wmoHeaderWrapper;
 
+    private final boolean sendLegacySbnXml = Boolean
+            .getBoolean("sbn.retrieval.sendLegacyXML");
+
     /**
      * @param directory
      */
@@ -81,8 +91,9 @@ public class SbnRetrievalTask extends RetrievalTask {
         this.wmoHeaderWrapper = wmoHeaderWrapper;
         try {
             this.jaxbManager = new JAXBManager(SbnRetrievalResponseXml.class,
-                    OpenDapRetrievalResponse.class, WFSRetrievalResponse.class,
-                    PDARetrievalResponse.class, Coverage.class);
+                    SbnRetrievalInfoXml.class, OpenDapRetrievalResponse.class,
+                    WFSRetrievalResponse.class, PDARetrievalResponse.class,
+                    Coverage.class, LevelGroup.class);
         } catch (JAXBException e) {
             throw new ExceptionInInitializerError(e);
         }
@@ -97,10 +108,19 @@ public class SbnRetrievalTask extends RetrievalTask {
             final File tempHiddenFile = new File(finalFile.getParentFile(),
                     "." + finalFile.getName());
 
-            // generate SbnRetrievalResponseXml
-            final String xml = jaxbManager
-                    .marshalToXml(new SbnRetrievalResponseXml(retrieval,
-                            retrievalPluginDataObjects, true));
+            String xml = null;
+            if (sendLegacySbnXml) {
+                // generate SbnRetrievalResponseXml
+                xml = jaxbManager.marshalToXml(new SbnRetrievalResponseXml(
+                        retrieval, retrievalPluginDataObjects, true));
+            } else {
+                Subscription sub = DataDeliveryHandlers.getSubscriptionHandler()
+                        .getByName(retrieval.getSubscriptionName());
+                xml = jaxbManager.marshalToXml(new SbnRetrievalInfoXml(
+                        sub.getId(), retrieval.getUrl(),
+                        retrieval.getServiceType(), retrievalPluginDataObjects,
+                        retrieval.getAttribute()));
+            }
             final Date date = TimeUtil.newDate();
             final String textForFile = wmoHeaderWrapper.applyWmoHeader(
                     retrieval.getProvider(), retrieval.getPlugin(),
@@ -108,7 +128,7 @@ public class SbnRetrievalTask extends RetrievalTask {
 
             // Write as hidden file, this is OS specific, but there is no
             // platform-neutral way to do this with Java
-            FileUtil.bytes2File(textForFile.getBytes(), tempHiddenFile);
+            Files.write(textForFile.getBytes(), tempHiddenFile);
 
             // Rename to non-hidden
             if (!tempHiddenFile.renameTo(finalFile)) {

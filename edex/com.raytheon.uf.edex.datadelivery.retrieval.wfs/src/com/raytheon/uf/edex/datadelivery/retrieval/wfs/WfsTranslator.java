@@ -6,9 +6,6 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.PointTime;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
 
@@ -34,6 +31,7 @@ import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
  * Jul 24, 2014  3441     dhladky   Sharpen error handling for WFS
  * Sep 22, 2014  3121     dhladky   Generic clean up.
  * Jul 25, 2017  6186     rjpeter   Update signature
+ * Nov 15, 2017  6498     tjensen   Use inherited logger for logging.
  *
  * </pre>
  *
@@ -42,9 +40,6 @@ import net.opengis.wfs.v_1_1_0.FeatureCollectionType;
 
 public class WfsTranslator
         extends RetrievalTranslator<PointTime, Coverage, AbstractFeatureType> {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(WfsTranslator.class);
 
     public WfsTranslator(Retrieval<PointTime, Coverage> retrieval)
             throws InstantiationException {
@@ -105,18 +100,13 @@ public class WfsTranslator
             } else {
                 if (o instanceof ExceptionReport) {
                     ExceptionReport exception = (ExceptionReport) o;
-                    if (exception != null) {
-                        for (ExceptionType type : exception.getException()) {
-
-                            statusHandler.handle(Priority.ERROR,
-                                    "Remote Exception returned: \n" + type
-                                            .getExceptionText().toString());
-                        }
+                    for (ExceptionType type : exception.getException()) {
+                        logger.error("Remote Exception returned: \n"
+                                + type.getExceptionText().toString());
                     }
                 } else if (o instanceof String) {
                     // failed utterly, but with a raw string explanation.
-                    statusHandler.handle(Priority.ERROR,
-                            "Raw Remote Exception: \n" + o.toString());
+                    logger.error("Raw Remote Exception: \n" + o.toString());
                 } else {
                     throw new IllegalStateException(
                             "Received an invalid WFS return object. "
@@ -125,7 +115,7 @@ public class WfsTranslator
             }
 
         } catch (Exception e) {
-            statusHandler.handle(Priority.ERROR, "Can't create plugins.", e);
+            logger.error("Can't create plugins.", e);
         }
 
         return metadataAdapter.getPdos();

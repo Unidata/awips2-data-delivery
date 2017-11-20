@@ -54,6 +54,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Aug 09, 2016  5771     rjpeter   Allow concurrent event processing
  * Aug 02, 2017  6186     rjpeter   Removed RetrievalManagerNotifyEvent.
+ * Nov 15, 2017  6498     tjensen   Improved logging on deferred allocations
  *
  * </pre>
  *
@@ -104,20 +105,25 @@ public class RetrievalManager {
             RetrievalPlan plan = getRetrievalPlans().get(network);
 
             if (plan != null) {
-
                 if (bandwidthAllocation.getStartTime()
                         .before(plan.getPlanStart().getTime())
                         || bandwidthAllocation.getEndTime()
                                 .after(plan.getPlanEnd().getTime())) {
 
                     statusHandler
-                            .warn("Attempt to schedule bandwidth outside current window. BandwidthAllocation ["
+                            .warn("Attempt to schedule bandwidth outside current window. "
+                                    + "Allocation Time: ("
+                                    + bandwidthAllocation.getStartTime()
+                                    + " to " + bandwidthAllocation.getEndTime()
+                                    + ") Plan Window: ("
+                                    + plan.getPlanStart().getTime() + " to "
+                                    + plan.getPlanEnd().getTime()
+                                    + "). BandwidthAllocation ["
                                     + bandwidthAllocation.getIdentifier()
-                                    + "].  The BandwidthAllocation will be deferred.");
+                                    + "] will be deferred.");
                     bandwidthAllocation.setStatus(RetrievalStatus.DEFERRED);
                     bandwidthDao.createOrUpdate(bandwidthAllocation);
                 } else {
-
                     synchronized (plan) {
                         unscheduled.addAll(plan.schedule(bandwidthAllocation));
                         bandwidthDao.createOrUpdate(bandwidthAllocation);

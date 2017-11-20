@@ -30,8 +30,6 @@ import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.RetrievalAttribute;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.GridMetadataAdapter;
 import com.raytheon.uf.edex.datadelivery.retrieval.response.RetrievalTranslator;
@@ -56,6 +54,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
  * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
  * Sep 21, 2017  6441     tgurney   Remove references to dods-1.1.7
+ * Nov 15, 2017  6498     tjensen   Use inherited logger for logging
  *
  * </pre>
  *
@@ -64,9 +63,6 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
 
 public class OpenDAPTranslator
         extends RetrievalTranslator<GriddedTime, GriddedCoverage, Integer> {
-
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(OpenDAPTranslator.class);
 
     public OpenDAPTranslator(Retrieval<GriddedTime, GriddedCoverage> retrieval)
             throws InstantiationException {
@@ -91,7 +87,7 @@ public class OpenDAPTranslator
                 }
 
             } catch (Exception e) {
-                statusHandler.error("Unable to translate OpenDAP Response", e);
+                logger.error("Unable to translate OpenDAP Response", e);
             }
         }
 
@@ -154,15 +150,16 @@ public class OpenDAPTranslator
         // retrieve data
         RetrievalAttribute<GriddedTime, GriddedCoverage> attXML = retrieval
                 .getAttribute();
-        if (attXML.getCoverage() instanceof GriddedCoverage) {
+        if (attXML.getCoverage() != null) {
             GriddedCoverage gridCoverage = attXML.getCoverage();
 
             nx = gridCoverage.getRequestGridCoverage().getNx();
             ny = gridCoverage.getRequestGridCoverage().getNy();
 
             if (dnx != nx || dny != ny) {
-                statusHandler.info("GRID SIZE INCONSISTENCY!!!!!!!!" + nx
-                        + " DNX: " + dnx + " diffX: " + diffX);
+                logger.warn("Grid Size Inconsistency found for subscription '"
+                        + retrieval.getSubscriptionName() + "'. NX" + nx
+                        + " DNX: " + dnx + " NY" + ny + " DNY: " + dny);
             }
         }
 
@@ -205,8 +202,7 @@ public class OpenDAPTranslator
                         record.setOverwriteAllowed(true);
                         records[bin] = record;
                         bin++;
-                        statusHandler.info(
-                                "Creating record: " + record.getDataURI());
+                        logger.info("Creating record: " + record.getDataURI());
                         start = end;
                     }
                 }
