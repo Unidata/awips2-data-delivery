@@ -35,6 +35,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -45,7 +47,6 @@ import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
-import com.raytheon.uf.common.datadelivery.bandwidth.util.LogUtil;
 import com.raytheon.uf.common.datadelivery.event.retrieval.AdhocSubscriptionRequestEvent;
 import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionRequestEvent;
 import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionStatusEvent;
@@ -63,15 +64,13 @@ import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
-import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.IPerformanceTimer;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.FileUtil;
+import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.common.util.algorithm.AlgorithmUtil;
 import com.raytheon.uf.common.util.algorithm.AlgorithmUtil.IBinarySearchResponse;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
@@ -194,8 +193,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 public abstract class BandwidthManager<T extends Time, C extends Coverage>
         extends AbstractPrivilegedRequestHandler<BandwidthRequest<T, C>> {
 
-    protected final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     /** Used for min time range (point subs) **/
     public static final String MIN_RANGE_TIME = "min";
@@ -364,14 +362,14 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 bwManager.initializer.executeAfterRegistryInit();
                 return bwManager;
             } catch (EbxmlRegistryException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Error loading subscriptions after starting the new bandwidth manager!  Returning null reference.",
+                logger.error(
+                        "Error loading subscriptions after starting the new bandwidth manager! ",
                         e);
                 return null;
             }
         } finally {
             timer.stop();
-            statusHandler.info("Took [" + timer.getElapsedTime()
+            logger.info("Took [" + timer.getElapsedTime()
                     + "] ms to start a new bandwidth manager of type [" + type
                     + "]");
         }
@@ -459,8 +457,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     requestNetwork, bandwidth);
             response = proposeOnlyUnscheduledSubscriptions;
             if (proposeOnlyUnscheduledSubscriptions.isEmpty()) {
-                statusHandler
-                        .info("No subscriptions will be unscheduled by changing the bandwidth for network ["
+                logger.info(
+                        "No subscriptions will be unscheduled by changing the bandwidth for network ["
                                 + requestNetwork + "] to [" + bandwidth
                                 + "].  This is a Propose-Only call. NO CHANGES WILL BE APPLIED..");
             }
@@ -470,8 +468,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     requestNetwork, bandwidth);
             response = unscheduledSubscriptions;
             if (unscheduledSubscriptions.isEmpty()) {
-                statusHandler
-                        .info("No subscriptions will be unscheduled by changing the bandwidth for network ["
+                logger.info(
+                        "No subscriptions will be unscheduled by changing the bandwidth for network ["
                                 + requestNetwork + "] to [" + bandwidth
                                 + "].  Applying...");
                 // This is a safe operation as all subscriptions will remain
@@ -522,8 +520,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             break;
         default:
             throw new IllegalArgumentException(
-                    "Dont know how to handle request type [" + requestType
-                            + "]");
+                    "Unknown request type [" + requestType + "]");
         }
 
         // Clean up any in-memory bandwidth configuration files
@@ -536,8 +533,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         }
 
         timer.stop();
-        statusHandler.info("Processed request of type [" + requestType
-                + "] in [" + timer.getElapsedTime() + "] ms");
+        logger.info("Processed request of type [" + requestType + "] in ["
+                + timer.getElapsedTime() + "] ms");
 
         return response;
     }
@@ -598,8 +595,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
          * publish the subscription events.
          */
         for (SubscriptionRequestEvent event : subscriptionEventsMap.values()) {
-            statusHandler
-                    .info("Subscription scheduling, added to bus as request event: "
+            logger.info(
+                    "Subscription scheduling, added to bus as request event: "
                             + event.getId());
             EventBus.publish(event);
         }
@@ -639,10 +636,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                         .getDataSetMetaDataToDate(subscription.getDataSetName(),
                                 subscription.getProvider(),
                                 plan.getPlanEnd().getTime());
-
             } catch (RegistryHandlerException e1) {
-                dsmdList = new ArrayList<>(0);
-                statusHandler.handle(Priority.PROBLEM,
+                dsmdList = Collections.emptyList();
+                logger.error(
                         "Unable to look-up list of DataSetMetData during scheduling. ",
                         e1);
             }
@@ -653,6 +649,17 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
 
             unscheduled = scheduleSubscriptionForRetrievalTimes(subscription,
                     retrievalTimes);
+
+            if (!unscheduled.isEmpty()) {
+                logger.warn(unscheduled.size()
+                        + " allocations unscheduled while scheduling for subscription "
+                        + subscription.getName());
+                if (logger.isDebugEnabled()) {
+                    logger.debug(StringUtil.createMessage(
+                            "The following allocations were unscheduled:",
+                            unscheduled, 3));
+                }
+            }
         }
         return unscheduled;
     }
@@ -691,9 +698,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                                 subscription.getProvider(),
                                 plan.getPlanEnd().getTime());
             } catch (RegistryHandlerException e1) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Unable to look-up list of DataSetMetData during schedule updating. ",
-                        e1);
+                logger.error("Unable to look-up list of DataSetMetData for "
+                        + subscription.getDataSetName(), e1);
             }
             SortedSet<Date> retrievalTimes = subscription.getRetrievalTimes(
                     plan.getPlanStart().getTime(), plan.getPlanEnd().getTime(),
@@ -783,7 +789,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         }
 
         List<BandwidthAllocation> unscheduled = new ArrayList<>();
-        statusHandler.info("Scheduling subscription " + subscription.getName());
+        logger.info("Scheduling subscription " + subscription.getName());
 
         unscheduled.addAll(aggregate(subscription, retrievalTimes));
         timer.lap("aggregate");
@@ -817,9 +823,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         Set<String> subscriptionsUnscheduled = proposeResponse
                 .getUnscheduledSubscriptions();
         if (subscriptionsUnscheduled.isEmpty()) {
-            statusHandler
-                    .info("No subscriptions will be unscheduled by scheduling subscriptions "
-                            + subscriptions + ".  Applying...");
             // This is a safe operation as all subscriptions will remain
             // scheduled, just apply
             scheduleSubscriptions(subscriptions);
@@ -886,7 +889,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             unscheduled = proposedBwManager.scheduleSubscriptions(
                     (List<Subscription<T, C>>) subscriptions);
         } catch (Exception e) {
-            statusHandler.error("Error proposing scheduling! ", e);
+            logger.error("Error proposing scheduling! ", e);
         }
 
         final ProposeScheduleResponse proposeScheduleResponse = new ProposeScheduleResponse();
@@ -915,8 +918,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         try {
             proposedBwManager = startProposedBandwidthManager(copyOfCurrentMap);
 
-            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug("Current retrieval plan:" + FileUtil.EOL
+            if (logger.isDebugEnabled()) {
+                logger.debug("Current retrieval plan:" + FileUtil.EOL
                         + showRetrievalPlan(requestNetwork) + FileUtil.EOL
                         + "Proposed retrieval plan:" + FileUtil.EOL
                         + proposedBwManager.showRetrievalPlan(requestNetwork));
@@ -926,26 +929,22 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     .getBandwidthAllocationsInState(
                             RetrievalStatus.UNSCHEDULED);
 
-            if (!unscheduledAllocations.isEmpty()
-                    && statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                LogUtil.logIterable(statusHandler, Priority.DEBUG,
-                        "The following unscheduled allocations would occur with the proposed bandwidth:",
-                        unscheduledAllocations);
-            }
-
             for (BandwidthAllocation allocation : unscheduledAllocations) {
                 subscriptions.add(allocation.getSubName());
-
             }
-
-            if (!subscriptions.isEmpty()
-                    && statusHandler.isPriorityEnabled(Priority.INFO)) {
-                LogUtil.logIterable(statusHandler, Priority.INFO,
-                        "The following subscriptions would not be scheduled with the proposed bandwidth:",
-                        subscriptions);
+            if (!unscheduledAllocations.isEmpty()) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(StringUtil.createMessage(
+                            "The following unscheduled allocations would occur with the proposed bandwidth:",
+                            unscheduledAllocations, 3));
+                } else if (logger.isInfoEnabled() && !subscriptions.isEmpty()) {
+                    logger.info(StringUtil.createMessage(
+                            "The following subscriptions would not be scheduled with the proposed bandwidth:",
+                            subscriptions, 3));
+                }
             }
         } catch (Exception e) {
-            statusHandler.error("Error proposing setting of Bandwidth! " + e);
+            logger.error("Error proposing setting of Bandwidth! " + e);
         }
 
         return subscriptions;
@@ -1020,11 +1019,10 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 Calendar endTime = TimeUtil.newGmtCalendar();
                 endTime.setTimeInMillis(startTime.getTimeInMillis());
 
-                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    statusHandler.debug("Adding latency minutes of ["
-                            + maxLatency + "] to start time of "
-                            + String.format("[%1$tY%1$tm%1$td%1$tH%1$tM]",
-                                    startTime));
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Adding latency minutes of [" + maxLatency
+                            + "] to start time of " + String.format(
+                                    "[%1$tY%1$tm%1$td%1$tH%1$tM]", startTime));
                 }
 
                 endTime.add(Calendar.MINUTE, maxLatency);
@@ -1090,16 +1088,14 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      */
     protected List<BandwidthAllocation> queueRetrieval(
             AdhocSubscription<T, C> adhocSub) {
-        statusHandler.info(
+        logger.info(
                 "Scheduling adhoc subscription [" + adhocSub.getName() + "]");
         String url = adhocSub.getUrl();
 
         if (url == null || "".equals(url)) {
-            // TODO: Throw IllegalArgumentException?
-            statusHandler
-                    .error("No DataSetMetaData URL specified for AdhocSubscription ["
+            throw new IllegalArgumentException(
+                    "No DataSetMetaData URL specified for AdhocSubscription ["
                             + adhocSub.getName() + "], skipping retrieval");
-            return Collections.emptyList();
         }
 
         Calendar now = BandwidthUtil.now();
@@ -1141,7 +1137,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     .getDataSetMetaDataHandler().getById(adhocSub.getUrl());
             retrievalAgent.queueRetrievals(dsmd, Arrays.asList(adhocSub));
         } catch (RegistryHandlerException e) {
-            statusHandler.error("Unable to look up DataSetMetaData[" + url
+            logger.error("Unable to look up DataSetMetaData[" + url
                     + "] for AdhocSubscription [" + adhocSub.getName()
                     + "], skipping retrieval", e);
         }
@@ -1182,7 +1178,15 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
          */
         if (subscription instanceof AdhocSubscription) {
             // TODO: Move call once AdhocSubscription is no longer in registry
-            return queueRetrieval((AdhocSubscription<T, C>) subscription);
+            List<BandwidthAllocation> unscheduled = Collections.emptyList();
+            try {
+                unscheduled = queueRetrieval(
+                        (AdhocSubscription<T, C>) subscription);
+            } catch (Exception e) {
+                logger.error("Unable to queue retrieval for adhoc subscription "
+                        + subscription.getName(), e);
+            }
+            return unscheduled;
         }
 
         // First see if BandwidthManager has seen the subscription before.
@@ -1240,9 +1244,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                 .getBandwidthAllocationsByRegistryId(subscription.getId());
 
         if (bandwidthAllocations.isEmpty()) {
-            statusHandler
-                    .warn("Unable to find bandwidthAllocations for subscription ["
-                            + subscription + "].  Returning current time.");
+            logger.warn("Unable to find bandwidthAllocations for subscription ["
+                    + subscription + "].  Returning current time.");
             return new Date();
         }
 
@@ -1303,7 +1306,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     .scheduleSubscriptions(Arrays.asList(subscription));
             return unscheduled.isEmpty();
         } catch (SerializationException e) {
-            statusHandler.handle(Priority.PROBLEM,
+            logger.error(
                     "Serialization error while determining required latency.  Returning true in order to be fault tolerant.",
                     e);
             return true;
@@ -1387,7 +1390,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                             .getSubscriptionHandler().getById(subId);
                     actualSubscriptions.add(actualSubscription);
                 } catch (RegistryHandlerException e) {
-                    statusHandler.handle(Priority.PROBLEM,
+                    logger.error(
                             "Unable to lookup the subscription, results may not be accurate for modeling bandwidth changes.",
                             e);
                 }
@@ -1512,17 +1515,15 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         if (binarySearchedValue != null) {
             currentValue = binarySearchedValue;
 
-            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug(String.format(
+            if (logger.isDebugEnabled()) {
+                logger.debug(String.format(
                         "Found required " + valueDescription
                                 + " of [%s] in [%s] iterations",
                         binarySearchedValue, response.getIterations()));
             }
         } else {
-            statusHandler.warn(String.format(
-                    "Unable to find the required " + valueDescription
-                            + " with a binary search, using value [%s]",
-                    currentValue));
+            logger.warn("Unable to find the required " + valueDescription
+                    + " with a binary search, using value " + currentValue);
         }
 
         timer.stop();
@@ -1532,7 +1533,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                         + " of [%s] in [%s] ms.",
                 currentValue, timer.getElapsedTime());
 
-        statusHandler.info(logMsg);
+        logger.info(logMsg);
 
         return currentValue;
     }
@@ -1603,7 +1604,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         try {
             bandwidthDao.purgeBandwidthAllocationsBeforeDate(threshold);
         } catch (DataAccessLayerException e) {
-            statusHandler.error(
+            logger.error(
                     "Failed to purge allocations before [" + threshold + "]",
                     e);
         }

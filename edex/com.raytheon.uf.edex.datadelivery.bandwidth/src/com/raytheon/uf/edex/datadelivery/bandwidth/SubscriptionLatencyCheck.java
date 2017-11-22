@@ -30,6 +30,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
 import com.raytheon.uf.common.datadelivery.event.retrieval.GenericNotifyEvent;
@@ -45,8 +48,6 @@ import com.raytheon.uf.common.event.EventBus;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
@@ -92,8 +93,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.db.RetrievalRequestRecord;
 public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
 
     /** Status handler (logger) */
-    protected static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(SubscriptionLatencyCheck.class);
+    protected static final Logger logger = LoggerFactory
+            .getLogger(SubscriptionLatencyCheck.class);
 
     /** Default extension at 25% */
     protected static final float DEFAULT_EXTENDED_DELAY_FACTOR = .25F;
@@ -109,7 +110,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             try {
                 retrievalExtensionFactor = Float.parseFloat(val);
             } catch (NumberFormatException nfe) {
-                statusHandler.warn(
+                logger.warn(
                         "datadelivery.bandwidth.retrieval.expiration.factor has been incorrectly configured. Using the default value.");
             }
         }
@@ -227,7 +228,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                 slcp.start();
             }
         } else {
-            statusHandler.warn(
+            logger.warn(
                     "start() has already been called, ignoring further requests!");
         }
     }
@@ -237,7 +238,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
      *
      */
     public void shutdown() {
-        statusHandler.info("shutdown() has been called ("
+        logger.info("shutdown() has been called ("
                 + sdf.format(TimeUtil.currentTimeMillis())
                 + "), ignoring further requests!");
         if (started) {
@@ -253,38 +254,40 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
      * @return boolean true if all parameters have been assigned.
      */
     protected boolean checkInitParams() {
-
+        boolean initialized = true;
+        StringBuilder sb = new StringBuilder();
         if (this.bucketsDao == null) {
-            statusHandler.error(
-                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Bandwidth Bucket DAO is null.");
-            return (false);
+            sb.append(", Bandwidth Bucket DAO");
+            initialized = false;
         }
 
         if (this.bandwidthDao == null) {
-            statusHandler.error(
-                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Bandwidth DAO is null.");
-            return (false);
+            sb.append(", Bandwidth DAO");
+            initialized = false;
         }
 
         if (this.subscriptionHandler == null) {
-            statusHandler.error(
-                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Subscription Handler is null.");
-            return (false);
+            sb.append(", Subscription Handler");
+            initialized = false;
         }
 
         if (this.dataSetHandler == null) {
-            statusHandler.error(
-                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Data Set Meta Data Handler is null.");
-            return (false);
+            sb.append(", Data Set Meta Data Handler");
+            initialized = false;
         }
 
         if (this.dataSetLatencyDao == null) {
-            statusHandler.error(
-                    "ERROR: Unable to perform Subscription Latency Check (Spring Bean). Data Set Latency Dao is null.");
-            return (false);
+            sb.append(", Data Set Latency Dao");
+            initialized = false;
         }
-
-        return (true);
+        if (!initialized) {
+            // trim of the first two characters to remove the leading ", "
+            sb.delete(0, 2);
+            logger.error(
+                    "Subscription Latency Check (Spring Bean) not fully initialized. Uninitialized: "
+                            + sb.toString());
+        }
+        return initialized;
     }
 
     /**
@@ -324,7 +327,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          *
          */
         public void shutdown() {
-            statusHandler.info("SubscriptionLatencyCheckProcessor for Network: "
+            logger.info("SubscriptionLatencyCheckProcessor for Network: "
                     + threadNetwork.name() + " shutdown() has been called ("
                     + sdf.format(TimeUtil.currentTimeMillis())
                     + "), ignoring further requests!");
@@ -340,20 +343,23 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
          *
          */
         protected void initialize() {
-            // Get Bandwidth Bucket Gap and Subscription Extension Factor
-            // from config datadelivery/bandwidthmap.xml file
+            /*
+             * Get Bandwidth Bucket Gap and Subscription Extension Factor from
+             * config datadelivery/bandwidthmap.xml file
+             */
             this.bandwidthBucketLength = retrieveBandwidthMapData();
 
-            // Compute value from Registry (bandwidthbucket.bucketstarttime
-            // database table)
+            /*
+             * Compute value from Registry (bandwidthbucket.bucketstarttime
+             * database table)
+             */
             long now = TimeUtil.currentTimeMillis();
             BandwidthBucket currentBandwidthBucket = bucketsDao
                     .getBucketContainingTime(now, this.threadNetwork);
             if (currentBandwidthBucket == null) {
-                statusHandler
-                        .info("Unable to retrieve BandwidthBucket for timestamp "
-                                + now + " and Network  " + this.threadNetwork
-                                + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
+                logger.warn("Unable to retrieve BandwidthBucket for timestamp "
+                        + now + " and Network  " + this.threadNetwork
+                        + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
                 return;
             }
             long currentBandwidthBucketTime = currentBandwidthBucket
@@ -362,11 +368,10 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             BandwidthBucket nextBandwidthBucket = bucketsDao
                     .getBucketContainingTime(nextWindow, this.threadNetwork);
             if (nextBandwidthBucket == null) {
-                statusHandler
-                        .info("Unable to retrieve BandwidthBucket for timestamp "
-                                + nextWindow + " (next Bucket) and Network "
-                                + this.threadNetwork
-                                + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
+                logger.warn("Unable to retrieve BandwidthBucket for timestamp "
+                        + nextWindow + " (next Bucket) and Network "
+                        + this.threadNetwork
+                        + " Unable to compare Registry Bandwidth Bucket size agaist bandwidthmap.xml definition.");
                 return;
             }
             long nextBandwidthBucketTime = nextBandwidthBucket
@@ -375,8 +380,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             long registryBandwidthBucketLength = nextBandwidthBucketTime
                     - currentBandwidthBucketTime;
             if (configFileBandwidthBucketLength != registryBandwidthBucketLength) {
-                statusHandler
-                        .info("Configured (bandwidthmap.xml) Bandwidth Bucket Size ("
+                logger.info(
+                        "Configured (bandwidthmap.xml) Bandwidth Bucket Size ("
                                 + configFileBandwidthBucketLength
                                 + " mils) differs from persistance record bandwidthbucket.bucketstarttime latency ("
                                 + registryBandwidthBucketLength
@@ -395,7 +400,7 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             // Don't start immediately. Wait until next Bandwidth Bucket.
             try {
                 waitTime = calculateNewSleepTime(0);
-                statusHandler.debug("Sleeping (" + waitTime
+                logger.debug("Sleeping (" + waitTime
                         + " mils) until next Bandwidth Bucket.");
                 Thread.sleep(waitTime);
             } catch (InterruptedException e1) {
@@ -407,19 +412,19 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                 timer.start();
 
                 try {
-                    statusHandler.info("Checking subscription latencies...");
+                    logger.info("Checking subscription latencies...");
                     waitTime = checkSubscriptionLatency();
                 } catch (Throwable e) {
                     // so thread doesn't die
-                    statusHandler.error(
+                    logger.error(
                             "Unable to perform Subscription Latency Check.", e);
                 }
                 timer.stop();
-                statusHandler.info("Checking subscription latency took "
+                logger.info("Checking subscription latency took "
                         + timer.getElapsedTime() + "ms.");
                 try {
                     if ((!this.isProcessorShutdown) && (waitTime >= 0)) {
-                        statusHandler.debug("SubscriptionLatencyCheckProcessor "
+                        logger.debug("SubscriptionLatencyCheckProcessor "
                                 + threadNetwork.name() + " Sleeping ("
                                 + waitTime
                                 + " mils) until next Bandwidth Bucket.");
@@ -533,8 +538,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
             if ((currentBandwidthBucket == null)
                     || (nextBandwidthBucket == null)
                     || (oneMoreBandwidthBucket == null)) {
-                statusHandler
-                        .warn("Unable to retrieve necessary Bandwidth Bucket data for Network: "
+                logger.warn(
+                        "Unable to retrieve necessary Bandwidth Bucket data for Network: "
                                 + this.threadNetwork
                                 + " Unable to perform Subscription Latency Check. Waiting for next Bandwidth Bucket time window");
                 return (scheduledNextBandwidthBucketTime);
@@ -568,7 +573,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     Long baId = bandwidthAllocation.getIdentifier();
                     long baBandwidthBucket = bandwidthAllocation
                             .getBandwidthBucket();
-                    String subscriptionId = bandwidthAllocation.getSubscriptionId();
+                    String subscriptionId = bandwidthAllocation
+                            .getSubscriptionId();
 
                     if ((baBandwidthBucket >= currentBandwidthBucketTime)
                             && (baBandwidthBucket < nextBandwidthBucketTime)) {
@@ -583,8 +589,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     } else if (baBandwidthBucket < currentBandwidthBucketTime) {
                         // This allocation should have been removed.
                         // Record it for tracking purposes
-                        statusHandler
-                                .info("Bandwidth Allocation: Bandwidth Bucket set earlier than most current Bandwidth Bucket. Id: "
+                        logger.info(
+                                "Bandwidth Allocation: Bandwidth Bucket set earlier than most current Bandwidth Bucket. Id: "
                                         + baId
                                         + "  Assigned Bandwidth Bucket Time: "
                                         + sdf.format(bandwidthAllocation
@@ -659,8 +665,10 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                     dataSetName = sub.getDataSetName();
                     dataSetProviderName = sub.getProvider();
                 } catch (RegistryHandlerException e) {
-                    statusHandler.error("Unable to query Subscription with id: "
-                            + bandwidthAllocation.getSubscriptionId(), e);
+                    logger.error(
+                            "Unable to query Subscription with id: "
+                                    + bandwidthAllocation.getSubscriptionId(),
+                            e);
                     continue;
                 }
                 subscriptionLatencyData.setSubscriptionName(subscriptionName);
@@ -678,9 +686,8 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                                     dataSetProviderName);
                     subscriptionLatencyData.setDataSetLatency(dataSetLatency);
                 } catch (RegistryHandlerException rhe) {
-                    statusHandler.error("Unable to query DataSet Name: "
-                            + dataSetName + " Provider: " + dataSetProviderName,
-                            rhe);
+                    logger.error("Unable to query DataSet Name: " + dataSetName
+                            + " Provider: " + dataSetProviderName, rhe);
                 }
             }
 
@@ -993,16 +1000,17 @@ public class SubscriptionLatencyCheck<T extends Time, C extends Coverage> {
                             failures.add(rrr);
                         }
                     } catch (Exception e) {
-                        statusHandler.warn(
-                                "Unable to update an expired retrieval.", e);
+                        logger.warn(
+                                "Unable to update an expired retrieval for subscription "
+                                        + rrr.getSubscriptionName(),
+                                e);
                     }
                 }
 
                 sendRetrievalNotifications(true, extensions);
                 sendRetrievalNotifications(false, failures);
             } catch (DataAccessLayerException e) {
-                statusHandler.warn("Unable to check for expired retrievals.",
-                        e);
+                logger.warn("Unable to check for expired retrievals.", e);
             }
         }
 

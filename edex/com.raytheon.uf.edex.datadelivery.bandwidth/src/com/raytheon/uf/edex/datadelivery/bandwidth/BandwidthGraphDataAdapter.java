@@ -21,12 +21,16 @@ package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthBucketDescription;
@@ -44,9 +48,6 @@ import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
@@ -92,8 +93,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 
 public class BandwidthGraphDataAdapter {
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(BandwidthGraphDataAdapter.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final RetrievalManager retrievalManager;
 
@@ -160,9 +160,8 @@ public class BandwidthGraphDataAdapter {
                         .getInstance().bandwidthDao
                                 .getBandwidthAllocations(network);
             } catch (Exception e) {
-                allocationList = new ArrayList<>(0);
-                statusHandler.error("Unable to retrieve BandwidthAlloactions!",
-                        e);
+                logger.error("Unable to retrieve BandwidthAlloactions!", e);
+                allocationList = Collections.emptyList();
             }
 
             for (BandwidthAllocation allocation : allocationList) {
@@ -236,7 +235,7 @@ public class BandwidthGraphDataAdapter {
                                             sub.getProvider(),
                                             sub.getTime().getStart());
                         } catch (RegistryHandlerException e) {
-                            statusHandler.handle(Priority.PROBLEM,
+                            logger.error(
                                     "No DataSetMetaData matching query! DataSetName: "
                                             + sub.getDataSetName()
                                             + " Provider: " + sub.getProvider()
@@ -262,7 +261,7 @@ public class BandwidthGraphDataAdapter {
 
                 }
             } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
+                logger.error(
                         "Could not lookup Subscription/DataSet to find baseRefTime!",
                         e);
             }

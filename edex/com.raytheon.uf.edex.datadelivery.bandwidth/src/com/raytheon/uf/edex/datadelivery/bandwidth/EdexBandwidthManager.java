@@ -73,7 +73,6 @@ import com.raytheon.uf.common.registry.event.UpdateRegistryEvent;
 import com.raytheon.uf.common.registry.handler.IRegistryObjectHandler;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.IPerformanceTimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
@@ -255,8 +254,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         try {
             handleRequest(request);
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error while reinitializing the bandwidth manager.", e);
+            logger.error("Error while reinitializing the bandwidth manager.",
+                    e);
         }
     }
 
@@ -289,7 +288,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 networkToSubscriptionSetMap = findSubscriptionsStrategy
                         .findSubscriptionsToSchedule();
             } catch (Exception ex) {
-                statusHandler.error(
+                logger.error(
                         "Error occurred searching for subscriptions. Falling back to backup files.",
                         ex);
                 networkToSubscriptionSetMap = null;
@@ -307,10 +306,10 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 retrievalManager.restart();
 
             } catch (Exception e) {
-                statusHandler.error("Can't restart Retreival Manager! " + e);
+                logger.error("Can't restart Retrieval Manager! ", e);
             }
 
-            statusHandler.info(
+            logger.info(
                     "EdexBandwidthManager: Rescheduling Subscriptions for Bandwidth Manager reset. START");
 
             // Reactivate Subscriptions
@@ -326,9 +325,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         if (isSubscriptionManagedLocally(subscription)
                                 && subscription.isActive()) {
                             try {
-                                statusHandler
-                                        .info("\tRe-scheduling subscription: "
-                                                + subscription.getName());
+                                logger.info("\tRe-scheduling subscription: "
+                                        + subscription.getName());
                                 /*
                                  * subscriptionUpdated() both removes the old
                                  * allocations and re-schedules. It's the most
@@ -339,23 +337,23 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                                 logSubscriptionListUnscheduled(networkName,
                                         unscheduledList);
                             } catch (Exception ex) {
-                                statusHandler
-                                        .error("Error occurred restarting EdexBandwidthManager for Network: "
+                                logger.error(
+                                        "Error occurred restarting EdexBandwidthManager for Network: "
                                                 + network + " Subscription: "
-                                                + subscription.getName(), ex);
+                                                + subscription.getName(),
+                                        ex);
                             }
                         }
                     }
                 }
             }
         } else {
-            statusHandler.error(
+            logger.error(
                     "Error occurred restarting EdexBandwidthManager: unable to find subscriptions to reschedule");
             return;
         }
 
-        statusHandler.info(
-                "END EdexBandwidthManager: Restored Subscriptions for Bandwidth Manager Reset.");
+        logger.info("Restored Subscriptions for Bandwidth Manager Reset.");
 
         // Create system status event
         Calendar now = TimeUtil.newGmtCalendar();
@@ -412,7 +410,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @Subscribe
     public void persistScheduledSubscription(Subscription<T, C> persistSub) {
 
-        statusHandler.info("Persisting Subscription: " + persistSub.getName()
+        logger.info("Persisting Subscription: " + persistSub.getName()
                 + " status: " + persistSub.getStatus().name());
         subscriptionUpdated(persistSub);
 
@@ -445,7 +443,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 }
                 sb.append(ba.getId());
             }
-            statusHandler.info(sb.toString());
+            logger.info(sb.toString());
         }
 
     }
@@ -489,8 +487,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         try {
             return handler.getById(id);
         } catch (RegistryHandlerException e) {
-            statusHandler.error("Error attempting to retrieve RegistryObject["
-                    + id + "] from Registry.", e);
+            logger.error("Error attempting to retrieve RegistryObject[" + id
+                    + "] from Registry.", e);
             return null;
         }
     }
@@ -529,8 +527,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             // For removes we only care about Subscriptions. DSMD is un-flagged.
             if (DataDeliveryRegistryObjectTypes
                     .isRecurringSubscription(event.getObjectType())) {
-                statusHandler
-                        .info("Received Subscription removal notification for Subscription ["
+                logger.info(
+                        "Received Subscription removal notification for Subscription ["
                                 + event.getId() + "]");
 
                 remove(bandwidthDao
@@ -545,8 +543,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     Subscription<T, C> sub = (Subscription<T, C>) RegistryEncoders
                             .ofType(Type.JAXB)
                             .decodeObject(event.getRemovedObject());
-                    statusHandler
-                            .info("Subscription removed: " + event.getId());
+                    logger.info("Subscription removed: " + event.getId());
                     /*
                      * We only care about subs that our Site ID is contained
                      * within
@@ -561,7 +558,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                             isLocalOrigination);
 
                 } catch (SerializationException e) {
-                    statusHandler.handle(Priority.PROBLEM,
+                    logger.error(
                             "Failed to retrieve deleted object from RemoveRegistryEvent",
                             e);
                 }
@@ -624,8 +621,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 }
             }
 
-            statusHandler
-                    .info("Subscription Inserted: " + subscription.getName());
+            logger.info("Subscription Inserted: " + subscription.getName());
             sendSubscriptionNotificationEvent(event, subscription,
                     isLocalOrigination);
         }
@@ -693,8 +689,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 subscriptionUpdated(subscription);
             }
 
-            statusHandler
-                    .info("Subscription Updated: " + subscription.getName());
+            logger.info("Subscription Updated: " + subscription.getName());
             sendSubscriptionNotificationEvent(event, subscription,
                     isLocalOrigination);
         }
@@ -718,16 +713,15 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
              */
             Matcher matcher = RAP_PATTERN.matcher(dsmd.getUrl());
             if (matcher.matches()) {
-                statusHandler
-                        .info("Found rap_f dataset - updating dataset name from ["
-                                + dsmd.getDataSetName() + "] to [rap_f]");
+                logger.info("Found rap_f dataset - updating dataset name from ["
+                        + dsmd.getDataSetName() + "] to [rap_f]");
                 dsmd.setDataSetName("rap_f");
             }
 
             BandwidthEventBus.publish(dsmd);
 
         } else {
-            statusHandler.error("No DataSetMetaData found for id [" + id + "]");
+            logger.error("No DataSetMetaData found for id [" + id + "]");
         }
     }
 
@@ -765,22 +759,16 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                                 RegistryIdUtil.getId());
             }
         } catch (RegistryHandlerException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Failed to lookup subscriptions for dataset [" + dataSetName
-                            + "], url [" + url + "]",
-                    e);
+            logger.error("Failed to lookup subscriptions for dataset ["
+                    + dataSetName + "], url [" + url + "]", e);
             return Collections.emptyList();
         }
 
         if (CollectionUtil.isNullOrEmpty(subscriptions)) {
-            statusHandler.debug("No subscriptions found for dataset ["
-                    + dataSetName + "], url [" + url + "]");
+            logger.debug("No subscriptions found for dataset [" + dataSetName
+                    + "], url [" + url + "]");
             return subscriptions;
         }
-
-        statusHandler.info(String.format(
-                "Found [%d] subscriptions subscribed to dataset [%s], url [%s].",
-                subscriptions.size(), dataSetName, url));
 
         Iterator<? extends Subscription> subIter = subscriptions.iterator();
         while (subIter.hasNext()) {
@@ -790,20 +778,30 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 String skipReason = dataSetMetaData
                         .satisfiesSubscription(subscription);
                 if (skipReason != null) {
-                    // TODO: This could be a lot of logging for PDA data
-                    statusHandler.info(
-                            "Skipping subscription [" + subscription.getName()
-                                    + "] for dataSet[" + dataSetName + "] url ["
-                                    + url + "]:" + skipReason);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Skipping subscription ["
+                                + subscription.getName() + "] for dataSet["
+                                + dataSetName + "] url [" + url + "]:"
+                                + skipReason);
+                    }
                     subIter.remove();
                 }
             } catch (Exception e) {
-                statusHandler.error("Error checking if dataset [" + dataSetName
+                logger.error("Error checking if dataset [" + dataSetName
                         + "] url [" + url + "] satisfies subscription ["
                         + subscription.getName() + "], skipping subscription",
                         e);
                 subIter.remove();
             }
+        }
+
+        if (!subscriptions.isEmpty()) {
+            logger.info("Found " + subscriptions.size()
+                    + " subscriptions subscribed to dataset " + dataSetName
+                    + ", url " + url + ".");
+        } else if (logger.isDebugEnabled()) {
+            logger.debug("No subscriptions found for dataset [" + dataSetName
+                    + "], url [" + url + "]");
         }
 
         return subscriptions;
@@ -963,9 +961,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                                         event.getUsername());
                         break;
                     default:
-                        statusHandler.handle(Priority.PROBLEM,
-                                "Invalid RegistryEvent action: "
-                                        + event.getAction());
+                        logger.error("Invalid RegistryEvent action: "
+                                + event.getAction());
                     }
                 }
             }
@@ -1047,7 +1044,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                                         " is unscheduled. Insufficient bandwidth at startup.");
                                 EventBus.publish(sse);
                             } catch (RegistryHandlerException e) {
-                                statusHandler.handle(Priority.PROBLEM,
+                                logger.error(
                                         "Unable to update subscription scheduling status: "
                                                 + sub.getName(),
                                         e);
@@ -1082,8 +1079,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 subList = activeSubs.get(network);
             }
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error retrieving subscriptions.", e);
+            logger.error("Error retrieving subscriptions.", e);
         }
 
         return subList;
@@ -1111,8 +1107,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     subscriptions.add(sub);
                 }
             } catch (RegistryHandlerException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Unable to deserialize a subscription", e);
+                logger.error("Unable to deserialize a subscription with id "
+                        + unscheduledAllocation.getSubscriptionId(), e);
                 continue;
             }
         }
@@ -1146,12 +1142,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
         try {
             subMap = findSubscriptionsStrategy.findSubscriptionsToSchedule();
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
+            logger.error(
                     "Problem finding subscriptions that need to be scheduled",
                     e);
         }
         if (subMap != null) {
-            statusHandler.info("Finding any unscheduled subscriptions...");
+            logger.info("Finding any unscheduled subscriptions...");
             List<Subscription<T, C>> unschedSubs = new ArrayList<>();
             for (Network route : subMap.keySet()) {
                 for (Subscription<T, C> sub : subMap.get(route)) {
@@ -1170,8 +1166,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                 String msg = null;
                 for (Subscription sub : unschedSubs) {
 
-                    statusHandler
-                            .info("Attempting to Schedule unscheduled subscription: "
+                    logger.info(
+                            "Attempting to Schedule unscheduled subscription: "
                                     + sub.getName());
                     List<BandwidthAllocation> unscheduleAllocations = schedule(
                             sub);
@@ -1203,13 +1199,13 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         sendSubscriptionStatusEvent(msg, sub);
 
                     } catch (RegistryHandlerException e) {
-                        statusHandler.handle(Priority.PROBLEM,
+                        logger.error(
                                 "Couldn't update subscription state in BandwidthManager",
                                 e);
                     }
                 }
             } else {
-                statusHandler.info("No unscheduled subscriptions found...");
+                logger.info("No unscheduled subscriptions found...");
             }
         }
     }
@@ -1228,26 +1224,21 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
                 IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
                 timer.start();
-                statusHandler.info("MaintenanceTask starting...");
+                logger.info("MaintenanceTask starting...");
 
                 for (RetrievalPlan plan : retrievalManager.getRetrievalPlans()
                         .values()) {
-                    if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                        statusHandler
-                                .info("MaintenanceTask: " + plan.getNetwork());
-                        statusHandler.info("MaintenanceTask: planStart: "
-                                + plan.getPlanStart().getTime());
-                        statusHandler.info("MaintenanceTask: planEnd: "
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("MaintenanceTask: " + plan.getNetwork());
+                        logger.debug("MaintenanceTask: planStart: "
+                                + plan.getPlanStart().getTime() + " planEnd: "
                                 + plan.getPlanEnd().getTime());
                     }
                     plan.resize();
-                    if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                        statusHandler
-                                .info("MaintenanceTask: resized planStart: "
-                                        + plan.getPlanStart().getTime());
-                        statusHandler.info("MaintenanceTask: resized planEnd: "
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("MaintenanceTask: resized planStart: "
+                                + plan.getPlanStart().getTime() + " planEnd: "
                                 + plan.getPlanEnd().getTime());
-                        statusHandler.info("MaintenanceTask: Update schedule");
                     }
                     // Find DEFERRED Allocations and load them into the plan...
                     List<BandwidthAllocation> deferred = bandwidthDao
@@ -1264,12 +1255,12 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                     numSubsProcessed += updateSchedule(plan.getNetwork());
                 }
                 timer.stop();
-                statusHandler.info("MaintenanceTask complete: "
-                        + timer.getElapsed() + " - " + numSubsProcessed
+                logger.info("MaintenanceTask complete: " + timer.getElapsed()
+                        + " - " + numSubsProcessed
                         + " Subscriptions processed.");
 
             } catch (Throwable t) {
-                statusHandler.error(
+                logger.error(
                         "MaintenanceTask: Subscription update scheduling has failed",
                         t);
             }
