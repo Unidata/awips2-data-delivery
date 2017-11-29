@@ -37,9 +37,6 @@ import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.serialization.SerializationUtil;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.util.app.AppInfo;
 import com.raytheon.uf.edex.core.EDEXUtil;
@@ -64,6 +61,7 @@ import com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist.DecodeInfo;
  * Sep 16, 2016  5762     tjensen   Remove Camel from FTPS calls
  * May 22, 2017  6130     tjensen   Update for Polar products
  * Jul 25, 2017  6186     rjpeter   Use Retrieval
+ * Nov 15, 2017  6498     tjensen   Use inherited logger for logging
  *
  * </pre>
  *
@@ -72,9 +70,6 @@ import com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist.DecodeInfo;
 
 public class PDATranslator
         extends RetrievalTranslator<Time, Coverage, PluginDataObject> {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(PDATranslator.class);
 
     public PDATranslator(Retrieval<Time, Coverage> retrieval)
             throws InstantiationException {
@@ -116,9 +111,8 @@ public class PDATranslator
             String appVersion = AppInfo.getInstance().getVersion();
             VersionData vd = dataSet.getVersionDataByVersion(appVersion);
             if (vd == null) {
-                statusHandler.error("Unable to process file '"
-                        + responseFileName + "': dataset '"
-                        + dataSet.getDataSetName()
+                logger.error("Unable to process file '" + responseFileName
+                        + "': dataset '" + dataSet.getDataSetName()
                         + "' not supported in version '" + appVersion + "'");
                 return;
             }
@@ -166,22 +160,20 @@ public class PDATranslator
                 decodeInfo.setEnqueTime(System.currentTimeMillis());
 
                 // Send off to Ingest for processing
-                statusHandler.info("Sending PDA retrieval file to Ingest: "
+                logger.info("Sending PDA retrieval file to Ingest: "
                         + storeFileName);
                 EDEXUtil.getMessageProducer().sendAsyncUri(
                         "jms-durable:queue:Ingest.DataDelivery.Decode",
                         SerializationUtil.transformToThrift(decodeInfo));
 
             } else {
-                statusHandler.error(
+                logger.error(
                         "Unable to process file: null file name received.");
             }
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unable to decode PDA file objects for DataSet '"
-                            + dataSet.getDataSetName() + "' for subscription '"
-                            + retrieval.getSubscriptionName() + "'!",
-                    e);
+            logger.error("Unable to decode PDA file objects for DataSet '"
+                    + dataSet.getDataSetName() + "' for subscription '"
+                    + retrieval.getSubscriptionName() + "'!", e);
         }
     }
 

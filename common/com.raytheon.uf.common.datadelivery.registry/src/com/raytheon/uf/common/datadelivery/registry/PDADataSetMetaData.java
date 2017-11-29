@@ -48,6 +48,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Aug 02, 2017  6186     rjpeter   Support dataSetMetaData being a partial
  *                                  dataSet.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Nov 15, 2017  6498     tjensen   Remove unneeded parameters
  *
  * </pre>
  *
@@ -63,16 +64,6 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
     @DynamicSerializeElement
     private String metaDataID;
 
-    /**
-     * Deprecated.
-     *
-     * Needed for compatibility with sites using versions older than 18.1.1
-     */
-    @DynamicSerializeElement
-    @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
-    @Deprecated
-    protected Map<String, Parameter> parameters = new HashMap<>();
-
     @DynamicSerializeElement
     @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
     protected Map<String, ParameterGroup> parameterGroups = new HashMap<>();
@@ -87,16 +78,6 @@ public class PDADataSetMetaData extends DataSetMetaData<Time, Coverage> {
 
     public void setMetaDataID(String metaDataID) {
         this.metaDataID = metaDataID;
-    }
-
-    @Deprecated
-    public Map<String, Parameter> getParameters() {
-        return parameters;
-    }
-
-    @Deprecated
-    public void setParameters(Map<String, Parameter> parameters) {
-        this.parameters = parameters;
     }
 
     @Override

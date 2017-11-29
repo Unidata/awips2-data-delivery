@@ -55,7 +55,7 @@ public class DataSetMetaDataDao
     private static String GET_IDS_BEYOND_RETENTION = "SELECT o.id FROM RegistryObjectType o inner join o.slot s1 inner join s1.slotValue v1 "
             + "WHERE o.objectType=:objectType and s1.name = :dateSlotName and v1.integerValue < :retentionTime and "
             + "o.id in (select s2.parent_id FROM SlotType s2 inner join s2.slotValue v2 WHERE s2.name = :providerSlotName and v2.stringValue = :provider) "
-            + "order by v2.integerValue";
+            + "order by v1.integerValue";
 
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public List<String> getProviderNames(String objectType,

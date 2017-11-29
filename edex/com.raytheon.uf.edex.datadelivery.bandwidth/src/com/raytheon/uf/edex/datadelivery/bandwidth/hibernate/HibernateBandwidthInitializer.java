@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,57 +22,66 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.hibernate;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.BandwidthManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
-import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
- * 
+ *
  * {@link IBandwidthInitializer} that uses Hibernate.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 20, 2013 1543       djohnson     Add SW history, separate how to find subscriptions.
- * Apr 16, 2013 1906       djohnson     Implements RegistryInitializedListener.
- * Apr 30, 2013 1960       djohnson     just call init rather than drop/create tables explicitly.
- * Jun 25, 2013 2106       djohnson     init() now takes a {@link RetrievalManager} as well.
- * Sep 05, 2013 2330       bgonzale     On WFO registry init, only subscribe to local site subscriptions.
- * Sep 06, 2013 2344       bgonzale     Removed attempt to add to immutable empty set.
- * Oct 16, 2013 2267       bgonzale     executeAfterRegistryInit subscribes to all local.  Removed is shared checks.
- * Nov 04, 2013 2506       bgonzale     added site field.  facilitates testing.
- * Nov 19, 2013 2545       bgonzale     Removed programmatic customization for central, client, and dev(monolithic) 
- *                                      registries since the injected FindSubscription handler will be configured now.
- * Jan 29, 2014 2636       mpduff       Scheduling refactor.
- * Feb 06, 2014 2636       bgonzale     Use scheduling initialization method after registry init.
- * Feb 11, 2014 2771       bgonzale     Use Data Delivery ID instead of Site.
- * Feb 14, 2014 2636       mpduff       Clean up logging
- * Apr 09, 2014 3012       dhladky      Adhoc firing prevention.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 20, 2013  1543     djohnson  Add SW history, separate how to find
+ *                                  subscriptions.
+ * Apr 16, 2013  1906     djohnson  Implements RegistryInitializedListener.
+ * Apr 30, 2013  1960     djohnson  just call init rather than drop/create
+ *                                  tables explicitly.
+ * Jun 25, 2013  2106     djohnson  init() now takes a {@link RetrievalManager}
+ *                                  as well.
+ * Sep 05, 2013  2330     bgonzale  On WFO registry init, only subscribe to
+ *                                  local site subscriptions.
+ * Sep 06, 2013  2344     bgonzale  Removed attempt to add to immutable empty
+ *                                  set.
+ * Oct 16, 2013  2267     bgonzale  executeAfterRegistryInit subscribes to all
+ *                                  local.  Removed is shared checks.
+ * Nov 04, 2013  2506     bgonzale  added site field.  facilitates testing.
+ * Nov 19, 2013  2545     bgonzale  Removed programmatic customization for
+ *                                  central, client, and dev(monolithic)
+ *                                  registries since the injected
+ *                                  FindSubscription handler will be configured
+ *                                  now.
+ * Jan 29, 2014  2636     mpduff    Scheduling refactor.
+ * Feb 06, 2014  2636     bgonzale  Use scheduling initialization method after
+ *                                  registry init.
+ * Feb 11, 2014  2771     bgonzale  Use Data Delivery ID instead of Site.
+ * Feb 14, 2014  2636     mpduff    Clean up logging
+ * Apr 09, 2014  3012     dhladky   Adhoc firing prevention.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Nov 22, 2017  6484     tjensen   Remove unused init return value and site
+ *                                  field
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 public class HibernateBandwidthInitializer implements IBandwidthInitializer {
 
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(HibernateBandwidthInitializer.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(HibernateBandwidthInitializer.class);
 
     private final ISubscriptionFinder findSubscriptionsStrategy;
-
-    private final String site;
 
     private BandwidthManager instance;
 
@@ -81,21 +90,11 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
      */
     public HibernateBandwidthInitializer(
             ISubscriptionFinder findSubscriptionsStrategy) {
-        this(findSubscriptionsStrategy, RegistryIdUtil.getId());
-    }
-
-    /**
-     * @param string
-     * @param strategy
-     */
-    HibernateBandwidthInitializer(
-            ISubscriptionFinder findSubscriptionsStrategy, String site) {
         this.findSubscriptionsStrategy = findSubscriptionsStrategy;
-        this.site = site;
     }
 
     @Override
-    public boolean init(BandwidthManager instance, IBandwidthDbInit dbInit,
+    public void init(BandwidthManager instance, IBandwidthDbInit dbInit,
             RetrievalManager retrievalManager) {
 
         this.instance = instance;
@@ -112,8 +111,6 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
         }
 
         retrievalManager.initRetrievalPlans();
-
-        return true;
     }
 
     /**
@@ -135,23 +132,24 @@ public class HibernateBandwidthInitializer implements IBandwidthInitializer {
                 for (String subscription : unscheduled) {
                     sb.append(subscription).append(" ");
                 }
-                statusHandler.handle(Priority.INFO, sb.toString());
+                logger.info(sb.toString());
             }
 
         } catch (Exception e) {
-            statusHandler.error(
-                    "Failed to query for subscriptions to schedule", e);
+            logger.error("Failed to query for subscriptions to schedule", e);
         }
     }
 
     /**
      * Get a map of the active subs by route.
-     * 
+     *
      * @return Map<Network, List<Subscription>>
      * @throws Exception
      */
+    @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public Map<Network, List<Subscription>> getSubMapByRoute() throws Exception {
+    public Map<Network, List<Subscription>> getSubMapByRoute()
+            throws Exception {
 
         return findSubscriptionsStrategy.findSubscriptionsToSchedule();
     }

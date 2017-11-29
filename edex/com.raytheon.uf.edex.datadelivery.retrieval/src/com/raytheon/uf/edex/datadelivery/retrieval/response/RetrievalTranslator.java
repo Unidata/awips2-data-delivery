@@ -22,6 +22,9 @@ package com.raytheon.uf.edex.datadelivery.retrieval.response;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
@@ -49,6 +52,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMet
  * Jun 11, 2013  2101     dhladky   Imports
  * Sep 24, 2014  3121     dhladky   try to improve generic usage.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
+ * Nov 15, 2017  6498     tjensen   Improved logging on InstantiationException
  *
  * </pre>
  *
@@ -57,6 +61,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.adapters.AbstractMet
 
 public abstract class RetrievalTranslator<T extends Time, C extends Coverage, RecordKey>
         implements IRetrievalTranslator<T, C, RecordKey> {
+
+    protected Logger logger = LoggerFactory.getLogger(getClass());
 
     protected Class<?> recordClass;
 
@@ -79,10 +85,12 @@ public abstract class RetrievalTranslator<T extends Time, C extends Coverage, Re
                     .getPluginRecordClassName(retrieval.getPlugin());
             configureFromPdoClassName(clazz);
         } catch (Exception e) {
+            logger.error("Failed to instantiate RetrievalTranslator for plugin "
+                    + retrieval.getPlugin(), e);
             throw new InstantiationException(
                     "Failed to instantiate RetrievalTranslator for plugin ["
                             + retrieval.getPlugin() + "]. Reason ["
-                            + e.toString());
+                            + e.toString() + "]");
         }
     }
 

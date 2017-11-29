@@ -88,6 +88,7 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Oct 19, 2017  6465     tjensen   Rename Collections to URLParserInfo
  * Oct 23, 2017  6185     bsteffen  Use area and resolution to get sat provider.
+ * Nov 15, 2017  6498     tjensen   Removed unneeded parameters from metadata
  *
  * </pre>
  *
@@ -284,9 +285,6 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                     pdadsmd.setDate(idate);
                     pdadsmd.setProviderName(provider.getName());
                     pdadsmd.setParameterGroups(parameterGroups);
-
-                    // TODO: OBE after all sites are on 18.1.1
-                    pdadsmd.setParameters(parameters);
 
                     /*
                      * If this is a moving dataset, save the coverage for this

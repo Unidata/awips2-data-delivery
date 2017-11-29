@@ -74,6 +74,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 02, 2017  6186     rjpeter   Updated super call to null for retrievalAgent
  * Aug 29, 2017  6186     rjpeter   Override queueRetrieval to do nothing
+ * Nov 22, 2017  6484     tjensen   Improve logging
  *
  * </pre>
  *
@@ -104,20 +105,18 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage>
          * {@inheritDoc}
          */
         @Override
-        public boolean init(BandwidthManager instance, IBandwidthDbInit dbInit,
+        public void init(BandwidthManager instance, IBandwidthDbInit dbInit,
                 RetrievalManager retrievalManager) {
             BandwidthManager edexBandwidthManager = EdexBandwidthContextFactory
                     .getInstance();
             if (instance instanceof InMemoryBandwidthManager) {
-                List<BandwidthAllocation> unscheduled = ((InMemoryBandwidthManager) instance)
+                ((InMemoryBandwidthManager) instance)
                         .copyState(edexBandwidthManager);
-                return true;
             } else {
                 statusHandler
-                        .error("Skipping init(), this initializer should only be used "
-                                + "on an in-memory BandwidthManager!"
-                                + "  This is a configuration error.");
-                return false;
+                        .error("Cannot initialize InMemoryBandwidthManager from non-InMemory instance ("
+                                + instance.getClass() + ")."
+                                + "  This is likely a configuration error. Skipping");
             }
         }
 

@@ -29,7 +29,6 @@ import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
-import com.raytheon.uf.common.datadelivery.registry.PendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
@@ -69,6 +68,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.metadata.ServiceTypeFactory;
  * Jul 25, 2017  6186     rjpeter   Update signature
  * Aug 02, 2017  6186     rjpeter   Removed SubscriptionBundle
  * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
+ * Nov 22, 2017  6484     tjensen   Cleanup getSubscriptionType
  *
  * </pre>
  *
@@ -137,15 +137,8 @@ public abstract class RetrievalGenerator<T extends Time, C extends Coverage> {
 
         if (sub instanceof AdhocSubscription) {
             return SubscriptionType.AD_HOC;
-        } else if (sub instanceof Subscription) {
-            return SubscriptionType.SUBSCRIBED;
-        } else if (sub instanceof PendingSubscription) {
-            // I don't really think we'll use this but......
-            return SubscriptionType.PENDING;
-        } else {
-            logger.error("Unknown Type of subscription! " + sub.getName());
-            return null;
         }
+        return SubscriptionType.SUBSCRIBED;
     }
 
     /**

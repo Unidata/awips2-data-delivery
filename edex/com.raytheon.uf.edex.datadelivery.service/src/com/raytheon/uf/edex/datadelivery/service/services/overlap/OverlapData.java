@@ -21,6 +21,7 @@ package com.raytheon.uf.edex.datadelivery.service.services.overlap;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,13 +50,16 @@ import com.raytheon.uf.common.util.CollectionUtil;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 17, 2013   2292     mpduff      Initial creation
- * Feb 13, 2014   2386     bgonzale    Change pass comparisons to >= instead of only >.
- *                                     Renamed sub1 and sub2 to otherSub and sub to make
- *                                     it easier to see what is compared against.
- * Sep 12, 2017 6413       tjensen     Updated to support ParameterGroups
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 17, 2013  2292     mpduff    Initial creation
+ * Feb 13, 2014  2386     bgonzale  Change pass comparisons to >= instead of
+ *                                  only >. Renamed sub1 and sub2 to otherSub
+ *                                  and sub to make it easier to see what is
+ *                                  compared against.
+ * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Nov 15, 2017  6498     tjensen   Added null check for potential empty
+ *                                  ParameterGroup levels
  *
  * </pre>
  *
@@ -180,7 +184,10 @@ public abstract class OverlapData<T extends Time, C extends Coverage> {
         totalParameterLevels = subSet.size();
         for (ParameterGroup otherPg : otherPgs.values()) {
             for (LevelGroup olg : otherPg.getGroupedLevels().values()) {
-                subSet.removeAll(olg.getLevels());
+                List<ParameterLevelEntry> olevels = olg.getLevels();
+                if (olevels != null && !olevels.isEmpty()) {
+                    subSet.removeAll(olevels);
+                }
             }
         }
         overlapParameterLevels = totalParameterLevels - subSet.size();
