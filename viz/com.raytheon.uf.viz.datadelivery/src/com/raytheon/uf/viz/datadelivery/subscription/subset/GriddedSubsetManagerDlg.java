@@ -46,6 +46,7 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.google.common.collect.Ordering;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
+import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
@@ -120,6 +121,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Aug 02, 2017  6186     rjpeter   Fix adhoc processing.
  * Aug 29, 2017  6186     rjpeter   Add url for adhoc.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Sep 26, 2017  6438     tgurney   Fix handling of Sea Ice selected levels
  * Sep 27, 2017  5948     tjensen   Update populateSubsetXML to get vertList
  *
  * </pre>
