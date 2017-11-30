@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NetworkTrafficServerConnector;
 import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
@@ -42,7 +43,6 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthBucketDao;
 import com.raytheon.uf.edex.datadelivery.retrieval.handlers.IBandwidthChangedCallback;
 import com.raytheon.uf.edex.registry.ebxml.web.RegistryWebServer;
-import com.raytheon.uf.edex.registry.ebxml.web.security.NetworkTrafficSelectChannelConnector;
 
 /**
  * {@link RegistryBandwidthUtilizationListener} Keeps track of network traffic
@@ -58,6 +58,7 @@ import com.raytheon.uf.edex.registry.ebxml.web.security.NetworkTrafficSelectChan
  * 6/5/2014     1712       bphillip    Changed registry Jetty server class
  * Dec 01, 2015 5152       nabowle     Use custom NetworkTrafficSelectChannelConnector.
  * Jun 12, 2017 6222       tgurney     Add bandwidthChangedCallback
+ * Nov 30, 2017 6529       tgurney     jetty 9.3 upgrade fix
  * 
  * </pre>
  * 
@@ -110,8 +111,8 @@ public class RegistryBandwidthUtilizationListener implements NetworkTrafficListe
         createQuartzCron(cron, network.name());
 
         for (Connector connector: server.getJettyServer().getConnectors()) {
-            if (connector instanceof NetworkTrafficSelectChannelConnector) {
-                NetworkTrafficSelectChannelConnector nconnector = ((NetworkTrafficSelectChannelConnector)connector);
+            if (connector instanceof NetworkTrafficServerConnector) {
+                NetworkTrafficServerConnector nconnector = ((NetworkTrafficServerConnector) connector);
                 nconnector.addNetworkTrafficListener(this);
                 logger.debug(nconnector.toString() + " on Network: " + network);
             }
