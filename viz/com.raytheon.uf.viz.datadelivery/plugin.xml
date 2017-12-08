@@ -128,4 +128,8 @@
             name="dataDeliveryProductBrowserDataDefinition">
       </dataDefinition>
    </extension>
+   <extension
+         point="com.raytheon.viz.volumebrowser.config.path">
+      <path>menus/datadelivery/volumebrowser</path>
+   </extension>
 </plugin>

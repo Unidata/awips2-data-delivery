@@ -95,6 +95,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Aug 02, 2017  6186     rjpeter   Removed url.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Dec 07, 2017  6355     nabowle   Add vertical slot.
  *
  * </pre>
  *
@@ -155,6 +156,7 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         this.setEnsemble(sub.getEnsemble());
         this.setOriginatingSite(sub.getOriginatingSite());
         this.setSubscriptionType(sub.getSubscriptionType());
+        this.setVertical(sub.isVertical());
 
         // Set the registry id
         this.setId(RegistryUtil.getRegistryObjectKey(this));
@@ -306,6 +308,10 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     @DynamicSerializeElement
     @SlotAttribute(Subscription.SUBSCRIPTION_STATE_SLOT)
     private SubscriptionState subscriptionState = SubscriptionState.ON;
+
+    @XmlAttribute
+    @DynamicSerializeElement
+    private boolean vertical = false;
 
     /*
      * Active Period starting day of the year. Calculated from
@@ -854,6 +860,16 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     @Override
     public void setId(String id) {
         this.id = id;
+    }
+
+    @Override
+    public boolean isVertical() {
+        return vertical;
+    }
+
+    @Override
+    public void setVertical(boolean isVertical) {
+        this.vertical = isVertical;
     }
 
     @Override

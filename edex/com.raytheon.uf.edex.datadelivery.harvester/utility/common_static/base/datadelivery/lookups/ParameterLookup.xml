@@ -48,4 +48,14 @@
     <!-- Vague description on these 2 cause them to map to 'T' -->
     <parameterMapping AWIPS="MxT" display="MxT (2m FHAG)" GrADs="tmpmax2m"/>
     <parameterMapping AWIPS="MnT" display="MnT (2m FHAG)" GrADs="tmpmin2m"/>
+    
+    <!-- These map to Pressure at LCY, MCY, or HCY and need to be kept as separate Parameters. -->
+    <parameterMapping AWIPS="preslclb" display="P (LCY Bottom)" GrADs="preslclb"/>
+    <parameterMapping AWIPS="preslclt" display="P (LCY Top)" GrADs="preslclt"/>
+    <parameterMapping AWIPS="presmclb" display="P (MCY Bottom)" GrADs="presmclb"/>
+    <parameterMapping AWIPS="presmclt" display="P (MCY Top)" GrADs="presmclt"/>
+    <parameterMapping AWIPS="preshclb" display="P (HCY Bottom)" GrADs="preshclb"/>
+    <parameterMapping AWIPS="preshclt" display="P (HCY Top)" GrADs="preshclt"/>
+    
+    
 </ParameterLookup>

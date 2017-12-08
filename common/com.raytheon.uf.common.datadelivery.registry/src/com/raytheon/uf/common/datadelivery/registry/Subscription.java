@@ -59,6 +59,7 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Aug 02, 2017  6186     rjpeter   Removed url.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Dec 08, 2017  6355     nabowle   Add vertical slot.
  *
  * </pre>
  *
@@ -760,4 +761,8 @@ public interface Subscription<T extends Time, C extends Coverage>
      */
     SortedSet<Date> getRetrievalTimes(Date planStart, Date planEnd,
             List<DataSetMetaData> dsmdList, SubscriptionUtil subUtil);
+
+    void setVertical(boolean isVertical);
+
+    boolean isVertical();
 }
