@@ -1,36 +1,41 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:util="http://www.springframework.org/schema/util"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd
     http://www.springframework.org/schema/util
     http://www.springframework.org/schema/util/spring-util.xsd
     http://camel.apache.org/schema/spring
     http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-	<bean id="tokenBucket" class="com.raytheon.uf.common.util.rate.TokenBucket">
-		<!-- tokens (bytes) per interval. the real value is set at runtime -->
-		<constructor-arg value="39321" />
-		<!-- interval in ms. not modifiable at runtime -->
-		<constructor-arg value="50" />
-	</bean>
+    <bean class="com.raytheon.uf.common.logback.appender.ThreadBasedAppender" factory-method="registerThreadPattern">
+        <constructor-arg value="retrieval" />
+        <constructor-arg value="dataDeliveryRetrievalProcess.*" />
+    </bean>
 
-	<bean id="tokenBucketUpdater"
-		class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.TokenBucketUpdater">
-		<constructor-arg ref="tokenBucket" />
-		<constructor-arg value="OPSNET" />
-	</bean>
+    <bean id="tokenBucket" class="com.raytheon.uf.common.util.rate.TokenBucket">
+        <!-- tokens (bytes) per interval. the real value is set at runtime -->
+        <constructor-arg value="39321" />
+        <!-- interval in ms. not modifiable at runtime -->
+        <constructor-arg value="50" />
+    </bean>
 
-	<bean id="storeData"
-		class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.StoreRetrievedData">
-		<constructor-arg value="direct-vm:dataDeliveryNotify" />
-	</bean>
+    <bean id="tokenBucketUpdater"
+        class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.TokenBucketUpdater">
+        <constructor-arg ref="tokenBucket" />
+        <constructor-arg value="OPSNET" />
+    </bean>
 
-	<bean id="retrievalTask"
-		class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.SiteRetrievalTask">
-		<constructor-arg ref="tokenBucket" />
-		<constructor-arg ref="storeData" />
-	</bean>
+    <bean id="storeData"
+        class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.StoreRetrievedData">
+        <constructor-arg value="direct-vm:dataDeliveryNotify" />
+    </bean>
+
+    <bean id="retrievalTask"
+        class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.SiteRetrievalTask">
+        <constructor-arg ref="tokenBucket" />
+        <constructor-arg ref="storeData" />
+    </bean>
 
     <bean id="dataDeliveryRetrievalDecoder"
         class="com.raytheon.uf.edex.datadelivery.retrieval.SbnDataDeliveryRetrievalDecoder">
