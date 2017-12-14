@@ -81,6 +81,7 @@ import com.vividsolutions.jts.geom.Envelope;
  * Apr 13, 2014  3012     dhladky   Cleaned up.
  * Aug 30, 2017  6412     tjensen   Changed to store insert times in metadata
  *                                  instead of obs times
+ * Dec 14, 2017  6356     tjensen   Move dataset updates out of initialization
  *
  * </pre>
  *
@@ -249,12 +250,6 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
             layer.setTargetMinx(configLayer.getMinx());
             layer.setTargetMiny(configLayer.getMiny());
             layer.setTimes(new TreeSet<Date>());
-
-            // create the main point data set
-            setDataSet(layer);
-            // install main dataset name on registry
-            WFSPointDataSet pds = getDataSet(layer.getName());
-            storeDataSet(pds);
         }
     }
 
@@ -494,14 +489,25 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
         // place into a WFS metadata object.
         synchronized (layer) {
             // creates a new PointTime object
-            times.put(layer.getName(), new PointTime());
+            String layerName = layer.getName();
+            times.put(layerName, new PointTime());
             // harvests the times from the layer
             setTime(layer);
 
+            // See if we have know about the dataset. If not, send an update.
+            WFSPointDataSet pds = wpds.get(layerName);
+            if (pds == null) {
+                // create the main point data set
+                setDataSet(layer);
+                // install main dataset name on registry
+                pds = getDataSet(layer.getName());
+                storeDataSet(pds);
+            }
+
             // make sure you populate the metadata
             setDataSetMetaData(layer);
-            PointDataSetMetaData data = getDataSetMetaData(layer.getName());
-            PointTime time = getTime(layer.getName());
+            PointDataSetMetaData data = getDataSetMetaData(layerName);
+            PointTime time = getTime(layerName);
             data.setTime(time);
             ImmutableDate date = new ImmutableDate(time.getEnd());
             data.setDate(date);
