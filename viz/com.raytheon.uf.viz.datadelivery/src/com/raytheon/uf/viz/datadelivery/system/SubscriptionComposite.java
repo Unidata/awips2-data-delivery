@@ -29,13 +29,18 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 
+import com.raytheon.uf.common.auth.AuthException;
+import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
+import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapConfig;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapMatchStrategy;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.auth.UserController;
+import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
 import com.raytheon.viz.ui.widgets.ApplyCancelComposite;
 import com.raytheon.viz.ui.widgets.IApplyCancelAction;
 
@@ -52,11 +57,11 @@ import com.raytheon.viz.ui.widgets.IApplyCancelAction;
  * Sept 24, 2013  2386     dhladky     Started work on Multiple Type Configs
  * Oct 03, 2013   2386     mpduff      Implemented multiple type configs
  * Mar 28, 2016   5482     randerso    Fixed GUI sizing issues
+ * Dec 15, 2017   6467     tgurney     Check for permission before applying
  * 
  * </pre>
  * 
  * @author mpduff
- * @version 1.0
  */
 
 public abstract class SubscriptionComposite extends Composite implements
@@ -200,24 +205,28 @@ public abstract class SubscriptionComposite extends Composite implements
      */
     abstract boolean saveConfiguration() throws LocalizationException;
 
-    /**
-     * {@inheritDoc}
-     */
+
     @Override
     public boolean apply() {
         try {
-            return saveConfiguration();
-        } catch (LocalizationException e) {
+            DataDeliveryPermission perm = DataDeliveryPermission.SYSTEM_MANAGEMENT_CREATE;
+            final IUser user = UserController.getUserObject();
+            final String msg = user.uniqueId()
+                    + " is not authorized to create, edit or delete rules."
+                    + "\nPermission: " + perm.toString();
+            if (DataDeliveryServices.getPermissionsService()
+                    .checkPermissions(user, msg, perm.toString())
+                    .hasPermission(perm.toString())) {
+                return saveConfiguration();
+            }
+            return true;
+        } catch (LocalizationException | AuthException e) {
             statusHandler.handle(Priority.ERROR,
                     "Unable to save configuration changes.", e);
         }
-
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void cancel() {
         loadConfiguration();
@@ -228,11 +237,6 @@ public abstract class SubscriptionComposite extends Composite implements
         buttonComp.enableButtons(true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.system.IChangeApplier#applyChange()
-     */
     @Override
     public void applyChange() {
         setButtonsEnabled();

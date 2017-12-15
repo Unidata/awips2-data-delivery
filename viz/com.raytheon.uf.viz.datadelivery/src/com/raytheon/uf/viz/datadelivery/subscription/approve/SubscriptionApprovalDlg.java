@@ -117,6 +117,8 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Apr 25, 2017  1045     tjensen   Cleanup more unneeded interfaces
  * Oct 27, 2017  6467     tgurney   Update "not authorized" message text
+ * Dec 15, 2017  6467     tgurney   Update "not authorized" message for shared
+ *                                  subscription approval
  *
  * </pre>
  *
@@ -395,6 +397,8 @@ public class SubscriptionApprovalDlg extends CaveSWTDialog implements
                 for (String name : notApprovedSubList) {
                     buffer.append(name).append("\n");
                 }
+                buffer.append("\nPermission: " + DataDeliveryPermission.SUBSCRIPTION_APPROVE_SITE
+                                .toString());
 
                 statusHandler.handle(Priority.WARN, buffer.toString());
             }
