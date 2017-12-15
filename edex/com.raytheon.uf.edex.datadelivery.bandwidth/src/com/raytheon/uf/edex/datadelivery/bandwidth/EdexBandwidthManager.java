@@ -169,6 +169,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  refactored dataSetMetaData processing
  * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
  *                                  BandwidthAllocations
+ * Dec 12, 2017  6522     mapeters  Add thread-based logging for retrieval
  *
  * </pre>
  *
@@ -405,7 +406,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * subscriptions. Reads subs off the BandwidthEventBus placed by
      * scheduleSubscriptions() method.
      *
-     * @param persistSubs
+     * @param persistSub
      */
     @Subscribe
     public void persistScheduledSubscription(Subscription<T, C> persistSub) {
@@ -570,7 +571,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * Listen for registry insert events necessary to drive Bandwidth
      * Management.
      *
-     * @param re
+     * @param event
      *            The <code>InsertRegistryEvent</code> Object to evaluate.
      */
     @SuppressWarnings("unchecked")
@@ -819,15 +820,22 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @AllowConcurrentEvents
     public void updatePDADataSetMetaData(PDADataSetMetaData dataSetMetaData)
             throws ParseException {
-        @SuppressWarnings("rawtypes")
-        List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
-                dataSetMetaData);
+        String oldThreadName = Thread.currentThread().getName();
+        Thread.currentThread().setName(RETRIEVAL_THREAD_PREFIX + oldThreadName);
 
-        if (CollectionUtil.isNullOrEmpty(subs)) {
-            return;
+        try {
+            @SuppressWarnings("rawtypes")
+            List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
+                    dataSetMetaData);
+
+            if (CollectionUtil.isNullOrEmpty(subs)) {
+                return;
+            }
+
+            retrievalAgent.queueRetrievals(dataSetMetaData, subs);
+        } finally {
+            Thread.currentThread().setName(oldThreadName);
         }
-
-        retrievalAgent.queueRetrievals(dataSetMetaData, subs);
     }
 
     /**
@@ -842,15 +850,22 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @AllowConcurrentEvents
     public void updateGriddedDataSetMetaData(
             GriddedDataSetMetaData dataSetMetaData) throws ParseException {
-        @SuppressWarnings("rawtypes")
-        List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
-                dataSetMetaData);
+        String oldThreadName = Thread.currentThread().getName();
+        Thread.currentThread().setName(RETRIEVAL_THREAD_PREFIX + oldThreadName);
 
-        if (CollectionUtil.isNullOrEmpty(subs)) {
-            return;
+        try {
+            @SuppressWarnings("rawtypes")
+            List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
+                    dataSetMetaData);
+
+            if (CollectionUtil.isNullOrEmpty(subs)) {
+                return;
+            }
+
+            retrievalAgent.queueRetrievals(dataSetMetaData, subs);
+        } finally {
+            Thread.currentThread().setName(oldThreadName);
         }
-
-        retrievalAgent.queueRetrievals(dataSetMetaData, subs);
     }
 
     /**
@@ -866,26 +881,33 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
     @AllowConcurrentEvents
     public void updatePointDataSetMetaData(PointDataSetMetaData dataSetMetaData)
             throws ParseException {
-        @SuppressWarnings("rawtypes")
-        List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
-                dataSetMetaData);
+        String oldThreadName = Thread.currentThread().getName();
+        Thread.currentThread().setName(RETRIEVAL_THREAD_PREFIX + oldThreadName);
 
-        if (CollectionUtil.isNullOrEmpty(subs)) {
-            return;
+        try {
+            @SuppressWarnings("rawtypes")
+            List<? extends Subscription> subs = getSubscriptionsForDataSetMetaData(
+                    dataSetMetaData);
+
+            if (CollectionUtil.isNullOrEmpty(subs)) {
+                return;
+            }
+
+            // Update the subscription to be for the time of the DSMD
+            final PointTime time = dataSetMetaData.getTime();
+            final Date pointTimeStart = time.getStart();
+            final Date pointTimeEnd = time.getEnd();
+
+            for (Subscription<T, C> sub : subs) {
+                T subTime = sub.getTime();
+                subTime.setStart(pointTimeStart);
+                subTime.setEnd(pointTimeEnd);
+            }
+
+            retrievalAgent.queueRetrievals(dataSetMetaData, subs);
+        } finally {
+            Thread.currentThread().setName(oldThreadName);
         }
-
-        // Update the subscription to be for the time of the DSMD
-        final PointTime time = dataSetMetaData.getTime();
-        final Date pointTimeStart = time.getStart();
-        final Date pointTimeEnd = time.getEnd();
-
-        for (Subscription<T, C> sub : subs) {
-            T subTime = sub.getTime();
-            subTime.setStart(pointTimeStart);
-            subTime.setEnd(pointTimeEnd);
-        }
-
-        retrievalAgent.queueRetrievals(dataSetMetaData, subs);
     }
 
     /**
@@ -988,7 +1010,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * to schedule the subscriptions available to it. It allows adds the timer
      * tasks for the Maintenance Task which keep scheduling current.
      *
-     * @param Map
+     * @param subMap
      *            <Network, List<Subscription>> subMap
      */
     @Override
