@@ -308,6 +308,8 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
             if (result != null && !result.equals(dataSet)) {
                 update = true;
                 dataSet.combine(result);
+            } else {
+                update = result == null;
             }
         } catch (RegistryHandlerException e) {
             logger.error("Unable to retrieve dataset.", e);
