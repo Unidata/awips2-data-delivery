@@ -49,6 +49,7 @@ import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManage
 import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
+import com.raytheon.uf.common.time.util.ImmutableDate;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.ogc.common.db.SimpleDimension;
 import com.raytheon.uf.edex.ogc.common.db.SimpleLayer;
@@ -318,6 +319,9 @@ public abstract class WfsRegistryCollectorAddon<D extends SimpleDimension, L ext
                 time.setEnd(endTime);
                 time.setNumTimes(time.getTimes().size());
                 dsmd.setTime(time);
+                ImmutableDate date = new ImmutableDate(time.getEnd());
+                dsmd.setDate(date);
+
                 StringBuilder url = new StringBuilder(160);
                 url.append(baseUrl).append(UNIQUE_ID_SEPARATOR)
                         .append(dsmd.getDataSetName())

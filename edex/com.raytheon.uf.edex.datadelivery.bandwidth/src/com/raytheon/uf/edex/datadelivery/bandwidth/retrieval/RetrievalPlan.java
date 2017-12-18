@@ -83,6 +83,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 02, 2017  6186     rjpeter   Removed agentType.
  * Sep 18, 2017  6415     rjpeter   Call deleteBucketUpToTime
+ * Dec 18, 2017  6484     tjensen   Mark planStart and planEnd as volatile
  *
  * </pre>
  *
@@ -126,9 +127,9 @@ public class RetrievalPlan {
     // Number of minutes of bandwidth per bucket.
     private int bucketMinutes;
 
-    private Calendar planEnd;
+    private volatile Calendar planEnd;
 
-    private Calendar planStart;
+    private volatile Calendar planStart;
 
     private long bytesPerBucket;
 

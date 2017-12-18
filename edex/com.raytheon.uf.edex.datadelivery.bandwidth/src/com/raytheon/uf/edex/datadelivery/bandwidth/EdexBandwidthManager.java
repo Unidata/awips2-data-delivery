@@ -1228,18 +1228,15 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
 
                 for (RetrievalPlan plan : retrievalManager.getRetrievalPlans()
                         .values()) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("MaintenanceTask: " + plan.getNetwork());
-                        logger.debug("MaintenanceTask: planStart: "
-                                + plan.getPlanStart().getTime() + " planEnd: "
-                                + plan.getPlanEnd().getTime());
-                    }
+                    logger.info("MaintenanceTask: " + plan.getNetwork());
+                    logger.info("MaintenanceTask: planStart: "
+                            + plan.getPlanStart().getTime() + " planEnd: "
+                            + plan.getPlanEnd().getTime());
                     plan.resize();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("MaintenanceTask: resized planStart: "
-                                + plan.getPlanStart().getTime() + " planEnd: "
-                                + plan.getPlanEnd().getTime());
-                    }
+                    logger.info("MaintenanceTask: resized planStart: "
+                            + plan.getPlanStart().getTime() + " planEnd: "
+                            + plan.getPlanEnd().getTime());
+
                     // Find DEFERRED Allocations and load them into the plan...
                     List<BandwidthAllocation> deferred = bandwidthDao
                             .getDeferred(plan.getNetwork(),
