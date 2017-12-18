@@ -250,25 +250,24 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
      * @param dataSet
      */
     protected void storeDataSet(final DS dataSet) {
+        if (checkForDataSetUpdate(dataSet)) {
+            final String dataSetName = dataSet.getDataSetName();
+            DataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
+            if (centralUpdatesEnabled) {
+                try {
+                    handler.update(RegistryUtil.registryUser, dataSet);
+                    logger.info("Dataset [" + dataSetName
+                            + "] successfully stored in Registry");
+                    storeDataSetName(dataSet);
 
-        DataSet<?, ?> dataSetToStore = getDataSetToStore(dataSet);
-        final String dataSetName = dataSetToStore.getDataSetName();
-        DataSetHandler handler = DataDeliveryHandlers.getDataSetHandler();
-
-        if (centralUpdatesEnabled) {
-            try {
-                handler.update(RegistryUtil.registryUser, dataSetToStore);
+                } catch (RegistryHandlerException e) {
+                    logger.error("Dataset [" + dataSetName
+                            + "] failed to store in Registry", e);
+                }
+            } else {
                 logger.info("Dataset [" + dataSetName
-                        + "] successfully stored in Registry");
-                storeDataSetName(dataSet);
-
-            } catch (RegistryHandlerException e) {
-                logger.error("Dataset [" + dataSetName
-                        + "] failed to store in Registry", e);
+                        + "] not stored in Registry. Registry updates currently disabled.");
             }
-        } else {
-            logger.info("Dataset [" + dataSetName
-                    + "] not stored in Registry. Registry updates currently disabled.");
         }
     }
 
@@ -289,27 +288,31 @@ public abstract class RegistryCollectorAddon<D extends SimpleDimension, L extend
     }
 
     /**
-     * Checks for a {@link DataSet} already existing with the same name in the
-     * Registry. If so, then combine the objects.
+     * Checks if the dataSet to be stored is different from the version
+     * currently in the registry. If so, combine the two dataSets and return
+     * true.
      *
      * @param dataSet
-     *            the dataSet
-     * @return the dataSet instance that should be stored to the registry
+     *            the dataSet to be stored
+     * @return true if dataSet is different from what's in the registry, else
+     *         false
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    protected DataSet getDataSetToStore(DataSet dataSet) {
+    protected boolean checkForDataSetUpdate(DataSet dataSet) {
+        boolean update = false;
         try {
             DataSet<Time, Coverage> result = DataDeliveryHandlers
                     .getDataSetHandler()
                     .getByNameAndProvider(dataSet.getDataSetName(),
                             dataSet.getProviderName());
-            if (result != null) {
+            if (result != null && !result.equals(dataSet)) {
+                update = true;
                 dataSet.combine(result);
             }
         } catch (RegistryHandlerException e) {
             logger.error("Unable to retrieve dataset.", e);
         }
-        return dataSet;
+        return update;
     }
 
     /**

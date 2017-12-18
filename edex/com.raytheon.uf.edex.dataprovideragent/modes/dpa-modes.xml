@@ -39,13 +39,11 @@
         <include>auth-common.xml</include>
         <include>database-common.xml</include>
         <!-- Remote connect to registry services -->
-        <include>datadelivery-standalone.xml</include>
         <include>datadelivery-handlers.xml</include>
         <include>datadelivery-handlers-impl.xml</include>
         <include>request-router.xml</include>
         <include>^utility-request.xml</include>
         <include>dpa-datadelivery.xml</include>
-        <include>edex-security.xml</include>
         <include>geo-common.xml</include>
         <include>request-service.*</include>
         <include>utility-common.xml</include>
