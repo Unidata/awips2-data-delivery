@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.datadelivery.registry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,9 +47,12 @@ import com.raytheon.uf.common.parameter.lookup.ParameterLookup;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 14, 2017 6413       tjensen     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 14, 2017  6413     tjensen   Initial creation
+ * Dec 19, 2017  6523     tjensen   Added copyParameter,
+ *                                  generateParameterLevelFromDescription, and
+ *                                  getDescriptionForParameters methods
  *
  * </pre>
  *
@@ -83,83 +87,87 @@ public class ParameterUtils {
             Collection<Parameter> parameters) {
         Map<String, ParameterGroup> pgs = new HashMap<>(1);
 
-        for (Parameter param : parameters) {
+        if (parameters != null && !parameters.isEmpty()) {
+            for (Parameter param : parameters) {
 
-            String awipsName = param.getAwipsName();
-            if (awipsName == null) {
-                awipsName = param.getName();
-            }
-            String units = param.getUnits();
-            ParameterGroup pg = pgs.get(buildKey(awipsName, units));
-            if (pg == null) {
-                pg = new ParameterGroup(awipsName, units);
-                pgs.put(pg.getKey(), pg);
-            }
-
-            /*
-             * Parameters store level information in one of 3 different ways
-             * that we need handle.
-             */
-            for (DataLevelType type : param.getLevelType()) {
-                LevelGroup lg = pg.getLevelGroup(
-                        ParameterUtils.buildKey(type.getDescription(), null));
-                if (lg == null) {
-                    lg = new LevelGroup(type.getDescription(), null);
-                    if (type.getType() != null) {
-                        lg.setMasterKey(type.getType().toString());
-                    }
-                    pg.putLevelGroup(lg);
+                String awipsName = param.getAwipsName();
+                if (awipsName == null) {
+                    awipsName = param.getName();
                 }
+                String units = param.getUnits();
+                ParameterGroup pg = pgs.get(buildKey(awipsName, units));
+                if (pg == null) {
+                    pg = new ParameterGroup(awipsName, units);
+                    pgs.put(pg.getKey(), pg);
+                }
+
                 /*
-                 * GRID data is the only type that stores its level information
-                 * in Levels objects, so if it has Levels, assume it's Grid.
+                 * Parameters store level information in one of 3 different ways
+                 * that we need handle.
                  */
-                Levels levels = param.getLevels();
-                if (levels != null) {
-                    boolean providerLevels = false;
-                    if (param.getLevelType().get(0).getType() == LevelType.MB
-                            || param.getLevelType().get(0)
-                                    .getType() == LevelType.SEAB) {
-                        providerLevels = true;
+                for (DataLevelType type : param.getLevelType()) {
+                    LevelGroup lg = pg.getLevelGroup(ParameterUtils
+                            .buildKey(type.getDescription(), null));
+                    if (lg == null) {
+                        lg = new LevelGroup(type.getDescription(), null);
+                        if (type.getType() != null) {
+                            lg.setMasterKey(type.getType().toString());
+                        }
+                        pg.putLevelGroup(lg);
                     }
                     /*
-                     * If we have selected indices, we need to just create
-                     * entries for the ones selected. Otherwise create an entry
-                     * for each level.
+                     * GRID data is the only type that stores its level
+                     * information in Levels objects, so if it has Levels,
+                     * assume it's Grid.
                      */
-                    List<Integer> selectedLevelIndices = levels
-                            .getSelectedLevelIndices();
-                    if (selectedLevelIndices != null
-                            && !selectedLevelIndices.isEmpty()) {
-                        for (Integer index : selectedLevelIndices) {
-                            GriddedParameterLevelEntry ple = new GriddedParameterLevelEntry(
-                                    param.getProviderName(),
-                                    param.getDefinition(),
-                                    levels.getLevelAt(index).toString());
-                            ple.setMissingValue(param.getMissingValue());
-                            ple.setUseProviderLevel(providerLevels);
-                            lg.addLevel(ple);
+                    Levels levels = param.getLevels();
+                    if (levels != null) {
+                        boolean providerLevels = false;
+                        if (param.getLevelType().get(0)
+                                .getType() == LevelType.MB
+                                || param.getLevelType().get(0)
+                                        .getType() == LevelType.SEAB) {
+                            providerLevels = true;
                         }
-                    } else {
-                        for (Double level : levels.getLevel()) {
-                            String levelStr = null;
-                            if (level != Double.NaN) {
-                                levelStr = level.toString();
+                        /*
+                         * If we have selected indices, we need to just create
+                         * entries for the ones selected. Otherwise create an
+                         * entry for each level.
+                         */
+                        List<Integer> selectedLevelIndices = levels
+                                .getSelectedLevelIndices();
+                        if (selectedLevelIndices != null
+                                && !selectedLevelIndices.isEmpty()) {
+                            for (Integer index : selectedLevelIndices) {
+                                GriddedParameterLevelEntry ple = new GriddedParameterLevelEntry(
+                                        param.getProviderName(),
+                                        param.getDefinition(),
+                                        levels.getLevelAt(index).toString());
+                                ple.setMissingValue(param.getMissingValue());
+                                ple.setUseProviderLevel(providerLevels);
+                                lg.addLevel(ple);
                             }
-                            GriddedParameterLevelEntry ple = new GriddedParameterLevelEntry(
-                                    param.getProviderName(),
-                                    param.getDefinition(), levelStr);
-                            ple.setMissingValue(param.getMissingValue());
-                            ple.setUseProviderLevel(providerLevels);
-                            lg.addLevel(ple);
+                        } else {
+                            for (Double level : levels.getLevel()) {
+                                String levelStr = null;
+                                if (level != Double.NaN) {
+                                    levelStr = level.toString();
+                                }
+                                GriddedParameterLevelEntry ple = new GriddedParameterLevelEntry(
+                                        param.getProviderName(),
+                                        param.getDefinition(), levelStr);
+                                ple.setMissingValue(param.getMissingValue());
+                                ple.setUseProviderLevel(providerLevels);
+                                lg.addLevel(ple);
+                            }
                         }
-                    }
 
-                } else {
-                    ParameterLevelEntry ple = new ParameterLevelEntry(
-                            param.getProviderName(), param.getDefinition(),
-                            null);
-                    lg.addLevel(ple);
+                    } else {
+                        ParameterLevelEntry ple = new ParameterLevelEntry(
+                                param.getProviderName(), param.getDefinition(),
+                                null);
+                        lg.addLevel(ple);
+                    }
                 }
             }
         }
@@ -401,8 +409,11 @@ public class ParameterUtils {
             if (lg != null) {
                 // Should be the same for all ParameterGroups
                 reverse = lg.isReverseOrder();
-                for (ParameterLevelEntry level : lg.getLevels()) {
-                    paramLevels.add(level);
+                List<ParameterLevelEntry> levels = lg.getLevels();
+                if (levels != null) {
+                    for (ParameterLevelEntry level : levels) {
+                        paramLevels.add(level);
+                    }
                 }
             }
         }
@@ -501,4 +512,105 @@ public class ParameterUtils {
         return uniqueParams;
     }
 
+    /**
+     * Copy the select parameter and level values. Used to create
+     * parameterGroups for Subscriptions.
+     *
+     * @param param
+     *            parameter
+     *
+     * @param selectedLevels
+     *            the levels selected on the tab
+     *
+     * @param levelKey
+     *            the type of the data level
+     *
+     * @return Parameter Parameter object
+     */
+    public static ParameterGroup copyParameter(ParameterGroup param,
+            String[] selectedLevels, String levelKey) {
+        ParameterGroup myParameterCopy = new ParameterGroup(param.getAbbrev(),
+                param.getUnits());
+
+        LevelGroup lg = param.getLevelGroup(levelKey);
+        LevelGroup myLgCopy = new LevelGroup(lg.getName(), lg.getUnits());
+        myLgCopy.setMasterKey(lg.getMasterKey());
+        myLgCopy.setReverseOrder(lg.isReverseOrder());
+        myParameterCopy.putLevelGroup(myLgCopy);
+
+        /*
+         * Grab only the desired levels. If no levels are given, check to see if
+         * this is a single level parameter who's level isn't labeled.
+         */
+        List<String> selectedList = Arrays.asList(selectedLevels);
+        if (selectedList.isEmpty()) {
+            if (lg.getLevels().size() == 1) {
+                ParameterLevelEntry level = lg.getLevels().get(0);
+                if (level.getDisplayString() == null
+                        || level.getDisplayString().isEmpty()) {
+                    myLgCopy.addLevel(level);
+                }
+            }
+
+        } else {
+            for (ParameterLevelEntry level : lg.getLevels()) {
+                if (selectedList.contains(level.getDisplayString())) {
+                    myLgCopy.addLevel(level);
+                }
+            }
+        }
+        return myParameterCopy;
+    }
+
+    /**
+     * Generates a friendly description of a valid parameter at a given level.
+     *
+     * @param paramName
+     *            name of the parameter
+     * @param levelType
+     *            type of LevelGroup
+     * @param displayString
+     *            description of the specific level
+     * @return
+     */
+    public static String generateParameterLevelDescription(String paramName,
+            String levelType, String displayString) {
+        return paramName + " --> " + levelType + " -> " + displayString;
+    }
+
+    /**
+     * Generates a list of descriptions for all parameters of a given
+     * LevelGroup.
+     *
+     * @param levelKey
+     *            key for the LevelGroup
+     * @param parameterGroups
+     *            map of parametersGroups
+     * @return
+     */
+    public static List<String> getDescriptionsForParameters(String levelKey,
+            Map<String, ParameterGroup> parameterGroups) {
+        List<String> returnList = new ArrayList<>();
+        for (Entry<String, ParameterGroup> entry : parameterGroups.entrySet()) {
+            ParameterGroup pg = entry.getValue();
+            String paramName = entry.getKey();
+            LevelGroup lg = pg.getLevelGroup(levelKey);
+
+            if (lg != null) {
+                List<ParameterLevelEntry> levels = lg.getLevels();
+                if (levels != null) {
+                    for (ParameterLevelEntry level : levels) {
+                        String displayString = level.getDisplayString();
+                        if (displayString != null && !displayString.isEmpty()
+                                && !returnList.contains(displayString)) {
+                            returnList.add(generateParameterLevelDescription(
+                                    paramName, levelKey, displayString));
+                        }
+                    }
+                }
+            }
+        }
+
+        return returnList;
+    }
 }

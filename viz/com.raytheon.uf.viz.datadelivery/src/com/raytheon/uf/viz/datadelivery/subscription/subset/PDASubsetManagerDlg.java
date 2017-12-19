@@ -92,6 +92,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Oct 13, 2017  6461     tgurney   Allow creating queries with a time range
  * Nov 02, 2017  6461     tgurney   Use a single message box for multiple adhoc
  *                                  subs created
+ * Dec 19, 2017  6523     tjensen   Changes for VerticalXML updates
  *
  * </pre>
  *
@@ -455,6 +456,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
             v.setLevels(
                     ParameterUtils.getLevelNamesForLevel(levelLabel, params));
             v.setParameterList(new ArrayList<>(params.keySet()));
+            v.setSelectedList(ParameterUtils
+                    .getDescriptionsForParameters(levelLabel, params));
 
             levelMap.put(levelLabel, v);
         }

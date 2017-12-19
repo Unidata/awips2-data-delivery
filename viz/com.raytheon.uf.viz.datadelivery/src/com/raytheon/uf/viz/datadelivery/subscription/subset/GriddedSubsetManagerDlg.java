@@ -46,7 +46,6 @@ import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.google.common.collect.Ordering;
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
-import com.raytheon.uf.common.datadelivery.registry.DataLevelType.LevelType;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.Ensemble;
@@ -123,6 +122,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Sep 26, 2017  6438     tgurney   Fix handling of Sea Ice selected levels
  * Sep 27, 2017  5948     tjensen   Update populateSubsetXML to get vertList
+ * Dec 19, 2017  6523     tjensen   Changes for VerticalXML updates
  *
  * </pre>
  *
@@ -349,7 +349,8 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
             v.setLevels(
                     ParameterUtils.getLevelNamesForLevel(levelLabel, params));
             v.setParameterList(new ArrayList<>(params.keySet()));
-
+            v.setSelectedList(ParameterUtils
+                    .getDescriptionsForParameters(levelLabel, params));
             levelMap.put(levelLabel, v);
         }
         ArrayList<VerticalXML> vertList = new ArrayList<>(levelMap.values());
