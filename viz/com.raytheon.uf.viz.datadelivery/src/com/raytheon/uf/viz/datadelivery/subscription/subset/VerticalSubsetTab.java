@@ -20,7 +20,6 @@
 package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +34,7 @@ import org.eclipse.swt.widgets.ExpandItem;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
-import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
-import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
 import com.raytheon.uf.viz.datadelivery.common.ui.ExpandBarControls;
 import com.raytheon.uf.viz.datadelivery.common.ui.ExpandBarControlsConfig;
@@ -75,6 +72,8 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.VerticalXML;
  * Jul 08, 2015  4566       dhladky   Use AWIPS naming rather than provider
  *                                    naming.
  * Sep 12, 2017  6413       tjensen   Updated to support ParameterGroups
+ * Dec 19, 2017  6523       tjensen   Updates for LevelParameterSelection's
+ *                                    ToggleSelectList
  *
  * </pre>
  *
@@ -98,6 +97,8 @@ public class VerticalSubsetTab extends SubsetTab
 
     private Map<String, Map<String, ParameterGroup>> paramsByNameByLevel;
 
+    private Map<String, ParameterGroup> parameterGroups;
+
     /**
      * Constructor.
      *
@@ -113,8 +114,9 @@ public class VerticalSubsetTab extends SubsetTab
             IDataSize callback) {
         this.parentComp = parentComp;
         this.callback = callback;
+        this.parameterGroups = dataSet.getParameterGroups();
 
-        populateLevelMap(dataSet.getParameterGroups());
+        populateLevelMap();
 
         init();
     }
@@ -149,25 +151,22 @@ public class VerticalSubsetTab extends SubsetTab
 
         for (Entry<String, Map<String, ParameterGroup>> levelEntry : paramsByNameByLevel
                 .entrySet()) {
+
             String levelLabel = levelEntry.getKey();
             Map<String, ParameterGroup> params = levelEntry.getValue();
-            List<String> levelList = ParameterUtils
-                    .getLevelNamesForLevel(levelLabel, params);
-            List<String> paramList = new ArrayList<>(params.keySet());
 
             ExpandItem item = new ExpandItem(expandBar, SWT.NONE);
             item.setText(levelLabel);
             item.setImage(
                     filterImgs.getExpandItemImage(ExpandItemState.NoEntries));
             LevelParameterSelection lps = new LevelParameterSelection(expandBar,
-                    SWT.BORDER, levelList, paramList, this, levelLabel);
+                    SWT.BORDER, params, this, levelLabel);
             item.setHeight(lps.computeSize(SWT.DEFAULT, SWT.DEFAULT).y);
             item.setControl(lps);
         }
-
     }
 
-    private void populateLevelMap(Map<String, ParameterGroup> parameterGroups) {
+    private void populateLevelMap() {
         paramsByNameByLevel = ParameterUtils
                 .getParameterLevelMap(parameterGroups);
     }
@@ -205,7 +204,7 @@ public class VerticalSubsetTab extends SubsetTab
             Control control = item.getControl();
             if (control instanceof LevelParameterSelection) {
                 LevelParameterSelection lps = (LevelParameterSelection) control;
-                if (lps.shouldExpand()) {
+                if (lps.isSelection()) {
                     item.setExpanded(true);
                 }
             }
@@ -238,70 +237,23 @@ public class VerticalSubsetTab extends SubsetTab
                 continue;
             }
 
-            String[] selectedLevels = lps.getSelectedLevels();
-            String[] selectedParameters = lps.getSelectedParameters();
-
-            for (String parameter : selectedParameters) {
-                ParameterGroup param = paramsByNameByLevel.get(lps.getId())
+            Map<String, List<String>> pgKeys = lps.getParameterKeys();
+            String levelGroup = lps.getId();
+            for (Entry<String, List<String>> keyEntry : pgKeys.entrySet()) {
+                String parameter = keyEntry.getKey();
+                List<String> levelList = keyEntry.getValue();
+                ParameterGroup param = paramsByNameByLevel.get(levelGroup)
                         .get(parameter);
                 if (param != null) {
-                    ParameterGroup p = copyParameter(param, selectedLevels,
-                            lps.getId());
+                    ParameterGroup p = ParameterUtils.copyParameter(param,
+                            levelList.toArray(new String[levelList.size()]),
+                            levelGroup);
                     selectedParameterObjs.put(p.getKey(), p);
                 }
             }
         }
 
         return selectedParameterObjs;
-    }
-
-    /**
-     * Copy the parameters.
-     *
-     * @param param
-     *            parameter
-     *
-     * @param selectedLevels
-     *            the levels selected on the tab
-     *
-     * @param string
-     *            the type of the data level
-     *
-     * @return Parameter Parameter object
-     */
-    private ParameterGroup copyParameter(ParameterGroup param,
-            String[] selectedLevels, String levelKey) {
-        ParameterGroup myParameterCopy = new ParameterGroup(param.getAbbrev(),
-                param.getUnits());
-
-        LevelGroup lg = param.getLevelGroup(levelKey);
-        LevelGroup myLgCopy = new LevelGroup(lg.getName(), lg.getUnits());
-        myLgCopy.setMasterKey(lg.getMasterKey());
-        myLgCopy.setReverseOrder(lg.isReverseOrder());
-        myParameterCopy.putLevelGroup(myLgCopy);
-
-        /*
-         * Grab only the desired levels. If no levels are given, check to see if
-         * this is a single level parameter who's level isn't labeled.
-         */
-        List<String> selectedList = Arrays.asList(selectedLevels);
-        if (selectedList.isEmpty()) {
-            if (lg.getLevels().size() == 1) {
-                ParameterLevelEntry level = lg.getLevels().get(0);
-                if (level.getDisplayString() == null
-                        || "".equals(level.getDisplayString())) {
-                    myLgCopy.addLevel(level);
-                }
-            }
-
-        } else {
-            for (ParameterLevelEntry level : lg.getLevels()) {
-                if (selectedList.contains(level.getDisplayString())) {
-                    myLgCopy.addLevel(level);
-                }
-            }
-        }
-        return myParameterCopy;
     }
 
     @Override
@@ -315,6 +267,7 @@ public class VerticalSubsetTab extends SubsetTab
                     .getControl();
             String[] parameters = selection.getSelectedParameters();
             String[] levels = selection.getSelectedLevels();
+            String[] selected = selection.getSelectedParameterLevels();
             if (levels.length > 0 || parameters.length > 0) {
                 if (showBreak) {
                     sb.append(
@@ -324,12 +277,8 @@ public class VerticalSubsetTab extends SubsetTab
                     showBreak = true;
                 }
                 sb.append(item.getText() + nl);
-                sb.append("  Levels:" + nl);
-                for (String s : levels) {
-                    sb.append("      " + s + nl);
-                }
-                sb.append("  Parameters:" + nl);
-                for (String s : parameters) {
+                sb.append("  Selected Levels/Parameters:" + nl);
+                for (String s : selected) {
                     sb.append("      " + s + nl);
                 }
             }
@@ -374,7 +323,8 @@ public class VerticalSubsetTab extends SubsetTab
      *            The DataSetMetaData object
      */
     public void populate(List<VerticalXML> vertList, DataSet<?, ?> dataSet) {
-        populateLevelMap(dataSet.getParameterGroups());
+        this.parameterGroups = dataSet.getParameterGroups();
+        populateLevelMap();
         createExpandBarItems();
 
         for (VerticalXML vert : vertList) {
@@ -382,13 +332,18 @@ public class VerticalSubsetTab extends SubsetTab
                 LevelParameterSelection lps = (LevelParameterSelection) item
                         .getControl();
                 if (vert.getLayerType().equalsIgnoreCase(item.getText())) {
-                    if (vert.getLevels() != null
-                            && vert.getLevels().size() > 0) {
-                        lps.selectLevels(vert.getLevels());
+                    List<String> levels = vert.getLevels();
+                    if (levels != null && !levels.isEmpty()) {
+                        lps.selectLevels(levels);
                     }
-                    if (vert.getParameterList() != null
-                            && vert.getParameterList().size() > 0) {
-                        lps.selectParameters(vert.getParameterList());
+                    List<String> parameterList = vert.getParameterList();
+                    if (parameterList != null && !parameterList.isEmpty()) {
+                        lps.selectParameters(parameterList);
+                    }
+                    lps.selectionChanged();
+                    List<String> selectedList = vert.getSelectedList();
+                    if (selectedList != null && !selectedList.isEmpty()) {
+                        lps.selectParameterLevels(selectedList);
                     }
                 }
             }
@@ -408,19 +363,20 @@ public class VerticalSubsetTab extends SubsetTab
         for (ExpandItem item : items) {
             LevelParameterSelection lps = (LevelParameterSelection) item
                     .getControl();
-            if (lps.shouldExpand()) {
+            if (lps.isSelection()) {
                 VerticalXML vertical = new VerticalXML();
-
                 vertical.setLayerType(item.getText());
-                String[] levels = lps.getSelectedLevels();
-                String[] parameters = lps.getSelectedParameters();
 
-                for (String level : levels) {
+                for (String level : lps.getSelectedLevels()) {
                     vertical.addLevel(level);
                 }
 
-                for (String parameter : parameters) {
+                for (String parameter : lps.getSelectedParameters()) {
                     vertical.addParameter(parameter);
+                }
+
+                for (String select : lps.getSelectedParameterLevels()) {
+                    vertical.addSelected(select);
                 }
                 vertList.add(vertical);
             }
@@ -440,7 +396,7 @@ public class VerticalSubsetTab extends SubsetTab
             Control control = eItem.getControl();
             if (control instanceof LevelParameterSelection) {
                 LevelParameterSelection lps = (LevelParameterSelection) control;
-                if (lps.shouldExpand()) {
+                if (lps.isSelection()) {
                     return true;
                 }
             }
@@ -476,30 +432,6 @@ public class VerticalSubsetTab extends SubsetTab
             if (control instanceof LevelParameterSelection) {
                 LevelParameterSelection lps = (LevelParameterSelection) control;
                 lps.setClean();
-            }
-        }
-    }
-
-    /**
-     * Update the selected parameters and levels.
-     *
-     * @param vertList
-     */
-    public void updateSettings(List<VerticalXML> vertList) {
-        for (VerticalXML vert : vertList) {
-            for (ExpandItem item : expandBar.getItems()) {
-                LevelParameterSelection lps = (LevelParameterSelection) item
-                        .getControl();
-                if (vert.getLayerType().equalsIgnoreCase(item.getText())) {
-                    if (vert.getLevels() != null
-                            && !vert.getLevels().isEmpty()) {
-                        lps.selectLevels(vert.getLevels());
-                    }
-                    if (vert.getParameterList() != null
-                            && !vert.getParameterList().isEmpty()) {
-                        lps.selectParameters(vert.getParameterList());
-                    }
-                }
             }
         }
     }

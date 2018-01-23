@@ -30,22 +30,22 @@ import javax.xml.bind.annotation.XmlElements;
 import com.raytheon.uf.viz.datadelivery.common.xml.IDisplayXml;
 
 /**
- * TODO Add Description
+ * XML used to save selections for VerticalSubsetTab
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------
+ * ------------- -------- --------- ------------------------------------------
  * Mar 29, 2012           mpduff    Initial creation.
  * Jun 04, 2013  223      mpudff    Refactored Method name change.
  * Sep 14, 2017  6413     tjensen   Use Lists instead of ArrayLists
+ * Dec 19, 2017  6523     tjensen   Add fields for selected parameters/levels
  *
  * </pre>
  *
  * @author mpduff
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class VerticalXML implements IDisplayXml {
@@ -58,6 +58,9 @@ public class VerticalXML implements IDisplayXml {
 
     @XmlElements({ @XmlElement(name = "levels", type = String.class) })
     protected List<String> levelList = new ArrayList<>();
+
+    @XmlElements({ @XmlElement(name = "selected", type = String.class) })
+    protected List<String> selectedList = new ArrayList<>();
 
     /**
      * @return the layerType
@@ -139,5 +142,17 @@ public class VerticalXML implements IDisplayXml {
         sb.append(nl);
 
         return sb.toString();
+    }
+
+    public List<String> getSelectedList() {
+        return selectedList;
+    }
+
+    public void setSelectedList(List<String> selectedList) {
+        this.selectedList = selectedList;
+    }
+
+    public void addSelected(String selected) {
+        this.selectedList.add(selected);
     }
 }
