@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.datadelivery.subscription.subset;
 
+import java.util.Set;
+
 import com.raytheon.uf.common.datadelivery.registry.AdhocSubscription;
 import com.raytheon.uf.common.datadelivery.registry.DataSetMetaData;
 import com.raytheon.uf.common.datadelivery.registry.RecurringSubscription;
@@ -28,12 +30,9 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
-import com.raytheon.uf.viz.datadelivery.subscription.CancelForceApplyAndIncreaseLatencyDisplayText;
 import com.raytheon.uf.viz.datadelivery.subscription.CreateSubscriptionDlg;
 import com.raytheon.uf.viz.datadelivery.subscription.CreateSubscriptionDlg.ICreateAdhocCallback;
-import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionServiceResult;
 
 /**
  * Callback for creating an adhoc subscription after creating a recurring
@@ -46,6 +45,9 @@ import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionServiceResult;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 25, 2017 6461       tgurney     Initial creation
+ * Jan 25, 2018 6506       nabowle     Schedule adhocs directly instead of
+ *                                     storing to bypass the registry and avoid
+ *                                     naming issues.
  *
  * </pre>
  *
@@ -105,32 +107,32 @@ public class CreateAdhocCallback implements ICreateAdhocCallback {
             adhoc.getTime().setEnd(dataSetMetaData.getDate());
         }
         adhoc.setSubscriptionType(SubscriptionType.QUERY);
-        return storeAdhoc(subscriptionDlg, adhoc);
+        return scheduleAdhoc(subscriptionDlg, adhoc);
 
     }
 
-    protected String storeAdhoc(CreateSubscriptionDlg subscriptionDlg,
+    protected String scheduleAdhoc(CreateSubscriptionDlg subscriptionDlg,
             AdhocSubscription adhoc) {
         String status = "";
         try {
-            String currentUser = LocalizationManager.getInstance()
-                    .getCurrentUser();
-            SubscriptionServiceResult result = DataDeliveryServices
-                    .getSubscriptionService().store(currentUser, adhoc,
-                            new CancelForceApplyAndIncreaseLatencyDisplayText(
-                                    "create", subscriptionDlg.getShell()));
+            Set<String> unscheduled = DataDeliveryServices.getBandwidthService()
+                    .schedule(adhoc);
 
-            if (result.hasMessageToDisplay()) {
-                status = result.getMessage();
+            if (unscheduled.isEmpty()) {
+                status = "Query Scheduled for " + adhoc.getName();
 
                 /*
                  * Log the results, but don't need a dialog notice since there
                  * already is a dialog confirming the creation of the recurring
                  * subscription
                  */
-                statusHandler.info("Query Scheduled: " + result.getMessage());
+                statusHandler.info(status);
+            } else {
+                status = "Some retrievals were not scheduled for "
+                        + adhoc.getName();
+                statusHandler.warn(status);
             }
-        } catch (RegistryHandlerException e) {
+        } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error requesting adhoc data.", e);
         }
