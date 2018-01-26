@@ -53,7 +53,7 @@ import com.raytheon.uf.common.parameter.lookup.ParameterLookup;
  * Dec 19, 2017  6523     tjensen   Added copyParameter,
  *                                  generateParameterLevelFromDescription, and
  *                                  getDescriptionForParameters methods
- *
+ * Jan 26, 2018  6413     rjpeter   Always set missingValue in generateParametersFromGroups
  * </pre>
  *
  * @author tjensen
@@ -253,12 +253,13 @@ public class ParameterUtils {
                                                             .getLevelOne())));
                                     levels.setLevel(gdsmd.getProviderLevels());
                                 }
-
-                                parm.setMissingValue(
-                                        griddedLevel.getMissingValue());
-                                parm.setFillValue(
-                                        griddedLevel.getMissingValue());
                             }
+
+                            parm.setMissingValue(
+                                    griddedLevel.getMissingValue());
+                            // fill value never actually used, reuse missing
+                            // value
+                            parm.setFillValue(griddedLevel.getMissingValue());
                         } else {
                             parm.setMissingValue("0");
                             parm.setFillValue("0");
