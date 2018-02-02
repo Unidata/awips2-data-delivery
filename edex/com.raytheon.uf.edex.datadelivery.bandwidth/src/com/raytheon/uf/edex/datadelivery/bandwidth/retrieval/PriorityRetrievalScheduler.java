@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,28 +21,27 @@ package com.raytheon.uf.edex.datadelivery.bandwidth.retrieval;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthAllocation;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.BandwidthBucket;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 
 /**
- * Implementation of IRetrievalScheduler that evaluates Subscription priority
- * values and fills the RetrievalPlan accordingly.
- * 
+ * Retrieval Scheduler that evaluates Subscription priority values and fills the
+ * RetrievalPlan accordingly.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Aug 27, 2012  726      jspinks   Initial release.
@@ -60,10 +59,10 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * May 27, 2015  4531     dhladky   Remove excessive Calendar references.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * May 23, 2016  5639     tjensen   Fix reprioritization
- * 
+ * Feb 02, 2018  6471     tjensen   Added UnscheduledAllocationReports. Made static
+ *
  * </pre>
- * 
- * @version 1.0
+ *
  */
 public class PriorityRetrievalScheduler {
 
@@ -72,21 +71,21 @@ public class PriorityRetrievalScheduler {
 
     /**
      * Attempt to schedule a BandwidthAllocation in the specified RetrievalPlan.
-     * 
+     *
      * @param plan
      *            The RetrievalPlan to attempt to schedule the
      *            BandwidthAllocation in.
-     * 
+     *
      * @param allocation
      *            The BandwidthAllocation to schedule.
      * @return the {@link BandwidthAllocation}s that are unable to be scheduled,
      *         this can be formerly scheduled allocations that were booted to
      *         make room for an allocation deemed more important
      */
-    public List<BandwidthAllocation> schedule(RetrievalPlan plan,
+    public static List<UnscheduledAllocationReport> schedule(RetrievalPlan plan,
             BandwidthAllocation allocation) {
 
-        Set<BandwidthAllocation> unscheduled = new HashSet<>();
+        List<UnscheduledAllocationReport> unscheduled = new ArrayList<>();
 
         /*
          * First get the retrieval start time. Compare the buckets in order, to
@@ -113,8 +112,8 @@ public class PriorityRetrievalScheduler {
         boolean notScheduled = true;
 
         // Get the buckets that are in the 'window' for the BandwidthAllocation.
-        SortedSet<BandwidthBucket> window = plan.getBucketsInWindow(
-                startTimeMillis, endTimeMillis);
+        SortedSet<BandwidthBucket> window = plan
+                .getBucketsInWindow(startTimeMillis, endTimeMillis);
 
         // Look through the buckets in the window for bandwidth.
         Iterator<BandwidthBucket> itr = window.iterator();
@@ -128,7 +127,7 @@ public class PriorityRetrievalScheduler {
 
             BandwidthBucket bucket = itr.next();
             // How much is available?
-            long available = bucket.getAvailableBandwidth();
+            long available = bucket.getAvailableBytes();
 
             // The whole allocation can fit..
             if (available >= bandwidthRequired) {
@@ -189,7 +188,6 @@ public class PriorityRetrievalScheduler {
             // Time to look at re-prioritizing some retrievals...
             unscheduled.addAll(reprioritize(plan, allocation, startTimeMillis,
                     endTimeMillis));
-            notScheduled = unscheduled.contains(allocation);
         } else {
             // Commit the reservations
             for (BandwidthBucket key : reservations.keySet()) {
@@ -209,18 +207,16 @@ public class PriorityRetrievalScheduler {
              * that the BandwidthAllocation and/or BandwidthAllocation has been
              * allocated to.
              */
-            plan.updateRequestMapping(allocation.getId(), reservations.keySet());
+            plan.updateRequestMapping(allocation.getId(),
+                    reservations.keySet());
         }
 
-        if (notScheduled) {
-            unscheduled.add(allocation);
-        }
-
-        return new ArrayList<>(unscheduled);
+        return unscheduled;
     }
 
-    private List<BandwidthAllocation> reprioritize(RetrievalPlan plan,
-            BandwidthAllocation request, Long startKey, Long endKey) {
+    private static List<UnscheduledAllocationReport> reprioritize(
+            RetrievalPlan plan, BandwidthAllocation request, Long startKey,
+            Long endKey) {
 
         statusHandler
                 .debug("Re-prioritizing necessary for BandwidthAllocation: "
@@ -243,14 +239,14 @@ public class PriorityRetrievalScheduler {
          * make room.
          */
         for (BandwidthBucket bucket : window) {
-            total += bucket.getAvailableBandwidth();
+            total += bucket.getAvailableBytes();
         }
         if (total < requestSize) {
             for (BandwidthBucket bucket : window) {
                 for (BandwidthAllocation o : plan
                         .getBandwidthAllocationsForBucket(bucket)) {
                     long estimatedSizeInBytes = o.getEstimatedSizeInBytes();
-                    bucket.getAvailableBandwidth();
+                    bucket.getAvailableBytes();
 
                     // Priority Enum has Highest Priority = lowest value
                     if (request.compareTo(o) == -1) {
@@ -270,8 +266,8 @@ public class PriorityRetrievalScheduler {
              * anything. We shouldn't get here since reprioritize should only
              * get called if there isn't enough space available.
              */
-            statusHandler
-                    .warn("Attempted reprioritize when enough bandwidth is already available");
+            statusHandler.warn(
+                    "Attempted reprioritize when enough bandwidth is already available");
             enoughBandwidth = true;
         }
 
@@ -288,22 +284,24 @@ public class PriorityRetrievalScheduler {
             }
 
             // This should insert the request in the window we just created...
-            List<BandwidthAllocation> unscheduled = schedule(plan, request);
+            List<UnscheduledAllocationReport> unscheduled = schedule(plan,
+                    request);
 
             /*
              * Now attempt to reschedule the removed requests (but not the
              * reservations), which may result in further rescheduling...
              */
             for (BandwidthAllocation reservation : lowerPriorityRequests) {
-                if (reservation instanceof BandwidthAllocation) {
-                    unscheduled.addAll(schedule(plan, reservation));
-                }
+                unscheduled.addAll(schedule(plan, reservation));
             }
             return unscheduled;
-        } else {
-            List<BandwidthAllocation> unscheduled = new ArrayList<>(1);
-            unscheduled.add(request);
-            return unscheduled;
         }
+        // Not enough bandwidth available to schedule
+        List<UnscheduledAllocationReport> unscheduled = new ArrayList<>(1);
+        UnscheduledAllocationReport status = new UnscheduledAllocationReport(
+                request, (total / SizeUtil.BYTES_PER_KB), startKey, endKey);
+        unscheduled.add(status);
+
+        return unscheduled;
     }
 }

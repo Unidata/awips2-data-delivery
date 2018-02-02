@@ -7,6 +7,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -23,6 +24,12 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.datadelivery.registry.Network;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -36,9 +43,9 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * resource availability for a particular "route", i.e. network connection.
  * {@link RetrievalManager} creates a {@link RetrievalPlan} using the
  * BandwidthMap to schedule tasks that require network resources.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -47,10 +54,10 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Oct 23, 2012 1286       djohnson    Add ability to save changes to the map.
  * Nov 27, 2013 1736       dhladky     Moved to common plugin
  * Dec 01, 2014 3550       ccody       Filter out Retrieval Notification Messages.
- * 
+ * Feb 02, 2018 6471       tjensen     Improved configuration file management
+ *
  * </pre>
- * 
- * @version 1.0
+ *
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
@@ -71,7 +78,7 @@ public class BandwidthMap {
 
     /**
      * marshall and unmarshall Bandwidth Map objects
-     * 
+     *
      * @return
      */
     private static JAXBManager getJaxb() throws JAXBException {
@@ -84,7 +91,7 @@ public class BandwidthMap {
 
     /**
      * Load an XML serialized BandwidthMap from the specified file.
-     * 
+     *
      * @param file
      *            the file
      * @return the map
@@ -96,15 +103,13 @@ public class BandwidthMap {
         try {
             map = getJaxb().unmarshalFromXmlFile(BandwidthMap.class, file);
             map.initialize();
-            map.setFile(file);
-
         } catch (JAXBException e) {
             throw new IllegalArgumentException(e);
         } catch (SerializationException e) {
-            statusHandler.handle(
-                    Priority.ERROR,
-                    "Can not de-serialize the Bandwidth Map file! "
-                            + file.getAbsolutePath(), e);
+            statusHandler.handle(Priority.ERROR,
+                    "Cannot de-serialize the Bandwidth Map file! "
+                            + file.getAbsolutePath(),
+                    e);
         }
 
         return map;
@@ -112,7 +117,7 @@ public class BandwidthMap {
 
     // Map to track days of the year (int) to bandwidthBucket id (long)
     // to available bandwidth (int).
-    private final SortedMap<Integer, NavigableMap<Long, Integer>> bandwidth = new TreeMap<Integer, NavigableMap<Long, Integer>>();
+    private final SortedMap<Integer, NavigableMap<Long, Integer>> bandwidth = new TreeMap<>();
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -121,8 +126,6 @@ public class BandwidthMap {
 
     @XmlElement(name = "extendedLatencyFactor")
     private BandwidthExtendedLatency extendedLatencyFactor;
-
-    private File file;
 
     // A matcher for a seed and step value pair separated by a colon ':'.
     private final Pattern seedStepPattern = Pattern
@@ -133,13 +136,13 @@ public class BandwidthMap {
 
     /**
      * The the available bandwidth (in kilobytes/second) for the specified time.
-     * 
+     *
      * @param routeName
      *            The route name to use.
-     * 
+     *
      * @param time
      *            The time to use.
-     * 
+     *
      * @return The available bandwidth for the time specified.
      */
     public int getBandwidth(Network routeName, Calendar time) {
@@ -164,8 +167,8 @@ public class BandwidthMap {
                 NavigableMap<Long, Integer> limitedBandwidth = bandwidth
                         .get(time.get(Calendar.DAY_OF_YEAR));
                 if (limitedBandwidth != null) {
-                    Entry<Long, Integer> t = limitedBandwidth.floorEntry(time
-                            .getTimeInMillis());
+                    Entry<Long, Integer> t = limitedBandwidth
+                            .floorEntry(time.getTimeInMillis());
                     if (t != null) {
                         bw = t.getValue().intValue();
                     }
@@ -190,10 +193,10 @@ public class BandwidthMap {
 
     /**
      * Return the route with the specified network.
-     * 
+     *
      * @param network
      *            The network to retrieve a BandwidthRoute for.
-     * 
+     *
      * @return The BandwidthRoute with for the specified network.
      */
     public BandwidthRoute getRoute(Network network) {
@@ -209,28 +212,28 @@ public class BandwidthMap {
 
     /**
      * Convenience method for parsing a seed/step pair.
-     * 
+     *
      * <pre>
      * Example: if a seed/step of 1:3 is provided with a maximum
      * value of 10.  A List containing 1,4,7,10 will be returned.
-     * 
+     *
      * Example: if a seed/step of 2:2 is provided with a maximum
      * value of 10.  A List containing 2,4,6,8,10 will be returned.
-     * 
+     *
      * </pre>
-     * 
+     *
      * @param m
      *            The Matcher that has matched on the value to be evaluated.
-     * 
+     *
      * @param maximumValue
      *            The maximum value in the seed/step series.
-     * 
+     *
      * @return A List of Integers that contain all the values between the seed
      *         value and the maximum value, inclusive, with a stepping obtained
      *         from the Matcher.
      */
     private List<Integer> getSeedStep(Matcher m, int maximumValue) {
-        List<Integer> series = new ArrayList<Integer>();
+        List<Integer> series = new ArrayList<>();
         if (m.end(1) > -1) {
             int seed = Integer.parseInt(m.group(1));
             int step = Integer.parseInt(m.group(2));
@@ -246,15 +249,15 @@ public class BandwidthMap {
 
     /**
      * Convenience method for parsing a comma separated series of integers.
-     * 
+     *
      * @param matcher
      *            The Matcher that has matched on the value to be evaluated.
-     * 
+     *
      * @return A List of Integers contained in the series, sorted in ascending
      *         order.
      */
     private List<Integer> getSeries(Matcher matcher) {
-        List<Integer> series = new ArrayList<Integer>();
+        List<Integer> series = new ArrayList<>();
         series.add(Integer.parseInt(matcher.group(1)));
         while (matcher.find(matcher.end())) {
             series.add(Integer.parseInt(matcher.group(1)));
@@ -265,8 +268,8 @@ public class BandwidthMap {
 
     /**
      * The the Extended Latency Factor.
-     * 
-     * 
+     *
+     *
      * @return The Extended Latency factor.
      */
     public int getExtendedLatencyFactor() {
@@ -279,7 +282,7 @@ public class BandwidthMap {
 
     private void initialize() {
 
-        List<BitSet> criteria = new ArrayList<BitSet>();
+        List<BitSet> criteria = new ArrayList<>();
 
         if (this.routes != null) {
             for (BandwidthRoute route : routes) {
@@ -301,24 +304,19 @@ public class BandwidthMap {
 
                     temp = route.getPlanDays();
                     if (temp == 0) {
-                        statusHandler
-                                .warn("BandwidthMap["
-                                        + route.getNetwork()
-                                        + "] does not contain the required attribute planDays."
-                                        + "The default value of ["
-                                        + DEFAULT_PLAN_DAYS + "] will be used.");
+                        statusHandler.warn("BandwidthMap[" + route.getNetwork()
+                                + "] does not contain the required attribute planDays."
+                                + "The default value of [" + DEFAULT_PLAN_DAYS
+                                + "] will be used.");
                         route.setPlanDays(DEFAULT_PLAN_DAYS);
                     }
 
                     temp = route.getBucketSizeMinutes();
                     if (temp == 0) {
-                        statusHandler
-                                .warn("BandwidthMap["
-                                        + route.getNetwork()
-                                        + "] does not contain the required attribute bucketSizeMinutes."
-                                        + "The default value of ["
-                                        + DEFAULT_BUCKET_SIZE
-                                        + "] will be used.");
+                        statusHandler.warn("BandwidthMap[" + route.getNetwork()
+                                + "] does not contain the required attribute bucketSizeMinutes."
+                                + "The default value of [" + DEFAULT_BUCKET_SIZE
+                                + "] will be used.");
                         route.setBucketSizeMinutes(DEFAULT_BUCKET_SIZE);
                     }
 
@@ -330,145 +328,128 @@ public class BandwidthMap {
                         int minuteOfDay = 0;
 
                         if (modification.getMinuteOfDay() == null) {
-                            statusHandler
-                                    .warn("BandwidthMap["
-                                            + route.getNetwork()
-                                            + "] Modification ["
-                                            + index
-                                            + "/"
-                                            + modifications.size()
-                                            + "] does not contain the required minuteOfDay attribute."
-                                            + "This modification will be ignored.");
+                            statusHandler.warn("BandwidthMap["
+                                    + route.getNetwork() + "] Modification ["
+                                    + index + "/" + modifications.size()
+                                    + "] does not contain the required minuteOfDay attribute."
+                                    + "This modification will be ignored.");
                             continue;
                         } else {
-                            minuteOfDay = Integer.parseInt(modification
-                                    .getMinuteOfDay());
+                            minuteOfDay = Integer
+                                    .parseInt(modification.getMinuteOfDay());
                         }
 
                         if (modification.getDuration() == null) {
-                            statusHandler
-                                    .warn("BandwidthMap["
-                                            + route.getNetwork()
-                                            + "] Modification ["
-                                            + index
-                                            + "/"
-                                            + modifications.size()
-                                            + "] does not contain the required duration attribute."
-                                            + "This modification will be ignored.");
+                            statusHandler.warn("BandwidthMap["
+                                    + route.getNetwork() + "] Modification ["
+                                    + index + "/" + modifications.size()
+                                    + "] does not contain the required duration attribute."
+                                    + "This modification will be ignored.");
                             continue;
                         } else {
-                            duration = Integer.parseInt(modification
-                                    .getDuration());
+                            duration = Integer
+                                    .parseInt(modification.getDuration());
                         }
 
                         if (modification.getMonth() != null) {
                             BitSet month = parseMonth(modification.getMonth());
-                            // If the BitSet is empty, the value provided was
-                            // invalid, move
-                            // to the next allocation.
+                            /*
+                             * If the BitSet is empty, the value provided was
+                             * invalid, move to the next allocation.
+                             */
                             if (month.isEmpty()) {
-                                statusHandler
-                                        .warn("BandwidthMap["
-                                                + route.getNetwork()
-                                                + "] contains an invalid value for attribute month, "
-                                                + "modification ["
-                                                + index
-                                                + "/"
-                                                + modifications.size()
-                                                + "]. This modification will be ignored.");
+                                statusHandler.warn("BandwidthMap["
+                                        + route.getNetwork()
+                                        + "] contains an invalid value for attribute month, "
+                                        + "modification [" + index + "/"
+                                        + modifications.size()
+                                        + "]. This modification will be ignored.");
                                 continue;
                             }
                             criteria.add(month);
                         }
 
                         if (modification.getDayOfMonth() != null) {
-                            BitSet dayOfMonth = parseDayOfMonth(modification
-                                    .getDayOfMonth());
-                            // If the BitSet is empty, the value provided was
-                            // invalid, move
-                            // to the next allocation.
+                            BitSet dayOfMonth = parseDayOfMonth(
+                                    modification.getDayOfMonth());
+                            /*
+                             * If the BitSet is empty, the value provided was
+                             * invalid, move to the next allocation.
+                             */
                             if (dayOfMonth.isEmpty()) {
-                                statusHandler
-                                        .warn("BandwidthMap["
-                                                + route.getNetwork()
-                                                + "] contains an invalid value for attribute dayOfMonth, "
-                                                + "modification ["
-                                                + index
-                                                + "/"
-                                                + modifications.size()
-                                                + "]. This modification will be ignored.");
+                                statusHandler.warn("BandwidthMap["
+                                        + route.getNetwork()
+                                        + "] contains an invalid value for attribute dayOfMonth, "
+                                        + "modification [" + index + "/"
+                                        + modifications.size()
+                                        + "]. This modification will be ignored.");
                                 continue;
                             }
                             criteria.add(dayOfMonth);
                         }
 
                         if (modification.getWeekOfMonth() != null) {
-                            BitSet weekOfMonth = parseWeekOfMonth(modification
-                                    .getWeekOfMonth());
-                            // If the BitSet is empty, the value provided was
-                            // invalid, move
-                            // to the next allocation.
+                            BitSet weekOfMonth = parseWeekOfMonth(
+                                    modification.getWeekOfMonth());
+                            /*
+                             * If the BitSet is empty, the value provided was
+                             * invalid, move to the next allocation.
+                             */
                             if (weekOfMonth.isEmpty()) {
-                                statusHandler
-                                        .warn("BandwidthMap["
-                                                + route.getNetwork()
-                                                + "] contains an invalid value for attribute weekOfMonth, "
-                                                + "modification ["
-                                                + index
-                                                + "/"
-                                                + modifications.size()
-                                                + "]. This modification will be ignored.");
+                                statusHandler.warn("BandwidthMap["
+                                        + route.getNetwork()
+                                        + "] contains an invalid value for attribute weekOfMonth, "
+                                        + "modification [" + index + "/"
+                                        + modifications.size()
+                                        + "]. This modification will be ignored.");
                                 continue;
                             }
                             criteria.add(weekOfMonth);
                         }
 
                         if (modification.getWeekOfYear() != null) {
-                            BitSet weekOfYear = parseWeekOfYear(modification
-                                    .getWeekOfYear());
-                            // If the BitSet is empty, the value provided was
-                            // invalid, move
-                            // to the next allocation.
+                            BitSet weekOfYear = parseWeekOfYear(
+                                    modification.getWeekOfYear());
+                            /*
+                             * If the BitSet is empty, the value provided was
+                             * invalid, move to the next allocation.
+                             */
                             if (weekOfYear.isEmpty()) {
-                                statusHandler
-                                        .warn("BandwidthMap["
-                                                + route.getNetwork()
-                                                + "] contains an invalid value for attribute weekOfYear, "
-                                                + "modification ["
-                                                + index
-                                                + "/"
-                                                + modifications.size()
-                                                + "]. This modification will be ignored.");
+                                statusHandler.warn("BandwidthMap["
+                                        + route.getNetwork()
+                                        + "] contains an invalid value for attribute weekOfYear, "
+                                        + "modification [" + index + "/"
+                                        + modifications.size()
+                                        + "]. This modification will be ignored.");
                                 continue;
                             }
                             criteria.add(weekOfYear);
                         }
 
                         if (modification.getDayOfWeek() != null) {
-                            BitSet daysOfWeek = parseDayOfWeek(modification
-                                    .getDayOfWeek());
-                            // If the BitSet is empty, the value provided was
-                            // invalid, move
-                            // to the next allocation.
+                            BitSet daysOfWeek = parseDayOfWeek(
+                                    modification.getDayOfWeek());
+                            /*
+                             * If the BitSet is empty, the value provided was
+                             * invalid, move to the next allocation.
+                             */
                             if (daysOfWeek.isEmpty()) {
-                                statusHandler
-                                        .warn("BandwidthMap["
-                                                + route.getNetwork()
-                                                + "] contains an invalid value for attribute dayOfWeek, "
-                                                + "modification ["
-                                                + index
-                                                + "/"
-                                                + modifications.size()
-                                                + "]. This modification will be ignored.");
+                                statusHandler.warn("BandwidthMap["
+                                        + route.getNetwork()
+                                        + "] contains an invalid value for attribute dayOfWeek, "
+                                        + "modification [" + index + "/"
+                                        + modifications.size()
+                                        + "]. This modification will be ignored.");
                                 continue;
                             }
                             criteria.add(daysOfWeek);
                         }
 
-                        if (criteria.size() > 0) {
-                            // Combine all the criteria together to get the
-                            // final
-                            // bitmapping...
+                        if (!criteria.isEmpty()) {
+                            /*
+                             * Combine all the criteria together to get the
+                             * final bitmapping...
+                             */
                             Calendar now = TimeUtil.newCalendar();
                             BitSet composite = getDaysBitSet(now);
                             composite.set(0, composite.size());
@@ -480,12 +461,14 @@ public class BandwidthMap {
                             now.set(Calendar.SECOND, 0);
                             now.set(Calendar.MILLISECOND, 0);
 
-                            // For each day with criteria, build the
-                            // "bucketSize" indexes that
-                            // will mark each modification to the default
-                            // bandwidth.
-                            for (int dayOfYear = composite.nextSetBit(0); dayOfYear >= 0; dayOfYear = composite
-                                    .nextSetBit(dayOfYear + 1)) {
+                            /*
+                             * For each day with criteria, build the
+                             * "bucketSize" indexes that will mark each
+                             * modification to the default bandwidth.
+                             */
+                            for (int dayOfYear = composite.nextSetBit(
+                                    0); dayOfYear >= 0; dayOfYear = composite
+                                            .nextSetBit(dayOfYear + 1)) {
 
                                 now.set(Calendar.DAY_OF_YEAR, dayOfYear);
                                 now.set(Calendar.HOUR_OF_DAY, minuteOfDay / 60);
@@ -494,7 +477,7 @@ public class BandwidthMap {
                                 NavigableMap<Long, Integer> bucket = bandwidth
                                         .get(dayOfYear);
                                 if (bucket == null) {
-                                    bucket = new TreeMap<Long, Integer>();
+                                    bucket = new TreeMap<>();
                                     bandwidth.put(dayOfYear, bucket);
                                 }
 
@@ -505,35 +488,33 @@ public class BandwidthMap {
                                     now.add(Calendar.MINUTE,
                                             route.getBucketSizeMinutes());
                                 }
-                                // Mark the end of a modification with a bucket
-                                // with default bandwidth.
-                                // Since available bandwidth is determined by
-                                // looking up a start time,
-                                // this approach will allow lookups with time
-                                // past the duration time of
-                                // this modification to receive an answer of
-                                // default bandwidth, without
-                                // having to do any calculations on the
-                                // difference between time and
-                                // key values.
+                                /*
+                                 * Mark the end of a modification with a bucket
+                                 * with default bandwidth. Since available
+                                 * bandwidth is determined by looking up a start
+                                 * time, this approach will allow lookups with
+                                 * time past the duration time of this
+                                 * modification to receive an answer of default
+                                 * bandwidth, without having to do any
+                                 * calculations on the difference between time
+                                 * and key values.
+                                 */
                                 bucket.put(now.getTimeInMillis(),
                                         route.getDefaultBandwidth());
                             }
                         } else {
-                            statusHandler
-                                    .warn("BandwidthMap["
-                                            + route.getNetwork()
-                                            + "] modification ["
-                                            + index
-                                            + "/"
-                                            + modifications.size()
-                                            + "] did not contain valid"
-                                            + " time specifications. This modification will be ignored.");
+                            statusHandler.warn("BandwidthMap["
+                                    + route.getNetwork() + "] modification ["
+                                    + index + "/" + modifications.size()
+                                    + "] did not contain valid"
+                                    + " time specifications. This modification will be ignored.");
                         }
 
-                        // Now we have generated the keys for the starting and
-                        // ending BandwidthBuckets. Get the portion of map that
-                        // is built, and adjust the available bandwidth.
+                        /*
+                         * Now we have generated the keys for the starting and
+                         * ending BandwidthBuckets. Get the portion of map that
+                         * is built, and adjust the available bandwidth.
+                         */
 
                     }
                 }
@@ -556,10 +537,10 @@ public class BandwidthMap {
     /**
      * Parse the value of dayOfMonth, which can be a single value or a comma
      * separated series of days of the month.
-     * 
+     *
      * @param dayOfMonth
      *            A single day value, or a comma separated series of day values.
-     * 
+     *
      * @return A BitSet with bits corresponding to the days of the year set that
      *         match with the days of the month value specified.
      */
@@ -569,7 +550,7 @@ public class BandwidthMap {
 
         // Check series matcher..
         Matcher s = seriesPattern.matcher(dayOfMonth);
-        List<Integer> daysOfMonth = new ArrayList<Integer>();
+        List<Integer> daysOfMonth = new ArrayList<>();
         if (s.lookingAt()) {
             daysOfMonth.add(Integer.parseInt(s.group(1)));
             while (s.find(s.end())) {
@@ -577,7 +558,7 @@ public class BandwidthMap {
             }
         }
 
-        if (daysOfMonth.size() > 0) {
+        if (!daysOfMonth.isEmpty()) {
             for (int month = now.getActualMinimum(Calendar.MONTH); month <= now
                     .getActualMaximum(Calendar.MONTH); month++) {
                 now.set(Calendar.MONTH, month);
@@ -598,10 +579,10 @@ public class BandwidthMap {
     /**
      * Parse the value of dayOfWeek, which can be a single value or a comma
      * separated series of days of the week.
-     * 
+     *
      * @param dayOfWeek
      *            A single day value, or a comma separated series of day values.
-     * 
+     *
      * @return A BitSet with bits corresponding to the days of the year set that
      *         match with the days of the week value specified.
      */
@@ -611,12 +592,12 @@ public class BandwidthMap {
         BitSet daysOfYear = getDaysBitSet(now);
 
         Matcher s = seriesPattern.matcher(dayOfWeek);
-        List<Integer> daysOfWeek = new ArrayList<Integer>();
+        List<Integer> daysOfWeek = new ArrayList<>();
         if (s.lookingAt()) {
             daysOfWeek = getSeries(s);
-            Set<Integer> days = new HashSet<Integer>();
+            Set<Integer> days = new HashSet<>();
             days.addAll(daysOfWeek);
-            Set<Integer> exclude = new HashSet<Integer>();
+            Set<Integer> exclude = new HashSet<>();
 
             // Iterate over the weeks of the year and set the days of each week.
             // The first and last weeks need a little extra attention
@@ -631,7 +612,7 @@ public class BandwidthMap {
                 exclude.add(day);
             }
 
-            Set<Integer> firstDays = new HashSet<Integer>(days);
+            Set<Integer> firstDays = new HashSet<>(days);
             firstDays.removeAll(exclude);
             for (int d : firstDays) {
                 now.set(Calendar.DAY_OF_WEEK, d);
@@ -658,7 +639,7 @@ public class BandwidthMap {
             for (day++; day <= 7; day++) {
                 exclude.add(day);
             }
-            Set<Integer> lastDays = new HashSet<Integer>(days);
+            Set<Integer> lastDays = new HashSet<>(days);
             lastDays.removeAll(exclude);
             for (int l : lastDays) {
                 now.set(Calendar.DAY_OF_WEEK, l);
@@ -672,10 +653,10 @@ public class BandwidthMap {
     /**
      * Parse the value of month, which can be a single value or a comma
      * separated series of months.
-     * 
+     *
      * @param month
      *            A single month value, or a comma separated series of months.
-     * 
+     *
      * @return A BitSet with bits corresponding to the days of the year set that
      *         match with the days contained in the month value specified.
      */
@@ -708,13 +689,13 @@ public class BandwidthMap {
         BitSet daysOfYear = getDaysBitSet(now);
 
         Matcher s = seriesPattern.matcher(weekOfMonth);
-        List<Integer> weeksOfMonth = new ArrayList<Integer>();
+        List<Integer> weeksOfMonth = new ArrayList<>();
         if (s.lookingAt()) {
             weeksOfMonth = getSeries(s);
 
-            Set<Integer> days = new HashSet<Integer>();
+            Set<Integer> days = new HashSet<>();
             days.addAll(weeksOfMonth);
-            Set<Integer> exclude = new HashSet<Integer>();
+            Set<Integer> exclude = new HashSet<>();
 
             // Iterate over the weeks of the year and set the days of each week.
             // The first and last weeks need a little extra attention
@@ -729,7 +710,7 @@ public class BandwidthMap {
                 exclude.add(day);
             }
 
-            Set<Integer> firstDays = new HashSet<Integer>(days);
+            Set<Integer> firstDays = new HashSet<>(days);
             firstDays.removeAll(exclude);
             for (int d : firstDays) {
                 now.set(Calendar.DAY_OF_WEEK, d);
@@ -756,7 +737,7 @@ public class BandwidthMap {
             for (day++; day <= 7; day++) {
                 exclude.add(day);
             }
-            Set<Integer> lastDays = new HashSet<Integer>(days);
+            Set<Integer> lastDays = new HashSet<>(days);
             lastDays.removeAll(exclude);
             for (int l : lastDays) {
                 now.set(Calendar.DAY_OF_WEEK, l);
@@ -770,10 +751,10 @@ public class BandwidthMap {
     /**
      * Parse the value of weekOfYear, which can be one of three possible values.
      * A single value, a comma separated series or a seed/step value pair.
-     * 
+     *
      * @param weekOfYear
      *            The weekOfYear value to parse.
-     * 
+     *
      * @return A BitSet with bits corresponding to the days of the year set that
      *         match with the days contained in the weeks of the year value
      *         specified.
@@ -784,7 +765,7 @@ public class BandwidthMap {
 
         // Check series matcher..
         Matcher s = seriesPattern.matcher(weekOfYear);
-        List<Integer> weeksOfYear = new ArrayList<Integer>();
+        List<Integer> weeksOfYear = new ArrayList<>();
         if (s.lookingAt()) {
             weeksOfYear = getSeries(s);
         } else {
@@ -796,7 +777,7 @@ public class BandwidthMap {
             }
         }
 
-        if (weeksOfYear.size() > 0) {
+        if (!weeksOfYear.isEmpty()) {
             // Special processing for the first and last week of the year.
 
             // If the first week of the year was selected..
@@ -837,7 +818,7 @@ public class BandwidthMap {
 
     /**
      * Set the route attribute.
-     * 
+     *
      * @param routes
      *            the routes to set
      */
@@ -847,7 +828,7 @@ public class BandwidthMap {
 
     /**
      * Set the extendedLatencyFactor attribute.
-     * 
+     *
      * @param extendedLatencyFactor
      *            the extendedLatencyFactor to set
      */
@@ -858,17 +839,41 @@ public class BandwidthMap {
 
     /**
      * Persists the changes to this instance to its configuration file.
-     * 
+     *
      * @throws SerializationException
      *             on error serializing changes
      */
     public void save() throws SerializationException {
-        save(file);
+        try {
+            IPathManager pm = PathManagerFactory.getPathManager();
+
+            Map<LocalizationLevel, LocalizationFile> fileMap = pm
+                    .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
+                            BandwidthMapManager.CONFIG_FILE);
+            LocalizationFile locFile = fileMap.get(LocalizationLevel.SITE);
+
+            /*
+             * If site level file does not exist, create it as we do not want to
+             * modify base files.
+             */
+            if (locFile == null) {
+                locFile = pm.getLocalizationFile(
+                        pm.getContext(LocalizationType.COMMON_STATIC,
+                                LocalizationLevel.SITE),
+                        BandwidthMapManager.CONFIG_FILE);
+            }
+            getJaxb().marshalToStream(this, locFile.openOutputStream());
+        } catch (JAXBException | LocalizationException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Cannot serialize Bandwidth Map to file "
+                            + BandwidthMapManager.CONFIG_FILE,
+                    e);
+        }
     }
 
     /**
      * Persists the changes to this instance to its configuration file.
-     * 
+     *
      * @param file
      *            the file to save changes to
      * @throws SerializationException
@@ -878,17 +883,10 @@ public class BandwidthMap {
         try {
             getJaxb().marshalToXmlFile(this, file.getAbsolutePath());
         } catch (JAXBException e) {
-            statusHandler.handle(
-                    Priority.PROBLEM,
-                    "Can not serialize Bandwidth Map to file"
-                            + file.getAbsolutePath(), e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Cannot serialize Bandwidth Map to file"
+                            + file.getAbsolutePath(),
+                    e);
         }
-    }
-
-    /**
-     * @param file
-     */
-    private void setFile(File file) {
-        this.file = file;
     }
 }

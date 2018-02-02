@@ -39,6 +39,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
 import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDbInit;
 import com.raytheon.uf.edex.datadelivery.bandwidth.interfaces.IBandwidthInitializer;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
+import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.UnscheduledAllocationReport;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
@@ -75,6 +76,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Aug 02, 2017  6186     rjpeter   Updated super call to null for retrievalAgent
  * Aug 29, 2017  6186     rjpeter   Override queueRetrieval to do nothing
  * Nov 22, 2017  6484     tjensen   Improve logging
+ * Feb 02, 2018  6471     tjensen   Added UnscheduledAllocationReports
  *
  * </pre>
  *
@@ -164,7 +166,7 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage>
     protected Set<String> scheduleSbnSubscriptions(
             List<Subscription<T, C>> subscriptions)
             throws SerializationException {
-        return scheduleSubscriptions(subscriptions);
+        return getUnscheduledSubNames(scheduleSubscriptions(subscriptions));
     }
 
     @Override
@@ -200,7 +202,7 @@ class InMemoryBandwidthManager<T extends Time, C extends Coverage>
     }
 
     @Override
-    protected List<BandwidthAllocation> queueRetrieval(
+    protected List<UnscheduledAllocationReport> queueRetrieval(
             AdhocSubscription<T, C> adhocSub) {
         // No queuing for in memory impl
         return Collections.emptyList();

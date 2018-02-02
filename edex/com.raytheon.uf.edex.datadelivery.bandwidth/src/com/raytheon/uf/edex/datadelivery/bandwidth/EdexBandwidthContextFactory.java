@@ -21,14 +21,13 @@ package com.raytheon.uf.edex.datadelivery.bandwidth;
 
 import java.io.File;
 
+import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMapManager;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataSetMetaDataHandler;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -66,6 +65,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 09, 2016  5771     rjpeter   Update constructor
  * Aug 02, 2017  6186     rjpeter   Added SubscriptionRetrievalAgent
+ * Feb 02, 2018  6471     tjensen   Improve configuration file management
  *
  * </pre>
  *
@@ -203,14 +203,9 @@ public class EdexBandwidthContextFactory<T extends Time, C extends Coverage>
      * @return the localization file
      */
     public static LocalizationFile getBandwidthMapLocalizationFile() {
-        // TODO: Change to be site specific
         IPathManager pm = PathManagerFactory.getPathManager();
-        LocalizationContext lc = pm.getContext(LocalizationType.COMMON_STATIC,
-                LocalizationLevel.BASE);
-
-        LocalizationFile lf = pm.getLocalizationFile(lc,
-                "datadelivery/bandwidthmap.xml");
-        return lf;
+        return pm.getStaticLocalizationFile(LocalizationType.COMMON_STATIC,
+                BandwidthMapManager.CONFIG_FILE);
     }
 
     @Override

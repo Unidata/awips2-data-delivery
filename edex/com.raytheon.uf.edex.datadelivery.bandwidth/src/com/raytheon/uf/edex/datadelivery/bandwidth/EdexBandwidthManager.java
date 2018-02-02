@@ -86,6 +86,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.notification.BandwidthEventBu
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalPlan;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalAgent;
+import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.UnscheduledAllocationReport;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
@@ -169,6 +170,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  refactored dataSetMetaData processing
  * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
  *                                  BandwidthAllocations
+ * Feb 02, 2018  6471     tjensen   Added UnscheduledAllocationReports
  *
  * </pre>
  *
@@ -310,7 +312,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             }
 
             logger.info(
-                    "EdexBandwidthManager: Rescheduling Subscriptions for Bandwidth Manager reset. START");
+                    "EdexBandwidthManager: Rescheduling Subscriptions for Bandwidth Manager reset: "
+                            + resetReasonMessage);
 
             // Reactivate Subscriptions
             String networkName;
@@ -332,7 +335,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                                  * allocations and re-schedules. It's the most
                                  * efficient option for resetting BWM
                                  */
-                                List<BandwidthAllocation> unscheduledList = subscriptionUpdated(
+                                List<UnscheduledAllocationReport> unscheduledList = subscriptionUpdated(
                                         subscription);
                                 logSubscriptionListUnscheduled(networkName,
                                         unscheduledList);
@@ -375,13 +378,11 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      *
      * @param subscriptions
      *            the subscriptions
-     * @return the set of subscription names unscheduled
-     * @throws SerializationException
+     * @return the set of unscheduled allocation reports
      */
     @Override
-    protected Set<String> scheduleSubscriptions(
-            List<Subscription<T, C>> insubscriptions)
-            throws SerializationException {
+    protected Set<UnscheduledAllocationReport> scheduleSubscriptions(
+            List<Subscription<T, C>> insubscriptions) {
 
         /**
          * This returns an empty unscheduled list by design. The actual storage
@@ -429,7 +430,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
      * @param unscheduledList
      */
     private void logSubscriptionListUnscheduled(String subscriptionNetwork,
-            List<BandwidthAllocation> unscheduledList) {
+            List<UnscheduledAllocationReport> unscheduledList) {
         if (unscheduledList != null) {
             StringBuilder sb = new StringBuilder();
             sb.append("The following subscriptions for Network: ");
@@ -437,7 +438,7 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
             sb.append(" remain unscheduled after refresh:\n");
             BandwidthAllocation ba = null;
             for (int i = 0; i < unscheduledList.size(); i++) {
-                ba = unscheduledList.get(i);
+                ba = unscheduledList.get(i).getUnscheduled();
                 if (i > 0) {
                     sb.append(", ");
                 }
@@ -1026,7 +1027,8 @@ public abstract class EdexBandwidthManager<T extends Time, C extends Coverage>
                         }
                     }
 
-                    unscheduled.addAll(scheduleSubscriptions(subsToSchedule));
+                    unscheduled.addAll(getUnscheduledSubNames(
+                            scheduleSubscriptions(subsToSchedule)));
                     unscheduledNames.addAll(unscheduled);
 
                     /*

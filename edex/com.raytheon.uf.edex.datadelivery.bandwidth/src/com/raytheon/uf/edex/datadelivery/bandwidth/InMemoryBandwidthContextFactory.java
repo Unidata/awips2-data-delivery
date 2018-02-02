@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -39,23 +39,23 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Implementation of {@link BandwidthContextFactory} that returns DAO classes
  * for in-memory use. Intentionally package-private as only the Edex bandwidth
  * manager should be using it.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 24, 2012 1286       djohnson     Initial creation
- * Jun 24, 2013 2106       djohnson     Add {@link #getBandwidthBucketDao()}.
- * Apr 22, 2014 2992       dhladky      Added IdUtil for siteList
- * May 22, 2014 2808       dhladky      Scheduling unscheduled
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------
+ * Oct 24, 2012  1286     djohnson  Initial creation
+ * Jun 24, 2013  2106     djohnson  Add {@link #getBandwidthBucketDao()}.
+ * Apr 22, 2014  2992     dhladky   Added IdUtil for siteList
+ * May 22, 2014  2808     dhladky   Scheduling unscheduled
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Feb 02, 2018  6471     tjensen   Improve configuration file management
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 
 class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
@@ -63,7 +63,7 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(InMemoryBandwidthContextFactory.class);
 
-    private static final ThreadLocal<File> BANDWIDTH_MAP_CONFIG_FILES = new ThreadLocal<File>();
+    private static final ThreadLocal<File> BANDWIDTH_MAP_CONFIG_FILES = new ThreadLocal<>();
 
     private final IBandwidthDao dao = new InMemoryBandwidthDao();
 
@@ -73,57 +73,45 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
 
     private final IBandwidthInitializer initializer = new InMemoryBandwidthInitializer();
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthDbInit getBandwidthDbInit() {
         return dbInit;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthDao getBandwidthDao() {
         return dao;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthInitializer getBandwidthInitializer() {
         return initializer;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public File getBandwidthMapConfigFile() {
+    public static File getBandwidthMapConfig() {
         File file = InMemoryBandwidthContextFactory.BANDWIDTH_MAP_CONFIG_FILES
                 .get();
 
         if (file == null || !file.exists()) {
-            statusHandler
-                    .warn("Unable to find expected in-memory bandwidth map configuration file... loading from the localization version.");
+            statusHandler.warn(
+                    "Unable to find expected in-memory bandwidth map configuration file... loading from the localization version.");
             file = EdexBandwidthContextFactory.getBandwidthMapConfig();
         }
 
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler
-                    .debug("Returning file reference ["
-                            + file.getAbsolutePath()
-                            + "] for in-memory bandwidth manager bandwidth map configuration.");
+            statusHandler.debug("Returning file reference ["
+                    + file.getAbsolutePath()
+                    + "] for in-memory bandwidth manager bandwidth map configuration.");
         }
 
         return file;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    public File getBandwidthMapConfigFile() {
+        return getBandwidthMapConfig();
+    }
+
     @Override
     public BandwidthManager getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,
@@ -135,7 +123,7 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
     /**
      * Set the in-memory bandwidthmap config file. Package-level access on
      * purpose for access from {@link BandwidthManager}.
-     * 
+     *
      * @param bandwidthMap
      *            the bandwidthMap to use to create the file
      */
@@ -146,10 +134,9 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
             InMemoryBandwidthContextFactory.BANDWIDTH_MAP_CONFIG_FILES
                     .set(tempFile);
         } catch (Exception e) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Exception preparing the in-memory bandwidth map configuration, results will be non-deterministic",
-                            e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Exception preparing the in-memory bandwidth map configuration, results will be non-deterministic",
+                    e);
         }
     }
 
@@ -168,9 +155,6 @@ class InMemoryBandwidthContextFactory implements BandwidthContextFactory {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public IBandwidthBucketDao getBandwidthBucketDao() {
         return bandwidthBucketsDao;

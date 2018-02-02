@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +86,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalManager;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalPlan;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalStatus;
 import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.SubscriptionRetrievalAgent;
+import com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.UnscheduledAllocationReport;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthDaoUtil;
 import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
 import com.raytheon.uf.edex.datadelivery.retrieval.handlers.IBandwidthChangedCallback;
@@ -185,6 +185,8 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  SubscriptionRetrieval
  * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
  *                                  BandwidthAllocations
+ * Feb 02, 2018  6471     tjensen   Improve handling of subscriptions that are
+ *                                  too big to schedule
  *
  * </pre>
  *
@@ -240,11 +242,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     protected final RetrievalManager retrievalManager;
 
     protected final SubscriptionRetrievalAgent retrievalAgent;
-
-    /**
-     * Map of application contexts used for starting bandwidth manager instances
-     */
-    private final ConcurrentHashMap<String[], ClassPathXmlApplicationContext> appContextMap = new ConcurrentHashMap<>();
 
     private IBandwidthChangedCallback bandwidthChangedCallback;
 
@@ -348,14 +345,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             final String[] springFiles, String type) {
         ITimer timer = TimeUtil.getTimer();
         timer.start();
-
-        ClassPathXmlApplicationContext ctx = appContextMap.get(springFiles);
         try {
-            if (ctx == null) {
-                ctx = new ClassPathXmlApplicationContext(springFiles,
-                        EDEXUtil.getSpringContext());
-                appContextMap.put(springFiles, ctx);
-            }
+            ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(
+                    springFiles, EDEXUtil.getSpringContext());
             BandwidthManager<T, C> bwManager = null;
             bwManager = ctx.getBean("bandwidthManager", BandwidthManager.class);
             try {
@@ -548,21 +540,17 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *
      * @param subscriptions
      *            the subscriptions
-     * @return the set of subscription names unscheduled
-     * @throws SerializationException
+     * @return the set of unscheduled allocation reports
      */
-    protected Set<String> scheduleSubscriptions(
-            List<Subscription<T, C>> insubscriptions)
-            throws SerializationException {
-
-        Set<String> unscheduledSubscriptions = new TreeSet<>();
-        Set<BandwidthAllocation> unscheduledAllocations = new HashSet<>();
+    protected Set<UnscheduledAllocationReport> scheduleSubscriptions(
+            List<Subscription<T, C>> insubscriptions) {
+        Set<UnscheduledAllocationReport> unscheduledAllocations = new HashSet<>();
         Map<String, SubscriptionRequestEvent> subscriptionEventsMap = new HashMap<>();
 
         for (Subscription<T, C> subscription : orderSubscriptionsByPriority(
                 insubscriptions)) {
 
-            List<BandwidthAllocation> unscheduled = subscriptionUpdated(
+            List<UnscheduledAllocationReport> unscheduled = subscriptionUpdated(
                     subscription);
             unscheduledAllocations.addAll(unscheduled);
 
@@ -600,23 +588,18 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                             + event.getId());
             EventBus.publish(event);
         }
-
-        for (BandwidthAllocation allocation : unscheduledAllocations) {
-            unscheduledSubscriptions.add(allocation.getSubName());
-        }
-
-        return unscheduledSubscriptions;
+        return unscheduledAllocations;
     }
 
     /**
      * Schedule retrievals for Subscriptions in the list.
      *
      * @param subscription
-     * @return A map of bandwidth allocations that are not scheduled by
-     *         subscription name
+     * @return A list of unscheduled allocation reports
      */
-    public List<BandwidthAllocation> schedule(Subscription<T, C> subscription) {
-        List<BandwidthAllocation> unscheduled = Collections.emptyList();
+    public List<UnscheduledAllocationReport> schedule(
+            Subscription<T, C> subscription) {
+        List<UnscheduledAllocationReport> unscheduled = Collections.emptyList();
         if (subscription instanceof RecurringSubscription) {
             if (!((RecurringSubscription<T, C>) subscription)
                     .shouldSchedule()) {
@@ -777,9 +760,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            the subscription
      * @param retrievalTimes
      *            the retrieval times
-     * @return the unscheduled subscriptions
+     * @return the unscheduled allocation reports
      */
-    private List<BandwidthAllocation> scheduleSubscriptionForRetrievalTimes(
+    private List<UnscheduledAllocationReport> scheduleSubscriptionForRetrievalTimes(
             Subscription<T, C> subscription, SortedSet<Date> retrievalTimes) {
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
@@ -788,7 +771,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             return Collections.emptyList();
         }
 
-        List<BandwidthAllocation> unscheduled = new ArrayList<>();
+        List<UnscheduledAllocationReport> unscheduled = new ArrayList<>();
         logger.info("Scheduling subscription " + subscription.getName());
 
         unscheduled.addAll(aggregate(subscription, retrievalTimes));
@@ -831,9 +814,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
                     .next();
             int requiredLatency = determineRequiredLatency(subscription);
             proposeResponse.setRequiredLatency(requiredLatency);
-            long requiredDataSetSize = determineRequiredDataSetSize(
-                    subscription);
-            proposeResponse.setRequiredDataSetSize(requiredDataSetSize);
         } else {
             Map<String, Subscription<T, C>> allSubscriptionMap = new HashMap<>();
             String name = null;
@@ -881,7 +861,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         BandwidthMap copyOfCurrentMap = BandwidthMap
                 .load(EdexBandwidthContextFactory.getBandwidthMapConfig());
 
-        Set<String> unscheduled = Collections.emptySet();
+        Set<UnscheduledAllocationReport> unscheduled = Collections.emptySet();
         BandwidthManager<T, C> proposedBwManager = null;
         try {
             proposedBwManager = startProposedBandwidthManager(copyOfCurrentMap);
@@ -893,9 +873,44 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         }
 
         final ProposeScheduleResponse proposeScheduleResponse = new ProposeScheduleResponse();
-        proposeScheduleResponse.setUnscheduledSubscriptions(unscheduled);
+        proposeScheduleResponse.setUnscheduledSubscriptions(
+                getUnscheduledSubNames(unscheduled));
+        /*
+         * If allocations were unscheduled for a single subscription, return the
+         * maximum available schedule size for the given window.
+         */
+        if (!unscheduled.isEmpty() && subscriptions.size() == 1) {
+            long smallestSizeAvailable = -1;
+            for (UnscheduledAllocationReport uas : unscheduled) {
+                long scheduleAvailableInKB = uas.getScheduleAvailableInKB();
+                if (scheduleAvailableInKB < smallestSizeAvailable
+                        || smallestSizeAvailable == -1) {
+                    smallestSizeAvailable = scheduleAvailableInKB;
+                }
+            }
+            proposeScheduleResponse.setRequiredDataSetSize(smallestSizeAvailable);
+        }
 
         return proposeScheduleResponse;
+    }
+
+    /**
+     * Get the names of all subscriptions that had unscheduled allocations
+     *
+     * @param unscheduled
+     *            unscheduled allocation reports
+     * @return set of sub names that were unscheduled
+     */
+    protected Set<String> getUnscheduledSubNames(
+            Set<UnscheduledAllocationReport> unscheduled) {
+        if (unscheduled == null || unscheduled.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<String> names = new HashSet<>();
+        for (UnscheduledAllocationReport uas : unscheduled) {
+            names.add(uas.getUnscheduled().getSubName());
+        }
+        return names;
     }
 
     /**
@@ -971,12 +986,12 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     /**
      * Aggregate subscriptions for a given base time and dataset.
      *
-     * @param bandwidthSubscriptions
-     *            A List of SubscriptionDaos that have the same base time and
-     *            dataset.
+     * @param subscription
+     * @param baseReferenceTimes
+     * @return list of unscheduled allocation reports
      */
-    private List<BandwidthAllocation> aggregate(Subscription subscription,
-            SortedSet<Date> baseReferenceTimes) {
+    private List<UnscheduledAllocationReport> aggregate(
+            Subscription subscription, SortedSet<Date> baseReferenceTimes) {
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
 
@@ -1037,8 +1052,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         bandwidthDao.store(reservations);
         timer.lap("storing retrievals");
 
-        List<BandwidthAllocation> unscheduled = reservations.isEmpty()
-                ? Collections.<BandwidthAllocation> emptyList()
+        List<UnscheduledAllocationReport> unscheduled = reservations.isEmpty()
+                ? Collections.emptyList()
                 : retrievalManager.schedule(reservations);
         timer.lap("scheduling retrievals");
 
@@ -1084,9 +1099,9 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * Queue the retrieval of the AdhocSubscription for download.
      *
      * @param adhocSub
-     * @return
+     * @return list of unscheduled allocation reports
      */
-    protected List<BandwidthAllocation> queueRetrieval(
+    protected List<UnscheduledAllocationReport> queueRetrieval(
             AdhocSubscription<T, C> adhocSub) {
         logger.info(
                 "Scheduling adhoc subscription [" + adhocSub.getName() + "]");
@@ -1129,7 +1144,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
             reservations.add(retrieval);
         }
 
-        List<BandwidthAllocation> unscheduled = retrievalManager
+        List<UnscheduledAllocationReport> unscheduled = retrievalManager
                 .schedule(reservations);
 
         try {
@@ -1167,9 +1182,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *
      * @param subscription
      * @return
-     * @throws SerializationException
      */
-    public List<BandwidthAllocation> subscriptionUpdated(
+    public List<UnscheduledAllocationReport> subscriptionUpdated(
             Subscription<T, C> subscription) {
         /*
          * Since AdhocSubscription extends Subscription it is not possible to
@@ -1178,7 +1192,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
          */
         if (subscription instanceof AdhocSubscription) {
             // TODO: Move call once AdhocSubscription is no longer in registry
-            List<BandwidthAllocation> unscheduled = Collections.emptyList();
+            List<UnscheduledAllocationReport> unscheduled = Collections
+                    .emptyList();
             try {
                 unscheduled = queueRetrieval(
                         (AdhocSubscription<T, C>) subscription);
@@ -1291,26 +1306,18 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *
      * @param subscription
      *            the subscription
-     * @return true if able to be cleanly scheduled, false otherwise
+     * @return set of unscheduled allocation reports
      */
-    private boolean isSchedulableWithoutConflict(
-            final Subscription<T, C> subscription) {
-        BandwidthMap copyOfCurrentMap = BandwidthMap
-                .load(EdexBandwidthContextFactory.getBandwidthMapConfig());
+    private Set<UnscheduledAllocationReport> findScheduleConflicts(
+            final Subscription<T, C> subscription,
+            BandwidthMap copyOfCurrentMap) {
 
         BandwidthManager<T, C> proposedBandwidthManager = null;
-        try {
-            proposedBandwidthManager = startProposedBandwidthManager(
-                    copyOfCurrentMap);
-            Set<String> unscheduled = proposedBandwidthManager
-                    .scheduleSubscriptions(Arrays.asList(subscription));
-            return unscheduled.isEmpty();
-        } catch (SerializationException e) {
-            logger.error(
-                    "Serialization error while determining required latency.  Returning true in order to be fault tolerant.",
-                    e);
-            return true;
-        }
+        proposedBandwidthManager = startProposedBandwidthManager(
+                copyOfCurrentMap);
+        Set<UnscheduledAllocationReport> unscheduled = proposedBandwidthManager
+                .scheduleSubscriptions(Arrays.asList(subscription));
+        return unscheduled;
     }
 
     /**
@@ -1362,11 +1369,11 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      * @param copyFrom
      * @return
      */
-    public List<BandwidthAllocation> copyState(
+    public List<UnscheduledAllocationReport> copyState(
             BandwidthManager<T, C> copyFrom) {
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
-        List<BandwidthAllocation> unscheduled = Collections.emptyList();
+        List<UnscheduledAllocationReport> unscheduled = Collections.emptyList();
         IBandwidthDao<T, C> fromDao = copyFrom.bandwidthDao;
 
         final boolean proposingBandwidthChange = retrievalManager
@@ -1426,116 +1433,81 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *            the subscription
      * @return the required latency, in minutes
      */
-    @VisibleForTesting
-    int determineRequiredLatency(final Subscription<T, C> subscription) {
-        final int requiredLatency = determineRequiredValue(subscription,
-                new FindSubscriptionRequiredLatency());
-
-        final int bufferRoomInMinutes = retrievalManager
-                .getPlan(subscription.getRoute()).getBucketMinutes();
-
-        return requiredLatency + bufferRoomInMinutes;
-    }
-
-    /**
-     * Determine the dataset size that would be required on the subscription for
-     * it to be fully scheduled.
-     *
-     * @param subscription
-     *            the subscription
-     * @return the required dataset size
-     */
-    private long determineRequiredDataSetSize(
+    private int determineRequiredLatency(
             final Subscription<T, C> subscription) {
-        return determineRequiredValue(subscription,
-                new FindSubscriptionRequiredDataSetSize());
-    }
 
-    /**
-     * Determine a value that would be required on the subscription for it to be
-     * fully scheduled.
-     *
-     * @param subscription
-     *            the subscription
-     * @param strategy
-     *            the required value strategy
-     * @return the required value
-     */
-    @SuppressWarnings("unchecked")
-    private <M extends Comparable<M>> M determineRequiredValue(
-            final Subscription<T, C> subscription,
-            final IFindSubscriptionRequiredValue<M> strategy) {
         ITimer timer = TimeUtil.getTimer();
         timer.start();
 
-        boolean foundRequiredValue = false;
-        M currentValue = strategy.getInitialValue(subscription);
+        int requiredLatency = -1;
+        int defaultLatency = subscription.getLatencyInMinutes();
 
-        M previousValue = currentValue;
-        do {
-            previousValue = currentValue;
-            currentValue = strategy.getNextValue(subscription, currentValue);
+        // Attempt to schedule with latency doubled default
+        Subscription<T, C> clone = subscription.copy();
+        clone.setLatencyInMinutes(defaultLatency * 2);
+        BandwidthMap copyOfCurrentMap = BandwidthMap
+                .load(InMemoryBandwidthContextFactory.getBandwidthMapConfig());
+        Set<UnscheduledAllocationReport> conflicts = findScheduleConflicts(
+                clone, copyOfCurrentMap);
 
-            Subscription<T, C> clone = strategy.setValue(subscription.copy(),
-                    currentValue);
-            foundRequiredValue = isSchedulableWithoutConflict(clone);
-        } while (!foundRequiredValue);
-
-        SortedSet<M> possibleValues = strategy.getPossibleValues(previousValue,
-                currentValue);
-
-        IBinarySearchResponse<M> response = AlgorithmUtil
-                .binarySearch(possibleValues, new Comparable<M>() {
-                    @Override
-                    public int compareTo(M valueToCheck) {
-                        @SuppressWarnings("rawtypes")
-                        Subscription clone = strategy
-                                .setValue(subscription.copy(), valueToCheck);
-
-                        boolean valueWouldWork = isSchedulableWithoutConflict(
-                                clone);
-
-                        // Check if one more restrictive value would not work,
-                        // if so then this is the required value, otherwise keep
-                        // searching
-                        if (valueWouldWork) {
-                            clone = strategy.setValue(subscription.copy(),
-                                    strategy.getNextRestrictiveValue(
-                                            valueToCheck));
-
-                            return isSchedulableWithoutConflict(clone) ? 1 : 0;
-                        }
-                        // This would still be unscheduled
-                        return -1;
-                    }
-                });
-
-        final M binarySearchedValue = response.getItem();
-        final String valueDescription = strategy.getValueDescription();
-        if (binarySearchedValue != null) {
-            currentValue = binarySearchedValue;
-
-            if (logger.isDebugEnabled()) {
-                logger.debug(String.format(
-                        "Found required " + valueDescription
-                                + " of [%s] in [%s] iterations",
-                        binarySearchedValue, response.getIterations()));
+        /*
+         * If doubling latency allows subscription to be scheduled, determine
+         * the minimum increase needed to allow scheduling. If doubling latency
+         * is not enough, do not recommend raising latency beyond double
+         * recommended as this could cause bandwidth to be maxed out even as
+         * retrievals fall farther behind.
+         */
+        if (conflicts.isEmpty()) {
+            SortedSet<Integer> possibleValues = new TreeSet<>();
+            for (int i = defaultLatency; i <= (defaultLatency * 2); i++) {
+                possibleValues.add(Integer.valueOf(i));
             }
-        } else {
-            logger.warn("Unable to find the required " + valueDescription
-                    + " with a binary search, using value " + currentValue);
-        }
+            IBinarySearchResponse<Integer> response = AlgorithmUtil
+                    .binarySearch(possibleValues, new Comparable<Integer>() {
+                        @Override
+                        public int compareTo(Integer valueToCheck) {
+                            clone.setLatencyInMinutes(valueToCheck);
 
+                            boolean valueWouldWork = findScheduleConflicts(
+                                    clone, copyOfCurrentMap).isEmpty();
+
+                            /*
+                             * Check if one more restrictive value would not
+                             * work, if so then this is the required value,
+                             * otherwise keep searching
+                             */
+                            if (valueWouldWork) {
+                                clone.setLatencyInMinutes(valueToCheck - 1);
+
+                                return findScheduleConflicts(clone,
+                                        copyOfCurrentMap).isEmpty() ? 1 : 0;
+                            }
+                            // This would still be unscheduled
+                            return -1;
+                        }
+                    });
+
+            final Integer binarySearchedValue = response.getItem();
+            if (binarySearchedValue != null) {
+                requiredLatency = binarySearchedValue;
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug(String.format(
+                            "Found required latency of [%s] in [%s] iterations",
+                            binarySearchedValue, response.getIterations()));
+                }
+            } else {
+                logger.warn("Unable to find the required latency "
+                        + "with a binary search");
+            }
+
+            // Add in buffer for bucket size
+            requiredLatency += retrievalManager.getPlan(subscription.getRoute())
+                    .getBucketMinutes();
+        }
         timer.stop();
 
-        final String logMsg = String.format(
-                "Determined required " + valueDescription
-                        + " of [%s] in [%s] ms.",
-                currentValue, timer.getElapsedTime());
-
-        logger.info(logMsg);
-
-        return currentValue;
+        return requiredLatency;
     }
 
     /**

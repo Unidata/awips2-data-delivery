@@ -55,6 +55,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.dao.IBandwidthDao;
  * Aug 09, 2016  5771     rjpeter   Allow concurrent event processing
  * Aug 02, 2017  6186     rjpeter   Removed RetrievalManagerNotifyEvent.
  * Nov 15, 2017  6498     tjensen   Improved logging on deferred allocations
+ * Feb 02, 2018  6471     tjensen   Added UnscheduledAllocationReports
  *
  * </pre>
  *
@@ -88,12 +89,11 @@ public class RetrievalManager {
      *
      * @param bandwidthAllocations
      *            The BandwidthAllocations to schedule.
-     * @return the list of {@link BandwidthAllocation}s that were unable to be
-     *         scheduled
+     * @return the list of unscheduled allocation reports
      */
-    public <T extends BandwidthAllocation> List<BandwidthAllocation> schedule(
-            List<T> inallocations) {
-        List<BandwidthAllocation> unscheduled = new ArrayList<>();
+    public List<UnscheduledAllocationReport> schedule(
+            List<BandwidthAllocation> inallocations) {
+        List<UnscheduledAllocationReport> unscheduled = new ArrayList<>();
         // Arrange allocations in priority order
         List<BandwidthAllocation> bandwidthAllocations = new ArrayList<>(
                 inallocations.size());
@@ -136,7 +136,8 @@ public class RetrievalManager {
         }
 
         // Update any unscheduled allocations
-        for (BandwidthAllocation allocation : unscheduled) {
+        for (UnscheduledAllocationReport uas : unscheduled) {
+            BandwidthAllocation allocation = uas.getUnscheduled();
             allocation.setStatus(RetrievalStatus.UNSCHEDULED);
             bandwidthDao.createOrUpdate(allocation);
         }

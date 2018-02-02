@@ -13,10 +13,6 @@
         <property name="bandwidthDao" ref="bandwidthDao" />
         <property name="bucketsDao" ref="bandwidthBucketDao" />
         <property name="associator" ref="bandwidthBucketAllocationAssociator" />
-        <property name="scheduler">
-            <bean
-                class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.PriorityRetrievalScheduler" />
-        </property>
     </bean>
 
     <!-- SBN Retrival Plans are defined in the wfo configuration because it is used by the 
@@ -29,10 +25,6 @@
         <property name="bandwidthDao" ref="bandwidthDao" />
         <property name="bucketsDao" ref="bandwidthBucketDao" />
         <property name="associator" ref="bandwidthBucketAllocationAssociator" />
-        <property name="scheduler">
-            <bean
-                class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.PriorityRetrievalScheduler" />
-        </property>
     </bean>
 
     <bean id="network" class="com.raytheon.uf.common.datadelivery.registry.Network" factory-method="valueOf">

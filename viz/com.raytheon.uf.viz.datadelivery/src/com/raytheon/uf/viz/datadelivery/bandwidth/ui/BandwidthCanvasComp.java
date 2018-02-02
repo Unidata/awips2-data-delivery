@@ -66,6 +66,7 @@ import org.eclipse.swt.widgets.ToolTip;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthGraphData;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMap;
+import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthMapManager;
 import com.raytheon.uf.common.datadelivery.bandwidth.data.BandwidthRoute;
 import com.raytheon.uf.common.datadelivery.event.notification.NotificationRecord;
 import com.raytheon.uf.common.datadelivery.event.retrieval.SubscriptionStatusEvent;
@@ -134,7 +135,9 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *  Jan 10, 2017   746      bsteffen    Do not ignore frequent updates.
  *  May 03, 2017   6248     nabowle     Fix spelling of threshold.
  *  Jun 21, 2017   6300     nabowle     Update imageMgr's current time when updating images.
+ *  Feb 02, 2018   6471     tjensen     Improve BandwidthMap Config file management
  *
+ * 
  * </pre>
  *
  * @author lvenable
@@ -224,7 +227,7 @@ public class BandwidthCanvasComp extends Composite
     private Timer activeUpdateTimer = null;
 
     /** the query job **/
-    private GraphDataUtil graphDataUtil;
+    private final GraphDataUtil graphDataUtil;
 
     /** Vertical line marking the mouse pointer's location */
     private int mouseMarker;
@@ -409,7 +412,7 @@ public class BandwidthCanvasComp extends Composite
         long bucketSizeMinutes = 0;
 
         IPathManager pm = PathManagerFactory.getPathManager();
-        File bandwidthFile = pm.getStaticFile("datadelivery/bandwidthmap.xml");
+        File bandwidthFile = pm.getStaticFile(BandwidthMapManager.CONFIG_FILE);
         if (bandwidthFile != null) {
             BandwidthMap copyOfBandwidthMap = BandwidthMap.load(bandwidthFile);
             if (copyOfBandwidthMap != null) {

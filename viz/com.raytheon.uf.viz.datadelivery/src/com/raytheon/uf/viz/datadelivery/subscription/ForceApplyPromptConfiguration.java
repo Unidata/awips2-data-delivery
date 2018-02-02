@@ -21,7 +21,6 @@ package com.raytheon.uf.viz.datadelivery.subscription;
 
 import java.util.Set;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import com.raytheon.uf.common.datadelivery.bandwidth.ProposeScheduleResponse;
@@ -36,10 +35,11 @@ import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.IForceA
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 22, 2013 1650       djohnson     Initial creation
- * Jun 20, 2017 6299       tgurney      Remove IProposeScheduleResponse
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------------
+ * May 22, 2013  1650     djohnson  Initial creation
+ * Jun 20, 2017  6299     tgurney   Remove IProposeScheduleResponse
+ * Feb 02, 2018  6471     tjensen   Display bandwidth details if has max size
  *
  * </pre>
  *
@@ -127,7 +127,7 @@ public class ForceApplyPromptConfiguration {
      * @return true or false
      */
     public boolean hasBandwidthDetails() {
-        return requiredLatency != ProposeScheduleResponse.VALUE_NOT_SET;
+        return maximumAllowedSize != ProposeScheduleResponse.VALUE_NOT_SET;
     }
 
     /**
@@ -143,31 +143,59 @@ public class ForceApplyPromptConfiguration {
                         .contains(subscription.getName());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof ForceApplyPromptConfiguration) {
-            ForceApplyPromptConfiguration other = (ForceApplyPromptConfiguration) obj;
-
-            EqualsBuilder builder = new EqualsBuilder();
-            builder.append(this.title, other.title);
-            builder.append(this.message, other.message);
-            builder.append(this.requiredLatency, other.requiredLatency);
-            builder.append(this.maximumLatency, other.maximumLatency);
-            builder.append(this.maximumAllowedSize, other.maximumAllowedSize);
-            builder.append(this.subscription, other.subscription);
-            builder.append(this.wouldBeUnscheduledSubscriptions,
-                    other.wouldBeUnscheduledSubscriptions);
-            return builder.isEquals();
+        if (this == obj) {
+            return true;
         }
-        return super.equals(obj);
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        ForceApplyPromptConfiguration other = (ForceApplyPromptConfiguration) obj;
+        if (maximumAllowedSize != other.maximumAllowedSize) {
+            return false;
+        }
+        if (maximumLatency != other.maximumLatency) {
+            return false;
+        }
+        if (message == null) {
+            if (other.message != null) {
+                return false;
+            }
+        } else if (!message.equals(other.message)) {
+            return false;
+        }
+        if (requiredLatency != other.requiredLatency) {
+            return false;
+        }
+        if (subscription == null) {
+            if (other.subscription != null) {
+                return false;
+            }
+        } else if (!subscription.equals(other.subscription)) {
+            return false;
+        }
+        if (title == null) {
+            if (other.title != null) {
+                return false;
+            }
+        } else if (!title.equals(other.title)) {
+            return false;
+        }
+        if (wouldBeUnscheduledSubscriptions == null) {
+            if (other.wouldBeUnscheduledSubscriptions != null) {
+                return false;
+            }
+        } else if (!wouldBeUnscheduledSubscriptions
+                .equals(other.wouldBeUnscheduledSubscriptions)) {
+            return false;
+        }
+        return true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public int hashCode() {
         HashCodeBuilder builder = new HashCodeBuilder();
