@@ -184,6 +184,8 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Jun 09, 2017  746      bsteffen  Handle group conflicts with duration and period.
  * Aug 31, 2017  6396     nabowle   Fix SharedSubscription creation.
  * Oct 26, 2017  6461     tgurney   Add ICreateAdhocCallback
+ * Feb 08, 2018  6451     nabowle   Require selected cycle times if available.
+ *                                  Select All The Cycles by default.
  *
  * </pre>
  *
@@ -631,6 +633,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             String hour = Strings.padStart(String.valueOf(cycle), 2, '0');
             Button btn = new Button(cycleComp, SWT.CHECK);
             btn.setText(hour);
+            btn.setSelection(this.create);
             hourBtnArr[i] = btn;
             i++;
         }
@@ -1403,6 +1406,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         boolean groupDurValid = false;
         boolean groupActiveValid = false;
         boolean latencyValid = false;
+        boolean cyclesValid = true;
 
         // Validate the date entries
         datesValid = this.durationValidChk();
@@ -1421,6 +1425,18 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     "Invalid latency value entered.\n\n"
                             + "Please enter a value in minutes between 0 and "
                             + maxLatency);
+        }
+
+        if (subscription.getDataSetType() == DataType.GRID) {
+            if (this.cycleTimes != null && !this.cycleTimes.isEmpty()) {
+                List<Integer> selectedCycles = getCycleTimes();
+                if (selectedCycles.isEmpty()) {
+                    displayErrorPopup("Cycle Required",
+                            "No cycle times were selected.\n\n"
+                                    + "Please select at least one of the available cycles.");
+                    cyclesValid = false;
+                }
+            }
         }
 
         // Validate the subscription name if entered into text box
@@ -1459,7 +1475,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             }
         }
 
-        if (activeDatesValid && datesValid && latencyValid) {
+        if (activeDatesValid && datesValid && latencyValid && cyclesValid) {
             valid = true;
         }
 
