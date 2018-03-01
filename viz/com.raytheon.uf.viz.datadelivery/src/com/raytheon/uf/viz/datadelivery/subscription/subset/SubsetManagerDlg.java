@@ -186,6 +186,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Sep 27, 2017  5948     tjensen   Updated saving to and loading from subset xml
  * Oct 13, 2017  6461     tgurney   Split up handleQuery()
  * Nov 02, 2017  6461     tgurney   storeQuerySub() add showMessageBox flag
+ * Mar 01, 2018  7204     nabowle   Add subEnvelope.
  * </pre>
  *
  * @author mpduff
@@ -251,6 +252,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     protected ICreateAdhocCallback adhocCallback;
 
+    protected ReferencedEnvelope subEnvelope;
+
     /**
      * Constructor
      *
@@ -261,12 +264,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * @param dataSet
      *            The DataSetMetaData
      */
-    public SubsetManagerDlg(Shell shell, boolean loadDataSet, DataSet dataSet) {
+    public SubsetManagerDlg(Shell shell, boolean loadDataSet, DataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
         super(shell, SWT.RESIZE | SWT.DIALOG_TRIM | SWT.MAX | SWT.MIN,
                 CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         this.loadDataSet = loadDataSet;
         this.dataSet = dataSet;
         this.adhocCallback = new CreateAdhocCallback();
+        this.subEnvelope = subEnvelope;
     }
 
     /**
@@ -278,8 +283,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * @param dataSet
      *            The DataSetMetaData
      */
-    public SubsetManagerDlg(Shell shell, DataSet dataSet) {
-        this(shell, false, dataSet);
+    public SubsetManagerDlg(Shell shell, DataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
+        this(shell, false, dataSet, subEnvelope);
     }
 
     /**
@@ -985,13 +991,17 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      *            the data set
      * @return the dialog
      */
-    public static SubsetManagerDlg fromDataSet(Shell shell, DataSet dataSet) {
+    public static SubsetManagerDlg fromDataSet(Shell shell, DataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
         if (dataSet.getDataSetType() == DataType.GRID) {
-            return new GriddedSubsetManagerDlg(shell, (GriddedDataSet) dataSet);
+            return new GriddedSubsetManagerDlg(shell, (GriddedDataSet) dataSet,
+                    subEnvelope);
         } else if (dataSet.getDataSetType() == DataType.POINT) {
-            return new PointSubsetManagerDlg(shell, (PointDataSet) dataSet);
+            return new PointSubsetManagerDlg(shell, (PointDataSet) dataSet,
+                    subEnvelope);
         } else if (dataSet.getDataSetType() == DataType.PDA) {
-            return new PDASubsetManagerDlg(shell, (PDADataSet) dataSet);
+            return new PDASubsetManagerDlg(shell, (PDADataSet) dataSet,
+                    subEnvelope);
         }
         throw new IllegalArgumentException(String.format(DATASETS_NOT_SUPPORTED,
                 dataSet.getClass().getName()));

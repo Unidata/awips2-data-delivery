@@ -70,6 +70,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.subset.xml.TimeXML;
  * Oct 11, 2013  2386     mpduff    Refactor DD Front end.
  * Oct 30, 2014  2706     ccody     Add Check for changes on Dialog close
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
+ * Mar 01, 2018  7204     nabowle   Add subEnvelope to constructor. Give to SpatialTab.
  *
  * </pre>
  *
@@ -116,7 +117,7 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
      */
     public PointSubsetManagerDlg(Shell shell, PointDataSet dataSet,
             boolean loadDataSet, SubsetXML subsetXml) {
-        super(shell, loadDataSet, dataSet);
+        super(shell, loadDataSet, dataSet, null);
         this.dataSet = dataSet;
         this.subsetXml = subsetXml;
         setTitle();
@@ -130,8 +131,9 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
      * @param dataSet
      *            the data set
      */
-    public PointSubsetManagerDlg(Shell shell, PointDataSet dataSet) {
-        super(shell, dataSet);
+    public PointSubsetManagerDlg(Shell shell, PointDataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
+        super(shell, dataSet, subEnvelope);
         this.dataSet = dataSet;
         setTitle();
     }
@@ -159,7 +161,8 @@ public class PointSubsetManagerDlg extends SubsetManagerDlg {
         spatialComp.setLayout(gl);
         spatialComp.setLayoutData(gd);
         spatialTab.setControl(spatialComp);
-        spatialTabControls = new SpatialSubsetTab(spatialComp, dataSet, this);
+        spatialTabControls = new SpatialSubsetTab(spatialComp, dataSet, this,
+                subEnvelope);
     }
 
     /**

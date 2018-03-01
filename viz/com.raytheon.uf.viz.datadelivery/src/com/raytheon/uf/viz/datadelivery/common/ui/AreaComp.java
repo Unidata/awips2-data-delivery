@@ -66,11 +66,11 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * This is a common composite that is used to hold the area controls.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 28, 2012            lvenable    Initial creation.
@@ -100,11 +100,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                       fixed validaiton of lat/lon text fields.
  * Mar 01, 2016  5413      tjensen      Fixed validaiton of lat/lon text fields.
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
- * 
+ * Mar 01, 2018  7204      nabowle     Reproject the subenvelope and validate the text.
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
 
 public class AreaComp extends Composite implements ISubset {
@@ -181,13 +181,13 @@ public class AreaComp extends Composite implements ISubset {
     private final NumberFormat formatter = new DecimalFormat("0.0000");
 
     /** Region tree map. */
-    private final Map<String, LocalizationFile> regionMap = new TreeMap<String, LocalizationFile>();
+    private final Map<String, LocalizationFile> regionMap = new TreeMap<>();
 
     /** SpatialSubsetMapDlg object. */
     private SpatialSubsetMapDlg dlg = null;
 
     /** File extension */
-    private final String extension = ".xml";
+    private static final String EXTENSION = ".xml";
 
     /** callback */
     private final IDataSize callback;
@@ -200,7 +200,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent composite.
      * @param groupTxt
@@ -228,7 +228,16 @@ public class AreaComp extends Composite implements ISubset {
         } else {
             this.fullEnvelope = fullEnvelope;
         }
-        this.subEnvelope = subEnvelope;
+        if (subEnvelope != null) {
+            try {
+                this.subEnvelope = MapUtil.reprojectAndIntersect(subEnvelope,
+                        this.fullEnvelope);
+            } catch (TransformException e) {
+                statusHandler.warn(
+                        "Unable to reproject and intersect the provided sub-envelope with the full-envelope.",
+                        e);
+            }
+        }
 
         init();
     }
@@ -270,6 +279,7 @@ public class AreaComp extends Composite implements ISubset {
             }
         } else if (manualRdo.getSelection()) {
             updateBounds(subEnvelope);
+            validateBoundsText();
         }
     }
 
@@ -307,7 +317,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Create the bound controls.
-     * 
+     *
      * @param group
      *            Group container.
      */
@@ -375,7 +385,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Create the region and bounding box controls.
-     * 
+     *
      * @param group
      *            Group container.
      */
@@ -398,7 +408,7 @@ public class AreaComp extends Composite implements ISubset {
         manualRdo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                if (manualRdo.getSelection() == false) {
+                if (!manualRdo.getSelection()) {
                     return;
                 }
 
@@ -429,7 +439,7 @@ public class AreaComp extends Composite implements ISubset {
         regionRdo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                if (regionRdo.getSelection() == false) {
+                if (!regionRdo.getSelection()) {
                     return;
                 }
                 updateRegionControls();
@@ -481,7 +491,7 @@ public class AreaComp extends Composite implements ISubset {
         boundingBoxRdo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                if (boundingBoxRdo.getSelection() == false) {
+                if (!boundingBoxRdo.getSelection()) {
                     return;
                 }
 
@@ -506,7 +516,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Add a separator line to the display.
-     * 
+     *
      * @param parentComp
      *            Parent component.
      */
@@ -522,7 +532,7 @@ public class AreaComp extends Composite implements ISubset {
     /**
      * Enable/Disable the region and bounding box controls. The bounding box
      * control will always be the disabled if the region controls are enabled.
-     * 
+     *
      */
     public void updateRegionControls() {
         enableCustomControls(manualRdo.getSelection());
@@ -533,7 +543,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Set controls enabled based on flag.
-     * 
+     *
      * @param flag
      *            true if controls should be enabled
      */
@@ -544,7 +554,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Set text controls enabled based on flag.
-     * 
+     *
      * @param flag
      *            true if text controls should be enabled
      */
@@ -564,7 +574,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Get the text background based on if the control is enabled or not
-     * 
+     *
      * @param enabled
      *            enabled flag
      */
@@ -580,7 +590,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Enable the regions control based on the flag.
-     * 
+     *
      * @param flag
      *            enabled state of the controls
      */
@@ -592,7 +602,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Enable the bounding box controls base on the flag.
-     * 
+     *
      * @param flag
      *            enabled state of the controls
      */
@@ -602,7 +612,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Enable all controls using flag.
-     * 
+     *
      * @param flag
      *            on/off toggle for controls.
      */
@@ -618,7 +628,7 @@ public class AreaComp extends Composite implements ISubset {
         regionRdo.setEnabled(flag);
         boundingBoxRdo.setEnabled(flag);
 
-        if (flag == true) {
+        if (flag) {
             updateRegionControls();
             handleRegionChange();
         }
@@ -670,7 +680,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Region selection action handler
-     * 
+     *
      * @param verbose
      *            when true user is alerted to validation errors.
      */
@@ -704,8 +714,8 @@ public class AreaComp extends Composite implements ISubset {
             }
         } else {
             String path = name;
-            if (!path.endsWith(extension)) {
-                path = path + extension;
+            if (!path.endsWith(EXTENSION)) {
+                path = path + EXTENSION;
             }
 
             LocalizationFile locFile = regionMap.get(path);
@@ -781,7 +791,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Get the user Regions.
-     * 
+     *
      * @return array of user regions
      */
     private String[] getUserRegions() {
@@ -793,12 +803,12 @@ public class AreaComp extends Composite implements ISubset {
             regionMap.put(lf.getFile().getName(), lf);
         }
 
-        List<String> regions = new ArrayList<String>();
+        List<String> regions = new ArrayList<>();
         Collections.sort(regions);
         for (String region : regionMap.keySet()) {
 
             // remove file extension
-            int extensionIndex = region.lastIndexOf(".");
+            int extensionIndex = region.lastIndexOf('.');
             String newStr = region.substring(0, extensionIndex);
 
             regions.add(newStr);
@@ -809,7 +819,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Validate the bounds.
-     * 
+     *
      * @return true if the bounds are valid
      */
     private boolean validateBoundsText() {
@@ -892,7 +902,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Get a double from text.
-     * 
+     *
      * @param text
      *            The double String
      * @return double, Double.NaN if unable to parse
@@ -944,7 +954,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Select the custom radio button
-     * 
+     *
      * @param regionName
      */
     public void setRegion(String regionName) {
@@ -953,8 +963,8 @@ public class AreaComp extends Composite implements ISubset {
         int index = 0;
         String subRegionName = regionName;
 
-        if (regionName.endsWith(extension)) {
-            int extensionIndex = regionName.lastIndexOf(".");
+        if (regionName.endsWith(EXTENSION)) {
+            int extensionIndex = regionName.lastIndexOf('.');
             subRegionName = regionName.substring(0, extensionIndex);
         }
 
@@ -983,7 +993,7 @@ public class AreaComp extends Composite implements ISubset {
 
     /**
      * Select the custom radio button.
-     * 
+     *
      * @return region name
      */
     public String getRegionName() {
@@ -1017,7 +1027,7 @@ public class AreaComp extends Composite implements ISubset {
     /**
      * Switch to "My Regions" as the active selection and select the provided
      * region name.
-     * 
+     *
      * @param regionName
      */
     public void showMyRegions(String regionName) {

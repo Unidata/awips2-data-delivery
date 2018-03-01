@@ -123,6 +123,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Sep 26, 2017  6438     tgurney   Fix handling of Sea Ice selected levels
  * Sep 27, 2017  5948     tjensen   Update populateSubsetXML to get vertList
  * Dec 19, 2017  6523     tjensen   Changes for VerticalXML updates
+ * Mar 01, 2018  7204     nabowle   Add subEnvelope to constructor. Give to SpatialTab.
  *
  * </pre>
  *
@@ -192,7 +193,7 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
      */
     public GriddedSubsetManagerDlg(Shell shell, GriddedDataSet dataSet,
             boolean loadDataSet, SubsetXML subsetXml) {
-        super(shell, loadDataSet, dataSet);
+        super(shell, loadDataSet, dataSet, null);
         this.dataSet = dataSet;
         this.subsetXml = subsetXml;
         setTitle();
@@ -206,8 +207,9 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
      * @param dataSet
      *            The dataset object
      */
-    public GriddedSubsetManagerDlg(Shell shell, GriddedDataSet dataSet) {
-        super(shell, dataSet);
+    public GriddedSubsetManagerDlg(Shell shell, GriddedDataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
+        super(shell, dataSet, subEnvelope);
         this.dataSet = dataSet;
         setTitle();
     }
@@ -259,7 +261,8 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         spatialComp.setLayout(gl);
         spatialComp.setLayoutData(gd);
         spatialTab.setControl(spatialComp);
-        spatialTabControls = new SpatialSubsetTab(spatialComp, dataSet, this);
+        spatialTabControls = new SpatialSubsetTab(spatialComp, dataSet, this,
+                subEnvelope);
 
         SortedSet<Integer> forecastHours = new TreeSet<>(
                 griddedDataSet.getForecastHours());
