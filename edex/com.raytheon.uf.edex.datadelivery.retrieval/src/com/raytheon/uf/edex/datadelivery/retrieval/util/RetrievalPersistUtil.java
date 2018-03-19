@@ -3,19 +3,19 @@ package com.raytheon.uf.edex.datadelivery.retrieval.util;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -47,9 +47,9 @@ import com.raytheon.uf.edex.datadelivery.retrieval.mapping.PluginRouteList;
 
 /**
  * Common class for persistence of plugins
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -57,17 +57,18 @@ import com.raytheon.uf.edex.datadelivery.retrieval.mapping.PluginRouteList;
  * Jan 30, 2014 2686       dhladky     Refactor of retrieval.
  * Aug 08, 2016 5744       mapeters    Plugin routes file moved from
  *                                     edex_static to common_static
- * 
+ * Mar 19, 2018 6413       tjensen     Make routePlugin not synchronized
+ *
  * </pre>
- * 
+ *
  */
 
 public final class RetrievalPersistUtil {
 
-    private final String OVERRIDE_PATH = "mapping" + IPathManager.SEPARATOR
-            + "pluginRoutes.xml";
+    private static final String OVERRIDE_PATH = "mapping"
+            + IPathManager.SEPARATOR + "pluginRoutes.xml";
 
-    private static JAXBManager jaxb;
+    private static volatile JAXBManager jaxb;
 
     private final Map<String, String> overrideDestinationUris = new HashMap<>();
 
@@ -85,13 +86,13 @@ public final class RetrievalPersistUtil {
     /**
      * Sends the pdos to the default persist or post processing/persistence
      * route
-     * 
+     *
      * @param defaultPersistRoute
      * @param pluginName
      * @param pdos
      * @return
      */
-    public static synchronized boolean routePlugin(String defaultPersistRoute,
+    public static boolean routePlugin(String defaultPersistRoute,
             String pluginName, PluginDataObject[] pdos) {
 
         boolean success = false;
@@ -121,13 +122,13 @@ public final class RetrievalPersistUtil {
                 } else {
 
                     pluginDao.persistToDatabase(pdos);
-                    EDEXUtil.getMessageProducer().sendAsyncUri(
-                            defaultPersistRoute, pdos);
+                    EDEXUtil.getMessageProducer()
+                            .sendAsyncUri(defaultPersistRoute, pdos);
                     success = true;
                 }
             } catch (Exception e) {
-                statusHandler.error("Could not store " + pluginName
-                        + " records...", e);
+                statusHandler.error(
+                        "Could not store " + pluginName + " records...", e);
             }
         }
 
@@ -155,11 +156,11 @@ public final class RetrievalPersistUtil {
             PluginRouteList prl = null;
 
             try (InputStream is = lf.openInputStream()) {
-                prl = getJaxbManager().unmarshalFromInputStream(
-                        PluginRouteList.class, is);
+                prl = getJaxbManager()
+                        .unmarshalFromInputStream(PluginRouteList.class, is);
             } catch (Exception e) {
-                statusHandler.error(
-                        "[Data Delivery] Configuration for plugin routes failed to load: File: "
+                statusHandler
+                        .error("[Data Delivery] Configuration for plugin routes failed to load: File: "
                                 + lf.getPath(), e);
             }
 
@@ -178,19 +179,19 @@ public final class RetrievalPersistUtil {
 
     /**
      * get the JAXBManager to serialize the files
-     * 
+     *
      * @return
      */
     private JAXBManager getJaxbManager() {
 
         if (jaxb == null) {
             try {
-                jaxb = new JAXBManager(PluginRoute.class, PluginRouteList.class);
+                jaxb = new JAXBManager(PluginRoute.class,
+                        PluginRouteList.class);
             } catch (JAXBException e) {
-                statusHandler
-                        .handle(Priority.ERROR,
-                                "Unable to create JAXBManager for the Plugin and PLuginRoute classes.",
-                                e);
+                statusHandler.handle(Priority.ERROR,
+                        "Unable to create JAXBManager for the Plugin and PLuginRoute classes.",
+                        e);
             }
         }
 
