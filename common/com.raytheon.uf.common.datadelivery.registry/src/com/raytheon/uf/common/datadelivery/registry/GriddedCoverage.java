@@ -60,11 +60,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Mar 04, 2015  3959     rjpeter   Update for grid based subgridding.
  * Apr 05, 2017  1045     tjensen   Add Constructor to create GriddedCoverage
  *                                  from non-GriddedCoverage
+ * Feb 06, 2018  6355     nabowle   Make getGridRangeLow() call inclusive.
  *
  * </pre>
  *
  * @author dhladky
- * @version 1.0
  */
 
 @XmlRootElement
@@ -193,7 +193,7 @@ public class GriddedCoverage extends Coverage implements Serializable {
 
             SubGridGeometryCalculator subGridCalc = new SubGridGeometryCalculator(
                     requestEnvelope, getGridCoverage().getGridGeometry());
-            int[] ul = subGridCalc.getGridRangeLow(false);
+            int[] ul = subGridCalc.getGridRangeLow(true);
             int[] lr = subGridCalc.getGridRangeHigh(false);
 
             SubGrid subGrid = new SubGrid();

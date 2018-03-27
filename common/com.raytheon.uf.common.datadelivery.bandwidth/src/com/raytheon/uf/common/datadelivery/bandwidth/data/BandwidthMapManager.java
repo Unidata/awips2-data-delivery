@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,20 +33,21 @@ import com.raytheon.uf.common.util.FileUtil;
 
 /**
  * The {@link BandwidthMap} file manager class for scheduling.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 6, 2014            mpduff     Initial creation
- * Dec 14 2015   5204     dhladky    Update to new ILocalizationPathObserver pattern.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 06, 2014           mpduff    Initial creation
+ * Dec 14, 2015  5204     dhladky   Update to new ILocalizationPathObserver
+ *                                  pattern.
+ * Feb 02, 2018  6471     tjensen   Improved handling of configuation levels
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class BandwidthMapManager implements ILocalizationPathObserver {
@@ -55,15 +56,12 @@ public class BandwidthMapManager implements ILocalizationPathObserver {
     private static BandwidthMapManager instance;
 
     /** Config file backing the {@link BandwidthMap} */
-    private static final String CONFIG_FILE = FileUtil.join("datadelivery",
+    public static final String CONFIG_FILE = FileUtil.join("datadelivery",
             "bandwidthmap.xml");
-
-    /** Config Localization file */
-    private LocalizationFile locFile;
 
     /** The {@link BandwidthMap} */
     private BandwidthMap bandwidthMap;
-    
+
     /** Flags whether BandwidthMapManager has been initialized **/
     private boolean isInit = false;
 
@@ -71,15 +69,15 @@ public class BandwidthMapManager implements ILocalizationPathObserver {
      * private constructor
      */
     private BandwidthMapManager() {
-        
+
     }
 
     /**
      * Get an instance.
-     * 
+     *
      * @return the instance
      */
-    public static synchronized final BandwidthMapManager getInstance() {
+    public static final synchronized BandwidthMapManager getInstance() {
         if (instance == null) {
             instance = new BandwidthMapManager();
             instance.readBandwidthMapConfig();
@@ -96,8 +94,8 @@ public class BandwidthMapManager implements ILocalizationPathObserver {
         Map<LocalizationLevel, LocalizationFile> fileMap = pm
                 .getTieredLocalizationFile(LocalizationType.COMMON_STATIC,
                         CONFIG_FILE);
-        locFile = fileMap.get(LocalizationLevel.SITE);
-        
+        LocalizationFile locFile = fileMap.get(LocalizationLevel.SITE);
+
         if (locFile == null) {
             locFile = fileMap.get(LocalizationLevel.BASE);
         }
@@ -113,7 +111,7 @@ public class BandwidthMapManager implements ILocalizationPathObserver {
 
     /**
      * Get the {@link BandwidthMap} data object.
-     * 
+     *
      * @return The data object
      */
     public BandwidthMap getBandwidthMap() {

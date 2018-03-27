@@ -71,6 +71,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Aug 09, 2016  5771     rjpeter   Update constructor
  * Aug 02, 2017  6186     rjpeter   Added SubscriptionRetrievalAgent
+ * Feb 02, 2018  6471     tjensen   Added UnscheduledAllocationReports
  *
  * </pre>
  *
@@ -128,11 +129,12 @@ public class NcfBandwidthManagerCreator<T extends Time, C extends Coverage>
         protected Set<String> scheduleSbnSubscriptions(
                 List<Subscription<T, C>> subscriptions)
                 throws SerializationException {
-            return scheduleSubscriptions(subscriptions);
+            return getUnscheduledSubNames(scheduleSubscriptions(subscriptions));
         }
 
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public BandwidthManager<T, C> getBandwidthManager(IBandwidthDbInit dbInit,
             IBandwidthDao bandwidthDao, RetrievalManager retrievalManager,

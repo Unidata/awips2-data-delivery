@@ -84,6 +84,7 @@ import com.raytheon.uf.edex.datadelivery.bandwidth.util.BandwidthUtil;
  * Aug 02, 2017  6186     rjpeter   Removed agentType.
  * Sep 18, 2017  6415     rjpeter   Call deleteBucketUpToTime
  * Dec 18, 2017  6484     tjensen   Mark planStart and planEnd as volatile
+ * Feb 02, 2018  6471     tjensen   Made PriorityRetrivalScheduler static
  *
  * </pre>
  *
@@ -103,9 +104,6 @@ public class RetrievalPlan {
     private Network network;
 
     private BandwidthMap map;
-
-    // The scheduler used to insert retrievals into the plan
-    private PriorityRetrievalScheduler scheduler;
 
     // How many days of retrievals should the plan hold
     private int planDays;
@@ -232,9 +230,9 @@ public class RetrievalPlan {
      *
      * @param bandwidthAllocation
      *            the allocation
-     * @return the list of unscheduled bandwidth allocations
+     * @return the list of unscheduled allocation reports
      */
-    public List<BandwidthAllocation> schedule(
+    public List<UnscheduledAllocationReport> schedule(
             BandwidthAllocation bandwidthAllocation) {
         // First make sure we have the same path
         if (!(network == bandwidthAllocation.getNetwork())) {
@@ -250,7 +248,8 @@ public class RetrievalPlan {
         }
 
         synchronized (bucketsLock) {
-            return scheduler.schedule(this, bandwidthAllocation);
+            return PriorityRetrievalScheduler.schedule(this,
+                    bandwidthAllocation);
         }
     }
 
@@ -339,10 +338,6 @@ public class RetrievalPlan {
 
         this.planStart = newStartOfPlan;
         this.planEnd = newEndOfPlan;
-    }
-
-    public void setScheduler(PriorityRetrievalScheduler scheduler) {
-        this.scheduler = scheduler;
     }
 
     /**
@@ -666,7 +661,7 @@ public class RetrievalPlan {
                         + "k an Allocation "
                         + allocation.getEstimatedSizeInBytes() / 1000
                         + "k.  Remaining in bucket "
-                        + actualBucket.getAvailableBandwidth() / 1000 + "k");
+                        + actualBucket.getAvailableBytes() / 1000 + "k");
             }
         }
     }
@@ -697,7 +692,7 @@ public class RetrievalPlan {
                         + "k an Allocation "
                         + allocation.getEstimatedSizeInBytes() / 1000
                         + "k.  Remaining in bucket "
-                        + actualBucket.getAvailableBandwidth() / 1000 + "k");
+                        + actualBucket.getAvailableBytes() / 1000 + "k");
             }
         }
     }
@@ -727,7 +722,7 @@ public class RetrievalPlan {
                         + actualBucket.getBucketSize() / 1000
                         + "k a Reservation " + reservation.getSize() / 1000
                         + "k.  Remaining in bucket "
-                        + actualBucket.getAvailableBandwidth() / 1000 + "k");
+                        + actualBucket.getAvailableBytes() / 1000 + "k");
             }
         }
     }

@@ -98,6 +98,7 @@ import com.raytheon.uf.viz.datadelivery.common.ui.ActivePeriodComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.DurationComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.GroupSelectComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.PriorityComp;
+import com.raytheon.uf.viz.datadelivery.common.ui.VBComp;
 import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
 import com.raytheon.uf.viz.datadelivery.system.SystemRuleManager;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
@@ -184,6 +185,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Jun 09, 2017  746      bsteffen  Handle group conflicts with duration and period.
  * Aug 31, 2017  6396     nabowle   Fix SharedSubscription creation.
  * Oct 26, 2017  6461     tgurney   Add ICreateAdhocCallback
+ * Dec 08, 2017  6355     nabowle   Add VBComp.
  * Feb 08, 2018  6451     nabowle   Require selected cycle times if available.
  *                                  Select All The Cycles by default.
  *
@@ -234,6 +236,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /** Subscription Name text field */
     private Text subNameTxt;
+
+    private VBComp vbcomp;
 
     /** Create/edit flag */
     private final boolean create;
@@ -367,6 +371,8 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             createChangeText();
         }
 
+        createVbComp();
+
         createButtons();
 
         populate();
@@ -437,6 +443,20 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         int textWidth = gc.getFontMetrics().getAverageCharWidth() * 60;
         gc.dispose();
         changeReasonTxt.setLayoutData(new GridData(textWidth, SWT.DEFAULT));
+    }
+
+    private void createVbComp() {
+        if (this.subscription.getDataSetType() == DataType.GRID) {
+            GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+            GridLayout gl = new GridLayout(1, false);
+
+            Group vbGroup = new Group(mainComp, SWT.NONE);
+            vbGroup.setLayout(gl);
+            vbGroup.setLayoutData(gd);
+            vbGroup.setText("Volume Browser");
+
+            vbcomp = new VBComp(vbGroup);
+        }
     }
 
     /**
@@ -1392,6 +1412,10 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         subscription.setLatencyInMinutes(priorityComp.getLatencyValue());
+
+        if (vbcomp != null) {
+            subscription.setVertical(vbcomp.isVertical());
+        }
     }
 
     /**
@@ -1790,6 +1814,10 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         setOfficeIds(subscription.getOfficeIDs());
+
+        if (vbcomp != null) {
+            vbcomp.setVertical(subscription.isVertical());
+        }
     }
 
     /**

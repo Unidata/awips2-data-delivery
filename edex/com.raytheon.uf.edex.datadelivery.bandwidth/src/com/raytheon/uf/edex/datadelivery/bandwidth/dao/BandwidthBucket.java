@@ -104,7 +104,7 @@ public class BandwidthBucket implements Comparable<BandwidthBucket>,
         this.id = from.id;
     }
 
-    public long getAvailableBandwidth() {
+    public long getAvailableBytes() {
         return bucketSize - currentSize;
     }
 
@@ -178,7 +178,7 @@ public class BandwidthBucket implements Comparable<BandwidthBucket>,
         sb.append("Bucket [").append(getBucketStartTime()).append("] [")
                 .append(BandwidthUtil.format(b));
         sb.append("] bandwidth [").append(bucketSize);
-        sb.append("] available [").append(getAvailableBandwidth())
+        sb.append("] available [").append(getAvailableBytes())
                 .append("]);");
 
         return sb.toString();

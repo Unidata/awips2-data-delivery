@@ -1,0 +1,19 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="SubscriptionVBConfigManager" class="com.raytheon.uf.edex.datadelivery.registry.config.SubscriptionVBConfigFileManager">
+        <constructor-arg ref="SubscriptionHandler" />
+    </bean>
+
+    <bean class="org.springframework.beans.factory.config.MethodInvokingBean">
+        <property name="targetClass" value="com.raytheon.uf.common.event.EventBus" />
+        <property name="targetMethod" value="register" />
+        <property name="arguments">
+            <list>
+                <ref bean="SubscriptionVBConfigManager" />
+            </list>
+        </property>
+    </bean>
+</beans>

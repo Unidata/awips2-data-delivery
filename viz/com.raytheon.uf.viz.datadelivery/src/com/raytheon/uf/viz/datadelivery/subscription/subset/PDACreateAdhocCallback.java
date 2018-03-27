@@ -50,6 +50,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.CreateSubscriptionDlg;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 25, 2017 6461       tgurney     Initial creation
+ * Jan 25, 2018 6506       nabowle     storeAdhoc renamed to scheduleAdhoc
  *
  * </pre>
  *
@@ -71,7 +72,8 @@ public class PDACreateAdhocCallback extends CreateAdhocCallback {
         String currentUser = LocalizationManager.getInstance().getCurrentUser();
 
         DataSet dataSet = subscriptionDlg.getDataSet();
-        String status = "";
+        StringBuilder status = new StringBuilder();
+
         try {
             metaDatas = DataDeliveryHandlers.getDataSetMetaDataHandler()
                     .getDataSetMetaDataByIntersection(dataSet.getDataSetName(),
@@ -82,7 +84,7 @@ public class PDACreateAdhocCallback extends CreateAdhocCallback {
                     "Error when retrieving metadata for dataset "
                             + dataSet.getDataSetName(),
                     e);
-            return status;
+            return status.toString();
         }
 
         int subCounter = 1;
@@ -99,12 +101,15 @@ public class PDACreateAdhocCallback extends CreateAdhocCallback {
                  */
                 newAdhoc.setName(
                         newAdhoc.getName() + "-" + now + "-" + subCounter);
-                status = storeAdhoc(subscriptionDlg, newAdhoc);
+                String retStatus = scheduleAdhoc(subscriptionDlg, newAdhoc);
+                if (retStatus != null && !retStatus.isEmpty()) {
+                    status.append(retStatus).append(" ");
+                }
                 subCounter++;
             }
         }
 
-        return status;
+        return status.toString();
     }
 
     private AdhocSubscription createAdhocForOneParameter(

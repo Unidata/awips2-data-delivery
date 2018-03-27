@@ -45,6 +45,7 @@ import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSetMetaDat
 import com.raytheon.uf.common.datadelivery.registry.Parameter;
 import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterUtils;
+import com.raytheon.uf.common.datadelivery.registry.Projection.ProjectionType;
 import com.raytheon.uf.common.datadelivery.registry.Provider;
 import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
@@ -130,9 +131,9 @@ import opendap.dap.NoSuchAttributeException;
  * Sep 25, 2017  6178        tgurney   parseMetaData generate link key from url
  * Oct 04, 2017  6465        tjensen   Get gridCoverage from provider. Rename
  *                                     Collections to URLParserInfo
+ * Jan 30, 2018  6413        rjpeter   Ensure each link gets a new coverage object
  * Feb 21, 2018  7210        nabowle   Recalculate dx for cases where dx*nx slightly
  *                                     exceeds 360.
- *
  * </pre>
  *
  * @author dhladky
@@ -183,7 +184,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
     private Map<String, ParameterGroup> getParameters(DAS das,
             GriddedDataSet dataSet, GriddedDataSetMetaData gdsmd,
             String subName, URLParserInfo urlParserInfo, String dataDateFormat,
-            GridCoverage gridCoverage) throws NoSuchAttributeException {
+            ProjectionType providerProjection) throws NoSuchAttributeException {
 
         final String collectionName = dataSet.getCollectionName();
         final String url = gdsmd.getUrl();
@@ -197,6 +198,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
         // TODO: haven't figure out how to tell the difference on these from
         // the provider metadata yet
+        GridCoverage gridCoverage = providerProjection.getGridCoverage();
         gridCoverage.setSpacingUnit(serviceConfig.getConstantValue("DEGREE"));
         gridCoverage.setFirstGridPointCorner(Corner.LowerLeft);
 
@@ -630,8 +632,8 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
         }
         String providerName = provider.getName();
         String collectionName = urlParserInfo.getName();
-        GridCoverage providerGC = provider.getProjection().get(0).getType()
-                .getGridCoverage();
+        ProjectionType providerProjection = provider.getProjection().get(0)
+                .getType();
 
         for (Link link : links) {
 
@@ -664,7 +666,7 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
 
             dataSet.setParameterGroups(
                     getParameters(das, dataSet, gdsmd, link.getSubName(),
-                            urlParserInfo, dataDateFormat, providerGC));
+                            urlParserInfo, dataDateFormat, providerProjection));
 
             // TODO: OBE after all sites are at 18.1.1 or above
             Map<String, Parameter> paramMap = ParameterUtils
