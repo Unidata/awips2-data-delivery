@@ -36,39 +36,34 @@ import com.raytheon.uf.common.util.CollectionUtil;
 
 /**
  * {@link IRegistryObjectHandler} implementation for {@link Subscription}.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 05, 2013 1841       djohnson     Extracted and genericized from siteSubscriptionHandler.
- * Jun 24, 2013 2106       djohnson     Now composes a registryHandler.
- * Mar 16, 2016 3919       tjensen      Cleanup unneeded interfaces
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Apr 05, 2013  1841     djohnson  Extracted and genericized from
+ *                                  siteSubscriptionHandler.
+ * Jun 24, 2013  2106     djohnson  Now composes a registryHandler.
+ * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
+ * Apr 03, 2018  7240     tjensen   Added getByDataSetAndProvider
+ *
  * </pre>
- * 
+ *
  * @author djohnson
- * @version 1.0
  */
 public abstract class SubscriptionTypeHandler<T extends Subscription, QUERY extends SubscriptionFilterableQuery<T>>
-        extends BaseSubscriptionHandler<T, QUERY> implements
-        ISubscriptionTypeHandler<T> {
+        extends BaseSubscriptionHandler<T, QUERY>
+        implements ISubscriptionTypeHandler<T> {
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public T getByPendingSubscription(PendingSubscription pending)
             throws RegistryHandlerException {
-        return getByPendingSubscriptionId(RegistryUtil
-                .getRegistryObjectKey(pending));
+        return getByPendingSubscriptionId(
+                RegistryUtil.getRegistryObjectKey(pending));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public T getByPendingSubscriptionId(final String id)
             throws RegistryHandlerException {
@@ -99,7 +94,7 @@ public abstract class SubscriptionTypeHandler<T extends Subscription, QUERY exte
     /**
      * Overridden because subscriptions must also have their
      * {@link PendingSubscription} object deleted.
-     * 
+     *
      * @param username
      *            the username of the requester
      * @param ids
@@ -120,9 +115,6 @@ public abstract class SubscriptionTypeHandler<T extends Subscription, QUERY exte
         super.deleteByIds(username, ids);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public List<T> getActiveByDataSetAndProvider(String dataSetName,
             String providerName) throws RegistryHandlerException {
@@ -134,6 +126,20 @@ public abstract class SubscriptionTypeHandler<T extends Subscription, QUERY exte
         RegistryQueryResponse<T> response = registryHandler.getObjects(query);
 
         checkResponse(response, "getActiveByDataSetAndProvider");
+
+        return response.getResults();
+    }
+
+    @Override
+    public List<T> getByDataSetAndProvider(String dataSetName,
+            String providerName) throws RegistryHandlerException {
+        SubscriptionFilterableQuery<T> query = getQuery();
+        query.setDataSetName(dataSetName);
+        query.setProviderName(providerName);
+
+        RegistryQueryResponse<T> response = registryHandler.getObjects(query);
+
+        checkResponse(response, "getByDataSetAndProvider");
 
         return response.getResults();
     }

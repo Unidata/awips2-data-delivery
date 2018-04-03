@@ -25,9 +25,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.xml.bind.JAXBException;
@@ -39,6 +41,7 @@ import com.raytheon.uf.common.datadelivery.registry.LevelGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterGroup;
 import com.raytheon.uf.common.datadelivery.registry.ParameterLevelEntry;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
+import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.mapping.DatabaseLevelMapping;
@@ -64,9 +67,11 @@ import com.raytheon.uf.common.menus.xml.CommonToolbarSubmenuContribution;
 import com.raytheon.uf.common.menus.xml.MenuTemplateFile;
 import com.raytheon.uf.common.parameter.Parameter;
 import com.raytheon.uf.common.parameter.lookup.ParameterLookup;
+import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.util.StringUtil;
+import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
 
 /**
  * Utility class for maintaining the Volume Browser config files for
@@ -76,9 +81,11 @@ import com.raytheon.uf.common.util.StringUtil;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 06, 2017 6355       nabowle     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 06, 2017  6355     nabowle   Initial creation
+ * Apr 03, 2018  7240     tjensen   Change to group by model name instead of
+ *                                  subscription
  *
  * </pre>
  *
@@ -86,6 +93,8 @@ import com.raytheon.uf.common.util.StringUtil;
  */
 
 public class SubscriptionVBConfigFileUtil {
+
+    private static final String DD_MODEL_PREFIX = "DD_";
 
     private static final Logger statusHandler = LoggerFactory
             .getLogger(SubscriptionVBConfigFileUtil.class);
@@ -164,39 +173,116 @@ public class SubscriptionVBConfigFileUtil {
     }
 
     /**
-     * Create the Volume Browser configuration files for the given subscription.
-     * Any existing files will be overwritten or removed if no longer relevant.
+     * Update the Volume Browser config files for a given datasets. Information
+     * from any current subscriptions will be used to generate the necessary
+     * configuration information. If no subscriptions to the dataset exist, all
+     * configuration files for the dataset will be deleted.
      *
-     * @param sub
+     * @param dsName
+     *            Name of the DataSet
+     * @param provider
+     *            Name of the data provider
      */
-    public static void createSubscriptionFiles(Subscription<?, ?> sub) {
-        statusHandler
-                .info("Creating the localized Volume Browser config files for the subscription "
-                        + sub.getName());
-        createVolumeBrowserSource(sub);
-        createFieldsFiles(sub);
-        createPlanesFiles(sub);
-        createSubscriptionIndexXml(sub);
+    public static void updateDataSetFiles(String dsName, String provider) {
+
+        try {
+            List<Subscription> dsSubs = DataDeliveryHandlers
+                    .getSubscriptionHandler().getByDataSetAndProviderForSite(
+                            dsName, provider, RegistryIdUtil.getId());
+            if (!dsSubs.isEmpty()) {
+                statusHandler
+                        .info("Updating the localized Volume Browser config files for dataset '"
+                                + dsName + "'");
+                Map<String, ParameterGroup> combinedParameterGroups = combineParameterGroups(
+                        dsSubs);
+                boolean isVertical = checkForVerticalSubs(dsSubs);
+
+                String ddName = DD_MODEL_PREFIX + dsName;
+
+                createVolumeBrowserSource(ddName, isVertical);
+                createFieldsFiles(ddName, isVertical, combinedParameterGroups);
+                createPlanesFiles(ddName, isVertical, combinedParameterGroups);
+                createDataSetIndexXml(ddName, isVertical);
+            } else {
+                deleteDataSetFiles(dsName);
+            }
+        } catch (RegistryHandlerException e) {
+            statusHandler.error(
+                    "Error updating localized Volume Browser config files", e);
+        }
+
+    }
+
+    private static boolean checkForVerticalSubs(List<Subscription> dsSubs) {
+        boolean isVertical = false;
+        for (Subscription sub : dsSubs) {
+            if (sub.isVertical()) {
+                isVertical = true;
+                break;
+            }
+        }
+        return isVertical;
+    }
+
+    private static Map<String, ParameterGroup> combineParameterGroups(
+            List<Subscription> dsSubs) {
+        Map<String, ParameterGroup> combinedParameterGroups = new HashMap<>();
+        for (Subscription sub : dsSubs) {
+            Map<String, ParameterGroup> subPGs = sub.getParameterGroups();
+            for (Entry<String, ParameterGroup> pge : subPGs.entrySet()) {
+                String pgKey = pge.getKey();
+                ParameterGroup pg = pge.getValue();
+                ParameterGroup combinedPG = combinedParameterGroups.get(pgKey);
+                if (combinedPG == null) {
+                    combinedPG = new ParameterGroup(pg.getAbbrev(),
+                            pg.getUnits());
+                    combinedParameterGroups.put(combinedPG.getKey(),
+                            combinedPG);
+                }
+
+                for (LevelGroup lg : pg.getGroupedLevels().values()) {
+                    LevelGroup combinedLG = combinedPG
+                            .getLevelGroup(lg.getKey());
+                    if (combinedLG == null) {
+                        combinedLG = new LevelGroup(lg.getName(),
+                                lg.getUnits());
+                        combinedLG.setMasterKey(lg.getMasterKey());
+                        combinedPG.putLevelGroup(combinedLG);
+                    }
+
+                    for (ParameterLevelEntry ple : lg.getLevels()) {
+                        List<ParameterLevelEntry> combinedLevels = combinedLG
+                                .getLevels();
+                        if (!combinedLevels.contains(ple)) {
+                            combinedLevels.add(new ParameterLevelEntry(ple));
+                        }
+                    }
+                }
+            }
+        }
+        return combinedParameterGroups;
     }
 
     /**
      * Delete all of the CONFIGURED localized Volume Browser config files for a
-     * removed subscription.
+     * given dataset.
      *
-     * @param subName
-     *            The subscription name.
+     * @param dsName
+     *            The dataset name.
      */
-    public static void deleteSubscriptionFiles(String subName) {
+    private static void deleteDataSetFiles(String dsName) {
+        String ddName = DD_MODEL_PREFIX + dsName;
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.COMMON_STATIC, LocalizationLevel.CONFIGURED);
-        ILocalizationFile localizationDir = pathMgr.getLocalizationFile(context,
-                SubscriptionVBConfigFileUtil.BASE_SUB_PATH + subName);
 
+        // Remove localization dir
+        ILocalizationFile localizationDir = pathMgr.getLocalizationFile(context,
+                SubscriptionVBConfigFileUtil.BASE_SUB_PATH + ddName);
         if (localizationDir.exists()) {
             statusHandler
-                    .info("Deleting the localized Volume Browser config files for the removed subscription "
-                            + subName);
+                    .info("Deleting the localized Volume Browser config files for "
+                            + dsName);
 
             ILocalizationFile[] files = PathManagerFactory.getPathManager()
                     .listFiles(context, localizationDir.getPath(), null, false,
@@ -206,22 +292,22 @@ public class SubscriptionVBConfigFileUtil {
                     lf.delete();
                 } catch (LocalizationException e) {
                     statusHandler.warn("Unable to delete the file "
-                            + lf.getPath() + " for the removed subscription "
-                            + subName + ".", e);
+                            + lf.getPath() + " for " + dsName + ".", e);
                 }
             }
             try {
                 localizationDir.delete();
             } catch (LocalizationException e) {
                 statusHandler.warn("Unable to delete the directory "
-                        + localizationDir.getPath()
-                        + " for the removed subscription " + subName + ".", e);
+                        + localizationDir.getPath() + " for " + dsName + ".",
+                        e);
             }
         }
 
+        // Remove Level Mapping file
         ILocalizationFile levelMappingFile = pathMgr.getLocalizationFile(
                 context, SubscriptionVBConfigFileUtil.LEVEL_MAPPINGS_PATH
-                        + subName + ".xml");
+                        + ddName + ".xml");
         if (levelMappingFile.exists()) {
             try {
                 levelMappingFile.delete();
@@ -231,10 +317,11 @@ public class SubscriptionVBConfigFileUtil {
             }
         }
 
+        // Remove Volume Browser Sources
         context = pathMgr.getContext(LocalizationType.CAVE_STATIC,
                 LocalizationLevel.CONFIGURED);
         ILocalizationFile vbSourcesFile = pathMgr.getLocalizationFile(context,
-                SubscriptionVBConfigFileUtil.VBSOURCES_PATH + subName + ".xml");
+                SubscriptionVBConfigFileUtil.VBSOURCES_PATH + ddName + ".xml");
         if (vbSourcesFile.exists()) {
             try {
                 vbSourcesFile.delete();
@@ -247,23 +334,24 @@ public class SubscriptionVBConfigFileUtil {
     }
 
     /**
-     * Create the VBSource config file for the given subscription. An existing
-     * config file for this subscription will be overwritten.
+     * Create the VBSource config file for the given model. An existing config
+     * file for this model will be overwritten.
      *
      * @param sub
      */
-    private static void createVolumeBrowserSource(Subscription<?, ?> sub) {
+    private static void createVolumeBrowserSource(String ddName,
+            boolean isVertical) {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.CAVE_STATIC, LocalizationLevel.CONFIGURED);
         ILocalizationFile vbSourceFile = pathMgr.getLocalizationFile(context,
-                VBSOURCES_PATH + sub.getName() + ".xml");
+                VBSOURCES_PATH + ddName + ".xml");
 
         VbSource source = new VbSource();
-        source.setKey(sub.getName());
+        source.setKey(ddName);
         source.setCategory("DataDelivery");
         List<ViewMenu> views;
-        if (sub.isVertical()) {
+        if (isVertical) {
             views = Arrays.asList(ViewMenu.values());
         } else {
             views = new ArrayList<>();
@@ -282,31 +370,31 @@ public class SubscriptionVBConfigFileUtil {
         } catch (JAXBException e) {
             statusHandler
                     .warn("Unable to marshal the VolumeBrowser index file for "
-                            + sub.getName(), e);
+                            + ddName, e);
         }
     }
 
-    private static String getFilePath(Subscription<?, ?> sub, String file) {
-        return BASE_SUB_PATH + sub.getName()
-                + (file.startsWith(IPathManager.SEPARATOR) ? ""
-                        : IPathManager.SEPARATOR)
-                + file;
+    private static String getFilePath(String ddName, String file) {
+        return BASE_SUB_PATH + ddName + (file.startsWith(IPathManager.SEPARATOR)
+                ? "" : IPathManager.SEPARATOR) + file;
     }
 
     /**
-     * Creates the index.xml for the given subscription. An existing index.xml
-     * file for this subscription will be overwritten.
+     * Creates the index.xml for the given model. An existing index.xml file for
+     * this model will be overwritten.
      *
-     * @param sub
-     * @throws LocalizationException
-     * @throws IOException
+     * @param ddName
+     *            Name of the DD Dataset
+     * @param isVertical
+     *            If subscriptions for this dataset were marked as vertical.
      */
-    private static void createSubscriptionIndexXml(Subscription<?, ?> sub) {
+    private static void createDataSetIndexXml(String ddName,
+            boolean isVertical) {
         // Fields
 
         List<CommonIncludeMenuItem> includes = new ArrayList<>();
         CommonIncludeMenuItem cmi;
-        String path = getFilePath(sub, PVTS_FIELDS_FILE);
+        String path = getFilePath(ddName, PVTS_FIELDS_FILE);
 
         /*
          * Verify that the expected file exists. If it doesn't, something went
@@ -320,8 +408,8 @@ public class SubscriptionVBConfigFileUtil {
             includes.add(cmi);
         }
 
-        if (sub.isVertical()) {
-            path = getFilePath(sub, SOUNDING_FIELDS_FILE);
+        if (isVertical) {
+            path = getFilePath(ddName, SOUNDING_FIELDS_FILE);
             if (fileExists(path)) {
                 cmi = new CommonIncludeMenuItem();
                 cmi.fileName = new File(path);
@@ -329,7 +417,7 @@ public class SubscriptionVBConfigFileUtil {
                 includes.add(cmi);
             }
 
-            path = getFilePath(sub, TIMEHEIGHT_FIELDS_FILE);
+            path = getFilePath(ddName, TIMEHEIGHT_FIELDS_FILE);
             if (fileExists(path)) {
                 cmi = new CommonIncludeMenuItem();
                 cmi.fileName = new File(path);
@@ -337,7 +425,7 @@ public class SubscriptionVBConfigFileUtil {
                 includes.add(cmi);
             }
 
-            path = getFilePath(sub, XSECT_FIELDS_FILE);
+            path = getFilePath(ddName, XSECT_FIELDS_FILE);
             if (fileExists(path)) {
                 cmi = new CommonIncludeMenuItem();
                 cmi.fileName = new File(path);
@@ -348,7 +436,7 @@ public class SubscriptionVBConfigFileUtil {
 
         // Planes
 
-        path = getFilePath(sub, PV_PLANES_FILE);
+        path = getFilePath(ddName, PV_PLANES_FILE);
         if (fileExists(path)) {
             cmi = new CommonIncludeMenuItem();
             cmi.fileName = new File(path);
@@ -356,8 +444,8 @@ public class SubscriptionVBConfigFileUtil {
             includes.add(cmi);
         }
 
-        if (sub.isVertical()) {
-            path = getFilePath(sub, PV_SPACE_PLANES_FILE);
+        if (isVertical) {
+            path = getFilePath(ddName, PV_SPACE_PLANES_FILE);
             if (fileExists(path)) {
                 cmi = new CommonIncludeMenuItem();
                 cmi.fileName = new File(path);
@@ -365,7 +453,7 @@ public class SubscriptionVBConfigFileUtil {
                 includes.add(cmi);
             }
 
-            path = getFilePath(sub, XSECT_SPACE_PLANES_FILE);
+            path = getFilePath(ddName, XSECT_SPACE_PLANES_FILE);
             if (fileExists(path)) {
                 cmi = new CommonIncludeMenuItem();
                 cmi.fileName = new File(path);
@@ -373,7 +461,7 @@ public class SubscriptionVBConfigFileUtil {
                 includes.add(cmi);
             }
 
-            path = getFilePath(sub, XSECT_TIME_PLANES_FILE);
+            path = getFilePath(ddName, XSECT_TIME_PLANES_FILE);
             if (fileExists(path)) {
                 cmi = new CommonIncludeMenuItem();
                 cmi.fileName = new File(path);
@@ -384,13 +472,12 @@ public class SubscriptionVBConfigFileUtil {
 
         /*
          * Something went wrong when creating the includes files. Do not create
-         * an index.xml file for this subscription to avoid breaking the
-         * VolumeBrowser.
+         * an index.xml file for this model to avoid breaking the VolumeBrowser.
          */
         if (includes.isEmpty()) {
             statusHandler
-                    .warn("The included fields and planes files were not created. Skipping creating the index.xml for the Subscription "
-                            + sub.getName());
+                    .warn("The included fields and planes files were not created. Skipping creating the index.xml for "
+                            + ddName);
             return;
         }
 
@@ -401,7 +488,7 @@ public class SubscriptionVBConfigFileUtil {
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.COMMON_STATIC, LocalizationLevel.CONFIGURED);
         ILocalizationFile indexFile = pathMgr.getLocalizationFile(context,
-                getFilePath(sub, "index.xml"));
+                getFilePath(ddName, "index.xml"));
 
         try {
             String contents = jaxb.marshalToXml(mcf);
@@ -409,7 +496,7 @@ public class SubscriptionVBConfigFileUtil {
         } catch (JAXBException e) {
             statusHandler
                     .warn("Unable to marshal the VolumeBrowser index file for "
-                            + sub.getName(), e);
+                            + ddName, e);
         }
 
     }
@@ -425,19 +512,18 @@ public class SubscriptionVBConfigFileUtil {
 
     /**
      * Create the appropriate fields files for the Volume Browser for this
-     * Subscription. Existing fields files for this Subscription will be
-     * destroyed.
+     * model. Existing fields files for this model will be destroyed.
      *
      * @param sub
      */
-    private static void createFieldsFiles(Subscription<?, ?> sub) {
+    private static void createFieldsFiles(String ddName, boolean isVertical,
+            Map<String, ParameterGroup> paramGroups) {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.COMMON_STATIC, LocalizationLevel.CONFIGURED);
 
         List<CommonMenuContribution> contributions = new ArrayList<>();
 
-        Map<String, ParameterGroup> paramGroups = sub.getParameterGroups();
         for (ParameterGroup pg : paramGroups.values()) {
             CommonMenuContribution cmc = new CommonMenuContribution();
             Parameter parm = ParameterLookup.getInstance()
@@ -461,7 +547,7 @@ public class SubscriptionVBConfigFileUtil {
         });
 
         CommonToolbarSubmenuContribution ctsc = new CommonToolbarSubmenuContribution();
-        ctsc.menuText = sub.getName();
+        ctsc.menuText = ddName;
         ctsc.contributions = contributions
                 .toArray(new CommonAbstractMenuContribution[0]);
 
@@ -472,49 +558,50 @@ public class SubscriptionVBConfigFileUtil {
 
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, PVTS_FIELDS_FILE)),
+                            getFilePath(ddName, PVTS_FIELDS_FILE)),
                     contentsStr, true);
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, SOUNDING_FIELDS_FILE)),
-                    contentsStr, sub.isVertical());
+                            getFilePath(ddName, SOUNDING_FIELDS_FILE)),
+                    contentsStr, isVertical);
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, TIMEHEIGHT_FIELDS_FILE)),
-                    contentsStr, sub.isVertical());
+                            getFilePath(ddName, TIMEHEIGHT_FIELDS_FILE)),
+                    contentsStr, isVertical);
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, XSECT_FIELDS_FILE)),
-                    contentsStr, sub.isVertical());
+                            getFilePath(ddName, XSECT_FIELDS_FILE)),
+                    contentsStr, isVertical);
         } catch (JAXBException e) {
-            statusHandler.warn("Unable to marshal the VolumeBrowser fields for "
-                    + sub.getName(), e);
+            statusHandler.warn(
+                    "Unable to marshal the VolumeBrowser fields for " + ddName,
+                    e);
         }
     }
 
     /**
      * Create the appropriate planes and level mapping files for the Volume
-     * Browser for this Subscription. Existing planes and level mapping files
-     * for this Subscription will be destroyed.
+     * Browser for this model. Existing planes and level mapping files for this
+     * model will be destroyed.
      *
      * @param sub
      */
-    private static void createPlanesFiles(Subscription<?, ?> sub) {
+    private static void createPlanesFiles(String ddName, boolean isVertical,
+            Map<String, ParameterGroup> parameterGroups) {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.COMMON_STATIC, LocalizationLevel.CONFIGURED);
 
-        Map<String, ParameterGroup> paramGroups = sub.getParameterGroups();
         Set<Level> levels = new HashSet<>();
-        for (ParameterGroup pg : paramGroups.values()) {
+        for (ParameterGroup pg : parameterGroups.values()) {
             for (LevelGroup lg : pg.getGroupedLevels().values()) {
                 String masterLevelKey = lg.getMasterKey();
 
                 List<ParameterLevelEntry> lgLevels = lg.getLevels();
                 if (lgLevels == null || lgLevels.isEmpty()) {
                     statusHandler
-                            .warn("No parameter level entries are available for subscription "
-                                    + sub.getName() + ", parameter group "
+                            .warn("No parameter level entries are available for "
+                                    + ddName + ", parameter group "
                                     + pg.getAbbrev() + ", levelGroup "
                                     + lg.getName()
                                     + ". Multiple provider parameters may be mapped to the same Parameter.");
@@ -552,8 +639,7 @@ public class SubscriptionVBConfigFileUtil {
 
                     if (level == null) {
                         statusHandler.warn("Unable to determine the plane for '"
-                                + ple.getDescription() + "' for Subscription "
-                                + sub.getName());
+                                + ple.getDescription() + "' for " + ddName);
                         continue;
                     }
 
@@ -563,10 +649,8 @@ public class SubscriptionVBConfigFileUtil {
         }
 
         if (levels.isEmpty()) {
-            statusHandler
-                    .warn("Unable to determine any planes for Subscription "
-                            + sub.getName()
-                            + ". The planes files cannot be created.");
+            statusHandler.warn("Unable to determine any planes for  " + ddName
+                    + ". The planes files cannot be created.");
         }
 
         /*
@@ -633,7 +717,7 @@ public class SubscriptionVBConfigFileUtil {
         }
 
         CommonToolbarSubmenuContribution ctsc = new CommonToolbarSubmenuContribution();
-        ctsc.menuText = sub.getName();
+        ctsc.menuText = ddName;
         ctsc.contributions = contributions
                 .toArray(new CommonAbstractMenuContribution[0]);
 
@@ -645,28 +729,29 @@ public class SubscriptionVBConfigFileUtil {
 
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, PV_PLANES_FILE)),
+                            getFilePath(ddName, PV_PLANES_FILE)),
                     contentsStr, true);
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, PV_SPACE_PLANES_FILE)),
-                    contentsStr, sub.isVertical());
+                            getFilePath(ddName, PV_SPACE_PLANES_FILE)),
+                    contentsStr, isVertical);
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, XSECT_SPACE_PLANES_FILE)),
-                    contentsStr, sub.isVertical());
+                            getFilePath(ddName, XSECT_SPACE_PLANES_FILE)),
+                    contentsStr, isVertical);
             writeOrDeleteFile(
                     pathMgr.getLocalizationFile(context,
-                            getFilePath(sub, XSECT_TIME_PLANES_FILE)),
-                    contentsStr, sub.isVertical());
+                            getFilePath(ddName, XSECT_TIME_PLANES_FILE)),
+                    contentsStr, isVertical);
 
         } catch (JAXBException e) {
-            statusHandler.warn("Unable to marshal the VolumeBrowser planes for "
-                    + sub.getName(), e);
+            statusHandler.warn(
+                    "Unable to marshal the VolumeBrowser planes for " + ddName,
+                    e);
         }
 
         ILocalizationFile levelMappingFile = pathMgr.getLocalizationFile(
-                context, LEVEL_MAPPINGS_PATH + sub.getName() + ".xml");
+                context, LEVEL_MAPPINGS_PATH + ddName + ".xml");
         if (!levelMappings.isEmpty()) {
             LevelMappingFile lmf = new LevelMappingFile();
             lmf.setLevelMappingFile(levelMappings);
@@ -694,6 +779,8 @@ public class SubscriptionVBConfigFileUtil {
         try {
             return Double.parseDouble(levelValue);
         } catch (Exception e) {
+            statusHandler.warn("Unable to parse valid level value from '"
+                    + levelValue + "'.", e);
             return Level.getInvalidLevelValue();
         }
     }
