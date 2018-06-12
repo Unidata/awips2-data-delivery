@@ -85,6 +85,8 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  * Jun 23, 2017  6322     tgurney   ftpsConnect throws Exception
  * Jun 29, 2017  6130     tjensen   Add visibility to
  *                                  separateRemoteFileDirectoryAndFileName()
+ * Jun 12, 2018  7320     rjpeter   Update ftp drop dir handling and added
+ *                                  mkdirs call.
  *
  * </pre>
  *
@@ -101,13 +103,30 @@ public class PDAConnectionUtil {
 
     private static final Pattern PROTOCOL_SUFFIX = Pattern.compile("://");
 
-    private static ServiceConfig serviceConfig;
+    private static final ServiceConfig serviceConfig;
 
-    private static SecurityConfiguration sc;
+    private static final SecurityConfiguration sc;
+
+    private static final String FTP_DROP_DIR;
+
     static {
         serviceConfig = HarvesterServiceManager.getInstance()
                 .getServiceConfig(ServiceType.PDA);
-        sc = getSecurityConfiguration();
+        try {
+            sc = new SecurityConfiguration();
+        } catch (IOException ioe) {
+            throw new RuntimeException(
+                    "Couldn't access the security configuration!", ioe);
+        }
+
+        File localDir = new File(
+                System.getProperty("DATA_ARCHIVE_ROOT") + File.separator
+                        + "data_delivery" + File.separator + "transfer");
+        FTP_DROP_DIR = localDir.getAbsolutePath();
+
+        if (!localDir.mkdirs()) {
+            logger.error("Unable to make ftp drop directory: " + FTP_DROP_DIR);
+        }
     }
 
     /***
@@ -169,10 +188,7 @@ public class PDAConnectionUtil {
         rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
 
         logger.info("rootUrl: " + rootUrl);
-        String localFileDirectory = serviceConfig
-                .getConstantValue("FTPS_DROP_DIR");
-        localFileName = localFileDirectory + File.separator
-                + remotePathAndFile[1];
+        localFileName = FTP_DROP_DIR + File.separator + remotePathAndFile[1];
         logger.info("Local File Name: " + localFileName);
         int port = new Integer(serviceConfig.getConstantValue("PORT"))
                 .intValue();
@@ -277,11 +293,16 @@ public class PDAConnectionUtil {
                 } else {
                     cis = new CountingInputStream(is);
                 }
-                IOUtils.copy(cis, fos);
+
+                if (FTPReply.isPositiveIntermediate(ftp.getReplyCode())) {
+                    IOUtils.copy(cis, fos);
+                } else {
+                    logger.error("Failed retrieving file stream for "
+                            + remoteFilename);
+                }
             }
 
-            reply = ftp.getReplyCode();
-            if (!FTPReply.isPositiveCompletion(reply)) {
+            if (!ftp.completePendingCommand()) {
                 throw new IOException("Retrieval was unsuccessful for "
                         + remoteFilename + " Reply: " + ftp.getReplyString());
             }
@@ -440,22 +461,4 @@ public class PDAConnectionUtil {
         return chunks2[0];
     }
 
-    /**
-     * Get the active security configuration
-     *
-     * @return
-     */
-    private static SecurityConfiguration getSecurityConfiguration() {
-        synchronized (PDAConnectionUtil.class) {
-            if (sc == null) {
-                try {
-                    sc = new SecurityConfiguration();
-                } catch (IOException ioe) {
-                    logger.error("Couldn't access the security configuration!",
-                            ioe);
-                }
-            }
-        }
-        return sc;
-    }
 }
