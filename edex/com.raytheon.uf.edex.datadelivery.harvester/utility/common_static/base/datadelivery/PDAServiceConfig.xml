@@ -13,8 +13,6 @@
     <!-- FTP variant used by PDA -->
     <constant name="CONN_TYPE" value="FTPS" />
     <constant name="PORT" value="21" />
-    <!-- Directory camel drops FTP files into for ingest delivery. -->
-    <constant name="FTPS_DROP_DIR" value="data_delivery" />
     <constant name="DEFAULT_MULTIPLIER" value="0.5" />
     <constant name="DEFAULT_RUN_INCREMENT" value="1" />
     <constant name="DEFAULT_OFFSET" value="30" />

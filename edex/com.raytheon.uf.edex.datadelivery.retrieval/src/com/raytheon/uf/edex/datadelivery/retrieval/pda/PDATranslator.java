@@ -1,4 +1,3 @@
-
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -29,12 +28,9 @@ import org.apache.commons.io.FileUtils;
 
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
-import com.raytheon.uf.common.datadelivery.registry.Provider.ServiceType;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.VersionData;
-import com.raytheon.uf.common.datadelivery.retrieval.util.HarvesterServiceManager;
 import com.raytheon.uf.common.datadelivery.retrieval.xml.Retrieval;
-import com.raytheon.uf.common.datadelivery.retrieval.xml.ServiceConfig;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.time.DataTime;
@@ -62,6 +58,7 @@ import com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist.DecodeInfo;
  * May 22, 2017  6130     tjensen   Update for Polar products
  * Jul 25, 2017  6186     rjpeter   Use Retrieval
  * Nov 15, 2017  6498     tjensen   Use inherited logger for logging
+ * Jun 12, 2018  7320     rjpeter   Update store directory.
  *
  * </pre>
  *
@@ -121,13 +118,9 @@ public class PDATranslator
                 // Write file to data store
                 Path filePath = Paths.get(responseFileName);
 
-                ServiceConfig serviceConfig = HarvesterServiceManager
-                        .getInstance().getServiceConfig(ServiceType.PDA);
                 storeFileName = System.getProperty("DATA_ARCHIVE_ROOT")
-                        + File.separator
-                        + serviceConfig.getConstantValue("FTPS_DROP_DIR")
-                        + File.separator + dataSet.getProviderName()
-                        + File.separator
+                        + File.separator + "data_delivery" + File.separator
+                        + dataSet.getProviderName() + File.separator
                         + dataSet.getDataSetName().replaceAll(" +", "_")
                         + File.separator + filePath.getFileName();
 

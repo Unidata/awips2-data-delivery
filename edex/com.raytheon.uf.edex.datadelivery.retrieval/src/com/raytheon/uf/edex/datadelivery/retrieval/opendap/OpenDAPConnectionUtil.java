@@ -22,7 +22,6 @@ package com.raytheon.uf.edex.datadelivery.retrieval.opendap;
 import java.io.FileNotFoundException;
 
 import com.raytheon.opendap.InputStreamWrapper;
-import com.raytheon.uf.common.comm.ProxyConfiguration;
 
 /**
  * Utilities for datadelivery connections.
@@ -31,18 +30,21 @@ import com.raytheon.uf.common.comm.ProxyConfiguration;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 28, 2012 819        djohnson     Initial creation
- * Apr 01, 2013 1786       mpduff       Pulled proxy settings out to util class.
- * May 12, 2013 753        dhladky      Expanded for use with other connection types
- * Aug 30, 2013  2314      mpduff       Added null checks.
- * Nov 12, 2013  *         dhladky      Fixed copy paste error
- * 6/18/2014    1712        bphillip    Updated Proxy configuration
- * Apr 14, 2015 4400       dhladky      Upgraded to DAP2 with backward compatibility.
- * Jun 06, 2017 6222       tgurney      Use token bucket to rate-limit requests
- * Jun 22, 2017 6222       tgurney      Receive stream wrapper from caller
- * Sep 21, 2017 6441       tgurney      Remove references to dods-1.1.7
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 28, 2012  819      djohnson  Initial creation
+ * Apr 01, 2013  1786     mpduff    Pulled proxy settings out to util class.
+ * May 12, 2013  753      dhladky   Expanded for use with other connection types
+ * Aug 30, 2013  2314     mpduff    Added null checks.
+ * Nov 12, 2013           dhladky   Fixed copy paste error
+ * Jun 18, 2014  1712     bphillip  Updated Proxy configuration
+ * Apr 14, 2015  4400     dhladky   Upgraded to DAP2 with backward
+ *                                  compatibility.
+ * Jun 06, 2017  6222     tgurney   Use token bucket to rate-limit requests
+ * Jun 22, 2017  6222     tgurney   Receive stream wrapper from caller
+ * Sep 21, 2017  6441     tgurney   Remove references to dods-1.1.7
+ * Jun 12, 2018  7320     rjpeter   Fixed passing of streamWrapper.
+ *
  * </pre>
  *
  * @author djohnson
@@ -74,12 +76,7 @@ public class OpenDAPConnectionUtil {
     public static opendap.dap.DConnect getDConnectDAP2(String urlString,
             InputStreamWrapper streamWrapper) throws FileNotFoundException {
         // new DAP2-serialized version
-        if (ProxyConfiguration.HTTP_PROXY_DEFINED) {
-            return new opendap.dap.DConnect(urlString,
-                    ProxyConfiguration.getHttpProxyHost(),
-                    ProxyConfiguration.getHttpProxyPortString(), streamWrapper);
-        }
-        return new opendap.dap.DConnect(urlString);
+        return new opendap.dap.DConnect(urlString, streamWrapper);
     }
 
     /**
