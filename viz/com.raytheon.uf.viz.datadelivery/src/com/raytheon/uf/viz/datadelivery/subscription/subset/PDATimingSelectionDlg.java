@@ -62,6 +62,7 @@ import com.raytheon.viz.ui.widgets.DateTimeEntry;
  * Jun 16, 2016  5683     tjensen   Change Cancel to return PDATimeSelection
  * Aug 17, 2016  5772     rjpeter   Always return selected time.
  * Oct 13, 2017  6461     tgurney   Replace single time with time range
+ * Jul 12, 2018  7358     tjensen   Fixed time range selection
  *
  * </pre>
  *
@@ -84,29 +85,28 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     @SuppressWarnings("rawtypes")
     private final Subscription subscription;
 
-    /** List of dates/cycles */
-    private SortedSet<Date> dateCycleList;
+    /** List of dates/cycles sorted oldest to newest */
+    private final SortedSet<Date> dateCycleList;
 
     /**
      * Constructor
-     *
+     * 
      * @param parentShell
-     * @param dataset
+     * @param oldestToNewest
      * @param subscription
-     * @param dateStringToDateMap
      */
     public PDATimingSelectionDlg(Shell parentShell,
-            SortedSet<Date> newestToOldest,
+            SortedSet<Date> oldestToNewest,
             @SuppressWarnings("rawtypes") Subscription subscription) {
         super(parentShell, SWT.DIALOG_TRIM);
         setText("Select Time Range");
         this.subscription = subscription;
 
-        if (newestToOldest == null || newestToOldest.isEmpty()) {
+        if (oldestToNewest == null || oldestToNewest.isEmpty()) {
             throw new IllegalArgumentException(
                     "No data is available for data set.");
         }
-        this.dateCycleList = newestToOldest;
+        this.dateCycleList = oldestToNewest;
     }
 
     /**
@@ -160,7 +160,7 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
         startTimeEntry.setDate(startDate.getTime());
 
         Calendar endDate = Calendar.getInstance();
-        endDate.setTime(dateCycleList.first());
+        endDate.setTime(dateCycleList.last());
         // Round up to the next minute
         endDate.add(Calendar.SECOND, 60 - endDate.get(Calendar.SECOND));
         endTimeEntry.setDate(endDate.getTime());
@@ -231,11 +231,11 @@ public class PDATimingSelectionDlg extends CaveSWTDialog {
     @SuppressWarnings("unchecked")
     private void handleOk() {
         PDATimeSelection data = new PDATimeSelection();
-        if (useLatestChk.getEnabled()) {
+        if (useLatestChk.getSelection()) {
             data.setLatest(true);
-            startTimeEntry.setDate(dateCycleList.first());
+            startTimeEntry.setDate(dateCycleList.last());
             Calendar endDateCal = Calendar.getInstance();
-            endDateCal.setTime(dateCycleList.first());
+            endDateCal.setTime(dateCycleList.last());
             // Round up to the next minute
             endDateCal.add(Calendar.SECOND,
                     60 - endDateCal.get(Calendar.SECOND));
