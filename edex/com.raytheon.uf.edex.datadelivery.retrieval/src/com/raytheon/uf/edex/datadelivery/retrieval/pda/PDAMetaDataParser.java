@@ -89,6 +89,8 @@ import net.opengis.ows.v_1_0_0.BoundingBoxType;
  * Oct 19, 2017  6465     tjensen   Rename Collections to URLParserInfo
  * Oct 23, 2017  6185     bsteffen  Use area and resolution to get sat provider.
  * Nov 15, 2017  6498     tjensen   Removed unneeded parameters from metadata
+ * Jul 31, 2018  7358     tjensen   Ensure metadata ParameterGroups aren't
+ *                                  modified by storeDataSet
  *
  * </pre>
  *
@@ -231,7 +233,15 @@ public class PDAMetaDataParser extends MetaDataParser<BriefRecordType> {
                 pdaDataSet.setDataSetType(DataType.PDA);
                 pdaDataSet.setTime(time);
                 pdaDataSet.setArrivalTime(arrivalTime.getTime());
-                pdaDataSet.setParameterGroups(parameterGroups);
+
+                /*
+                 * Create a copy of parameterGroups to pass in so potential
+                 * combining done when storing doesn't modify our map
+                 */
+                Map<String, ParameterGroup> dsParameterGroups = new HashMap<>(
+                        parameterGroups.size());
+                dsParameterGroups.putAll(parameterGroups);
+                pdaDataSet.setParameterGroups(dsParameterGroups);
 
                 // set the coverage
                 pdaDataSet.setCoverage(coverage);
