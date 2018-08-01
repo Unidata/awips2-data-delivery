@@ -85,6 +85,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 12, 2017  6440     bsteffen  Refresh level lookups.
  * Oct 17, 2017  6465     tjensen   Rename Collections to URLParserInfo. Add
  *                                  CrawlerDates. Improved Locking
+ * Jul 11, 2018  7358     tjensen   Added null checking
  *
  * </pre>
  *
@@ -301,11 +302,20 @@ public class LookupManagerUtils {
     public static void populateParameterRegexes(ParameterRegexes tmpRegex,
             Map<String, ParameterNameRegex> newParamNameRegexes,
             Map<String, ParameterLevelRegex> newParamLevelRegexes) {
-        for (ParameterNameRegex nameRegex : tmpRegex.getNameRegexes()) {
-            newParamNameRegexes.put(nameRegex.getId(), nameRegex);
-        }
-        for (ParameterLevelRegex levelRegex : tmpRegex.getLevelRegexes()) {
-            newParamLevelRegexes.put(levelRegex.getId(), levelRegex);
+        if (tmpRegex != null) {
+            List<ParameterNameRegex> nameRegexes = tmpRegex.getNameRegexes();
+            if (nameRegexes != null && !nameRegexes.isEmpty()) {
+                for (ParameterNameRegex nameRegex : nameRegexes) {
+                    newParamNameRegexes.put(nameRegex.getId(), nameRegex);
+                }
+            }
+
+            List<ParameterLevelRegex> levelRegexes = tmpRegex.getLevelRegexes();
+            if (levelRegexes != null && !levelRegexes.isEmpty()) {
+                for (ParameterLevelRegex levelRegex : levelRegexes) {
+                    newParamLevelRegexes.put(levelRegex.getId(), levelRegex);
+                }
+            }
         }
     }
 
