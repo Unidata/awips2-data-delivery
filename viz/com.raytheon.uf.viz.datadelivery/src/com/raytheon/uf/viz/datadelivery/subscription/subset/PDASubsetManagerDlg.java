@@ -94,6 +94,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  *                                  subs created
  * Dec 19, 2017  6523     tjensen   Changes for VerticalXML updates
  * Mar 01, 2018  7204     nabowle   Add subEnvelope to constructor. Give to SpatialTab.
+ * Jul 12, 2018  7358     tjensen   Set URL on Adhoc subscriptions
  *
  * </pre>
  *
@@ -307,11 +308,11 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
             return;
         }
 
-        List<Time> times = pdaMetaDatas.stream()
+        List<PDADataSetMetaData> selectedMD = pdaMetaDatas.stream()
                 .filter(m -> selection.getTimeRange().contains(m.getDate()))
-                .map(m -> m.getTime()).collect(Collectors.toList());
+                .collect(Collectors.toList());
 
-        if (times == null || times.isEmpty()) {
+        if (selectedMD == null || selectedMD.isEmpty()) {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, POPUP_TITLE,
                     "No data were found in the selected time range.");
             return;
@@ -319,9 +320,9 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
 
         int result = DataDeliveryUtils.showYesNoMessage(getShell(),
                 "Confirm Query Creation",
-                times.size() + " product(s) found for dataset "
-                        + dataSet.getDataSetName()
-                        + " in specified time range. Continue?");
+                selectedMD.size() + " product(s) found for dataset "
+                        + dataSet.getDataSetName() + " in selected range of "
+                        + selection.getTimeRange().toString() + ". Continue?");
 
         if (result != SWT.YES) {
             return;
@@ -331,18 +332,20 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
          * Subs will be named name-1, name-2, ... Make sure these names are not
          * already being used
          */
-        for (int i = 0; i < times.size(); i++) {
+        for (int i = 0; i < selectedMD.size(); i++) {
             if (querySubExists(getNameText() + "-" + i)) {
                 return;
             }
         }
         StringBuilder subListMessage = new StringBuilder();
         int subsCreated = 0;
-        for (int i = 0; i < times.size(); i++) {
+        for (int i = 0; i < selectedMD.size(); i++) {
             AdhocSubscription as = createSubscription(new AdhocSubscription(),
                     Network.OPSNET);
             as.setName(getNameText() + "-" + (i + 1));
-            as.setTime(times.get(i));
+            PDADataSetMetaData pdaDataSetMetaData = selectedMD.get(i);
+            as.setTime(pdaDataSetMetaData.getTime());
+            as.setUrl(pdaDataSetMetaData.getUrl());
             String thisMessage = storeQuerySub(as, false);
             subListMessage.append("\n" + as.getName() + ": ");
             if (thisMessage != null) {
@@ -353,7 +356,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
             }
         }
         DataDeliveryUtils.showMessage(getShell(), SWT.OK, "Query Scheduled",
-                subsCreated + "/" + times.size()
+                subsCreated + "/" + selectedMD.size()
                         + " queries successfully created." + subListMessage);
     }
 

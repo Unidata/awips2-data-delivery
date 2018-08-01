@@ -87,6 +87,7 @@ import com.raytheon.uf.edex.security.SecurityConfiguration;
  *                                  separateRemoteFileDirectoryAndFileName()
  * Jun 12, 2018  7320     rjpeter   Update ftp drop dir handling and added
  *                                  mkdirs call.
+ * Jul 12, 2018  7358     tjensen   Fix reply code handling and improve logging
  *
  * </pre>
  *
@@ -294,11 +295,12 @@ public class PDAConnectionUtil {
                     cis = new CountingInputStream(is);
                 }
 
-                if (FTPReply.isPositiveIntermediate(ftp.getReplyCode())) {
+                int replyCode = ftp.getReplyCode();
+                if (FTPReply.isPositivePreliminary(replyCode)) {
                     IOUtils.copy(cis, fos);
                 } else {
                     logger.error("Failed retrieving file stream for "
-                            + remoteFilename);
+                            + remoteFilename + ". Reply Code: " + replyCode);
                 }
             }
 
