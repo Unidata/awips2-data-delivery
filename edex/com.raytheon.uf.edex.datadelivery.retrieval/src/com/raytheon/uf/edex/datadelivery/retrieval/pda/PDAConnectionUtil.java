@@ -124,10 +124,6 @@ public class PDAConnectionUtil {
                 System.getProperty("DATA_ARCHIVE_ROOT") + File.separator
                         + "data_delivery" + File.separator + "transfer");
         FTP_DROP_DIR = localDir.getAbsolutePath();
-
-        if (!localDir.mkdirs()) {
-            logger.error("Unable to make ftp drop directory: " + FTP_DROP_DIR);
-        }
     }
 
     /***
@@ -187,24 +183,38 @@ public class PDAConnectionUtil {
         // Do this after you separate!
         String rootUrl = serviceConfig.getConstantValue("FTPS_REQUEST_URL");
         rootUrl = removeProtocolsAndFilesFromRootUrl(rootUrl);
-
         logger.info("rootUrl: " + rootUrl);
-        localFileName = FTP_DROP_DIR + File.separator + remotePathAndFile[1];
-        logger.info("Local File Name: " + localFileName);
-        int port = new Integer(serviceConfig.getConstantValue("PORT"))
-                .intValue();
-        boolean doBinaryTransfer = Boolean.parseBoolean(
-                serviceConfig.getConstantValue("BINARY_TRANSFER"));
-        boolean usePassiveMode = Boolean
-                .parseBoolean(serviceConfig.getConstantValue("PASSIVE_MODE"));
-        try {
-            FTPSClient ftp = createFtpClient();
-            ftpsRetrieveFile(ftp, userName, password, rootUrl, port,
-                    remotePathAndFile[1], remotePathAndFile[0], localFileName,
-                    doBinaryTransfer, usePassiveMode, tokenBucket, priority);
-        } catch (Exception e) {
-            throw new Exception("Error retrieving file " + remoteFilename
-                    + " from FTPS server " + rootUrl, e);
+
+        // Make sure the transfer directory exists
+        File localDir = new File(FTP_DROP_DIR);
+        if (!localDir.mkdirs()) {
+            logger.error("Unable to make ftp drop directory: " + FTP_DROP_DIR);
+        }
+        if (localDir.exists()) {
+            localFileName = FTP_DROP_DIR + File.separator
+                    + remotePathAndFile[1];
+            logger.info("Local File Name: " + localFileName);
+
+            int port = new Integer(serviceConfig.getConstantValue("PORT"))
+                    .intValue();
+            boolean doBinaryTransfer = Boolean.parseBoolean(
+                    serviceConfig.getConstantValue("BINARY_TRANSFER"));
+            boolean usePassiveMode = Boolean.parseBoolean(
+                    serviceConfig.getConstantValue("PASSIVE_MODE"));
+            try {
+                FTPSClient ftp = createFtpClient();
+                ftpsRetrieveFile(ftp, userName, password, rootUrl, port,
+                        remotePathAndFile[1], remotePathAndFile[0],
+                        localFileName, doBinaryTransfer, usePassiveMode,
+                        tokenBucket, priority);
+            } catch (Exception e) {
+                throw new Exception("Error retrieving file " + remoteFilename
+                        + " from FTPS server " + rootUrl, e);
+            }
+        } else {
+            logger.error(
+                    "Unable to retrieve file. Local download directory does not exist: "
+                            + FTP_DROP_DIR);
         }
         return localFileName;
     }
@@ -217,6 +227,7 @@ public class PDAConnectionUtil {
             throws FileNotFoundException, IOException {
 
         int reply = 0;
+
         try (OutputStream fos = new FileOutputStream(localFilename)) {
             ftp.connect(rootUrl, port);
             /*
