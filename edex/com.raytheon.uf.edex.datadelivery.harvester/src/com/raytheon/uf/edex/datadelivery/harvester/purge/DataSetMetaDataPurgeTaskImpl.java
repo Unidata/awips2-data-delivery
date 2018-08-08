@@ -40,7 +40,6 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.uf.common.util.ClusterIdUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
 
@@ -67,6 +66,7 @@ import com.raytheon.uf.edex.datadelivery.harvester.crawler.CrawlLauncher;
  * Apr 04, 2016  5424     dhladky   Metadata purge not efficient enough for PDA.
  * Sep 12, 2016  5846     tjensen   Improve purge to be more efficient
  * Sep 22, 2016  5762     tjensen   Limit purge size and make it configurable.
+ * Aug 08, 2018           mjames    Standalone Registry Configuration
  * 
  * </pre>
  * 
@@ -185,8 +185,8 @@ public class DataSetMetaDataPurgeTaskImpl implements IDataSetMetaDataPurgeTask {
                         DataDeliveryRegistryObjectTypes.DATASETMETADATA,
                         "providerName");
 
-        // username is the name of this registry, ("NCF")
-        String username = ClusterIdUtil.getId();
+        // username is the name of this registry, ("OAX")
+        String username = EDEXUtil.getEdexSite();
 
         // Loop over all the providers
         for (String provider : providerList) {

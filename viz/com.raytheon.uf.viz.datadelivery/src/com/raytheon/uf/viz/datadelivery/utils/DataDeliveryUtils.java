@@ -55,6 +55,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.CollectionUtil;
 import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.common.util.StringUtil;
+import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionManagerRowData;
 import com.raytheon.uf.viz.datadelivery.subscription.approve.SubscriptionApprovalRowData;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
@@ -106,6 +107,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jun 01, 2015 2805       dhladky     Dataset Discovery Browser wouldn't close with message box.
  * Aug 25, 2015 4747       dhladky     Better options on message box returns.
  * Sep 12, 2017 6413       tjensen     Updated to support ParameterGroups
+ * Aug 08, 2018            mjames      Standalone Registry Configuration
  * </pre>
  *
  * *
@@ -977,26 +979,12 @@ public class DataDeliveryUtils {
     public static int getMaxLatency(GriddedDataSet dataSet) {
         return getMaxLatency(new ArrayList<>(dataSet.getCycles()));
     }
-
+    
     public static String getDataDeliveryId() {
         if (dataDeliveryId == null) {
-            dataDeliveryId = retrieveDataDeliveryId();
+            dataDeliveryId = LocalizationManager.getInstance().getSite();
         }
         return dataDeliveryId;
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static String retrieveDataDeliveryId() {
-        BandwidthRequest request = new BandwidthRequest();
-        request.setRequestType(RequestType.GET_DATADELIVERY_ID);
-        try {
-            SuccessfulExecution response = (SuccessfulExecution) RequestRouter
-                    .route(request, DataDeliveryConstants.DATA_DELIVERY_SERVER);
-            return (String) response.getResponse();
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Unable to retrieve Data Delivery ID from EDEX.", e);
-        }
     }
 
     /**
