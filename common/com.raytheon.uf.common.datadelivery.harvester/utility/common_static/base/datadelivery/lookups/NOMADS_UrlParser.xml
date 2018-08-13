@@ -46,9 +46,10 @@
     </urlParserInfo>
 -->
 <urlParserInfoList>
-    <urlParserInfo name="narre">
+    <urlParserInfo name="RAP_Ensemble">
         <seedUrl>narre</seedUrl>
         <urlKey>narre</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
     <urlParserInfo name="wave_nah">
         <seedUrl>wave/nah</seedUrl>
@@ -64,15 +65,17 @@
         <seedUrl>gfs</seedUrl>
         <urlKey>gfs</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="gfs_0p25">
+    <urlParserInfo name="GFS_HiRes">
         <seedUrl>gfs_0p25</seedUrl>
         <urlKey>gfs</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="gfs_0p50">
+    <urlParserInfo name="GFS_MedRes">
         <seedUrl>gfs_0p50</seedUrl>
         <urlKey>gfs</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="gfs_1p00">
+    <urlParserInfo name="GFS_LoRes">
         <seedUrl>gfs_1p00</seedUrl>
         <urlKey>gfs</urlKey>
     </urlParserInfo>
@@ -81,7 +84,7 @@
         <urlKey>wna</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="wave_nfcens">
+    <urlParserInfo name="WAVE_Ensemble">
         <seedUrl>wave/nfcens</seedUrl>
         <urlKey></urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
@@ -105,7 +108,7 @@
         <seedUrl>gfs_hd</seedUrl>
         <urlKey>gfs_hd</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="wave_glw">
+    <urlParserInfo name="WAVE_GreatLake">
         <seedUrl>wave/glw</seedUrl>
         <urlKey>glw</urlKey>
         <dataSetNaming separator="_" expression="collectionName" />
@@ -119,72 +122,83 @@
         <seedUrl>gfs_2p5</seedUrl>
         <urlKey>gfs_2p5</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="hiresw">
+    <urlParserInfo name="HiRes_Window">
         <seedUrl>hiresw</seedUrl>
         <urlKey>hiresw</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
     <urlParserInfo name="cmcens">
         <seedUrl>cmcens</seedUrl>
         <urlKey>cmcens</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="nam">
+    <urlParserInfo name="NAM">
         <seedUrl>nam</seedUrl>
         <urlKey>nam</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="sref">
+    <urlParserInfo name="SREF">
         <seedUrl>sref</seedUrl>
         <urlKey>sref</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="sref_bc">
+    <urlParserInfo name="SREF_BiasCorr">
         <seedUrl>sref_bc</seedUrl>
         <urlKey>sref</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="ofs_hires">
+    <urlParserInfo name="Ocean_Forecast_HiRes">
         <seedUrl>ofs/hires</seedUrl>
         <urlKey>ofs</urlKey>
         <pattern dataSetLocation="0" cycleLocation="1" regex="\." />
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="ofs">
+    <urlParserInfo name="Ocean_Forecast">
         <seedUrl>ofs</seedUrl>
         <urlKey>ofs</urlKey>
         <pattern dataSetLocation="-1" regex="_" />
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="akrtma">
+    <urlParserInfo name="RTMA_AK">
         <seedUrl>akrtma</seedUrl>
         <urlKey>akrtma</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
     <urlParserInfo name="fens">
         <seedUrl>fens</seedUrl>
         <urlKey>fens</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="rtofs">
+    <urlParserInfo name="Ocean_Forecast_RealTime">
         <seedUrl>rtofs</seedUrl>
         <urlKey>rtofs_global</urlKey>
         <pattern dataSetLocation="-1" regex="_" />
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
     <urlParserInfo name="ice">
         <seedUrl>ice</seedUrl>
         <urlKey>ice</urlKey>
         <pattern dataSetLocation="0" cycleLocation="1" regex="\." />
     </urlParserInfo>
-    <urlParserInfo name="rtma2p5">
+    <urlParserInfo name="RTMA">
         <seedUrl>rtma2p5</seedUrl>
         <urlKey>rtma2p5</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="gurtma">
+    <urlParserInfo name="RTMA_Guam">
         <seedUrl>gurtma</seedUrl>
         <urlKey>gurtma</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="naefs_bc">
+    <urlParserInfo name="NA_Ens_BiasCorr">
         <seedUrl>naefs_bc</seedUrl>
         <urlKey>naefs</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
     </urlParserInfo>
-    <urlParserInfo name="rap">
+    <urlParserInfo name="RAP">
         <seedUrl>rap</seedUrl>
         <urlKey>rap</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="naefs_ndgd">
+    <urlParserInfo name="NA_Ens_NDGD">
         <seedUrl>naefs_ndgd</seedUrl>
         <urlKey>naefs</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
@@ -193,9 +207,10 @@
         <seedUrl>rtma</seedUrl>
         <urlKey>rtma</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="aqm">
+    <urlParserInfo name="Air_Quality">
         <seedUrl>aqm</seedUrl>
         <urlKey>aqm</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
     <urlParserInfo name="ncom">
         <seedUrl>ncom</seedUrl>
@@ -203,33 +218,37 @@
         <pattern dataSetLocation="1" regex="_" />
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
     </urlParserInfo>
-    <urlParserInfo name="estofs">
+    <urlParserInfo name="ExtraTropSurge">
         <seedUrl>estofs</seedUrl>
         <urlKey></urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="fnl">
+    <urlParserInfo name="Final_Analysis">
         <seedUrl>fnl</seedUrl>
         <urlKey>fnl</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="hirtma">
+    <urlParserInfo name="RTMA_Hawaii">
         <seedUrl>hirtma</seedUrl>
         <urlKey>hirtma</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="prrtma">
+    <urlParserInfo name="RTMA_PuertoRico">
         <seedUrl>prrtma</seedUrl>
         <urlKey>prrtma</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
-    <urlParserInfo name="gens_bc">
+    <urlParserInfo name="Global_Ens_BiasCorr">
         <seedUrl>gens_bc</seedUrl>
         <urlKey>gens</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
     </urlParserInfo>
-    <urlParserInfo name="gens">
+    <urlParserInfo name="Global_Ensemble">
         <seedUrl>gens</seedUrl>
         <urlKey>gens</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
     </urlParserInfo>
-    <urlParserInfo name="gens_ndgd">
+    <urlParserInfo name="Global_Ens_NDGD">
         <seedUrl>gens_ndgd</seedUrl>
         <urlKey>gens</urlKey>
         <dataSetNaming separator="_" expression="collectionName+dataSetName" />
@@ -238,9 +257,10 @@
         <seedUrl>hrrr</seedUrl>
         <urlKey>hrrr</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="estofs_atl">
+    <urlParserInfo name="ExtraTropSurge_ATL">
         <seedUrl>estofs_atl</seedUrl>
         <urlKey></urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
     <urlParserInfo name="blend">
         <seedUrl>blend</seedUrl>
@@ -258,12 +278,25 @@
         <seedUrl>wave/glwu</seedUrl>
         <urlKey>glwu</urlKey>
     </urlParserInfo>
-    <urlParserInfo name="gfs_0p25_1hr">
+    <urlParserInfo name="GFS_HiRes_1hr">
         <seedUrl>gfs_0p25_1hr</seedUrl>
         <urlKey>gfs</urlKey>
+        <dataSetNaming separator="_" expression="collectionName" />
     </urlParserInfo>
     <urlParserInfo name="gfs_test">
         <seedUrl>gfs_test</seedUrl>
+        <urlKey>gfs</urlKey>
+    </urlParserInfo>
+    <urlParserInfo name="gfs_0p25_1hr_preparafv3" ignore="false">
+        <seedUrl>gfs_0p25_1hr_preparafv3</seedUrl>
+        <urlKey>gfs</urlKey>
+    </urlParserInfo>
+    <urlParserInfo name="estofs_mic" ignore="false">
+        <seedUrl>estofs_mic</seedUrl>
+        <urlKey>estofs_mic</urlKey>
+    </urlParserInfo>
+    <urlParserInfo name="gfs_0p25_preparafv3" ignore="false">
+        <seedUrl>gfs_0p25_preparafv3</seedUrl>
         <urlKey>gfs</urlKey>
     </urlParserInfo>
 </urlParserInfoList>
