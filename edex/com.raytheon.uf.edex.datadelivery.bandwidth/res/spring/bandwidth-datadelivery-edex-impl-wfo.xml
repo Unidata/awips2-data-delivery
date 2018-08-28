@@ -35,10 +35,6 @@
         <constructor-arg ref="subscriptionRoutesToSchedule" />
     </bean>
 
-    <util:list id="subscriptionRoutesToSchedule">
-        <value>OPSNET</value>
-    </util:list>
-
     <bean id="bandwidthInitializer"
         class="com.raytheon.uf.edex.datadelivery.bandwidth.hibernate.HibernateBandwidthInitializer">
         <constructor-arg ref="findActiveSubscriptionsForRoute" />

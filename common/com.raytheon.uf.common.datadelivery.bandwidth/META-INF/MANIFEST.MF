@@ -4,7 +4,7 @@ Bundle-Name: Registry
 Bundle-SymbolicName: com.raytheon.uf.common.datadelivery.bandwidth
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: com.raytheon.uf.common.datadelivery.registry;bundle-version="1.0.0",
  com.raytheon.uf.common.comm;bundle-version="1.12.1174",
  com.raytheon.uf.common.serialization;bundle-version="1.12.1174",

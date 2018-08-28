@@ -6,15 +6,6 @@
     http://www.springframework.org/schema/util
     http://www.springframework.org/schema/util/spring-util.xsd">
 
-    <bean id="OPSNETRetrievalPlan"
-        class="com.raytheon.uf.edex.datadelivery.bandwidth.retrieval.RetrievalPlan">
-        <property name="network" value="OPSNET" />
-        <property name="map" ref="BandwidthMap" />
-        <property name="bandwidthDao" ref="bandwidthDao" />
-        <property name="bucketsDao" ref="bandwidthBucketDao" />
-        <property name="associator" ref="bandwidthBucketAllocationAssociator" />
-    </bean>
-
     <!-- SBN Retrival Plans are defined in the wfo configuration because it is used by the 
     InMemoryBandwidthManager in the centralRegistry and client registries.  They are not 
     scheduled in the client registries though -->
@@ -27,14 +18,8 @@
         <property name="associator" ref="bandwidthBucketAllocationAssociator" />
     </bean>
 
-    <bean id="network" class="com.raytheon.uf.common.datadelivery.registry.Network" factory-method="valueOf">
-        <constructor-arg value="OPSNET"/>
-    </bean>
 
     <util:map id="retrievalPlans">
-        <entry key="OPSNET">
-            <ref bean="OPSNETRetrievalPlan" />
-        </entry>
         <entry key="SBN">
             <ref bean="SBNRetrievalPlan" />
         </entry>

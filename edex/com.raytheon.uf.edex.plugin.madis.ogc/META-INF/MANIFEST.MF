@@ -4,7 +4,7 @@ Bundle-Name: Ogc
 Bundle-SymbolicName: com.raytheon.uf.edex.plugin.madis.ogc
 Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: com.raytheon.uf.edex.ogc.common;bundle-version="1.0.0",
  com.raytheon.uf.common.dataplugin.madis;bundle-version="1.0.0",
  com.raytheon.uf.edex.plugin.madis;bundle-version="1.0.0",
