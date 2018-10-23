@@ -86,6 +86,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  * Dec 06, 2017  6355     nabowle   Initial creation
  * Apr 03, 2018  7240     tjensen   Change to group by model name instead of
  *                                  subscription
+ * Sep 26, 2018  7471     tjensen   Ensure file names have safe characters
  *
  * </pre>
  *
@@ -197,7 +198,7 @@ public class SubscriptionVBConfigFileUtil {
                         dsSubs);
                 boolean isVertical = checkForVerticalSubs(dsSubs);
 
-                String ddName = DD_MODEL_PREFIX + dsName;
+                String ddName = createFileName(dsName);
 
                 createVolumeBrowserSource(ddName, isVertical);
                 createFieldsFiles(ddName, isVertical, combinedParameterGroups);
@@ -271,7 +272,7 @@ public class SubscriptionVBConfigFileUtil {
      *            The dataset name.
      */
     private static void deleteDataSetFiles(String dsName) {
-        String ddName = DD_MODEL_PREFIX + dsName;
+        String ddName = createFileName(dsName);
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.COMMON_STATIC, LocalizationLevel.CONFIGURED);
@@ -331,6 +332,20 @@ public class SubscriptionVBConfigFileUtil {
             }
         }
 
+    }
+
+    /**
+     * Return a file name with no spaces or special characters that may cause
+     * issues on file system.
+     *
+     * @param dsName
+     *            Dataset Name
+     * @return
+     */
+    private static String createFileName(String dsName) {
+        String ddName = DD_MODEL_PREFIX + dsName;
+        ddName = ddName.replaceAll("[^a-zA-Z0-9.-]+", "_");
+        return ddName;
     }
 
     /**
