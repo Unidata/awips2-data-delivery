@@ -45,8 +45,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.VizApp;
 
 /**
- * This is the data delivery utility class for GUIs. This class is intended to
- * be extended so common classes can be created and shared.
+ * This is the data delivery utility class for GUIs. This class is intended to be extended so common
+ * classes can be created and shared.
  * 
  * <pre>
  * 
@@ -66,6 +66,7 @@ import com.raytheon.uf.viz.core.VizApp;
  * May 17, 2013  1040      mpduff     Fixed JavaDoc and added tooltip.
  * May 20, 2013  2000      djohnson   Add methods for managing widget listeners.
  * Jun 01, 2015  2805      dhladky    Dataset Discovery Browser wouldn't close with message box.
+ * Dec 10, 2018  7502      troberts   Made regex slightly more tolerant.  Changed Subset Name to Subscription Name.
  * 
  * </pre>
  * 
@@ -74,390 +75,377 @@ import com.raytheon.uf.viz.core.VizApp;
  */
 public class DataDeliveryGUIUtils {
 
-    /** Status Handler */
-    private final static IUFStatusHandler statusHandler = UFStatus
-            .getHandler(DataDeliveryGUIUtils.class);
+  /** Status Handler */
+  private static final IUFStatusHandler statusHandler = UFStatus
+      .getHandler(DataDeliveryGUIUtils.class);
 
-    /** Tooltip */
-    private static Shell tooltip;
+  /** Tooltip */
+  private static Shell tooltip;
 
-    /** Subscription start/end date format */
-    private final static ThreadLocal<SimpleDateFormat> subscriptionFormat = new ThreadLocal<SimpleDateFormat>() {
-        @Override
-        protected SimpleDateFormat initialValue() {
-            SimpleDateFormat sTemp = new SimpleDateFormat("MM/dd/yyyy HH");
-            sTemp.setTimeZone(TimeZone.getTimeZone("GMT"));
-            return sTemp;
+  /** Subscription start/end date format */
+  private static final ThreadLocal<SimpleDateFormat> subscriptionFormat = new ThreadLocal<SimpleDateFormat>() {
+    @Override
+    protected SimpleDateFormat initialValue() {
+      SimpleDateFormat sTemp = new SimpleDateFormat("MM/dd/yyyy HH");
+      sTemp.setTimeZone(TimeZone.getTimeZone("GMT"));
+      return sTemp;
+    }
+  };
+
+  /** Active period start/end date format */
+  private static final ThreadLocal<SimpleDateFormat> activeFormat = new ThreadLocal<SimpleDateFormat>() {
+    @Override
+    protected SimpleDateFormat initialValue() {
+      SimpleDateFormat sTemp = new SimpleDateFormat("MM/dd");
+      sTemp.setTimeZone(TimeZone.getTimeZone("GMT"));
+      return sTemp;
+    }
+  };
+
+  /**
+   * Regex pattern to match on any character except those listed.
+   */
+  public static final Pattern VALID_CHAR_PATTERN = Pattern.compile("^[a-zA-Z 0-9-_]+$");
+
+  /** Pattern digit */
+  public static final Pattern DIGIT_PATTERN = Pattern.compile("[0-9]+");
+
+  /** Invalid Character Message Title */
+  public static final String INVALID_CHARS_TITLE = "No valid Characters";
+
+  /** Invalid Character Message */
+  public static final String INVALID_CHARS_MESSAGE = "No valid characters.\nThe Subscription Name must contain a letter or a number and must not contain a double space.";
+
+  /** Name Required Message Title */
+  public static final String NAME_REQUIRED_TITLE = "Name Required";
+
+  /** Name Required Message */
+  public static final String NAME_REQUIRED_MESSAGE = "Name required.\nA Subscription Name must be entered.";
+
+  /**
+   * Constructor.
+   */
+  public DataDeliveryGUIUtils() {
+
+  }
+
+  /**
+   * Validate the date fields
+   * 
+   * @param isRelative
+   *          Is this a relative date
+   * @param date
+   *          The date
+   * @return true if the date is valid
+   */
+  public static boolean validateDate(boolean isRelative, String date) {
+    boolean valid = false;
+    SimpleDateFormat formatToUse = (isRelative) ? subscriptionFormat.get() : activeFormat.get();
+
+    try {
+
+      if (date != null && date.length() > 0) {
+        formatToUse.parse(date.trim());
+        valid = true;
+      }
+
+    } catch (ParseException e) {
+      statusHandler.handle(Priority.PROBLEM,
+          "Invalid date format - Use the Select Date " + "buttons for the correct format ", e);
+    }
+
+    return valid;
+  }
+
+  /**
+   * Get the active start date.
+   * 
+   * @param selText
+   *          selected text.
+   * 
+   * @return Date
+   */
+  public static Date getSelectedActDate(String selText) {
+    Date d = null;
+
+    try {
+      d = activeFormat.get().parse(selText);
+    } catch (ParseException e) {
+      statusHandler.handle(Priority.PROBLEM, "Invalid date format - Format should be MM/dd", e);
+    }
+
+    return d;
+  }
+
+  /**
+   * Get the subscription start date.
+   * 
+   * @param selText
+   *          selected text
+   * 
+   * @return Date
+   */
+  public static Date getSelectedSubDate(String selText) {
+    Date d = null;
+
+    try {
+      d = subscriptionFormat.get().parse(selText);
+    } catch (ParseException e) {
+      statusHandler.handle(Priority.PROBLEM, "Invalid date format - Format should be MM/dd/yyyy HH",
+          e);
+    }
+
+    return d;
+  }
+
+  /**
+   * Get the Subscription format.
+   * 
+   * @return subscriptionFormat
+   */
+  public static SimpleDateFormat getSubscriptionFormat() {
+    return subscriptionFormat.get();
+  }
+
+  /**
+   * Get the Active period format.
+   * 
+   * @return activeFormat
+   */
+  public static SimpleDateFormat getActiveFormat() {
+    return activeFormat.get();
+  }
+
+  /**
+   * Check the date ordering.
+   * 
+   * @param start
+   *          The starting date as a string
+   * @param end
+   *          The ending date as a string
+   * @param subscriptionDuration
+   *          true if for subscription duration, false for active period
+   * @return true if the starting date is before the ending date
+   */
+  public static boolean checkDateOrder(String start, String end, boolean subscriptionDuration) {
+    boolean valid = false;
+
+    SimpleDateFormat formatToUse = (subscriptionDuration) ? subscriptionFormat.get()
+        : activeFormat.get();
+
+    try {
+
+      Date startDate = formatToUse.parse(start.trim());
+      Date endDate = formatToUse.parse(end.trim());
+
+      if (startDate.before(endDate) || startDate.equals(endDate)) {
+        valid = true;
+      }
+    } catch (ParseException e) {
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  /**
+   * Check text for null.
+   * 
+   * @param text
+   *          The text to check
+   * @return true if text not null
+   */
+  public static boolean hasText(final Text text) {
+    if (text == null) {
+      throw new IllegalArgumentException("passed in text instance cannot be null!");
+    }
+
+    String stringValue = text.getText();
+    return stringValue != null && !stringValue.trim().isEmpty();
+  }
+
+  /**
+   * Display the settings have changed popup.
+   * 
+   * @param shell
+   *          the shell
+   * @return SWT.YES if yes, SWT.NO if no
+   */
+  public static int showSettingsHaveChangedPopup(final Shell shell) {
+    return DataDeliveryUtils.showMessageNonCallback(shell, SWT.YES | SWT.NO, "Save Changes?",
+        "Settings have changed.\nAre you sure you want to exit without saving?");
+  }
+
+  /**
+   * Identify the shell as busy by disabling actions on it and setting the mouse cursor over it to
+   * the wait cursor. To undo this call the corresponding method markNotBusyInUIThread(Shell).
+   * 
+   * @see #DataDeliveryGUIUtils.markNotBusyInUIThread(Shell)
+   * 
+   * @param shell
+   *          The Shell to mark busy
+   */
+  public static void markBusyInUIThread(final Shell shell) {
+    VizApp.runAsync(new Runnable() {
+      @Override
+      public void run() {
+        if (!shell.isDisposed()) {
+          shell.setEnabled(false);
+          shell.setCursor(shell.getDisplay().getSystemCursor(SWT.CURSOR_WAIT));
         }
+      }
+    });
+  }
+
+  /**
+   * Turns off busy status for this shell by re-enabling it and setting the mouse cursor to normal.
+   * This call is the followup to markBusyInUIThread(Shell).
+   * 
+   * This should be placed in a finally block so when exceptions occur this code is still called.
+   * 
+   * @see #DataDeliveryGUIUtils.markBusyInUIThread(Shell)
+   * 
+   * @param shell
+   *          the Shell used in markBusyInUIThread
+   */
+  public static void markNotBusyInUIThread(final Shell shell) {
+    VizApp.runAsync(new Runnable() {
+      @Override
+      public void run() {
+        if (!shell.isDisposed()) {
+          shell.setEnabled(true);
+          shell.setCursor(null);
+        }
+      }
+    });
+  }
+
+  /**
+   * Check the user's latency value.
+   * 
+   * @param latency
+   *          the latency value
+   * @param maxLatency
+   *          the max latency value
+   * 
+   * @return true if valid
+   */
+  public static boolean latencyValidChk(int latency, int maxLatency) {
+    if (latency > -1 && latency <= maxLatency) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Remove all listeners of the specified types from the widget.
+   * 
+   * @param widget
+   *          the widget
+   * @param listenerTypes
+   *          the listener types
+   */
+  public static void removeListeners(Widget widget, int... listenerTypes) {
+    // Remove any current listeners
+    for (int listenerType : listenerTypes) {
+      Listener[] listeners = widget.getListeners(listenerType);
+      for (Listener listener : listeners) {
+        widget.removeListener(listenerType, listener);
+      }
+    }
+  }
+
+  /**
+   * Creates a selection listener that will run the specified runnable if the current value does not
+   * equal the initial value.
+   * 
+   * @param initialValue
+   *          the initial value
+   * @param spinner
+   *          the spinner
+   * @param runnable
+   *          the runnable to run
+   * @return the selection listener
+   */
+  public static SelectionListener addValueChangedSelectionListener(final int initialValue,
+      final Spinner spinner, final Runnable runnable) {
+    return new SelectionAdapter() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        if (spinner.getSelection() != initialValue) {
+          runnable.run();
+        }
+      }
     };
+  }
 
-    /** Active period start/end date format */
-    private final static ThreadLocal<SimpleDateFormat> activeFormat = new ThreadLocal<SimpleDateFormat>() {
-        @Override
-        protected SimpleDateFormat initialValue() {
-            SimpleDateFormat sTemp = new SimpleDateFormat("MM/dd");
-            sTemp.setTimeZone(TimeZone.getTimeZone("GMT"));
-            return sTemp;
+  /**
+   * Creates a selection listener that will run the specified runnable if the current value does not
+   * equal the initial value.
+   * 
+   * @param initialSelectionIndex
+   *          the initial selection index
+   * @param combo
+   *          the combo
+   * @param runnable
+   *          the runnable to run
+   * @return
+   */
+  public static SelectionListener addValueChangedSelectionListener(final int initialSelectionIndex,
+      final Combo combo, final Runnable runnable) {
+    return new SelectionAdapter() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        if (combo.getSelectionIndex() != initialSelectionIndex) {
+          runnable.run();
         }
+      }
     };
+  }
 
-    /**
-     * Regex pattern to match on any character except those listed.
-     */
-    public static final Pattern INVALID_CHAR_PATTERN = Pattern
-            .compile("[^a-zA-Z0-9-]+");
-
-    /** Pattern digit */
-    public static final Pattern DIGIT_PATTERN = Pattern.compile("[0-9]+");
-
-    /** Invalid Character Message Title */
-    public static final String INVALID_CHARS_TITLE = "Invalid Characters";
-
-    /** Invalid Character Message */
-    public static final String INVALID_CHARS_MESSAGE = "Invalid characters.\nThe Subset Name may only contain letters/numbers/dashes.";
-
-    /** Name Required Message Title */
-    public static final String NAME_REQUIRED_TITLE = "Name Required";
-
-    /** Name Required Message */
-    public static final String NAME_REQUIRED_MESSAGE = "Name required.\nA Subscription Name must be entered.";
-
-    /**
-     * Constructor.
-     */
-    public DataDeliveryGUIUtils() {
-
+  /**
+   * Get a tooltip display. Caller is responsible for disposing the tooltip by calling
+   * {@link #hideToolTip}.
+   * 
+   * @param parent
+   *          the parent shell
+   * @param x
+   *          the x location
+   * @param y
+   *          the y location
+   * @param text
+   *          the text
+   */
+  public static synchronized void showTooltip(Shell parent, int x, int y, String text) {
+    if (tooltip != null && !tooltip.isDisposed()) {
+      tooltip.dispose();
     }
 
-    /**
-     * Validate the date fields
-     * 
-     * @param isRelative
-     *            Is this a relative date
-     * @param date
-     *            The date
-     * @return true if the date is valid
-     */
-    public static boolean validateDate(boolean isRelative, String date) {
-        boolean valid = false;
-        SimpleDateFormat formatToUse = (isRelative) ? subscriptionFormat.get()
-                : activeFormat.get();
+    tooltip = new Shell(parent, SWT.TOOL | SWT.ON_TOP);
+    tooltip.setLayout(new GridLayout());
 
-        try {
+    tooltip.setBackground(tooltip.getDisplay().getSystemColor(SWT.COLOR_INFO_BACKGROUND));
+    tooltip.setBackgroundMode(SWT.INHERIT_FORCE);
 
-            if (date != null && date.length() > 0) {
-                formatToUse.parse(date.trim());
-                valid = true;
-            }
+    Label lbContent = new Label(tooltip, SWT.NONE);
+    lbContent.setText(text);
 
-        } catch (ParseException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Invalid date format - Use the Select Date "
-                            + "buttons for the correct format ", e);
-        }
+    Point lbContentSize = lbContent.computeSize(SWT.DEFAULT, SWT.DEFAULT);
 
-        return valid;
+    int width = lbContentSize.x + 10;
+    int height = lbContentSize.y + 10;
+
+    tooltip.setBounds(x, y, width, height);
+    tooltip.setVisible(true);
+  }
+
+  /**
+   * Dispose the tooltip created by {@link #showTooltip}
+   */
+  public static void hideToolTip() {
+    if (tooltip != null && !tooltip.isDisposed()) {
+      tooltip.dispose();
     }
-
-    /**
-     * Get the active start date.
-     * 
-     * @param selText
-     *            selected text.
-     * 
-     * @return Date
-     */
-    public static Date getSelectedActDate(String selText) {
-        Date d = null;
-
-        try {
-            d = activeFormat.get().parse(selText);
-        } catch (ParseException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Invalid date format - Format should be MM/dd", e);
-        }
-
-        return d;
-    }
-
-    /**
-     * Get the subscription start date.
-     * 
-     * @param selText
-     *            selected text
-     * 
-     * @return Date
-     */
-    public static Date getSelectedSubDate(String selText) {
-        Date d = null;
-
-        try {
-            d = subscriptionFormat.get().parse(selText);
-        } catch (ParseException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Invalid date format - Format should be MM/dd/yyyy HH", e);
-        }
-
-        return d;
-    }
-
-    /**
-     * Get the Subscription format.
-     * 
-     * @return subscriptionFormat
-     */
-    public static SimpleDateFormat getSubscriptionFormat() {
-        return subscriptionFormat.get();
-    }
-
-    /**
-     * Get the Active period format.
-     * 
-     * @return activeFormat
-     */
-    public static SimpleDateFormat getActiveFormat() {
-        return activeFormat.get();
-    }
-
-    /**
-     * Check the date ordering.
-     * 
-     * @param start
-     *            The starting date as a string
-     * @param end
-     *            The ending date as a string
-     * @param subscriptionDuration
-     *            true if for subscription duration, false for active period
-     * @return true if the starting date is before the ending date
-     */
-    public static boolean checkDateOrder(String start, String end,
-            boolean subscriptionDuration) {
-        boolean valid = false;
-
-        SimpleDateFormat formatToUse = (subscriptionDuration) ? subscriptionFormat
-                .get() : activeFormat.get();
-
-        try {
-
-            Date startDate = formatToUse.parse(start.trim());
-            Date endDate = formatToUse.parse(end.trim());
-
-            if (startDate.before(endDate) || startDate.equals(endDate)) {
-                valid = true;
-            }
-        } catch (ParseException e) {
-            valid = false;
-        }
-
-        return valid;
-    }
-
-    /**
-     * Check text for null.
-     * 
-     * @param text
-     *            The text to check
-     * @return true if text not null
-     */
-    public static boolean hasText(final Text text) {
-        if (text == null) {
-            throw new NullPointerException(
-                    "passed in text instance cannot be null!");
-        }
-
-        String stringValue = text.getText();
-        return stringValue != null && !stringValue.trim().isEmpty();
-    }
-
-    /**
-     * Display the settings have changed popup.
-     * 
-     * @param shell
-     *            the shell
-     * @return SWT.YES if yes, SWT.NO if no
-     */
-    public static int showSettingsHaveChangedPopup(final Shell shell) {
-        return DataDeliveryUtils
-                .showMessageNonCallback(shell, SWT.YES | SWT.NO, "Save Changes?",
-                        "Settings have changed.\nAre you sure you want to exit without saving?");
-    }
-
-    /**
-     * Identify the shell as busy by disabling actions on it and setting the
-     * mouse cursor over it to the wait cursor. To undo this call the
-     * corresponding method markNotBusyInUIThread(Shell).
-     * 
-     * @see #DataDeliveryGUIUtils.markNotBusyInUIThread(Shell)
-     * 
-     * @param shell
-     *            The Shell to mark busy
-     */
-    public static void markBusyInUIThread(final Shell shell) {
-        VizApp.runAsync(new Runnable() {
-            @Override
-            public void run() {
-                if (!shell.isDisposed()) {
-                    shell.setEnabled(false);
-                    shell.setCursor(shell.getDisplay().getSystemCursor(
-                            SWT.CURSOR_WAIT));
-                }
-            }
-        });
-    }
-
-    /**
-     * Turns off busy status for this shell by re-enabling it and setting the
-     * mouse cursor to normal. This call is the followup to
-     * markBusyInUIThread(Shell).
-     * 
-     * This should be placed in a finally block so when exceptions occur this
-     * code is still called.
-     * 
-     * @see #DataDeliveryGUIUtils.markBusyInUIThread(Shell)
-     * 
-     * @param shell
-     *            the Shell used in markBusyInUIThread
-     */
-    public static void markNotBusyInUIThread(final Shell shell) {
-        VizApp.runAsync(new Runnable() {
-            @Override
-            public void run() {
-                if (!shell.isDisposed()) {
-                    shell.setEnabled(true);
-                    shell.setCursor(null);
-                }
-            }
-        });
-    }
-
-    /**
-     * Check the user's latency value.
-     * 
-     * @param latency
-     *            the latency value
-     * @param maxLatency
-     *            the max latency value
-     * 
-     * @return true if valid
-     */
-    public static boolean latencyValidChk(int latency, int maxLatency) {
-        if (latency > -1 && latency <= maxLatency) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Remove all listeners of the specified types from the widget.
-     * 
-     * @param widget
-     *            the widget
-     * @param listenerTypes
-     *            the listener types
-     */
-    public static void removeListeners(Widget widget, int... listenerTypes) {
-        // Remove any current listeners
-        for (int listenerType : listenerTypes) {
-            Listener[] listeners = widget.getListeners(listenerType);
-            for (Listener listener : listeners) {
-                widget.removeListener(listenerType, listener);
-            }
-        }
-    }
-
-    /**
-     * Creates a selection listener that will run the specified runnable if the
-     * current value does not equal the initial value.
-     * 
-     * @param initialValue
-     *            the initial value
-     * @param spinner
-     *            the spinner
-     * @param runnable
-     *            the runnable to run
-     * @return the selection listener
-     */
-    public static SelectionListener addValueChangedSelectionListener(
-            final int initialValue, final Spinner spinner,
-            final Runnable runnable) {
-        return new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                if (spinner.getSelection() != initialValue) {
-                    runnable.run();
-                }
-            }
-        };
-    }
-
-    /**
-     * Creates a selection listener that will run the specified runnable if the
-     * current value does not equal the initial value.
-     * 
-     * @param initialSelectionIndex
-     *            the initial selection index
-     * @param combo
-     *            the combo
-     * @param runnable
-     *            the runnable to run
-     * @return
-     */
-    public static SelectionListener addValueChangedSelectionListener(
-            final int initialSelectionIndex, final Combo combo,
-            final Runnable runnable) {
-        return new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                if (combo.getSelectionIndex() != initialSelectionIndex) {
-                    runnable.run();
-                }
-            }
-        };
-    }
-
-    /**
-     * Get a tooltip display. Caller is responsible for disposing the tooltip by
-     * calling {@link #hideToolTip}.
-     * 
-     * @param parent
-     *            the parent shell
-     * @param x
-     *            the x location
-     * @param y
-     *            the y location
-     * @param text
-     *            the text
-     */
-    public static void showTooltip(Shell parent, int x, int y, String text) {
-        if (tooltip != null && !tooltip.isDisposed()) {
-            tooltip.dispose();
-        }
-        tooltip = new Shell(parent, SWT.TOOL | SWT.ON_TOP);
-        tooltip.setLayout(new GridLayout());
-
-        tooltip.setBackground(tooltip.getDisplay().getSystemColor(
-                SWT.COLOR_INFO_BACKGROUND));
-        tooltip.setBackgroundMode(SWT.INHERIT_FORCE);
-
-        Label lbContent = new Label(tooltip, SWT.NONE);
-        lbContent.setText(text);
-
-        Point lbContentSize = lbContent.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-
-        int width = lbContentSize.x + 10;
-        int height = lbContentSize.y + 10;
-
-        tooltip.setBounds(x, y, width, height);
-        tooltip.setVisible(true);
-    }
-
-    /**
-     * Dispose the tooltip created by {@link #showTooltip}
-     */
-    public static void hideToolTip() {
-        if (tooltip != null && !tooltip.isDisposed()) {
-            tooltip.dispose();
-        }
-    }
+  }
 }
