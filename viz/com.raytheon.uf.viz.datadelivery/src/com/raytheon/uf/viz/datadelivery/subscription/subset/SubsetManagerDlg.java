@@ -422,7 +422,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         sizeLbl.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         Label nameLbl = new Label(subsetComp, SWT.NONE);
-        nameLbl.setText("Subset Name: ");
+        nameLbl.setText("Subscription Name: ");
 
         nameText = new Text(subsetComp, SWT.BORDER);
         nameText.setLayoutData(
@@ -780,7 +780,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             return false;
         }
 
-        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(name.trim())
+        if (!DataDeliveryGUIUtils.VALID_CHAR_PATTERN.matcher(name.trim())
                 .find()) {
             DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
                     DataDeliveryGUIUtils.INVALID_CHARS_TITLE,
@@ -827,15 +827,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
         if (!DataDeliveryGUIUtils.hasText(this.nameText)) {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, "Name Required",
-                    "Name requred. A subset name must be entered.");
+                    "Name required. A subset name must be entered.");
             return;
         }
 
-        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN
+        if (!DataDeliveryGUIUtils.VALID_CHAR_PATTERN
                 .matcher(nameText.getText().trim()).find()) {
-            DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
-                    "Invalid Characters",
-                    "Invalid characters. The Subset Name may only contain letters/numbers/dashes.");
+            DataDeliveryUtils.showMessage(getShell(), SWT.ERROR, "Invalid Name",
+                    "Invalid Name. The Subset Name must contain a letter or a number.");
             return;
         }
 

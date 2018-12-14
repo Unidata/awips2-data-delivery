@@ -295,7 +295,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
         }
 
         String saveName = getRegionSaveText();
-        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(saveName.trim())
+        if (!DataDeliveryGUIUtils.VALID_CHAR_PATTERN.matcher(saveName.trim())
                 .find()) {
             DataDeliveryUtils.showMessageCancel(parentComp.getShell(),
                     DataDeliveryGUIUtils.INVALID_CHARS_TITLE,

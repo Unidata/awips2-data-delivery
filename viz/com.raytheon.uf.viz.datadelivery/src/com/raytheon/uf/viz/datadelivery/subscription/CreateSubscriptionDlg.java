@@ -17,6 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+
 package com.raytheon.uf.viz.datadelivery.subscription;
 
 import java.text.ParseException;
@@ -1274,7 +1275,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     if (cachedSiteSubscription != null) {
                         String responseMessage = response.getMessage();
                         if (responseMessage != null && responseMessage
-                                .indexOf(" has been updated") > 0) {
+                                .indexOf(" has been updated") > -1) {
                         }
                     }
                 } catch (RegistryHandlerException e) {
@@ -1474,8 +1475,9 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 return false;
             }
 
-            if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN
-                    .matcher(subscriptionName.trim()).find()) {
+            if (!DataDeliveryGUIUtils.VALID_CHAR_PATTERN
+                    .matcher(subscriptionName.trim()).find()
+                    || subscriptionName.trim().contains("  ")) {
                 displayErrorPopup(DataDeliveryGUIUtils.INVALID_CHARS_TITLE,
                         DataDeliveryGUIUtils.INVALID_CHARS_MESSAGE);
 
