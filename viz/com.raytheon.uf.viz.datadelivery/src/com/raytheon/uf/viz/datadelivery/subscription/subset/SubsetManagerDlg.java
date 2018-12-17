@@ -27,8 +27,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -187,6 +185,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Oct 13, 2017  6461     tgurney   Split up handleQuery()
  * Nov 02, 2017  6461     tgurney   storeQuerySub() add showMessageBox flag
  * Mar 01, 2018  7204     nabowle   Add subEnvelope.
+ * Dec 10, 2018  7504     troberts  Added check to avoid close loop.
  * </pre>
  *
  * @author mpduff
@@ -335,6 +334,17 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     protected abstract TimeXML getDataTimeInfo();
 
     @Override
+    public boolean shouldClose() {
+        displayMessage();
+        setClean();
+        if (subDlg != null && !subDlg.isOpen()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    @Override
     protected void initializeComponents(Shell shell) {
 
         createTabFolder();
@@ -348,14 +358,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 loadFromSubscription(subscription);
             }
         }
-
-        shell.addShellListener(new ShellAdapter() {
-            @Override
-            public void shellClosed(ShellEvent event) {
-                event.doit = false;
-                displayMessage();
-            }
-        });
 
         initialized = true;
         updateDataSize();
@@ -422,7 +424,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         sizeLbl.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         Label nameLbl = new Label(subsetComp, SWT.NONE);
-        nameLbl.setText("Subscription Name: ");
+        nameLbl.setText("Subset Name: ");
 
         nameText = new Text(subsetComp, SWT.BORDER);
         nameText.setLayoutData(
@@ -522,7 +524,10 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     public void launchCreateSubscriptionGui(Subscription sub) {
         DataDeliveryGUIUtils.markBusyInUIThread(shell);
         try {
-            handleOK(sub);
+            if (handleOK(sub)) {
+                setClean();
+                shell.dispose();
+            }
         } finally {
             DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
         }
@@ -548,7 +553,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     }
 
     protected boolean querySubExists() {
-        String name = nameText.getText();
+        nameText.getText();
         return querySubExists(nameText.getText());
     }
 
@@ -609,7 +614,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                                     + as.getProvider());
                     return;
                 }
-            } catch (RegistryHandlerException e) {
+            } catch (
+
+            RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "No DataSetMetaData matching query! DataSetName: "
                                 + as.getDataSetName() + " Provider: "
@@ -794,6 +801,17 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         }
 
         Collection<String> invalidTabs = getInvalidTabs();
+
+        if (!invalidTabs.isEmpty()) {
+            StringBuilder message = new StringBuilder(
+                    "The following tabs do not have valid entries:\n\n");
+            for (String tab : invalidTabs) {
+                message.append(tab + "\n");
+            }
+            DataDeliveryUtils.showMessage(shell, getStyle(), "Invalid Entries",
+                    message.toString());
+            return false;
+        }
 
         if (!invalidTabs.isEmpty()) {
             StringBuilder message = new StringBuilder(
