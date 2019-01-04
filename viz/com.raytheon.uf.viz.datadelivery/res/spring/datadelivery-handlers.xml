@@ -42,11 +42,6 @@
         </constructor-arg>
     </bean>
 
-    <bean name="GroupDefinitionHandler"
-        class="com.raytheon.uf.common.datadelivery.registry.handlers.GroupDefinitionHandler">
-        <property name="registryHandler" ref="registryHandler" />
-    </bean>
-
     <bean name="ProviderHandler"
         class="com.raytheon.uf.common.datadelivery.registry.handlers.ProviderHandler">
         <property name="registryHandler" ref="registryHandler" />
@@ -106,14 +101,7 @@
             value="com.raytheon.uf.common.datadelivery.registry.handlers.PendingSubscriptionHandler" />
         <constructor-arg ref="PendingSubscriptionHandler" />
     </bean>
-
-    <bean id="registerGroupDefinitionHandler" factory-bean="registryObjectHandlerRegistry"
-        factory-method="registerHandler">
-        <constructor-arg
-            value="com.raytheon.uf.common.datadelivery.registry.handlers.GroupDefinitionHandler" />
-        <constructor-arg ref="GroupDefinitionHandler" />
-    </bean>
-
+    
     <bean id="registerProviderHandler" factory-bean="registryObjectHandlerRegistry"
         factory-method="registerHandler">
         <constructor-arg
@@ -170,9 +158,9 @@
 
     <!-- Used to consolidate the dependency clauses of beans that rely upon 
         data delivery registry handlers -->
+        
     <bean id="registerDataDeliveryHandlers" class="java.lang.String"
         depends-on="registerSubscriptionHandler,registerPendingSubscriptionHandler,
-        registerGroupDefinitionHandler,
         registerProviderHandler,registerDataSetNameHandler,registerParameterHandler,
         registerParameterLevelHandler,registerDataSetMetaDataHandler,
         registerGriddedDataSetMetaDataHandler,registerDataSetHandler,registerAdhocSubscriptionHandler" />

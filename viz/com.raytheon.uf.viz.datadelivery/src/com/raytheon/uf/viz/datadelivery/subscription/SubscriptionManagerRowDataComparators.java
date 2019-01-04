@@ -40,6 +40,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 03, 2014 3840       ccody     Initial creation
+ * Jan 04, 2019 7503       troberts  Remove subscription grouping capabilities.
  * 
  * </pre>
  * 
@@ -49,9 +50,9 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.SubColumnNames;
 
 public class SubscriptionManagerRowDataComparators {
 
-    private static Map<SubColumnNames, Comparator<SubscriptionManagerRowData>> normalOrderMap = new HashMap<SubColumnNames, Comparator<SubscriptionManagerRowData>>();
+    private static Map<SubColumnNames, Comparator<SubscriptionManagerRowData>> normalOrderMap = new HashMap<>();
 
-    private static Map<SubColumnNames, Comparator<SubscriptionManagerRowData>> reverseOrderMap = new HashMap<SubColumnNames, Comparator<SubscriptionManagerRowData>>();
+    private static Map<SubColumnNames, Comparator<SubscriptionManagerRowData>> reverseOrderMap = new HashMap<>();
 
     protected static int internalStringCompare(String stringComp1,
             String stringComp2) {
@@ -245,11 +246,6 @@ public class SubscriptionManagerRowDataComparators {
         normalOrderMap.put(SubColumnNames.DATA_SIZE, DATA_SIZE_COMP);
         reverseOrderMap.put(SubColumnNames.DATA_SIZE,
                 Collections.reverseOrder(DATA_SIZE_COMP));
-
-        normalOrderMap.put(SubColumnNames.GROUP_NAME, GROUP_NAME_COMP);
-        reverseOrderMap.put(SubColumnNames.GROUP_NAME,
-                Collections.reverseOrder(GROUP_NAME_COMP));
-
     }
 
     public static Comparator<SubscriptionManagerRowData> getComparator(

@@ -96,6 +96,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Aug 02, 2017  6186     rjpeter   Removed url.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Dec 07, 2017  6355     nabowle   Add vertical slot.
+ * Jan 03, 2019  7503     troberts  Remove subscription grouping capabilities.
  *
  * </pre>
  *
@@ -137,7 +138,6 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
         this.setDataSetSize(sub.getDataSetSize());
         this.setDescription(sub.getDescription());
         this.setFullDataSet(sub.isFullDataSet());
-        this.setGroupName(sub.getGroupName());
         this.setId(sub.getId());
         this.setName(name);
         this.setOwner(sub.getOwner());
@@ -180,11 +180,6 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     @DynamicSerializeElement
     @SlotAttribute(NAME_SLOT)
     private String name;
-
-    @XmlAttribute
-    @DynamicSerializeElement
-    @SlotAttribute
-    private String groupName = GroupDefinition.NO_GROUP;
 
     @XmlAttribute
     @DynamicSerializeElement
@@ -346,27 +341,6 @@ public abstract class RecurringSubscription<T extends Time, C extends Coverage>
     @Override
     public void setName(String name) {
         this.name = name;
-    }
-
-    /**
-     * Get subscription group name.
-     *
-     * @return subscription group name
-     */
-    @Override
-    public String getGroupName() {
-        return groupName;
-    }
-
-    /**
-     * Set subscription group name.
-     *
-     * @param groupName
-     *            the name of the subscription group
-     */
-    @Override
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
     }
 
     /**

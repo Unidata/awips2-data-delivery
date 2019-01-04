@@ -66,7 +66,6 @@ import com.raytheon.uf.common.datadelivery.registry.Coverage;
 import com.raytheon.uf.common.datadelivery.registry.DataSet;
 import com.raytheon.uf.common.datadelivery.registry.DataType;
 import com.raytheon.uf.common.datadelivery.registry.GriddedTime;
-import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
 import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Network;
 import com.raytheon.uf.common.datadelivery.registry.OpenDapGriddedDataSet;
@@ -97,7 +96,6 @@ import com.raytheon.uf.viz.core.auth.UserController;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.datadelivery.common.ui.ActivePeriodComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.DurationComp;
-import com.raytheon.uf.viz.datadelivery.common.ui.GroupSelectComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.PriorityComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.VBComp;
 import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
@@ -106,7 +104,6 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryGUIUtils;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
-import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
 
 /**
  * The Data Delivery Create Subscription Dialog.
@@ -189,6 +186,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Dec 08, 2017  6355     nabowle   Add VBComp.
  * Feb 08, 2018  6451     nabowle   Require selected cycle times if available.
  *                                  Select All The Cycles by default.
+ * Jan 03, 2019  7503     troberts  Remove subscription grouping capabilities.
  * Jan 08, 2019  7330     troberts  Made latency for PDA subscriptions editable.
  *
  * </pre>
@@ -217,9 +215,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
 
     /** The Main Composite */
     private Composite mainComp;
-
-    /** The Subscription Group Information Composite */
-    private GroupSelectComp groupSelectComp;
 
     /** The Subscription Duration Composite */
     private DurationComp durComp;
@@ -261,9 +256,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
     private Label selectedSiteLbl;
 
     private final Font font;
-
-    /** Group Definition object */
-    private GroupDefinition groupDefinition;
 
     /** The dataset object */
     private final DataSet dataSet;
@@ -315,8 +307,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         mainComp.setLayoutData(gd);
 
         createSubscriptionInfoGroup();
-
-        groupSelectComp = new GroupSelectComp(mainComp, true);
 
         durComp = new DurationComp(mainComp);
         activePeriodComp = new ActivePeriodComp(mainComp);
@@ -611,21 +601,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         });
     }
 
-    @Override
-    protected void preOpened() {
-        super.preOpened();
-
-        Runnable populate = new Runnable() {
-            @Override
-            public void run() {
-                populateGroupSettings(groupSelectComp.getGroupName());
-            }
-        };
-        ComboBoxConf groupComboConf = new ComboBoxConf(true, "Select a Group",
-                populate);
-        groupSelectComp.setGroupNameComboConf(groupComboConf);
-    }
-
     /**
      * Create the cycle group portion of the subscription view.
      */
@@ -823,16 +798,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
      */
     public void setPriority(SubscriptionPriority priority) {
         priorityComp.setPriority(priority);
-    }
-
-    /**
-     * Set the group name.
-     *
-     * @param groupName
-     *            The group name to set
-     */
-    public void setGroupName(String groupName) {
-        groupSelectComp.setGroupName(groupName);
     }
 
     /**
@@ -1333,17 +1298,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         // Data are valid, now add info to the subscription object and store
         subscription.setProvider(dataSet.getProviderName());
 
-        if (groupSelectComp.isGroupSelected()) {
-            // Set group name and area
-            subscription.setGroupName(this.groupSelectComp.getGroupName());
-            if (groupDefinition.isArealDataSet()) {
-                subscription.getCoverage()
-                        .setEnvelope(groupDefinition.getEnvelope());
-            }
-        } else {
-            subscription.setGroupName(GroupDefinition.NO_GROUP);
-        }
-
         if (this.durComp.isIndefiniteChk()) {
             Calendar cal = TimeUtil.newGmtCalendar();
             subscription.setSubscriptionStart(cal.getTime());
@@ -1501,101 +1455,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             valid = true;
         }
 
-        // if group selected check if properties match saved group
-        if (!GroupDefinition.NO_GROUP
-                .equals(this.groupSelectComp.getGroupName()) && valid) {
-            groupDefinition = GroupDefinitionManager
-                    .getGroup(this.groupSelectComp.getGroupName());
-
-            // Compare the durations from the form to the group definition
-            Date durStart = groupDefinition.getSubscriptionStart();
-            Date durEnd = groupDefinition.getSubscriptionEnd();
-
-            String formDurStartStr = this.durComp.getStartText();
-            String formDurEndStr = this.durComp.getEndText();
-            Date formDurStart = null;
-            Date formDurEnd = null;
-
-            if (formDurStartStr != null && formDurEndStr != null) {
-                formDurStart = DataDeliveryGUIUtils
-                        .getSelectedSubDate(formDurStartStr);
-                formDurEnd = DataDeliveryGUIUtils
-                        .getSelectedSubDate(formDurEndStr);
-            }
-
-            if (durStart != null && durEnd != null && formDurStart != null
-                    && formDurEnd != null) {
-                if (durStart.equals(formDurStart)
-                        && durEnd.equals(formDurEnd)) {
-                    groupDurValid = true;
-                }
-            } else if (durStart == null && durEnd == null
-                    && formDurStart == null && formDurEnd == null) {
-                groupDurValid = true;
-            }
-
-            // Compare the active periods from the form to the group definition
-            Date activeStart = groupDefinition.getActivePeriodStart();
-            Date activeEnd = groupDefinition.getActivePeriodEnd();
-            String activeStartStr = null;
-            String activeEndStr = null;
-
-            String formActiveStart = this.activePeriodComp.getActiveStartText();
-            String formActiveEnd = this.activePeriodComp.getActiveEndText();
-
-            if (activeStart != null && activeEnd != null) {
-                activeStartStr = DataDeliveryGUIUtils.getActiveFormat()
-                        .format(activeStart);
-                activeEndStr = DataDeliveryGUIUtils.getActiveFormat()
-                        .format(activeEnd);
-            }
-
-            if (activeStartStr != null && activeEndStr != null
-                    && formActiveStart != null && formActiveEnd != null) {
-                if (activeStartStr.equals(formActiveStart)
-                        && activeEndStr.equals(formActiveEnd)) {
-                    groupActiveValid = true;
-                }
-            } else if (activeStartStr == null && activeEndStr == null
-                    && formActiveStart == null && formActiveEnd == null) {
-                groupActiveValid = true;
-            }
-
-        } else {
-            groupDurValid = true;
-            groupActiveValid = true;
-        }
-
-        if (!groupDurValid || !groupActiveValid) {
-            StringBuilder message = new StringBuilder();
-            message.append("The Subscription ");
-            if (!groupDurValid) {
-                message.append("Duration ");
-                if (!groupActiveValid) {
-                    message.append("and Active Period do ");
-                } else {
-                    message.append("does ");
-                }
-            } else {
-                message.append("Active Period does ");
-            }
-            message.append("not match the Group values. ");
-            message.append(
-                    "To apply these changes the subscription must be removed from the group.");
-            message.append("\n\n");
-            message.append("Should this subscription be removed from the "
-                    + groupDefinition.getGroupName() + " group?");
-
-            int yesOrNo = DataDeliveryUtils.showYesNoMessage(getShell(),
-                    "Invalid Group Values", message.toString());
-            if (yesOrNo == SWT.YES) {
-                groupSelectComp.setGroupName(null);
-                groupDefinition = null;
-            } else {
-                valid = false;
-            }
-        }
-
         // If valid is not set to true for any of the composites return
         if (!valid) {
             return false;
@@ -1741,11 +1600,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
             setSubscriptionDescription(subscription.getDescription());
         }
 
-        if (subscription.getGroupName() != null
-                && !"None".equals(subscription.getGroupName())) {
-            setGroupName(subscription.getGroupName());
-        }
-
         if (subscription.getSubscriptionEnd() != null) {
             setStartDate(subscription.getSubscriptionStart());
             setExpirationDate(subscription.getSubscriptionEnd());
@@ -1807,72 +1661,11 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                 selectCycles(cycleStrings);
             }
         }
-        if (!Strings.isNullOrEmpty(subscription.getGroupName())) {
-            setGroupName(subscription.getGroupName());
-        }
 
         setOfficeIds(subscription.getOfficeIDs());
 
         if (vbcomp != null) {
             vbcomp.setVertical(subscription.isVertical());
-        }
-    }
-
-    /**
-     * Populate the view based on the group name selected.
-     *
-     * @param groupName
-     *            The selected group name
-     */
-    private void populateGroupSettings(String groupName) {
-        GroupDefinition groupDefinition = GroupDefinitionManager
-                .getGroup(groupName);
-
-        if (groupDefinition == null) {
-            return;
-        }
-
-        // Set duration info
-        Date durStart = groupDefinition.getSubscriptionStart();
-        Date durEnd = groupDefinition.getSubscriptionEnd();
-
-        if (durStart != null || durEnd != null) {
-            setStartDate(durStart);
-            setExpirationDate(durEnd);
-            setNoExpiration(false);
-
-        } else {
-            setNoExpiration(true);
-            setSubscriptionDatesEnabled(false);
-            setStartDateBtnEnabled(false);
-            setEndDateBtnEnabled(false);
-        }
-
-        // Set the Active Period info
-        Date activePeriodStartDate = groupDefinition.getActivePeriodStart();
-        Date activePeriodEndDate = groupDefinition.getActivePeriodEnd();
-
-        if (activePeriodStartDate != null || activePeriodEndDate != null) {
-            final Calendar now = TimeUtil.newGmtCalendar();
-
-            activePeriodStartDate = calculateNextOccurenceOfMonthAndDay(
-                    activePeriodStartDate, now.get(Calendar.YEAR), now);
-
-            Calendar activePeriodStartCal = TimeUtil.newGmtCalendar();
-            activePeriodStartCal.setTime(activePeriodStartDate);
-
-            activePeriodEndDate = calculateNextOccurenceOfMonthAndDay(
-                    activePeriodEndDate,
-                    activePeriodStartCal.get(Calendar.YEAR), now);
-
-            setActiveStartDate(activePeriodStartDate);
-            setActiveEndDate(activePeriodEndDate);
-            setAlwaysActive(false);
-        } else {
-            setAlwaysActive(true);
-            setActiveDatesEnabled(false);
-            setActiveStartDateBtnEnabled(false);
-            setActiveEndDateBtnEnabled(false);
         }
     }
 

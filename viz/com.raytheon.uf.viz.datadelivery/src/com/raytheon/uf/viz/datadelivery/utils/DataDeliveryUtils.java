@@ -106,6 +106,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jun 01, 2015 2805       dhladky     Dataset Discovery Browser wouldn't close with message box.
  * Aug 25, 2015 4747       dhladky     Better options on message box returns.
  * Sep 12, 2017 6413       tjensen     Updated to support ParameterGroups
+ * Jan 04, 2019  7503      troberts    Remove subscription grouping capabilities.
  * </pre>
  *
  * *
@@ -337,13 +338,6 @@ public class DataDeliveryUtils {
             @Override
             public String getDisplayData(SubscriptionManagerRowData rd) {
                 return SizeUtil.prettyKiloByteSize(rd.getDataSetSize());
-            }
-        },
-        /** Column Group Name */
-        GROUP_NAME("Group Name", null) {
-            @Override
-            public String getDisplayData(SubscriptionManagerRowData rd) {
-                return rd.getGroupName();
             }
         };
 
@@ -784,8 +778,6 @@ public class DataDeliveryUtils {
         StringBuilder fmtStr = new StringBuilder();
 
         fmtStr.append("Subscription Name: ").append(sub.getName())
-                .append(newline);
-        fmtStr.append("Group Name: ").append(sub.getGroupName())
                 .append(newline);
         fmtStr.append("Dataset Name: ").append(sub.getDataSetName())
                 .append(newline);

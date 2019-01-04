@@ -186,6 +186,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Nov 02, 2017  6461     tgurney   storeQuerySub() add showMessageBox flag
  * Mar 01, 2018  7204     nabowle   Add subEnvelope.
  * Dec 10, 2018  7504     troberts  Added check to avoid close loop.
+ * Jan 04, 2019  7503     troberts  Remove subscription grouping capabilities.
  * </pre>
  *
  * @author mpduff
@@ -712,7 +713,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         }
 
         if (!create) {
-            sub.setGroupName(this.subscription.getGroupName());
             sub.setSubscriptionEnd(this.subscription.getSubscriptionEnd());
             sub.setSubscriptionStart(this.subscription.getSubscriptionStart());
             sub.setActivePeriodEnd(this.subscription.getActivePeriodEnd());
@@ -730,7 +730,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             if (this.subscription.getDescription() != null) {
                 sub.setDescription(subscription.getDescription());
             }
-            sub.setGroupName(subscription.getGroupName());
         }
 
         sub.setId(RegistryUtil.getRegistryObjectKey(sub));

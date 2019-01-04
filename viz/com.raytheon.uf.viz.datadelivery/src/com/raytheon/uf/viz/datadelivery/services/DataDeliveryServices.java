@@ -21,7 +21,6 @@ package com.raytheon.uf.viz.datadelivery.services;
 
 import com.raytheon.uf.common.auth.req.IPermissionsService;
 import com.raytheon.uf.common.datadelivery.bandwidth.BandwidthService;
-import com.raytheon.uf.common.datadelivery.service.GroupDefinitionService;
 import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.datadelivery.service.subscription.SubscriptionOverlapService;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService;
@@ -43,6 +42,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService;
  * Oct 21, 2013  2292     mpduff    Added generics.
  * Mar 16, 2016  3919     tjensen   Cleanup unneeded interfaces
  * Apr 25, 2017  1045     tjensen   Cleanup more unneeded interfaces
+ * Jan 03, 2019  7503     troberts  Remove subscription grouping capabilities.
  *
  * </pre>
  *
@@ -60,8 +60,6 @@ public final class DataDeliveryServices {
 
     private static IPermissionsService permissionsService;
 
-    private static GroupDefinitionService groupDefinitionService;
-
     private static SubscriptionOverlapService<?, ?> subscriptionOverlapService;
 
     /**
@@ -71,13 +69,11 @@ public final class DataDeliveryServices {
             SubscriptionService subscriptionService,
             SendToServerSubscriptionNotificationService subscriptionNotificationService,
             IPermissionsService permissionsService,
-            GroupDefinitionService groupDefinitionService,
             SubscriptionOverlapService<?, ?> subscriptionOverlapService) {
         DataDeliveryServices.bandwidthService = bandwidthService;
         DataDeliveryServices.subscriptionService = subscriptionService;
         DataDeliveryServices.subscriptionNotificationService = subscriptionNotificationService;
         DataDeliveryServices.permissionsService = permissionsService;
-        DataDeliveryServices.groupDefinitionService = groupDefinitionService;
         DataDeliveryServices.subscriptionOverlapService = subscriptionOverlapService;
     }
 
@@ -115,15 +111,6 @@ public final class DataDeliveryServices {
      */
     public static IPermissionsService getPermissionsService() {
         return DataDeliveryServices.permissionsService;
-    }
-
-    /**
-     * Get the group definition service.
-     *
-     * @return the groupDefinitionService
-     */
-    public static GroupDefinitionService getGroupDefinitionService() {
-        return DataDeliveryServices.groupDefinitionService;
     }
 
     /**

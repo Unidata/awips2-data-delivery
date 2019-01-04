@@ -69,15 +69,6 @@ public final class DataDeliveryHandlers {
     }
 
     /**
-     * Retrieve the {@link GroupDefinitionHandler}.
-     * 
-     * @return the handler
-     */
-    public static GroupDefinitionHandler getGroupDefinitionHandler() {
-        return RegistryObjectHandlers.get(GroupDefinitionHandler.class);
-    }
-
-    /**
      * Retrieve the {@link ProviderHandler}.
      * 
      * @return the handler
