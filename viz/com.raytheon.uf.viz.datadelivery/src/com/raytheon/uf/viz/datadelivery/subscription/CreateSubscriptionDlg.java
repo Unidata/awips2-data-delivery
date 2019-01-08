@@ -189,6 +189,7 @@ import com.raytheon.viz.ui.presenter.components.ComboBoxConf;
  * Dec 08, 2017  6355     nabowle   Add VBComp.
  * Feb 08, 2018  6451     nabowle   Require selected cycle times if available.
  *                                  Select All The Cycles by default.
+ * Jan 08, 2019  7330     troberts  Made latency for PDA subscriptions editable.
  *
  * </pre>
  *
@@ -324,8 +325,6 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         int latency = 15;
         SubscriptionPriority priority = SubscriptionPriority.NORMAL;
         SystemRuleManager ruleManager = SystemRuleManager.getInstance();
-        boolean isReadOnlyLatency = false;
-
         // rule values
         SubscriptionPriority priorityRule = null;
         int latencyRule = 0;
@@ -336,17 +335,14 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
                     .newTreeSet(((OpenDapGriddedDataSet) dataSet).getCycles());
             latencyRule = ruleManager.getLatency(subscription, cycleTimes);
             priorityRule = ruleManager.getPriority(subscription, cycleTimes);
-            isReadOnlyLatency = false;
         } else if (this.subscription.getDataSetType() == DataType.POINT) {
             // For point the latency is the retrieval interval
             latencyRule = ((PointTime) subscription.getTime()).getInterval();
             priorityRule = ruleManager.getPointDataPriority(subscription);
-            isReadOnlyLatency = true;
         } else if (this.subscription.getDataSetType() == DataType.PDA) {
             // For PDA the latency is static
             latencyRule = ruleManager.getPDADataLatency(subscription);
             priorityRule = ruleManager.getPDADataPriority(subscription);
-            isReadOnlyLatency = true;
         }
 
         if (this.create) {
@@ -358,7 +354,7 @@ public class CreateSubscriptionDlg extends CaveSWTDialog {
         }
 
         priorityComp = new PriorityComp(mainComp, latencyRule, latency,
-                priorityRule, priority, isReadOnlyLatency);
+                priorityRule, priority);
 
         if (this.subscription.getDataSetType() == DataType.GRID) {
             if (!CollectionUtil.isNullOrEmpty(cycleTimes)) {

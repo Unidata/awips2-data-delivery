@@ -49,6 +49,7 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription.SubscriptionPri
  * Jun 04, 2013     223    mpduff      Changes for Point Data.
  * Aug 30, 2013    2288    bgonzale    Added display of priority and latency rules.
  * Mar 28, 2016  5482      randerso     Fixed GUI sizing issues
+ * Jan 08, 2019  7330      troberts    Made latency for PDA subscriptions editable.
  * 
  * </pre>
  * 
@@ -77,8 +78,6 @@ public class PriorityComp extends Composite {
     /** The priority value */
     private SubscriptionPriority priority;
 
-    private final boolean readOnlyLatency;
-
     private Label latencyLabel;
 
     /**
@@ -99,7 +98,6 @@ public class PriorityComp extends Composite {
         this.latency = latency;
         this.priorityRule = null;
         this.priority = priority;
-        this.readOnlyLatency = readOnlyLatency;
         init();
     }
 
@@ -118,15 +116,13 @@ public class PriorityComp extends Composite {
      *            is latency editable.
      */
     public PriorityComp(Composite parent, int latencyRule, int latency,
-            SubscriptionPriority priorityRule, SubscriptionPriority priority,
-            boolean readOnlyLatency) {
+            SubscriptionPriority priorityRule, SubscriptionPriority priority) {
         super(parent, SWT.NONE);
         this.hasRules = true;
         this.latencyRule = latencyRule;
         this.latency = latency;
         this.priorityRule = priorityRule;
         this.priority = priority;
-        this.readOnlyLatency = readOnlyLatency;
         init();
     }
 
@@ -213,22 +209,12 @@ public class PriorityComp extends Composite {
         sb.append(":");
         latencyLbl.setText(sb.toString());
 
-        if (readOnlyLatency) {
-            latencyLabel = new Label(latencyComp, SWT.BORDER);
-            latencyLabel.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT,
-                    true, false));
-            latencyLabel
-                    .setToolTipText("Point Data's latency is the retrieval interval.");
-            latencyLabel.setText(String.valueOf(this.latency));
-        } else {
-            latencyText = new Text(latencyComp, SWT.BORDER);
-            latencyText.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
-                    false));
-            latencyText
-                    .setToolTipText("Time in minutes allotted for a subscription to download");
-            latencyText.setText(String.valueOf(this.latency));
-        }
-
+        latencyText = new Text(latencyComp, SWT.BORDER);
+        latencyText.setLayoutData(
+                new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        latencyText.setToolTipText(
+                "Time in minutes allotted for a subscription to download");
+        latencyText.setText(String.valueOf(this.latency));
     }
 
     /**
