@@ -51,6 +51,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.CreateSubscriptionDlg;
  * ------------ ---------- ----------- --------------------------
  * Oct 25, 2017 6461       tgurney     Initial creation
  * Jan 25, 2018 6506       nabowle     storeAdhoc renamed to scheduleAdhoc
+ * Jul 12, 2018 7358       tjensen     Set url on adhoc subscription
  *
  * </pre>
  *
@@ -138,6 +139,7 @@ public class PDACreateAdhocCallback extends CreateAdhocCallback {
         if (latestMetaData != null) {
             adhoc.setTime(latestMetaData.getTime());
             adhoc.setSubscriptionType(SubscriptionType.QUERY);
+            adhoc.setUrl(latestMetaData.getUrl());
             return adhoc;
         } else {
             return null;
