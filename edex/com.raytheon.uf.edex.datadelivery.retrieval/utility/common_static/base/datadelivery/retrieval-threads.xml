@@ -26,16 +26,8 @@
 <retrievalThreadsConfig xmlns:ns2="group">
     <providers>
         <provider>
-            <name>MADISOGC</name>
-            <threads>1</threads>
-        </provider>
-        <provider>
             <name>NOMADS</name>
             <threads>2</threads>
-        </provider>
-        <provider>
-            <name>PDA</name>
-            <threads>3</threads>
         </provider>
     </providers>
 </retrievalThreadsConfig>

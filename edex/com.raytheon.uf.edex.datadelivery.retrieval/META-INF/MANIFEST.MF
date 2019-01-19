@@ -46,10 +46,7 @@ Require-Bundle: com.raytheon.uf.common.status,
  org.slf4j;bundle-version="1.7.21",
  com.raytheon.uf.common.units,
  com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist,
- com.raytheon.uf.edex.plugin.madis.ogc,
- com.raytheon.uf.common.dataplugin.madis,
- com.raytheon.uf.edex.wfs;bundle-version="1.0.0",
- com.raytheon.uf.edex.plugin.madis
+ com.raytheon.uf.edex.wfs;bundle-version="1.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.edex.datadelivery.retrieval,
@@ -67,6 +64,5 @@ Export-Package: com.raytheon.uf.edex.datadelivery.retrieval,
  com.raytheon.uf.edex.datadelivery.retrieval.request,
  com.raytheon.uf.edex.datadelivery.retrieval.response,
  com.raytheon.uf.edex.datadelivery.retrieval.util,
- com.raytheon.uf.edex.datadelivery.retrieval.wfs,
- com.raytheon.uf.edex.datadelivery.retrieval.wfs.metadata
+ com.raytheon.uf.edex.datadelivery.retrieval.wfs
 Import-Package: com.raytheon.uf.common.wmo
