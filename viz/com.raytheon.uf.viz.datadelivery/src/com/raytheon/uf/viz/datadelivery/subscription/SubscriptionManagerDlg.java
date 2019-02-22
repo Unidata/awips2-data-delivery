@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -81,6 +82,7 @@ import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.datadelivery.actions.DataBrowserAction;
+import com.raytheon.uf.viz.datadelivery.common.ui.IGroupAction;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableChange;
 import com.raytheon.uf.viz.datadelivery.common.ui.LoadSaveConfigDlg;
 import com.raytheon.uf.viz.datadelivery.common.ui.LoadSaveConfigDlg.DialogType;
@@ -173,14 +175,14 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Jan 10, 2017  746       bsteffen    Avoid dialog spam when activating/deactivating many subscriptions
  * Oct 27, 2017  6467      tgurney     Update "not authorized" message text
  * Nov 17, 2017  6343      tgurney     Remove unused groupSelectionUpdate()
- * Dec 31, 2018  7503      troberts    Remove subscription grouping capabilities.
+ *
  * </pre>
  *
  * @author mpduff
  */
 
 public class SubscriptionManagerDlg extends CaveSWTDialog
-        implements ITableChange, ISubscriptionAction, IDisplay {
+        implements ITableChange, ISubscriptionAction, IGroupAction, IDisplay {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -229,8 +231,20 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
     /** Office ID combo box */
     private Combo officeCbo;
 
+    /** Group combo box */
+    private Combo groupCbo;
+
     /** Subscription Approval Dialog */
     private SubscriptionApprovalDlg dlg = null;
+
+    /** Create Group Dialog */
+    private CreateGroupDefinitionDlg createGroupDlg;
+
+    /** Edit Group Dialog */
+    private EditGroupDefinitionDlg editGroupDlg;
+
+    /** Delete Group Dialog */
+    private DeleteGroupDlg deleteGroupDlg;
 
     /** The subscription service */
     private final SubscriptionService subscriptionService = DataDeliveryServices
@@ -245,6 +259,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
     /** The selected office */
     private String selectedOffice;
 
+    /** The selected group */
+    private String selectedGroup;
+
     /** Load config dialog */
     private LoadSaveConfigDlg loadDlg;
 
@@ -257,6 +274,9 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
     /** Option to select all subscriptions */
     private static final String ALL = "ALL";
 
+    /** Option to select all groups of subscriptions */
+    private static final String ALL_SUBSCRIPTIONS = "All Subscriptions";
+
     /** Edit menu */
     private MenuItem editMI;
 
@@ -265,6 +285,15 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
 
     /** Delete menu */
     private MenuItem deleteMI;
+
+    /** Edit group menu */
+    private MenuItem editGroupMI;
+
+    /** Delete group menu */
+    private MenuItem deleteGroupMI;
+
+    /** Group menu */
+    private MenuItem groupMI;
 
     /** New menu */
     private MenuItem newMI;
@@ -322,6 +351,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         createMenus();
         createTopLayout();
         createTableControl();
+        loadGroupNames();
         loadOfficeNames();
         createBottomButtons();
         enableControls(true);
@@ -366,8 +396,25 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
             }
         });
 
+        groupMI = new MenuItem(fileMenu, SWT.NONE);
+        groupMI.setText("New Group...");
+        groupMI.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                handleGroupCreate(true);
+            }
+        });
+
         MenuItem refreshMI = new MenuItem(fileMenu, SWT.NONE);
         refreshMI.setText("Refresh Table");
+        refreshMI.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                handleRefresh();
+            }
+
+        });
+
         new MenuItem(fileMenu, SWT.SEPARATOR);
 
         MenuItem approveMI = new MenuItem(fileMenu, SWT.NONE);
@@ -519,6 +566,24 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
                 handleDelete();
             }
         });
+
+        editGroupMI = new MenuItem(editMenu, SWT.NONE);
+        editGroupMI.setText("Edit Group...");
+        editGroupMI.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                handleGroupCreate(false);
+            }
+        });
+
+        deleteGroupMI = new MenuItem(editMenu, SWT.NONE);
+        deleteGroupMI.setText("Delete Group...");
+        deleteGroupMI.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                deleteGroupSelected();
+            }
+        });
     }
 
     /**
@@ -575,11 +640,28 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
                 enableControls(officeCbo.getText().equals(CURRENT_SITE));
             }
         });
+
+        // Group label
+        Label groupLbl = new Label(officeComp, SWT.NONE);
+        groupLbl.setText("        Group: ");
+
+        // Group Selection Combo Box
+        groupCbo = new Combo(officeComp, SWT.READ_ONLY);
+        gd = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        groupCbo.setLayoutData(gd);
+        groupCbo.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                handleFilterSelection();
+            }
+
+        });
     }
 
     /**
      * Refresh the subscription table data.
      */
+    @Override
     public void handleRefresh() {
 
         VizApp.runAsync(new Runnable() {
@@ -655,6 +737,66 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
     }
 
     /**
+     * Open the Create Group dialog.
+     *
+     * @param create
+     *            true for create dialog and false for edit
+     */
+    private void handleGroupCreate(boolean create) {
+        final String permission = DataDeliveryPermission.SUBSCRIPTION_CREATE
+                .toString();
+        IUser user = UserController.getUserObject();
+        String msg = user.uniqueId()
+                + " is not authorized to access the Dataset Discovery Browser\nPermission: "
+                + permission;
+
+        try {
+            if (DataDeliveryServices.getPermissionsService()
+                    .checkPermission(user, msg, permission).isAuthorized()) {
+                if (create) {
+                    if (createGroupDlg == null) {
+                        createGroupDlg = new CreateGroupDefinitionDlg(
+                                this.shell, this);
+                    }
+                    createGroupDlg.open();
+                } else {
+                    if (thereAreGroupsAvailable()) {
+                        if (editGroupDlg == null) {
+                            editGroupDlg = new EditGroupDefinitionDlg(
+                                    this.shell, this);
+                        }
+                        editGroupDlg.open();
+                    } else {
+                        DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                                "No Groups Defined",
+                                "No groups currently defined.\n\n"
+                                        + "Select the File->New Group... menu to create a group");
+                    }
+                }
+            }
+        } catch (AuthException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error occurred in authorization request", e);
+        }
+    }
+
+    /**
+     * Deletes the selected group.
+     */
+    private void deleteGroupSelected() {
+        if (thereAreGroupsAvailable()) {
+            if (deleteGroupDlg == null) {
+                deleteGroupDlg = new DeleteGroupDlg(this.shell, this);
+            }
+            deleteGroupDlg.open();
+        } else {
+            DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                    "No Groups Defined", "No groups currently defined.\n\n"
+                            + "Select the File->New Group... menu to create a group");
+        }
+    }
+
+    /**
      * Set the default configuration file.
      */
     private void handleSetDefault() {
@@ -724,6 +866,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         if (configMan.getCurrentConfigFile() == null) {
             handleSaveAsConfig();
         } else {
+            // configMan.setConfigFile(configMan.getCurrentConfigFile());
             configMan.saveXml();
         }
     }
@@ -816,6 +959,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
      * Handle the delete action.
      */
     private void handleDelete() {
+        int selectionCount = tableComp.getTable().getSelectionCount();
         if (tableComp.getTable().getSelectionCount() == 0) {
             DataDeliveryUtils.showMessage(shell, SWT.ERROR, "No Rows Selected",
                     "Please select a row or rows to Delete");
@@ -915,7 +1059,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
                                                         if (isDisposed()) {
                                                             return;
                                                         }
-
                                                         handleRefresh();
                                                     }
                                                 });
@@ -976,8 +1119,11 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
      * Handle filtering the subscription table using combo box selections.
      */
     private void handleFilterSelection() {
+
+        final String group = groupCbo.getText();
         final String office = officeCbo.getText();
         this.selectedOffice = office;
+        this.selectedGroup = group;
 
         tableComp.setSubscriptionFilter(new ISubscriptionManagerFilter() {
             @Override
@@ -992,6 +1138,18 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
                 }
                 final List<Subscription> results = filter
                         .getSubscriptions(subscriptionHandler);
+
+                // Remove any that don't match the configured filters. TODO:
+                // This should be cleaned up at some point in the future
+                for (Iterator<Subscription> iter = results.iterator(); iter
+                        .hasNext();) {
+                    Subscription subscription = iter.next();
+                    if (group == null || ALL_SUBSCRIPTIONS.equals(group)
+                            || group.equals(subscription.getGroupName())) {
+                        continue;
+                    }
+                    iter.remove();
+                }
                 return results;
             }
         });
@@ -1211,6 +1369,15 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
     }
 
     /**
+     * Check whether there are groups available.
+     *
+     * @return true if there are groups defined
+     */
+    private boolean thereAreGroupsAvailable() {
+        return GroupDefinitionManager.hasGroups();
+    }
+
+    /**
      * Turn off and on tool tips.
      */
     private void handleTooltipSelection(boolean toolTipFlag) {
@@ -1223,6 +1390,25 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         } else {
             activateBtn.setToolTipText(null);
             deactivateBtn.setToolTipText(null);
+        }
+    }
+
+    /**
+     * Load the list of group names available. Default is "All Subscriptions"
+     */
+    @Override
+    public void loadGroupNames() {
+
+        List<String> groupNameList = GroupDefinitionManager.getGroupNames();
+
+        groupNameList.add(0, ALL_SUBSCRIPTIONS);
+        String[] groupNames = groupNameList.toArray(new String[0]);
+        groupCbo.setItems(groupNames);
+
+        if (this.selectedGroup != null) {
+            groupCbo.select(groupNameList.indexOf(selectedGroup));
+        } else {
+            groupCbo.select(0);
         }
     }
 
@@ -1386,6 +1572,11 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
     }
 
     @Override
+    public String getGroupNameTxt() {
+        return null;
+    }
+
+    @Override
     public void tableSelection() {
         // not currently used
     }
@@ -1403,6 +1594,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
 
     @Override
     public void updateControls() {
+        loadGroupNames();
         loadOfficeNames();
     }
 
@@ -1414,9 +1606,12 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
      */
     private void enableControls(boolean enable) {
         copyMI.setEnabled(enable);
+        deleteGroupMI.setEnabled(enable);
         editMI.setEnabled(enable);
         copyMI.setEnabled(enable);
         deleteMI.setEnabled(enable);
+        editGroupMI.setEnabled(enable);
+        groupMI.setEnabled(enable);
         newMI.setEnabled(enable);
         tableComp.enableMenus(enable);
         activateBtn.setEnabled(enable);
@@ -1440,7 +1635,6 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
                         if (isDisposed()) {
                             return;
                         }
-
                         handleRefresh();
                     }
                 });

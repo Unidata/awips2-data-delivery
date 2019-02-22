@@ -20,11 +20,13 @@
 package com.raytheon.uf.viz.datadelivery.common.ui;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,18 +42,30 @@ import org.eclipse.swt.widgets.Label;
 
 import com.google.common.collect.Sets;
 import com.raytheon.uf.common.datadelivery.registry.Coverage;
+import com.raytheon.uf.common.datadelivery.registry.DataSet;
+import com.raytheon.uf.common.datadelivery.registry.GriddedCoverage;
+import com.raytheon.uf.common.datadelivery.registry.GroupDefinition;
+import com.raytheon.uf.common.datadelivery.registry.InitialPendingSubscription;
 import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.datadelivery.registry.Time;
 import com.raytheon.uf.common.datadelivery.registry.handlers.DataDeliveryHandlers;
 import com.raytheon.uf.common.datadelivery.registry.handlers.SubscriptionHandler;
 import com.raytheon.uf.common.datadelivery.request.DataDeliveryPermission;
+import com.raytheon.uf.common.datadelivery.retrieval.util.DataSizeUtils;
+import com.raytheon.uf.common.datadelivery.service.SendToServerSubscriptionNotificationService;
 import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.ITimer;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
+import com.raytheon.uf.viz.datadelivery.filter.MetaDataManager;
+import com.raytheon.uf.viz.datadelivery.services.DataDeliveryServices;
+import com.raytheon.uf.viz.datadelivery.subscription.GroupDefinitionManager;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.ForceApplyPromptResponse;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService.IForceApplyPromptDisplayText;
+import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionServiceResult;
 import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
 import com.raytheon.viz.ui.presenter.IDisplay;
 import com.raytheon.viz.ui.widgets.duallist.DualList;
@@ -119,13 +133,18 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Feb 28, 2017  6121     randerso  Update DualListConfig settings
  * Jun 27, 2017  746      bsteffen  Ensure subscription messages make it to the user.
  * Nov 16, 2017  6343     tgurney   Add get subscription methods
- * Jan 03, 2019  7503     troberts  Remove subscription grouping capabilities.
+ *
+ *
  * </pre>
  *
  * @author jpiatt
  */
 public class UserSelectComp<T extends Time, C extends Coverage> extends
         Composite implements IUpdate, IDisplay, IForceApplyPromptDisplayText {
+
+    /** Status Handler */
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(UserSelectComp.class);
 
     /** Group Name combo box. */
     private Combo userNameCombo;
@@ -254,9 +273,6 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
      * Populate the Available subscriptions for a selected user.
      */
     private void populateUserSubscriptions(String owner) {
-        /** Status Handler */
-        final IUFStatusHandler statusHandler = UFStatus
-                .getHandler(UserSelectComp.class);
 
         final String ownerToUse = owner == null ? currentUser : owner;
 
@@ -291,6 +307,40 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
         userMap.put(owner, hMap);
     }
 
+    /**
+     * Change selected subscription definitions to group created properties.
+     *
+     * @param groupName
+     *            The name of the group
+     */
+    public void getSubscriptionNames(String groupName) {
+
+        String owner = userNameCombo.getText();
+        Map<String, Subscription<T, C>> ownerSubs = userMap.get(owner);
+
+        Set<String> selectedSubscriptionNames = Sets
+                .newHashSet(dualList.getSelectedListItems());
+
+        Set<String> differences = Sets.symmetricDifference(
+                selectedSubscriptionNames, initiallySelectedSubscriptions);
+
+        Set<Subscription<T, C>> addedToGroup = new HashSet<>();
+        Set<Subscription<T, C>> removedFromGroup = new HashSet<>();
+
+        for (String subscriptionName : differences) {
+            final Subscription<T, C> subscription = ownerSubs
+                    .get(subscriptionName);
+            if (selectedSubscriptionNames.contains(subscriptionName)) {
+                addedToGroup.add(subscription);
+            } else {
+                removedFromGroup.add(subscription);
+            }
+        }
+
+        updateGroupDefinition(groupName, addedToGroup, removedFromGroup);
+
+    }
+
     public Set<Subscription> getInitiallySelectedSubscriptions() {
         String owner = userNameCombo.getText();
         Map<String, Subscription<T, C>> ownerSubs = userMap.get(owner);
@@ -305,6 +355,162 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
                 .newHashSet(dualList.getSelectedListItems());
         return selectedSubNames.stream().map(str -> ownerSubs.get(str))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Updates the group definition, the subscriptions added to the group, and
+     * the subscriptions removed from the group.
+     *
+     * @param groupName
+     * @param addedToGroup
+     * @param removedFromGroup
+     */
+    @SuppressWarnings("unchecked")
+    private void updateGroupDefinition(String groupName,
+            Set<Subscription<T, C>> addedToGroup,
+            Set<Subscription<T, C>> removedFromGroup) {
+
+        ITimer timer = TimeUtil.getPriorityEnabledTimer(statusHandler,
+                Priority.DEBUG);
+        timer.start();
+
+        for (Subscription<T, C> subscription : removedFromGroup) {
+            subscription.setGroupName(GroupDefinition.NO_GROUP);
+        }
+
+        for (Subscription<T, C> subscription : addedToGroup) {
+            subscription.setGroupName(groupName);
+        }
+
+        Set<Subscription<T, C>> groupSubscriptionsForUpdate = Collections
+                .emptySet();
+        try {
+            groupSubscriptionsForUpdate = new HashSet<>(
+                    (Collection<? extends Subscription<T, C>>) DataDeliveryHandlers
+                            .getSubscriptionHandler()
+                            .getByGroupName(groupName));
+
+            // Remove any that are set to be removed from the group
+            groupSubscriptionsForUpdate.removeAll(removedFromGroup);
+
+            // Add those that are being added to the group
+            groupSubscriptionsForUpdate.addAll(addedToGroup);
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to retrieve group subscriptions.", e);
+        }
+
+        updateGroupDefinitionForSubscriptions(groupName,
+                groupSubscriptionsForUpdate, removedFromGroup);
+
+        timer.stop();
+        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+            statusHandler.debug("Took [" + timer.getElapsedTime()
+                    + "] to update group definition");
+        }
+    }
+
+    /**
+     * Populate the selected subscriptions
+     *
+     * @param selectedList
+     *            The selected subscriptions
+     * @param groupName
+     *            The name of the group
+     */
+    @SuppressWarnings("unchecked")
+    private void updateGroupDefinitionForSubscriptions(String groupName,
+            Set<Subscription<T, C>> groupSubscriptions,
+            Set<Subscription<T, C>> removeFromGroupSubscriptions) {
+
+        // Get Group Definition
+        GroupDefinition groupDefinition = GroupDefinitionManager
+                .getGroup(groupName);
+        if (groupDefinition == null) {
+            groupDefinition = new GroupDefinition();
+            groupDefinition.setGroupName(groupName);
+        }
+
+        for (Subscription<T, C> subscription : groupSubscriptions) {
+            DataSizeUtils<?> sizeUtils = null;
+            // Apply group properties to subscription definition
+            subscription.setGroupName(groupName);
+
+            // Set duration
+            if (groupDefinition.getSubscriptionStart() != null) {
+                subscription.setSubscriptionStart(
+                        groupDefinition.getSubscriptionStart());
+                subscription.setSubscriptionEnd(
+                        groupDefinition.getSubscriptionEnd());
+            } else {
+                subscription.setSubscriptionStart(null);
+                subscription.setSubscriptionEnd(null);
+            }
+
+            // Set active period
+            if (groupDefinition.getActivePeriodStart() != null) {
+                subscription.setActivePeriodStart(
+                        groupDefinition.getActivePeriodStart());
+                subscription.setActivePeriodEnd(
+                        groupDefinition.getActivePeriodEnd());
+            } else {
+                subscription.setActivePeriodStart(null);
+                subscription.setActivePeriodEnd(null);
+            }
+
+            if (subscription.getCoverage() != null
+                    && groupDefinition.isArealDataSet()) {
+
+                @SuppressWarnings("rawtypes")
+                DataSet dataset = MetaDataManager.getInstance().getDataSet(
+                        subscription.getDataSetName(),
+                        subscription.getProvider());
+
+                sizeUtils = DataSizeUtils.getInstance(dataset, subscription);
+
+                Coverage cov = new GriddedCoverage();
+                cov.setEnvelope(dataset.getCoverage().getEnvelope());
+                cov.setRequestEnvelope(groupDefinition.getEnvelope());
+
+                subscription.setCoverage((C) cov);
+            }
+
+            subscription.addOfficeID(DataDeliveryUtils.getDataDeliveryId());
+            if (sizeUtils != null) {
+                subscription.setDataSetSize(
+                        sizeUtils.getDataSetSizeInKb(subscription));
+            }
+        }
+
+        try {
+
+            @SuppressWarnings("rawtypes")
+            List<Subscription> pendingSubscriptionList = new ArrayList<>(Sets
+                    .union(groupSubscriptions, removeFromGroupSubscriptions));
+            final SubscriptionServiceResult result = DataDeliveryServices
+                    .getSubscriptionService().updateWithPendingCheck(
+                            currentUser, pendingSubscriptionList, this);
+
+            SendToServerSubscriptionNotificationService subscriptionNotificationService = DataDeliveryServices
+                    .getSubscriptionNotificationService();
+            for (Subscription<T, C> pendingSubscription : pendingSubscriptionList) {
+                InitialPendingSubscription<T, C> pendingSub = pendingSubscription
+                        .initialPending(currentUser);
+                subscriptionNotificationService
+                        .sendUpdatedPendingSubscriptionNotification(pendingSub,
+                                currentUser);
+            }
+
+            if (result.hasMessageToDisplay()) {
+                DataDeliveryUtils.showMessageNonCallback(getShell(),
+                        SWT.ICON_INFORMATION, "Edit Group",
+                        result.getMessage());
+            }
+        } catch (RegistryHandlerException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unable to update the group definition for subscriptions.",
+                    e);
+        }
     }
 
     /**
@@ -333,6 +539,36 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
     @Override
     public void selectionChanged() {
         // unused
+    }
+
+    /**
+     * Populate Selected Subscriptions list according to the group selection
+     *
+     * @param groupName
+     *            Name of the subscription group
+     */
+    public void selectSubscriptionsInGroup(String groupName) {
+
+        // clear the selected list
+        dualList.clearAvailableList(true);
+
+        initiallySelectedSubscriptions.clear();
+        Map<String, Subscription<T, C>> sMap = userMap
+                .get(userNameCombo.getText());
+
+        for (Entry<String, Subscription<T, C>> entry : sMap.entrySet()) {
+
+            String subscriptionName = entry.getKey();
+            Subscription<T, C> sub = entry.getValue();
+
+            if (groupName.equals(sub.getGroupName())) {
+                initiallySelectedSubscriptions.add(subscriptionName);
+            }
+        }
+
+        // set the selected list
+        dualList.selectItems(
+                initiallySelectedSubscriptions.toArray(new String[0]));
     }
 
     /**

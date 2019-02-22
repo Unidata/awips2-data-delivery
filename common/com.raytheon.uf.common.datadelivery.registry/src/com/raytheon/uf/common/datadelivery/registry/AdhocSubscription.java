@@ -59,7 +59,6 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *                                  Shareds can have adhocs.
  * Oct 14, 2014  3736     dhladky   Allow adhoc subs for Shared Subs.
  * Aug 02, 2017  6186     rjpeter   Added url
- * Jan 03, 2019  7503     troberts  Remove subscription grouping capabilities.
  *
  * </pre>
  *
@@ -87,11 +86,13 @@ public class AdhocSubscription<T extends Time, C extends Coverage>
     private String url;
 
     public AdhocSubscription() {
+        setGroupName("Adhoc");
     }
 
     public AdhocSubscription(RecurringSubscription<T, C> subscription) {
         super(subscription);
         this.setOwner(subscription.getOwner());
+        setGroupName("Adhoc");
     }
 
     public String getUrl() {

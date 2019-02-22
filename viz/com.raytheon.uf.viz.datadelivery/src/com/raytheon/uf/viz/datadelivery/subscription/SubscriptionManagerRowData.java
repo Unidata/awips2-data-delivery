@@ -26,6 +26,8 @@ import com.raytheon.uf.common.datadelivery.registry.Subscription;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.viz.datadelivery.common.ui.ITableData;
 import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionManagerDlg.FullDataset;
+import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
+import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 
 /**
  * Subscription Manager Table's Row Data.
@@ -47,8 +49,7 @@ import com.raytheon.uf.viz.datadelivery.subscription.SubscriptionManagerDlg.Full
  * Apr 08, 2013  1826      djohnson   Remove delivery options.
  * May 15, 2013  1040      mpduff     Change Office IDs to set.
  * Jan 14, 2014  2459      mpduff     Change Subscription status code
- * Dec 03, 2014  3840      ccody      Implement Comparator based sorting
- * Jan 04, 2019  7503      troberts   Remove subscription grouping capabilities.
+ * Dec 03, 2014  3840      ccody        Implement Comparator based sorting
  * </pre>
  * 
  * @author mpduff
@@ -86,6 +87,10 @@ public class SubscriptionManagerRowData implements ITableData {
 
     /** Subscription active period end date. */
     private Date activeEnd = null;
+
+    /** Subscription column titles. */
+    private final String[] columns = DataDeliveryUtils
+            .getColumnTitles(TABLE_TYPE.SUBSCRIPTION);
 
     /** Subscription details. */
     private String details = null;
@@ -445,6 +450,7 @@ public class SubscriptionManagerRowData implements ITableData {
         this.setDescription(subscription.getDescription());
         this.setOfficeIds(subscription.getOfficeIDs());
         this.setDataSetSize(subscription.getDataSetSize());
+        this.setGroupName(subscription.getGroupName());
 
         if (subscription.isFullDataSet()) {
             this.setFullDataSet(FullDataset.FULL);

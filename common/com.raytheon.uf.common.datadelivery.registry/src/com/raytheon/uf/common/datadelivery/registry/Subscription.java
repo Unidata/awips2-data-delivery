@@ -60,7 +60,6 @@ import com.raytheon.uf.common.datadelivery.registry.Utils.SubscriptionStatus;
  * Aug 02, 2017  6186     rjpeter   Removed url.
  * Sep 12, 2017  6413     tjensen   Updated to support ParameterGroups
  * Dec 08, 2017  6355     nabowle   Add vertical slot.
- * Jan 03, 2019  7503     troberts  Remove subscription grouping capabilities.
  *
  * </pre>
  *
@@ -216,6 +215,21 @@ public interface Subscription<T extends Time, C extends Coverage>
      *            the name of the subscription
      */
     void setName(String name);
+
+    /**
+     * Get subscription group name.
+     *
+     * @return subscription group name
+     */
+    String getGroupName();
+
+    /**
+     * Set subscription group name.
+     *
+     * @param groupName
+     *            the name of the subscription group
+     */
+    void setGroupName(String groupName);
 
     /**
      * Set subscription provider name.

@@ -67,6 +67,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
 import com.raytheon.uf.viz.datadelivery.comm.NotificationMessageContainsType;
+import com.raytheon.uf.viz.datadelivery.common.ui.IGroupAction;
 import com.raytheon.uf.viz.datadelivery.common.ui.SortDirection;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableComp;
 import com.raytheon.uf.viz.datadelivery.common.ui.TableCompConfig;
@@ -130,14 +131,13 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Jun 20, 2016 5676       tjensen      Use showYesNoMessage for prompts that need to block
  * Nov 08, 2016  5976      bsteffen     Update notification API.
  * Nov 17, 2017  6343      tgurney      Remove unused groupSelectionUpdate()
- * Jan 04, 2019  7503      troberts     Remove subscription grouping capabilities.
  *
  * </pre>
  *
  * @author lvenable
  */
 
-public class SubscriptionTableComp extends TableComp {
+public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /** Status Handler */
     private final IUFStatusHandler statusHandler = UFStatus
@@ -299,6 +299,37 @@ public class SubscriptionTableComp extends TableComp {
         }
 
         return true;
+    }
+
+    /**
+     * Open the Add To Group dialog.
+     */
+    private void handleGroupAdd() {
+
+        if (!verifySingleRowSelected()) {
+            return;
+        }
+
+        // Check permissions
+        final String permission = DataDeliveryPermission.SUBSCRIPTION_EDIT
+                .toString();
+        IUser user = UserController.getUserObject();
+        String msg = user.uniqueId()
+                + " is not authorized to access Group Add\nPermission: "
+                + permission;
+
+        try {
+            if (DataDeliveryServices.getPermissionsService()
+                    .checkPermissions(user, msg, permission).isAuthorized()) {
+
+                GroupAddDlg groupAdd = new GroupAddDlg(this.getShell(),
+                        getSelectedSubscription(), this);
+                groupAdd.open();
+            }
+        } catch (AuthException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error occurred in authorization request", e);
+        }
     }
 
     /**
@@ -484,7 +515,7 @@ public class SubscriptionTableComp extends TableComp {
     public synchronized void updateTable(
             List<Subscription> updatedSubscriptions) {
         for (Subscription s : updatedSubscriptions) {
-            if (s.isDeleted()) {
+            if (s.isDeleted() == true) {
                 // Delete the data from the table
                 SubscriptionManagerRowData smrd;
                 int removeIndex = -1;
@@ -513,7 +544,7 @@ public class SubscriptionTableComp extends TableComp {
                     }
                 }
 
-                if (!foundMatch) {
+                if (foundMatch == false) {
                     if (!(s instanceof PendingSubscription)) {
                         addSubscription(s);
                     }
@@ -556,7 +587,7 @@ public class SubscriptionTableComp extends TableComp {
                 if (column.isSortColumn()) {
                     sortedColumn = tc;
                     SortDirection sortDirection = SortDirection.ASCENDING;
-                    if (!column.isSortAsc()) {
+                    if (column.isSortAsc() == false) {
                         sortDirection = SortDirection.ASCENDING;
                     }
                     this.sortDirectionMap.put(tc.getText(), sortDirection);
@@ -621,11 +652,9 @@ public class SubscriptionTableComp extends TableComp {
                     if (columnXml.isVisible()) {
                         String text = getCellText(columnXml.getName(), rd);
                         if (text == null) {
-                            item.setText(idx, "");
-                            idx++;
+                            item.setText(idx++, "");
                         } else {
-                            item.setText(idx, text);
-                            idx++;
+                            item.setText(idx++, text);
                         }
                     }
                 }
@@ -671,6 +700,17 @@ public class SubscriptionTableComp extends TableComp {
                 }
             });
 
+            // Add the selected row to a subscription group
+            MenuItem groupItem = new MenuItem(popupMenu, SWT.PUSH);
+            groupItem.setText("Add to Group...");
+            groupItem.setEnabled(menuItemsEnabled && this.currentSiteSelected);
+            groupItem.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent e) {
+                    handleGroupAdd();
+                }
+            });
+
             /*
              * If a single shared sub is selected and another site's subs are
              * loaded then allow the user to add their site to the shared sub.
@@ -706,8 +746,8 @@ public class SubscriptionTableComp extends TableComp {
             TableColumn[] columns = table.getColumns();
 
             for (int i = 0; i < columns.length; i++) {
-                if ("Active".equals(columns[i].getText())) {
-                    if ("T".equalsIgnoreCase(item.getText(i))) {
+                if (columns[i].getText().equals("Active")) {
+                    if (item.getText(i).equalsIgnoreCase("T")) {
                         subActionCallback.activateButtonUpdate("Deactivate");
                     } else {
                         subActionCallback.activateButtonUpdate("Activate");
@@ -724,7 +764,7 @@ public class SubscriptionTableComp extends TableComp {
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
 
-        if (isUpdateableNotification(messages)) {
+        if (isUpdateableNotification(messages) == true) {
             // Just refresh the whole table on a pertinent notification arriving
             VizApp.runAsync(new Runnable() {
                 @Override
@@ -748,11 +788,12 @@ public class SubscriptionTableComp extends TableComp {
      *         notification message
      */
     protected boolean isUpdateableNotification(NotificationMessage[] messages) {
-        if ((isDisposed()) || (messages == null) || (messages.length == 0)) {
+        if ((isDisposed() == true) || (messages == null)
+                || (messages.length == 0)) {
             return (false);
         }
 
-        if (!notificationMessageChecker.matchesCondition(messages)) {
+        if (notificationMessageChecker.matchesCondition(messages) == false) {
             return (false);
         }
 
@@ -767,7 +808,8 @@ public class SubscriptionTableComp extends TableComp {
                     if (category != null && category
                             .equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
                         String messageText = notificationRecord.getMessage();
-                        if ((messageText != null) && (!messageText.isEmpty())) {
+                        if ((messageText != null)
+                                && (messageText.isEmpty() == false)) {
                             messageText = messageText.toUpperCase();
                             if (messageText.contains(DataDeliveryUtils.CREATED)
                                     || messageText
@@ -795,15 +837,30 @@ public class SubscriptionTableComp extends TableComp {
         return (isPertinent);
     }
 
+    @Override
+    public void loadGroupNames() {
+        // not implemented
+    }
+
     /**
      * Refresh the subscription table data.
      */
+    @Override
     public void handleRefresh() {
         if (!isDisposed()) {
             populateData();
             populateTable();
             this.lastUpdateTime = TimeUtil.currentTimeMillis();
         }
+    }
+
+    @Override
+    public String getGroupNameTxt() {
+
+        int idx = table.getSelectionIndex();
+        SubscriptionManagerRowData row = subManagerData.getDataRow(idx);
+        String groupName = row.getGroupName();
+        return groupName;
     }
 
     /**

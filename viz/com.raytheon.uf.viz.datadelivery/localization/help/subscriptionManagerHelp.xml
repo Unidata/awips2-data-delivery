@@ -5,7 +5,7 @@
   <helpEntry>
      <!-- Help entry heading, bold font -->
      <header>
-        The Subscription Manager Table allows a user to add, edit, copy, view, and delete data delivery subscriptions.
+		The Subscription Manager Table allows a user to add, edit, copy, view, and delete data delivery subscriptions.
      </header>
      <!-- Help entry text, normal font.  Line breaks in text are passed through to display -->
      <text>
@@ -24,6 +24,14 @@ First is the optional Area filter.  Selecting an area only displays datasets tha
      </header>
      <text>
      The New Subscription menu option opens the Dataset Discovery Browser.
+     </text>
+  </helpEntry>
+  <helpEntry>
+     <header>
+        New Group... 
+     </header>
+     <text>
+     The New Group menu option allows the user to create a new subscription group.  First enter a group name.  Next select the Subscription Duration, Active Period, and Areal Coverage.  Finally select which subscriptions to add to the new group.
      </text>
   </helpEntry>
   <helpEntry>
@@ -86,6 +94,22 @@ Click OK to perform the edit.
      </header>
      <text>
      Highlight a row(s) in the table to delete. Click Yes to perform the deletion.
+     </text>
+  </helpEntry>
+  <helpEntry>
+     <header>
+        Edit Group... 
+     </header>
+     <text>
+     Edit the group settings.  Select a group to edit, change the settings, click OK to save the edit.
+     </text>
+  </helpEntry>
+  <helpEntry>
+     <header>
+        Delete Group... 
+     </header>
+     <text>
+     Select a group to delete and click OK to delete the group.
      </text>
   </helpEntry>
   <helpEntry>

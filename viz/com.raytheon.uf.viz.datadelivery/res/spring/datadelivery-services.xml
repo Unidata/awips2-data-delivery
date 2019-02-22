@@ -12,6 +12,9 @@
     <bean id="permissionsService"
         class="com.raytheon.uf.viz.datadelivery.subscription.RequestFromServerPermissionsService" />
 
+    <bean id="groupDefinitionService"
+        class="com.raytheon.uf.common.datadelivery.service.GroupDefinitionService" />
+
     <bean id="subscriptionService"
         class="com.raytheon.uf.viz.datadelivery.subscription.SubscriptionService"
         factory-method="newInstance">
@@ -26,6 +29,7 @@
         <constructor-arg ref="subscriptionNotificationService" />
         <constructor-arg ref="bandwidthService" />
         <constructor-arg ref="permissionsService" />
+        <constructor-arg ref="groupDefinitionService" />
         <constructor-arg ref="subscriptionOverlapService" />
     </bean>
 
