@@ -62,6 +62,10 @@ import com.raytheon.uf.common.time.util.ImmutableDate;
  * Apr 05, 2017  1045     tjensen   Add Coverage generics DataSetMetaData
  * Apr 27, 2017  1045     tjensen   Add methods for moving datasets to check
  *                                  intersections
+ * Apr 17, 2019  7755     skabasele Introduced a null check in  getByDataSetDate 
+ *                                  to ensure that the method doesn't
+ *                                  throw an null exception for cases when calling classes internally
+ *                                  pass null as Date.
  *
  * </pre>
  *
@@ -120,8 +124,9 @@ public abstract class BaseDataSetMetaDataHandler<T extends DataSetMetaData<?, ?>
         DataSetMetaDataQuery query = new DataSetMetaDataQuery();
         query.setDataSetName(dataSetName);
         query.setProviderName(providerName);
-        query.setDate(new ImmutableDate(date));
-
+        if (date != null) {
+            query.setDate(new ImmutableDate(date));
+        }
         RegistryQueryResponse<DataSetMetaData> response = registryHandler
                 .getObjects(query);
 

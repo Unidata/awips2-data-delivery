@@ -147,6 +147,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Mar 01, 2018  7204     nabowle   Actually filter datasets based on the chosen areal coverage. Send
  *                                  the selected coverage forward so the SubsetManagerDlg's spatial 
  *                                  tab will default to it.
+ * Apr 12, 2019  7755     skabasele  Fixed the infinite cyclic relationship between close() and 
+ *                                   shell.addShellListener shellClosed(ShellEvent event)
  * </pre>
  *
  * @author lvenable
@@ -293,13 +295,13 @@ public class DataBrowserDlg extends CaveSWTDialog
             @Override
             public void shellClosed(ShellEvent event) {
                 if (!isDirty()) {
-                    close();
+                    event.doit = true;
                 } else {
                     event.doit = false;
                     int answer = DataDeliveryGUIUtils
                             .showSettingsHaveChangedPopup(getShell());
                     if (answer == SWT.YES) {
-                        close();
+                        event.doit = true;
                     }
                 }
             }

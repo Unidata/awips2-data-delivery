@@ -186,6 +186,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Nov 02, 2017  6461     tgurney   storeQuerySub() add showMessageBox flag
  * Mar 01, 2018  7204     nabowle   Add subEnvelope.
  * Dec 10, 2018  7504     troberts  Added check to avoid close loop.
+ * Apr 17, 2019  7755     skabasele Updated label to "Subscription Name" in createInfoComp()
  * </pre>
  *
  * @author mpduff
@@ -424,7 +425,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         sizeLbl.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         Label nameLbl = new Label(subsetComp, SWT.NONE);
-        nameLbl.setText("Subset Name: ");
+        nameLbl.setText("Subscription Name: ");
 
         nameText = new Text(subsetComp, SWT.BORDER);
         nameText.setLayoutData(
