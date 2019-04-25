@@ -34,6 +34,24 @@
          <lrLon>-50.0</lrLon>
       </parentBounds>
    </DataSetConfigInfo>
+
+   <DataSetConfigInfo>
+      <dataSetNameRegex>JPSS.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>122880</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>SNPP.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>122880</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+   <DataSetConfigInfo>
+      <dataSetNameRegex>GCOM.*</dataSetNameRegex>
+      <moving>true</moving>
+      <sizeEstimatePerParamInKB>200000</sizeEstimatePerParamInKB>
+   </DataSetConfigInfo>
+
+   <!-- saving for when size per parameter allowed
    <DataSetConfigInfo>
       <dataSetNameRegex>VIIRS-AF.*</dataSetNameRegex>
       <moving>true</moving>
@@ -94,4 +112,5 @@
       <moving>true</moving>
       <sizeEstimatePerParamInKB>286720</sizeEstimatePerParamInKB>
    </DataSetConfigInfo>
+    -->
 </DataSetConfigInfoMap>

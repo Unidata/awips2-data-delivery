@@ -25,9 +25,9 @@
     -->
 <pdaShortNameMapSet>
    <pdaShortNameMap id="GOES" pattern="([A-Z0-9]+-[A-Z0-9]+)-([A-Z0-9]{3,5}?)(C|F|M|M1|M2)(_TEST)?" paramGroup="$2" resGroup="$3"/>
-   <pdaShortNameMap id="VIIRS_EDR1" pattern="([A-Z]+)_(VIIRS)_(EDR)(_TEST)?" paramGroup="$2-$1" resGroup=""/>
-   <pdaShortNameMap id="VIIRS_EDR2" pattern="(VIIRS)-([A-Z]+)-(EDR)(_TEST)?" paramGroup="$1-$2" resGroup=""/>
-   <pdaShortNameMap id="JRR" pattern="(JPSSRR)_([A-Z]+)(_TEST)?" paramGroup="VIIRS-$2" resGroup=""/>
+   <pdaShortNameMap id="VIIRS_EDR1" pattern="([A-Z]+)_(VIIRS)_(EDR)(_TEST)?" paramGroup="$2-$1" resGroup="geodata"/>
+   <pdaShortNameMap id="VIIRS_EDR2" pattern="(VIIRS)-([A-Z]+)-(EDR)(_TEST)?" paramGroup="$1-$2" resGroup="geodata"/>
+   <pdaShortNameMap id="JRR" pattern="(JPSSRR)_([A-Z]+)(_TEST)?" paramGroup="JPSSRR-$2" resGroup="pointset"/>
    <pdaShortNameMap id="AMSR2" pattern="(AMSR2)_([A-Z]+)(_TEST)?" paramGroup="$1-$2" resGroup=""/>
-   <pdaShortNameMap id="NPR-MIRS" pattern="(NPR-MIRS-IMG)_(33min_v11)(_TEST)?" paramGroup="$1" resGroup=""/>
+   <pdaShortNameMap id="NPR-MIRS" pattern="(NPR-MIRS-IMG)_(33min_v11)(_TEST)?" paramGroup="$1" resGroup="pointset"/>
 </pdaShortNameMapSet>

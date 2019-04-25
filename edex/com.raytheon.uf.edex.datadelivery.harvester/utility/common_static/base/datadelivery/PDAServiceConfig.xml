@@ -68,5 +68,5 @@
         value="https://${retrieval.pda.response.external.ip}:8082/GetCoverageResponseHandler" />
     <!-- Combine PDA DataSets by satellite and region, requires all connected 
         sites to be at least 18.1.1 -->
-    <constant name="COMBINE_DATASET_METADATA" value="false" />
+    <constant name="COMBINE_DATASET_METADATA" value="true" />
 </serviceConfig>

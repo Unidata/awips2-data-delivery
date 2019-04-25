@@ -31,92 +31,47 @@
       <route>goesrIngestDecode</route>
     </versionData>
   </VersionInfo>
-  <VersionInfo id="ActiveFires">
+
+  <!-- Polar Data for Combined Data Sets -->
+  <VersionInfo id="GCOM pointset">
     <dataSetNamePattern>
-      <include>VIIRS-AF.*</include>
-    </dataSetNamePattern>
-    <versionData start="18.1.1">
-      <route>geodataIngestDecode</route>
-    </versionData>
-  </VersionInfo>
-  <VersionInfo id="VIIRS-ADP">
-    <dataSetNamePattern>
-      <include>VIIRS-ADP.*</include>
-    </dataSetNamePattern>
-    <versionData start="18.1.1">
-      <route>geodataIngestDecode</route>
-    </versionData>
-  </VersionInfo>
-  <VersionInfo id="VIIRS-AOD">
-    <dataSetNamePattern>
-      <include>VIIRS-AOD.*</include>
-    </dataSetNamePattern>
-    <versionData start="18.1.1">
-      <route>geodataIngestDecode</route>
-    </versionData>
-  </VersionInfo>
-  <VersionInfo id="VIIRS_WINDS">
-    <dataSetNamePattern>
-      <include>VIIRS_WINDS.*</include>
-    </dataSetNamePattern>
-    <versionData start="18.1.1">
-      <route>geodataIngestDecode</route>
-    </versionData>
-  </VersionInfo>
-  <VersionInfo id="AMSR2-OCEAN">
-    <dataSetNamePattern>
-      <include>AMSR2-OCEAN.*</include>
-    </dataSetNamePattern>
-    <versionData start="18.1.1">
-      <route>pointsetNetcdfDecode</route>
-    </versionData>
-  </VersionInfo>
-  <VersionInfo id="AMSR2-MBT">
-    <dataSetNamePattern>
-      <include>AMSR2-MBT.*</include>
-    </dataSetNamePattern>
-    <versionData start="18.1.1">
-      <route>pointsetNetcdfDecode</route>
-    </versionData>
-  </VersionInfo>
-  <VersionInfo id="JRR-ADP">
-    <dataSetNamePattern>
-      <include>JRR-ADP.*</include>
-    </dataSetNamePattern>
-    <versionData start="18.1.1">
-      <route>pointsetNetcdfDecode</route>
-    </versionData>
-  </VersionInfo>
-  <VersionInfo id="JRR-AOD">
-    <dataSetNamePattern>
-      <include>JRR-AOD.*</include>
+      <include>GCOM</include>
     </dataSetNamePattern>
     <versionData start="19.2.1">
       <route>pointsetNetcdfDecode</route>
     </versionData>
   </VersionInfo>
-  <VersionInfo id="JRR-ICE">
+  <VersionInfo id="JPSS1 geodata">
     <dataSetNamePattern>
-      <include>JRR-ICE.*</include>
+      <include>JPSS1 geodata</include>
+    </dataSetNamePattern>
+    <versionData start="19.2.1">
+      <route>geodataIngestDecode</route>
+    </versionData>
+  </VersionInfo>
+  <VersionInfo id="JPSS1 pointset">
+    <dataSetNamePattern>
+      <include>JPSS1 pointset</include>
     </dataSetNamePattern>
     <versionData start="19.2.1">
       <route>pointsetNetcdfDecode</route>
     </versionData>
   </VersionInfo>
-  <VersionInfo id="JRR-VolcanicAsh">
+  <VersionInfo id="SNPP geodata">
     <dataSetNamePattern>
-      <include>JRR-VolcanicAsh.*</include>
+      <include>SNPP geodata</include>
+    </dataSetNamePattern>
+    <versionData start="19.2.1">
+      <route>geodataIngestDecode</route>
+    </versionData>
+  </VersionInfo>
+  <VersionInfo id="SNPP pointset">
+    <dataSetNamePattern>
+      <include>SNPP pointset</include>
     </dataSetNamePattern>
     <versionData start="19.2.1">
       <route>pointsetNetcdfDecode</route>
     </versionData>
   </VersionInfo>
-  <VersionInfo id="NPR-MIRS">
-    <dataSetNamePattern>
-      <include>NPR-MIRS.*</include>
-    </dataSetNamePattern>
-    <versionData start="19.2.1">
-      <route>pointsetNetcdfDecode</route>
-    </versionData>
-  </VersionInfo>
+
 </DataSetVersionInfoMap>
