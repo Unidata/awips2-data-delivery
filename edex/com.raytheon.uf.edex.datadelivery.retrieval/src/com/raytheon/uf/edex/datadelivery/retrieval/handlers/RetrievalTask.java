@@ -112,7 +112,7 @@ public abstract class RetrievalTask {
             if (retrievalResponse != null) {
                 success = processRetrievedData(retrieval, retrievalResponse);
             } else {
-                logger.error("Retrieval failed for retrieval [" + retrieval
+                logger.error("Retrieval failed for [" + retrieval
                         + "]. No PDOs to store.");
             }
         } catch (Exception e) {
