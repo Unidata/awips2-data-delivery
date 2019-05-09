@@ -159,7 +159,7 @@ public class DataBrowserDlg extends CaveSWTDialog
     private static final String DATA_BROWSER_HELP_FILE = "help/dataBrowserHelp.xml";
 
     /** Window Title string. */
-    private static final String WINDOW_TITLE = "Dataset Discovery Browser";
+    private static final String WINDOW_TITLE = "Dataset Discovery";
 
     /** Configuration path string. */
     private static final String CONFIG_PATH = FileUtil.join("dataDelivery",
@@ -262,7 +262,7 @@ public class DataBrowserDlg extends CaveSWTDialog
     protected Layout constructShellLayout() {
         // Create the main layout for the shell.
         GridLayout mainLayout = new GridLayout(1, false);
-        mainLayout.marginHeight = 3;
+        mainLayout.marginHeight = 4;
         mainLayout.marginWidth = 2;
         mainLayout.verticalSpacing = 2;
         return mainLayout;
@@ -474,7 +474,6 @@ public class DataBrowserDlg extends CaveSWTDialog
         Group dataTypeGrp = new Group(comp, SWT.NONE);
         dataTypeGrp.setLayout(new GridLayout(1, false));
         dataTypeGrp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        dataTypeGrp.setText(" Data Types: ");
 
         loadDataTypes();
 
@@ -493,7 +492,6 @@ public class DataBrowserDlg extends CaveSWTDialog
         Group areaGrp = new Group(comp, SWT.NONE);
         areaGrp.setLayout(new GridLayout(1, false));
         areaGrp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        areaGrp.setText(" Areal Coverage: ");
 
         Composite areaComp = new Composite(areaGrp, SWT.NONE);
         areaComp.setLayout(new GridLayout(2, false));
