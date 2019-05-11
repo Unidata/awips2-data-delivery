@@ -5,6 +5,16 @@
     http://camel.apache.org/schema/spring
     http://camel.apache.org/schema/spring/camel-spring.xsd">
 
+    <bean class="com.raytheon.uf.common.logback.appender.ThreadBasedAppender" factory-method="registerThreadPattern">
+        <constructor-arg value="retrieval" />
+        <constructor-arg value="Retrieval.*" />
+    </bean>
+
+    <bean class="com.raytheon.uf.common.logback.appender.ThreadBasedAppender" factory-method="registerThreadPattern">
+        <constructor-arg value="retrieval" />
+        <constructor-arg value="asyncRetrievalQueue.*" />
+    </bean>
+
     <!-- Doesn't use SessionManagedDao interface for table creation -->
     <bean id="ddRetrievalDatabaseProperties" class="com.raytheon.uf.edex.database.DatabasePluginProperties">
         <property name="pluginFQN" value="com.raytheon.uf.edex.datadelivery.retrieval" />

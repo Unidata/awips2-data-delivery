@@ -47,6 +47,8 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * Mar 31, 2014  2889     dhladky   Added username for notification center
  *                                  tracking.
  * Apr 27, 2017  6186     rjpeter   Added getActiveByDataSetAndProviderForSite.
+ * Apr 03, 2018  7240     tjensen   Added getByDataSetAndProvider and
+ *                                  getByDataSetAndProviderForSite
  *
  * </pre>
  *
@@ -181,6 +183,19 @@ public class EmptySiteSubscriptionHandler implements ISiteSubscriptionHandler {
     @Override
     public void delete(String username, Collection<SiteSubscription> objects)
             throws RegistryHandlerException {
+    }
+
+    @Override
+    public List<SiteSubscription> getByDataSetAndProvider(String dataSetName,
+            String providerName) throws RegistryHandlerException {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<SiteSubscription> getByDataSetAndProviderForSite(
+            String dataSetName, String providerName, String officeId)
+            throws RegistryHandlerException {
+        return Collections.emptyList();
     }
 
 }

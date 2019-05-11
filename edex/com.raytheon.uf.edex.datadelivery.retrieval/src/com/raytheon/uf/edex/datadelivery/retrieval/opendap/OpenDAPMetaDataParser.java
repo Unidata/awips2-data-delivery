@@ -132,6 +132,8 @@ import opendap.dap.NoSuchAttributeException;
  * Oct 04, 2017  6465        tjensen   Get gridCoverage from provider. Rename
  *                                     Collections to URLParserInfo
  * Jan 30, 2018  6413        rjpeter   Ensure each link gets a new coverage object
+ * Feb 21, 2018  7210        nabowle   Recalculate dx for cases where dx*nx slightly
+ *                                     exceeds 360.
  * </pre>
  *
  * @author dhladky
@@ -284,12 +286,20 @@ class OpenDAPMetaDataParser extends MetaDataParser<List<Link>> {
             try {
                 AttributeTable at = das.getAttributeTable(lon);
                 // nx
-                gridCoverage.setNx(new Integer(OpenDAPParseUtility.getInstance()
-                        .trim(at.getAttribute(size).getValueAt(0))).intValue());
+                int nx = new Integer(OpenDAPParseUtility.getInstance()
+                        .trim(at.getAttribute(size).getValueAt(0))).intValue();
+                gridCoverage.setNx(nx);
                 // dx
-                gridCoverage.setDx(new Float(OpenDAPParseUtility.getInstance()
+                double dx = new Double(OpenDAPParseUtility.getInstance()
                         .trim(at.getAttribute(resolution).getValueAt(0)))
-                                .floatValue());
+                                .doubleValue();
+
+                if (nx * dx > 360.0D && nx * dx < 361.0D) {
+                    // correct (presumed) rounding errors.
+                    dx = 360.0D / nx;
+                }
+
+                gridCoverage.setDx(dx);
                 // min Lon
                 double minLon = new Double(OpenDAPParseUtility.getInstance()
                         .trim(at.getAttribute(minimum).getValueAt(0)))

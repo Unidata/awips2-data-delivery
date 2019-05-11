@@ -46,6 +46,7 @@ import oasis.names.tc.ebxml.regrep.xsd.rim.v4.RegistryObjectType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 06, 2017 6355       nabowle     Initial creation
+ * Apr 03, 2018 7240       tjensen     Change to support files by dataset
  *
  * </pre>
  *
@@ -106,7 +107,8 @@ public class SubscriptionVBConfigFileManager {
             return;
         }
 
-        SubscriptionVBConfigFileUtil.createSubscriptionFiles(sub);
+        SubscriptionVBConfigFileUtil.updateDataSetFiles(sub.getDataSetName(),
+                sub.getProvider());
     }
 
     private void subscriptionUpdated(RegistryEvent event,
@@ -201,12 +203,20 @@ public class SubscriptionVBConfigFileManager {
             return;
         }
 
-        SubscriptionVBConfigFileUtil.deleteSubscriptionFiles(subName);
+        updateConfigFiles(event);
 
     }
 
+    private void updateConfigFiles(RemoveRegistryEvent event) {
+        RegistryObjectType rot = event.getRemovedObject();
+        String dsName = rot.getSlotValue("dataSetName");
+        String provider = rot.getSlotValue("provider");
+        SubscriptionVBConfigFileUtil.updateDataSetFiles(dsName, provider);
+    }
+
     private void siteRemoved(RegistryEvent event, Subscription<?, ?> sub) {
-        SubscriptionVBConfigFileUtil.deleteSubscriptionFiles(sub.getName());
+        SubscriptionVBConfigFileUtil.updateDataSetFiles(sub.getDataSetName(),
+                sub.getProvider());
     }
 
     /**

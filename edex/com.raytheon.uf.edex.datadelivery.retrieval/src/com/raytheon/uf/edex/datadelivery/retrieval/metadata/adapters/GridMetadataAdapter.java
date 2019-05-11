@@ -58,6 +58,7 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  * Jun 13, 2017  6204     nabowle   Cleanup.
  * Jul 27, 2017  6186     rjpeter   Use Retrieval
  * Sep 20, 2017  6413     tjensen   Update for ParameterGroups
+ * Apr 03, 2018  7240     tjensen   Store data by dataset name with DD prefix
  *
  * </pre>
  *
@@ -65,6 +66,8 @@ import com.raytheon.uf.edex.datadelivery.retrieval.util.ResponseProcessingUtilit
  */
 public class GridMetadataAdapter
         extends AbstractMetadataAdapter<Integer, GriddedTime, GriddedCoverage> {
+
+    private static final String DD_MODEL_PREFIX = "DD_";
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(GridMetadataAdapter.class);
@@ -108,7 +111,7 @@ public class GridMetadataAdapter
                 for (int i = 0; i < time.getSelectedTimeIndices().size(); i++) {
                     for (Level level : levels) {
                         pdos[bin] = populateGridRecord(
-                                retrieval.getSubscriptionName(),
+                                DD_MODEL_PREFIX + retrieval.getDataSetName(),
                                 attXML.getParameterGroup(), attXML.getEntry(),
                                 level, ensemble, gridCoverage);
                         bin++;

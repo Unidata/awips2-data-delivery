@@ -93,6 +93,7 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Nov 02, 2017  6461     tgurney   Use a single message box for multiple adhoc
  *                                  subs created
  * Dec 19, 2017  6523     tjensen   Changes for VerticalXML updates
+ * Mar 01, 2018  7204     nabowle   Add subEnvelope to constructor. Give to SpatialTab.
  * Jul 12, 2018  7358     tjensen   Set URL on Adhoc subscriptions
  *
  * </pre>
@@ -145,7 +146,7 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      */
     public PDASubsetManagerDlg(Shell shell, PDADataSet dataSet,
             boolean loadDataSet, SubsetXML subsetXml) {
-        super(shell, loadDataSet, dataSet);
+        super(shell, loadDataSet, dataSet, null);
         this.dataSet = dataSet;
         this.subsetXml = subsetXml;
         this.adhocCallback = new PDACreateAdhocCallback();
@@ -160,8 +161,9 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
      * @param dataSet
      *            the data set
      */
-    public PDASubsetManagerDlg(Shell shell, PDADataSet dataSet) {
-        super(shell, dataSet);
+    public PDASubsetManagerDlg(Shell shell, PDADataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
+        super(shell, dataSet, subEnvelope);
         this.dataSet = dataSet;
         this.adhocCallback = new PDACreateAdhocCallback();
         setTitle();
@@ -209,7 +211,8 @@ public class PDASubsetManagerDlg extends SubsetManagerDlg {
         spatialComp.setLayout(sgl);
         spatialComp.setLayoutData(sgd);
         spatialTab.setControl(spatialComp);
-        spatialTabControls = new SpatialSubsetTab(spatialComp, dataSet, this);
+        spatialTabControls = new SpatialSubsetTab(spatialComp, dataSet, this,
+                subEnvelope);
     }
 
     @Override

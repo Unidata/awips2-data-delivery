@@ -185,6 +185,7 @@ import com.raytheon.uf.edex.registry.ebxml.util.RegistryIdUtil;
  *                                  SubscriptionRetrieval
  * Oct 25, 2017  6484     tjensen   Merged SubscriptionRetrievals and
  *                                  BandwidthAllocations
+ * Dec 12, 2017  6522     mapeters  Add thread-based logging for retrieval
  * Feb 02, 2018  6471     tjensen   Improve handling of subscriptions that are
  *                                  too big to schedule
  *
@@ -196,6 +197,8 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
         extends AbstractPrivilegedRequestHandler<BandwidthRequest<T, C>> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    protected static final String RETRIEVAL_THREAD_PREFIX = "Retrieval-";
 
     /** Used for min time range (point subs) **/
     public static final String MIN_RANGE_TIME = "min";
@@ -726,7 +729,7 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
     /**
      * Update the retrieval plan scheduling.
      *
-     * @param Network
+     * @param network
      *            the network to update
      *
      * @return number of subscriptions processed
@@ -1170,7 +1173,6 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
      *
      * @param bandwidthSubscriptions
      *            The subscriptionDao's to remove.
-     * @return
      */
     protected void remove(List<BandwidthAllocation> bandwidthAllocations) {
         bandwidthDaoUtil.remove(bandwidthAllocations);
@@ -1191,17 +1193,29 @@ public abstract class BandwidthManager<T extends Time, C extends Coverage>
          * case where the updated subscription is actually an AdhocSubscription
          */
         if (subscription instanceof AdhocSubscription) {
-            // TODO: Move call once AdhocSubscription is no longer in registry
-            List<UnscheduledAllocationReport> unscheduled = Collections
-                    .emptyList();
+            String oldThreadName = Thread.currentThread().getName();
+            Thread.currentThread()
+                    .setName(RETRIEVAL_THREAD_PREFIX + oldThreadName);
+
             try {
-                unscheduled = queueRetrieval(
-                        (AdhocSubscription<T, C>) subscription);
-            } catch (Exception e) {
-                logger.error("Unable to queue retrieval for adhoc subscription "
-                        + subscription.getName(), e);
+                /*
+                 * TODO: Move call once AdhocSubscription is no longer in
+                 * registry
+                 */
+                List<UnscheduledAllocationReport> unscheduled = Collections.emptyList();
+                try {
+                    unscheduled = queueRetrieval(
+                            (AdhocSubscription<T, C>) subscription);
+                } catch (Exception e) {
+                    logger.error(
+                            "Unable to queue retrieval for adhoc subscription "
+                                    + subscription.getName(),
+                            e);
+                }
+                return unscheduled;
+            } finally {
+                Thread.currentThread().setName(oldThreadName);
             }
-            return unscheduled;
         }
 
         // First see if BandwidthManager has seen the subscription before.

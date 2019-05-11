@@ -43,6 +43,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * Mar 29, 2013  1841     djohnson  Renamed from SubscriptionHandler.
  * Apr 05, 2013  1841     djohnson  Extracted core logic to superclass.
  * Apr 27, 2017  6186     rjpeter   Added getActiveByDataSetAndProviderForSite.
+ * Apr 03, 2018  7240     tjensen   Added getByDataSetAndProviderForSite
  *
  * </pre>
  *
@@ -77,6 +78,23 @@ public class SiteSubscriptionHandler
                 .getObjects(query);
 
         checkResponse(response, "getActiveByDataSetAndProvider");
+
+        return response.getResults();
+    }
+
+    @Override
+    public List<SiteSubscription> getByDataSetAndProviderForSite(
+            String dataSetName, String providerName, String officeId)
+            throws RegistryHandlerException {
+        SubscriptionFilterableQuery<SiteSubscription> query = getQuery();
+        query.setDataSetName(dataSetName);
+        query.setProviderName(providerName);
+        query.setOfficeId(officeId);
+
+        RegistryQueryResponse<SiteSubscription> response = registryHandler
+                .getObjects(query);
+
+        checkResponse(response, "getByDataSetAndProviderForSite");
 
         return response.getResults();
     }

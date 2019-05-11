@@ -174,6 +174,7 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Mar 28, 2016  5482      randerso    Fixed GUI sizing issues
  * Jan 10, 2017  746       bsteffen    Avoid dialog spam when activating/deactivating many subscriptions
  * Oct 27, 2017  6467      tgurney     Update "not authorized" message text
+ * Nov 17, 2017  6343      tgurney     Remove unused groupSelectionUpdate()
  *
  * </pre>
  *
@@ -441,13 +442,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         loadConfigMI.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                try {
-                    handleLoadConfig();
-                } catch (JAXBException e) {
-                    statusHandler.handle(
-                            com.raytheon.uf.common.status.UFStatus.Priority.ERROR,
-                            e.getLocalizedMessage(), e);
-                }
+                handleLoadConfig();
             }
         });
 
@@ -827,7 +822,7 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
     /**
      * Load configuration action.
      */
-    private void handleLoadConfig() throws JAXBException {
+    private void handleLoadConfig() {
         if (loadDlg == null || loadDlg.isDisposed()) {
             loadDlg = new LoadSaveConfigDlg(shell, DialogType.OPEN,
                     configMan.getLocalizationPath(),
@@ -1571,58 +1566,32 @@ public class SubscriptionManagerDlg extends CaveSWTDialog
         return exceptions;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void activateButtonUpdate(String text) {
         activateBtn.setText(text);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void groupSelectionUpdate(String fileName) {
-        // unused
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public String getGroupNameTxt() {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void tableSelection() {
         // not currently used
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean displayYesNoPopup(String title, String message) {
         return DataDeliveryUtils.showYesNoMessage(shell, title,
                 message) == SWT.YES;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void tableLock(boolean isLocked) {
         // no-op
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void updateControls() {
         loadGroupNames();

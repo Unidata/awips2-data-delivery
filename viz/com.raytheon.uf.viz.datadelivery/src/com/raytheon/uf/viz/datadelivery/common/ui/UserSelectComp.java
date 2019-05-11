@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -131,8 +132,9 @@ import com.raytheon.viz.ui.widgets.duallist.IUpdate;
  * Feb 21, 2017  746      bsteffen  Set request envelope when area changes.
  * Feb 28, 2017  6121     randerso  Update DualListConfig settings
  * Jun 27, 2017  746      bsteffen  Ensure subscription messages make it to the user.
+ * Nov 16, 2017  6343     tgurney   Add get subscription methods
  *
- * 
+ *
  * </pre>
  *
  * @author jpiatt
@@ -337,6 +339,22 @@ public class UserSelectComp<T extends Time, C extends Coverage> extends
 
         updateGroupDefinition(groupName, addedToGroup, removedFromGroup);
 
+    }
+
+    public Set<Subscription> getInitiallySelectedSubscriptions() {
+        String owner = userNameCombo.getText();
+        Map<String, Subscription<T, C>> ownerSubs = userMap.get(owner);
+        return initiallySelectedSubscriptions.stream()
+                .map(str -> ownerSubs.get(str)).collect(Collectors.toSet());
+    }
+
+    public Set<Subscription> getSelectedSubscriptions() {
+        String owner = userNameCombo.getText();
+        Map<String, Subscription<T, C>> ownerSubs = userMap.get(owner);
+        Set<String> selectedSubNames = Sets
+                .newHashSet(dualList.getSelectedListItems());
+        return selectedSubNames.stream().map(str -> ownerSubs.get(str))
+                .collect(Collectors.toSet());
     }
 
     /**

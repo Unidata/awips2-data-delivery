@@ -27,8 +27,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -186,6 +184,9 @@ import com.raytheon.viz.ui.presenter.IDisplay;
  * Sep 27, 2017  5948     tjensen   Updated saving to and loading from subset xml
  * Oct 13, 2017  6461     tgurney   Split up handleQuery()
  * Nov 02, 2017  6461     tgurney   storeQuerySub() add showMessageBox flag
+ * Mar 01, 2018  7204     nabowle   Add subEnvelope.
+ * Dec 10, 2018  7504     troberts  Added check to avoid close loop.
+ * Apr 17, 2019  7755     skabasele Updated label to "Subscription Name" in createInfoComp()
  * </pre>
  *
  * @author mpduff
@@ -251,6 +252,8 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
     protected ICreateAdhocCallback adhocCallback;
 
+    protected ReferencedEnvelope subEnvelope;
+
     /**
      * Constructor
      *
@@ -261,12 +264,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * @param dataSet
      *            The DataSetMetaData
      */
-    public SubsetManagerDlg(Shell shell, boolean loadDataSet, DataSet dataSet) {
+    public SubsetManagerDlg(Shell shell, boolean loadDataSet, DataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
         super(shell, SWT.RESIZE | SWT.DIALOG_TRIM | SWT.MAX | SWT.MIN,
                 CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         this.loadDataSet = loadDataSet;
         this.dataSet = dataSet;
         this.adhocCallback = new CreateAdhocCallback();
+        this.subEnvelope = subEnvelope;
     }
 
     /**
@@ -278,8 +283,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      * @param dataSet
      *            The DataSetMetaData
      */
-    public SubsetManagerDlg(Shell shell, DataSet dataSet) {
-        this(shell, false, dataSet);
+    public SubsetManagerDlg(Shell shell, DataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
+        this(shell, false, dataSet, subEnvelope);
     }
 
     /**
@@ -329,6 +335,17 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     protected abstract TimeXML getDataTimeInfo();
 
     @Override
+    public boolean shouldClose() {
+        displayMessage();
+        setClean();
+        if (subDlg != null && !subDlg.isOpen()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    @Override
     protected void initializeComponents(Shell shell) {
 
         createTabFolder();
@@ -342,14 +359,6 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                 loadFromSubscription(subscription);
             }
         }
-
-        shell.addShellListener(new ShellAdapter() {
-            @Override
-            public void shellClosed(ShellEvent event) {
-                event.doit = false;
-                displayMessage();
-            }
-        });
 
         initialized = true;
         updateDataSize();
@@ -416,7 +425,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         sizeLbl.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         Label nameLbl = new Label(subsetComp, SWT.NONE);
-        nameLbl.setText("Subset Name: ");
+        nameLbl.setText("Subscription Name: ");
 
         nameText = new Text(subsetComp, SWT.BORDER);
         nameText.setLayoutData(
@@ -516,7 +525,10 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     public void launchCreateSubscriptionGui(Subscription sub) {
         DataDeliveryGUIUtils.markBusyInUIThread(shell);
         try {
-            handleOK(sub);
+            if (handleOK(sub)) {
+                setClean();
+                shell.dispose();
+            }
         } finally {
             DataDeliveryGUIUtils.markNotBusyInUIThread(shell);
         }
@@ -542,7 +554,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
     }
 
     protected boolean querySubExists() {
-        String name = nameText.getText();
+        nameText.getText();
         return querySubExists(nameText.getText());
     }
 
@@ -603,7 +615,9 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
                                     + as.getProvider());
                     return;
                 }
-            } catch (RegistryHandlerException e) {
+            } catch (
+
+            RegistryHandlerException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "No DataSetMetaData matching query! DataSetName: "
                                 + as.getDataSetName() + " Provider: "
@@ -774,7 +788,7 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
             return false;
         }
 
-        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(name.trim())
+        if (!DataDeliveryGUIUtils.VALID_CHAR_PATTERN.matcher(name.trim())
                 .find()) {
             DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
                     DataDeliveryGUIUtils.INVALID_CHARS_TITLE,
@@ -788,6 +802,17 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
         }
 
         Collection<String> invalidTabs = getInvalidTabs();
+
+        if (!invalidTabs.isEmpty()) {
+            StringBuilder message = new StringBuilder(
+                    "The following tabs do not have valid entries:\n\n");
+            for (String tab : invalidTabs) {
+                message.append(tab + "\n");
+            }
+            DataDeliveryUtils.showMessage(shell, getStyle(), "Invalid Entries",
+                    message.toString());
+            return false;
+        }
 
         if (!invalidTabs.isEmpty()) {
             StringBuilder message = new StringBuilder(
@@ -821,15 +846,14 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
 
         if (!DataDeliveryGUIUtils.hasText(this.nameText)) {
             DataDeliveryUtils.showMessage(getShell(), SWT.OK, "Name Required",
-                    "Name requred. A subset name must be entered.");
+                    "Name required. A subset name must be entered.");
             return;
         }
 
-        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN
+        if (!DataDeliveryGUIUtils.VALID_CHAR_PATTERN
                 .matcher(nameText.getText().trim()).find()) {
-            DataDeliveryUtils.showMessage(getShell(), SWT.ERROR,
-                    "Invalid Characters",
-                    "Invalid characters. The Subset Name may only contain letters/numbers/dashes.");
+            DataDeliveryUtils.showMessage(getShell(), SWT.ERROR, "Invalid Name",
+                    "Invalid Name. The Subset Name must contain a letter or a number.");
             return;
         }
 
@@ -985,13 +1009,17 @@ public abstract class SubsetManagerDlg extends CaveSWTDialog implements
      *            the data set
      * @return the dialog
      */
-    public static SubsetManagerDlg fromDataSet(Shell shell, DataSet dataSet) {
+    public static SubsetManagerDlg fromDataSet(Shell shell, DataSet dataSet,
+            ReferencedEnvelope subEnvelope) {
         if (dataSet.getDataSetType() == DataType.GRID) {
-            return new GriddedSubsetManagerDlg(shell, (GriddedDataSet) dataSet);
+            return new GriddedSubsetManagerDlg(shell, (GriddedDataSet) dataSet,
+                    subEnvelope);
         } else if (dataSet.getDataSetType() == DataType.POINT) {
-            return new PointSubsetManagerDlg(shell, (PointDataSet) dataSet);
+            return new PointSubsetManagerDlg(shell, (PointDataSet) dataSet,
+                    subEnvelope);
         } else if (dataSet.getDataSetType() == DataType.PDA) {
-            return new PDASubsetManagerDlg(shell, (PDADataSet) dataSet);
+            return new PDASubsetManagerDlg(shell, (PDADataSet) dataSet,
+                    subEnvelope);
         }
         throw new IllegalArgumentException(String.format(DATASETS_NOT_SUPPORTED,
                 dataSet.getClass().getName()));

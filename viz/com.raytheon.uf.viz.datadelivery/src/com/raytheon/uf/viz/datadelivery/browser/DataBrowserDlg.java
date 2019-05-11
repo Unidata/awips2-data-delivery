@@ -144,6 +144,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Mar 24, 2016  5482     randerso  Fixed GUI sizing issue. Cleaned up timer code.
  * Aug 17, 2016  5772     rjpeter   Handle errors open Subset Dialog.
  * Sep 28, 2017  6458     mapeters  Don't block on open()
+ * Mar 01, 2018  7204     nabowle   Actually filter datasets based on the chosen areal coverage. Send
+ *                                  the selected coverage forward so the SubsetManagerDlg's spatial 
+ *                                  tab will default to it.
+ * Apr 12, 2019  7755     skabasele  Fixed the infinite cyclic relationship between close() and 
+ *                                   shell.addShellListener shellClosed(ShellEvent event)
  * </pre>
  *
  * @author lvenable
@@ -290,13 +295,13 @@ public class DataBrowserDlg extends CaveSWTDialog
             @Override
             public void shellClosed(ShellEvent event) {
                 if (!isDirty()) {
-                    close();
+                    event.doit = true;
                 } else {
                     event.doit = false;
                     int answer = DataDeliveryGUIUtils
                             .showSettingsHaveChangedPopup(getShell());
                     if (answer == SWT.YES) {
-                        close();
+                        event.doit = true;
                     }
                 }
             }
@@ -695,7 +700,8 @@ public class DataBrowserDlg extends CaveSWTDialog
                 } else {
 
                     try {
-                        dlg = SubsetManagerDlg.fromDataSet(shell, data);
+                        dlg = SubsetManagerDlg.fromDataSet(shell, data,
+                                envelope);
                         smDialogs.put(data, dlg);
                         dlg.addCloseCallback(new ICloseCallback() {
 
@@ -730,12 +736,13 @@ public class DataBrowserDlg extends CaveSWTDialog
         lowerRightLabel.setText("");
         clearBtn.setEnabled(false);
         envelope = null;
+        MetaDataManager.getInstance().clearAvailableDataSets();
+        MetaDataManager.getInstance().setArea(null);
 
         if (datatypeList.getSelectionIndex() != -1) {
             if (filterExpandBar != null) {
                 filterExpandBar.setEnvelope(null);
             }
-
             resetTableAndControls();
         }
         getShell().setCursor(null);
@@ -818,6 +825,7 @@ public class DataBrowserDlg extends CaveSWTDialog
 
             clearBtn.setEnabled(true);
         }
+        MetaDataManager.getInstance().clearAvailableDataSets();
 
         this.areaDirty = true;
     }

@@ -39,6 +39,7 @@ import com.raytheon.uf.common.registry.handler.RegistryHandlerException;
  * Oct 17, 2012  726      djohnson  Add {@link #getActiveByDataSetAndProvider}.
  * Mar 29, 2013  1841     djohnson  Renamed to specify UserSubscription.
  * Apr 27, 2017  6186     rjpeter   Added getActiveByDataSetAndProviderForSite.
+ * Apr 03, 2018  7240     tjensen   Added getByDataSetAndProviderForSite
  *
  * </pre>
  *
@@ -61,5 +62,20 @@ public interface ISiteSubscriptionHandler
      */
     List<SiteSubscription> getActiveByDataSetAndProviderForSite(
             String dataSetName, String providerName, String officeId)
+            throws RegistryHandlerException;
+
+    /**
+     * Retrieve subscriptions for the dataset name and provider for the
+     * specified site.
+     *
+     * @param dataSetName
+     *            the dataset name
+     * @param providerName
+     *            the provider name
+     * @param officeId
+     *            the office id for the site
+     */
+    List<SiteSubscription> getByDataSetAndProviderForSite(String dataSetName,
+            String providerName, String officeId)
             throws RegistryHandlerException;
 }

@@ -85,11 +85,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
 /**
  * Common subscription table composite that consolidates some of the common code
  * that is used by the subscription manager and the subscription viewer.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 15, 2012            lvenable     Initial creation.
@@ -123,15 +123,18 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils.TABLE_TYPE;
  * Nov 19, 2014  3852      dhladky      Fixed message overload problem.
  * Dec 03, 2014  3840      ccody        Correct sorting "contract violation" issue
  * Dec 09, 2014  3550      ccody        Filter out Retrieval Notification Messages.
- * Jan 05, 2015  3950   ccody/dhladky   Change Subscription Manager table update logic for pertinent 
+ * Jan 05, 2015  3950   ccody/dhladky   Change Subscription Manager table update logic for pertinent
  *                                      notification events (Create,Update,Delete,Activate,Deactivate,Expire)
  * Jan 30, 2015  2746      dhladky      Special handling for shared sub updates/deletes
  * Feb 04, 2015  4047      dhladky      Fixed deleting tableData before job has retrieved replacement.
  * Mar 16, 2016  3919      tjensen      Cleanup unneeded interfaces
  * Jun 20, 2016 5676       tjensen      Use showYesNoMessage for prompts that need to block
  * Nov 08, 2016  5976      bsteffen     Update notification API.
- * 
- * @version 1.0
+ * Nov 17, 2017  6343      tgurney      Remove unused groupSelectionUpdate()
+ *
+ * </pre>
+ *
+ * @author lvenable
  */
 
 public class SubscriptionTableComp extends TableComp implements IGroupAction {
@@ -189,7 +192,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent composite.
      * @param tableConfig
@@ -248,7 +251,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     /**
      * Bring up the edit screen with the given subscription. The user
      * permissions will be verified prior to launching the dialog.
-     * 
+     *
      * @param subscription
      *            the subscription
      */
@@ -263,8 +266,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
         try {
             if (DataDeliveryServices.getPermissionsService()
                     .checkPermissions(user, msg, permission).isAuthorized()) {
-                SubsetManagerDlg dlg = SubsetManagerDlg.fromSubscription(
-                        this.getShell(), true, subscription);
+                SubsetManagerDlg dlg = SubsetManagerDlg
+                        .fromSubscription(this.getShell(), true, subscription);
 
                 dlg.open();
             }
@@ -276,7 +279,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Verifies a single row is selected.
-     * 
+     *
      * @return true if a single row is selected
      */
     public boolean verifySingleRowSelected() {
@@ -348,8 +351,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                 continue;
             }
             // get the subscription details to be displayed to the user
-            printDetails.append(DataDeliveryUtils.formatDetails(rowData
-                    .getSubscription()));
+            printDetails.append(
+                    DataDeliveryUtils.formatDetails(rowData.getSubscription()));
         }
 
         // Pass the subscription details to be displayed
@@ -370,7 +373,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Get the table.
-     * 
+     *
      * @return The table.
      */
     public Table getTable() {
@@ -379,7 +382,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Action performed when the column is selected.
-     * 
+     *
      * @param tc
      *            Table column.
      */
@@ -405,7 +408,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Populate the data.
-     * 
+     *
      * @param filter
      */
     @SuppressWarnings("rawtypes")
@@ -421,7 +424,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
             protected IStatus run(IProgressMonitor monitor) {
                 try {
                     DataDeliveryGUIUtils.markBusyInUIThread(jobShell);
-                    subList.addAll(subscriptionFilter.getSubscriptions(handler));
+                    subList.addAll(
+                            subscriptionFilter.getSubscriptions(handler));
                     return Status.OK_STATUS;
                 } catch (RegistryHandlerException e) {
                     statusHandler.handle(Priority.PROBLEM,
@@ -456,7 +460,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Add a subscription to the list of subscriptions.
-     * 
+     *
      * @param subscription
      *            Subscription to add to the subscription list.
      */
@@ -469,7 +473,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Get the column data XML class.
-     * 
+     *
      * @param colName
      *            Column name.
      * @return The column data XML class.
@@ -489,7 +493,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Get the table cell text
-     * 
+     *
      * @param name
      *            The column name
      * @param rd
@@ -503,12 +507,13 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Update the table with the list of subscriptions.
-     * 
+     *
      * @param updatedSubscriptions
      *            List of updated subscriptions.
      */
     @SuppressWarnings("rawtypes")
-    public synchronized void updateTable(List<Subscription> updatedSubscriptions) {
+    public synchronized void updateTable(
+            List<Subscription> updatedSubscriptions) {
         for (Subscription s : updatedSubscriptions) {
             if (s.isDeleted() == true) {
                 // Delete the data from the table
@@ -552,27 +557,17 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Get the data manager for the subscription data.
-     * 
+     *
      * @return The data manager.
      */
     public TableDataManager<SubscriptionManagerRowData> getSubscriptionData() {
         return subManagerData;
     }
 
-    /**
-     * Get the sorted table column.
-     * 
-     * @return The table column that is sorted.
-     */
     public TableColumn getSortedTableColumn() {
         return sortedColumn;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#createColumns()
-     */
     @Override
     public void createColumns() {
         SubscriptionConfigurationManager configMan = SubscriptionConfigurationManager
@@ -614,11 +609,6 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
         populateTable();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#populateTable()
-     */
     @Override
     public void populateTable() {
         TableColumn[] columns = table.getColumns();
@@ -674,13 +664,6 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
         updateColumnSortImage();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.datadelivery.common.ui.TableComp#handleTableMouseClick
-     * (org.eclipse.swt.events.MouseEvent)
-     */
     @Override
     protected void handleTableMouseClick(MouseEvent event) {
 
@@ -756,12 +739,6 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.datadelivery.common.ui.TableComp#
-     * handleTableSelectionChange(org.eclipse.swt.events.SelectionEvent)
-     */
     @Override
     protected void handleTableSelection(SelectionEvent e) {
         if (table.getSelectionIndex() > -1) {
@@ -801,10 +778,10 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
     /**
      * Check the content of the {@link NotificationRecord} to see if the
      * Subscription Manager table needs to be updated.
-     * 
+     *
      * Update Subscription Table on: Subscription: Create, Update, Delete,
      * Activate, Deactivate, and Expire event messages.
-     * 
+     *
      * @param messages
      *            Event Notification Messages
      * @return isPertinent True if Subscription data to update in response to a
@@ -828,9 +805,8 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                     NotificationRecord notificationRecord = (NotificationRecord) obj;
 
                     String category = notificationRecord.getCategory();
-                    if (category != null
-                            && category
-                                    .equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
+                    if (category != null && category
+                            .equalsIgnoreCase(DataDeliveryUtils.SUBSCRIPTION)) {
                         String messageText = notificationRecord.getMessage();
                         if ((messageText != null)
                                 && (messageText.isEmpty() == false)) {
@@ -840,12 +816,12 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                                             .contains(DataDeliveryUtils.UPDATED)
                                     || messageText
                                             .contains(DataDeliveryUtils.DELETED)
-                                    || messageText
-                                            .contains(DataDeliveryUtils.ACTIVATED)
-                                    || messageText
-                                            .contains(DataDeliveryUtils.DEACTIVATED)
-                                    || messageText
-                                            .contains(DataDeliveryUtils.EXPIRE)) {
+                                    || messageText.contains(
+                                            DataDeliveryUtils.ACTIVATED)
+                                    || messageText.contains(
+                                            DataDeliveryUtils.DEACTIVATED)
+                                    || messageText.contains(
+                                            DataDeliveryUtils.EXPIRE)) {
                                 isPertinent = true;
                                 break;
                             }
@@ -853,18 +829,12 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                     }
                 }
             } catch (NotificationException ne) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to retrieve Notification Record from Notification Message.",
-                                ne);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to retrieve Notification Record from Notification Message.",
+                        ne);
             }
         }
         return (isPertinent);
-    }
-
-    @Override
-    public void groupSelectionUpdate(String fileName) {
-        // not implemented
     }
 
     @Override
@@ -895,20 +865,17 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Return the selected subscription.
-     * 
+     *
      * @return the subscription
      */
     @SuppressWarnings("unchecked")
     public Subscription<Time, Coverage> getSelectedSubscription() {
         int idx = this.getTable().getSelectionIndices()[0];
-        SubscriptionManagerRowData row = this.getSubscriptionData().getDataRow(
-                idx);
+        SubscriptionManagerRowData row = this.getSubscriptionData()
+                .getDataRow(idx);
         return row.getSubscription();
     }
 
-    /**
-     * @param subscriptionFilter
-     */
     public void setSubscriptionFilter(
             ISubscriptionManagerFilter subscriptionFilter) {
         this.subscriptionFilter = subscriptionFilter;
@@ -916,7 +883,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Enable based on the current site selected in the SubscriptionManagerDlg.
-     * 
+     *
      * @param enable
      *            true to enable the menu
      */
@@ -926,7 +893,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
 
     /**
      * Add the current site ID to the shared subscription.
-     * 
+     *
      * @param sub
      *            The subscription to add the current site
      */
@@ -1001,7 +968,7 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
      * NotificationMessage contains a NotificationRecord that belongs to the
      * "Retrieval" Category. This dialog should ignore "Retrieval"
      * notifications.
-     * 
+     *
      * @param messages
      *            Array of NotificationMessage objects containing
      *            NotificationRecord objects
@@ -1017,18 +984,16 @@ public class SubscriptionTableComp extends TableComp implements IGroupAction {
                 if (obj instanceof NotificationRecord) {
                     NotificationRecord notificationRecord = (NotificationRecord) obj;
                     String category = notificationRecord.getCategory();
-                    if (category != null
-                            && !category
-                                    .equalsIgnoreCase(DataDeliveryUtils.RETRIEVAL)) {
+                    if (category != null && !category
+                            .equalsIgnoreCase(DataDeliveryUtils.RETRIEVAL)) {
                         isRetrieval = false;
                         break;
                     }
                 }
             } catch (NotificationException ne) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Unable to retrieve Notification Record from Notification Message.",
-                                ne);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to retrieve Notification Record from Notification Message.",
+                        ne);
             }
 
         }

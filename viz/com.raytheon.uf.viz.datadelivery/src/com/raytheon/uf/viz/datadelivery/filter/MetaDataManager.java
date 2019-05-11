@@ -78,11 +78,11 @@ import com.raytheon.uf.viz.datadelivery.filter.config.xml.FilterTypeXML;
  * Jul 05, 2013  2137     mpduff    Single data type.
  * Jul 29, 2013  2196     bgonzale  Added levels isEmpty check.
  * Sep 14, 2017  6413     tjensen   Update for ParameterGroups
+ * Mar 01, 2018  7204     nabowle   Add clearAvailableDataSets()
  *
  * </pre>
  *
  * @author mpduff
- * @version 1.0
  */
 
 public class MetaDataManager {
@@ -461,6 +461,10 @@ public class MetaDataManager {
      */
     public void rereadMetaData() {
         reread = true;
+    }
+
+    public void clearAvailableDataSets() {
+        allAvailableDataSets = null;
     }
 
     /**

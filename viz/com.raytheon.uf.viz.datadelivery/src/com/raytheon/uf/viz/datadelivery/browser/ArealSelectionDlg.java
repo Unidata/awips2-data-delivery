@@ -22,8 +22,6 @@ package com.raytheon.uf.viz.datadelivery.browser;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -53,9 +51,10 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Dec 07, 2012  1278      bgonzale    Coordinate Array initialization in ctor.
  * Dec 10, 2012  1259      bsteffen    Switch Data Delivery from LatLon to referenced envelopes.
  * Jul 12, 2013  2141      mpduff      Fix typo.
- * Feb 10, 2016  5323      tjensen    Fix error with cancel
- * Feb 22, 2016  5323      tjensen    Add Confirm Cancel when closing with X button.
- * Mar 28, 2016   5482     randerso    Fix GUI sizing issues
+ * Feb 10, 2016  5323      tjensen     Fix error with cancel
+ * Feb 22, 2016  5323      tjensen     Add Confirm Cancel when closing with X button.
+ * Mar 28, 2016  5482     randerso     Fix GUI sizing issues
+ * Apr 16, 2019  7755     skabasele    Fix the infinite cycle dependency issue by removing the shellclosedListener.
  * 
  * </pre>
  * 
@@ -131,10 +130,9 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 if (!areaComp.isEnvelopeValid()) {
-                    DataDeliveryUtils
-                            .showMessage(getShell(), SWT.OK,
-                                    "Validation Error",
-                                    "The defined area is invalid\nAdjust the selected area and try again.");
+                    DataDeliveryUtils.showMessage(getShell(), SWT.OK,
+                            "Validation Error",
+                            "The defined area is invalid\nAdjust the selected area and try again.");
                     return;
                 }
 
@@ -156,9 +154,9 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                int answer = DataDeliveryUtils
-                        .showYesNoMessage(getShell(), "Cancel Changes?",
-                                "Are you sure you wish to close without selecting an area?");
+                int answer = DataDeliveryUtils.showYesNoMessage(getShell(),
+                        "Cancel Changes?",
+                        "Are you sure you wish to close without selecting an area?");
                 if (answer == SWT.YES) {
                     setReturnValue(false);
                     close();
@@ -166,19 +164,6 @@ public class ArealSelectionDlg extends CaveSWTDialog implements IDataSize {
             }
         });
 
-        shell.addShellListener(new ShellAdapter() {
-            @Override
-            public void shellClosed(ShellEvent event) {
-                int answer = DataDeliveryUtils
-                        .showYesNoMessage(getShell(), "Cancel Changes?",
-                                "Are you sure you wish to close without selecting an area?");
-                if (answer == SWT.YES) {
-                    close();
-                } else {
-                    event.doit = false;
-                }
-            }
-        });
     }
 
     /**

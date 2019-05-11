@@ -74,11 +74,11 @@ import com.raytheon.uf.viz.datadelivery.utils.DataDeliveryUtils;
  * Jun 20, 2016  5676     tjensen   Use showYesNoMessage for prompts that need
  *                                  to block
  * Apr 20, 2017  1045     tjensen   Update for moving datasets
+ * Mar 01, 2018  7204     nabowle   Add subEnvelope.
  *
  * </pre>
  *
  * @author mpduff
- * @version 1.0
  */
 
 public class SpatialSubsetTab extends SubsetTab implements IDataSize {
@@ -88,6 +88,9 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
 
     /** Envelope describing full area where requests are possible */
     private ReferencedEnvelope fullEnvelope;
+
+    /** Envelope describing pre-chosen sub-area */
+    private ReferencedEnvelope subEnvelope;
 
     private boolean moving = false;
 
@@ -123,7 +126,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
      *            IDataSize callback
      */
     public SpatialSubsetTab(Composite parentComp, DataSet dataSet,
-            IDataSize callback) {
+            IDataSize callback, ReferencedEnvelope subEnvelope) {
         this.parentComp = parentComp;
         if (dataSet != null) {
             this.moving = dataSet.isMoving();
@@ -132,6 +135,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
             }
         }
         this.callback = callback;
+        this.subEnvelope = subEnvelope;
 
         init();
     }
@@ -191,7 +195,8 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
             }
         });
 
-        areaComp = new AreaComp(parentComp, areaCompTitle, this, fullEnvelope);
+        areaComp = new AreaComp(parentComp, areaCompTitle, this, fullEnvelope,
+                subEnvelope);
         areaComp.setLayout(gl);
         areaComp.setLayoutData(gd);
 
@@ -290,7 +295,7 @@ public class SpatialSubsetTab extends SubsetTab implements IDataSize {
         }
 
         String saveName = getRegionSaveText();
-        if (DataDeliveryGUIUtils.INVALID_CHAR_PATTERN.matcher(saveName.trim())
+        if (!DataDeliveryGUIUtils.VALID_CHAR_PATTERN.matcher(saveName.trim())
                 .find()) {
             DataDeliveryUtils.showMessageCancel(parentComp.getShell(),
                     DataDeliveryGUIUtils.INVALID_CHARS_TITLE,

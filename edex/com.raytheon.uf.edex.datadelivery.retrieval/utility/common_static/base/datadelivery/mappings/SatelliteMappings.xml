@@ -31,11 +31,11 @@
         match. -->
     <pdaDescriptionMap>
         <key>GOES-16</key>
-        <description>GOES-Center</description>
+        <description>GOES-East</description>
     </pdaDescriptionMap>
     <pdaDescriptionMap>
         <key>GOES-17</key>
-        <description>GOES-Center</description>
+        <description>GOES-West</description>
     </pdaDescriptionMap>
     <pdaDescriptionMap>
         <key>GOES-18</key>
