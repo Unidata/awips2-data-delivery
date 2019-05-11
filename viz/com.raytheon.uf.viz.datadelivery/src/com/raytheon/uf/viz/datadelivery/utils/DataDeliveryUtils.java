@@ -849,7 +849,9 @@ public class DataDeliveryUtils {
                 fmtStr.append("Forecast Hours: ").append(newline);
                 fmtStr.append("------ ");
                 for (int idx : gtime.getSelectedTimeIndices()) {
-                    fmtStr.append(fcstHours.get(idx)).append(space);
+                	if (idx > 0 ) {
+                        fmtStr.append(fcstHours.get(idx)).append(space);
+                	}
                 }
 
                 fmtStr.append(newline);
