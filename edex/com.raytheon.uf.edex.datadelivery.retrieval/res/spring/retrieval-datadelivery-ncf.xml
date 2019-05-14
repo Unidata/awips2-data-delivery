@@ -22,7 +22,7 @@
 	<bean id="retrievalTask"
 		class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.SbnRetrievalTask">
 		<constructor-arg ref="tokenBucket" />
-		<constructor-arg value="${sbn.retrieval.transfer.directory}" />
+		<constructor-arg value="${sbn.retrieval.transfer.directory}" /> <!-- /awips2/crawl -->
 		<constructor-arg>
 			<bean
 				class="com.raytheon.uf.edex.datadelivery.retrieval.handlers.DataDeliveryRetrievalWmoHeaderApplier">

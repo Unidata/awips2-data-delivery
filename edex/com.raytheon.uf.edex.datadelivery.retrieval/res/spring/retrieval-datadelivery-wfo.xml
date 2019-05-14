@@ -8,11 +8,6 @@
     http://camel.apache.org/schema/spring
     http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-    <bean class="com.raytheon.uf.common.logback.appender.ThreadBasedAppender" factory-method="registerThreadPattern">
-        <constructor-arg value="retrieval" />
-        <constructor-arg value="dataDeliveryRetrievalProcess.*" />
-    </bean>
-
     <bean id="tokenBucket" class="com.raytheon.uf.common.util.rate.TokenBucket">
         <!-- tokens (bytes) per interval. the real value is set at runtime -->
         <constructor-arg value="39321" />

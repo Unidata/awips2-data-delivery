@@ -420,8 +420,8 @@ public class GriddedSubsetManagerDlg extends SubsetManagerDlg {
         if (!CollectionUtil.isNullOrEmpty(selectedTimeIndices)) {
             for (int idx : selectedTimeIndices) {
                 if (idx < 0 || idx >= numberOfFcstHours) {
-                    warnOfInvalidForecastHourIndex(this.subscription,
-                            numberOfFcstHours, idx);
+                    //warnOfInvalidForecastHourIndex(this.subscription,
+                    //        numberOfFcstHours, idx);
                 } else {
                     timeXml.addHour(fcstHours.get(idx));
                 }

@@ -200,10 +200,6 @@ public class HarvesterConfigurationManager {
             if (config.getProvider() != null
                     && config.getProvider().getConnection() != null
                     && config.getProvider().getConnection().getUrl() != null) {
-
-                statusHandler.info("Got connection URL for provider "
-                        + config.getProvider().getName() + ": "
-                        + config.getProvider().getConnection().getUrl());
             }
 
         } catch (SerializationException e) {
