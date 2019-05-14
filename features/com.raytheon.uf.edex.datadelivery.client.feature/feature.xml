@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="com.raytheon.uf.edex.datadelivery.feature"
-      label="EDEX DataDelivery Feature"
+      id="com.raytheon.uf.edex.datadelivery.client.feature"
+      label="EDEX DataDelivery Client Feature"
       version="1.0.0.qualifier"
       provider-name="RAYTHEON">
 
@@ -19,58 +19,54 @@
 
    <requires>
       <import feature="com.raytheon.uf.edex.common.core.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.dataplugins.feature" version="1.0.0.qualifier"/>
-      <import feature="com.raytheon.uf.edex.registry.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.core.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.datadelivery.client.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.datadelivery.core.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.menus.vb.feature" version="1.0.0.qualifier"/>
+      <import feature="com.raytheon.uf.edex.registry.client.feature" version="0.0.0"/>
    </requires>
 
    <plugin
-         id="org.apache.commons.compress"
+         id="com.raytheon.uf.common.datadelivery.request"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="edu.uci.ics.crawler4j"
+         id="com.raytheon.uf.edex.datadelivery.request"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="com.raytheon.uf.edex.datadelivery.bandwidth"
+         id="com.raytheon.uf.common.datadelivery.registry"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="com.raytheon.uf.edex.datadelivery.harvester"
+         id="com.raytheon.uf.common.datadelivery.event"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="com.raytheon.uf.common.datadelivery.bandwidth"
+         id="com.raytheon.uf.edex.datadelivery.event"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="com.raytheon.uf.edex.datadelivery.bandwidth.ncf"
+         id="com.raytheon.uf.common.datadelivery.service"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
 
    <plugin
-         id="com.raytheon.uf.edex.datadelivery.registry"
+         id="com.raytheon.uf.edex.plugin.datadelivery.retrieval.dist"
          download-size="0"
          install-size="0"
          version="0.0.0"
