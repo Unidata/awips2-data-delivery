@@ -104,7 +104,6 @@ public class HibernateBandwidthDbInit extends DbInit
     @Override
     public void init() throws Exception {
         initDb();
-        logger.info("Clearing previous bandwidth data...");
         final Work work = new Work() {
             @Override
             public void execute(Connection connection) throws SQLException {
@@ -117,7 +116,6 @@ public class HibernateBandwidthDbInit extends DbInit
         };
 
         dao.executeWork(work);
-        logger.info("Previous bandwidth data cleared");
     }
 
     @Override
